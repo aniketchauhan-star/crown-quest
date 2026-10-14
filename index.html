@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="description" content="Zippy's Crown Quest: a story-led learning game about linear equations in one variable (Class 8)." />
+    <meta name="theme-color" content="#0b2f39" />
+    <title>Zippy's Crown Quest</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="viewport">
+      <div id="stage" role="application" aria-label="Zippy's Crown Quest">
+        <div id="shake"><div id="world"></div></div>
+        <div id="overlay"></div>
+        <div id="ui"></div>
+        <div id="modal"></div>
+        <div id="title"></div>
+        <div id="loading">
+          <div class="lb-box">
+            <div class="lb-coin"></div>
+            <div class="lb-text">Loading…</div>
+            <div class="lb-track"><div class="lb-fill"></div></div>
+          </div>
+        </div>
+      </div>
+      <div id="rotate" aria-live="polite">
+        <div class="rot-phone"></div>
+        <div class="rot-text">Please turn your device sideways</div>
+      </div>
+    </div>
+    <script src="assets/sprites.js"></script>
+    <script src="js/content.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/activities.js"></script>
+    <script src="js/flow.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
