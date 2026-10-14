@@ -14,12 +14,16 @@
 
   // Scene layout in stage units (the stage is always 1920 x 1080).
   CQ.L = {
-    BX: 1040, // balance centre x
+    BX: 1085, // balance centre x
     PIVOT_Y: 330, // beam pivot y
-    GRUMBLE: { x: 222, y: 932, scale: 1.15 },
-    ZIPPY: { ax: 330, ay: -40, len: 166, scale: 0.84 },
+    GRUMBLE: { x: 262, y: 950, scale: 1.35 },
+    // Zippy hangs by his tail from a tree root that comes down from above the screen.
+    // (ax, ay) = where the root swings from (off-screen), len = root length to his tail.
+    ZIPPY: { ax: 420, ay: -120, len: 236, scale: 0.72 },
+    HELD_BAR_W: 146, // a gold bar in Zippy's hands
     PEDESTAL_TOP: 968,
     BAR_W: 220,
+    // sizes of things on the pans, in balance units (the whole balance is drawn at BAL.S)
     PAN_BAR_W: 150,
     CROWN_W: 160,
     COIN_W: 60,
@@ -310,6 +314,10 @@
         }
       });
     });
+  };
+  CQ.stopTween = (channel) => {
+    const c = channels.get(channel);
+    if (c) c.stop();
   };
   CQ.stopTweens = () => {
     Array.from(channels.values()).forEach((c) => c.stop());

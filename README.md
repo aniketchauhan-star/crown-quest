@@ -60,6 +60,16 @@ The game is complete without any audio files: every sound effect, the music and 
 
 The balance scale is drawn in code (`BalanceArt` in `js/world.js`): slim beam with ball ends, round hub, shallow bowls on thin rods, and a stepped base. `balanced game.png` is no longer used. Its sizes (beam length, bowl width and depth) are the `BAL` numbers at the top of that section.
 
+**Sizes and positions** are set in one place, `CQ.L` near the top of `js/engine.js`:
+- `ZIPPY.scale`: Zippy's size.
+- `ZIPPY.ax`: how far right his tree root hangs.
+- `GRUMBLE.scale`: Grumble's size, with `x` and `y` for where he sits.
+- `BX`: where the balance stands.
+
+The balance's own size is `BAL.S` in `js/world.js`; 1 means full size.
+
+Zippy hangs by his tail from a tree root drawn in code (`CQ.rootSVG` in `js/world.js`). The root comes down from above the screen, and his tail curls around its tip.
+
 The other original PNGs stay in this folder. If you change any of them (keep the same file names, and the 4 × 2 frame layout for character sheets), run:
 
 ```

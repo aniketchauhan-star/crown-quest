@@ -58,6 +58,7 @@
   CQ.ui = {
     build(uiLayer, overlay, modal) {
       this.layer = uiLayer;
+      CQ.stage.el.style.setProperty("--bx", CQ.L.BX + "px");
       this.overlay = overlay;
       this.modal = modal;
       CQ.hud.build(uiLayer);
@@ -263,6 +264,8 @@
         cb();
       });
       this.cb = null;
+      const B = CQ.BAL;
+      CQ.pos(this.el, CQ.L.BX - B.R * B.S, CQ.L.PIVOT_Y + B.PAN_BOTTOM * B.S + 95);
     },
     show(cb) {
       this.cb = cb;
@@ -448,7 +451,7 @@
   CQ.thought = function (wp, html, opts) {
     opts = opts || {};
     const p = CQ.camera.toScreen(wp);
-    const e = CQ.el("div", "thought", CQ.ui.layer);
+    const e = CQ.el("div", "thought" + (opts.cls ? " " + opts.cls : ""), CQ.ui.layer);
     CQ.pos(e, p.x, p.y);
     if (opts.w) e.style.width = opts.w + "px";
     if (opts.h) e.style.height = opts.h + "px";
@@ -483,6 +486,7 @@
     },
     stop() {
       this.seq++;
+      CQ.stopTween("hand");
       this.el.classList.add("hidden");
     },
     // Show a drag gesture between two stage points (repeats a few times).
@@ -507,6 +511,7 @@
     },
     async tapAt(p, times) {
       const id = ++this.seq;
+      CQ.stopTween("hand"); // an earlier drag demo must not keep moving the hand
       if (!p) return;
       times = times || 2;
       this.el.classList.remove("hidden");
