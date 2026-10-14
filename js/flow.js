@@ -218,7 +218,7 @@
     CQ.audio.play("bar.place");
     await R.when(
       Promise.all([
-        CQ.fly(CQ.world.drag, CQ.barFlyer(v, CQ.L.PAN_BAR_W), hand, target, { duration: 300, arc: -26 }),
+        CQ.fly(CQ.world.drag, CQ.barFlyer(v, CQ.L.PAN_BAR_PX), hand, target, { duration: 300, arc: -26 }),
         CQ.fly(CQ.world.drag, CQ.crownFlyer(), target, hand, { duration: 300, arc: -26 }),
       ])
     );
@@ -281,7 +281,7 @@
           barItem.el.style.visibility = "hidden";
           await Promise.all([
             CQ.fly(CQ.world.drag, CQ.crownFlyer(), hand, slot, { duration: 260, arc: -20 }),
-            CQ.fly(CQ.world.drag, CQ.barFlyer(v, CQ.L.PAN_BAR_W), slot, hand, { duration: 260, arc: -20 }),
+            CQ.fly(CQ.world.drag, CQ.barFlyer(v, CQ.L.PAN_BAR_PX), slot, hand, { duration: 260, arc: -20 }),
           ]);
           if (gen !== CQ.gen) return;
           b.removeItem(barItem);
@@ -309,7 +309,7 @@
     z.setVisible(false);
     CQ.torches.set(false);
     CQ.world.dark.style.opacity = 0.92;
-    CQ.camera.set(250, 760, 1.8);
+    CQ.camera.set(300, 760, 1.65);
     g.snoreVol = 1.6;
     await R.wait(900);
     await CQ.torches.lightUp();
@@ -323,7 +323,7 @@
     CQ.world.decor.classList.remove("rustle");
     await CQ.hideBurst(gb);
     g.snoreVol = 1.1;
-    await R.when(CQ.camera.to(560, 380, 1.3, 1300));
+    await R.when(CQ.camera.to(600, 400, 1.3, 1300));
     const drop = z.dropIn();
     await R.wait(650);
     CQ.spot.on(() => z.center(), 270);
@@ -352,7 +352,7 @@
     // thought bubble: what happens if the balance tips
     CQ.audio.play("zippy.gulp");
     // above the real balance, so the crown on the left pan stays in view
-    const th = CQ.thought({ x: z.center().x + 380, y: z.center().y - 40 }, miniTipScene(), { w: 500, h: 330 });
+    const th = CQ.thought({ x: z.center().x + 340, y: z.center().y - 20 }, miniTipScene(), { w: 500, h: 300, cls: "from-left" });
     const miniG = new CQ.Sprite(th.querySelector(".ms-grumble"), "", 0.3);
     miniG.show("grumble_roar", 7);
     setTimeout(() => th.classList.add("tip"), 900);
@@ -467,7 +467,7 @@
     await say("l4-4");
     removeLabel(q);
     glowCrown(false);
-    const under = b.ends.left.y + CQ.BAL.PAN_BOTTOM + 56; // just below the left pan
+    const under = b.ends.left.y + CQ.BAL.PAN_BOTTOM * CQ.BAL.S + 50; // just below the left pan
     let lx = worldLabel('<i class="v">x</i>', cc.x, under, "xlabel");
     await say("l4-5");
     removeLabel(lx);
@@ -860,7 +860,8 @@
       CQ.pos(l, x, 985);
       return l;
     };
-    return { left: mk(520, "left"), right: mk(1560, "right") };
+    const off = CQ.BAL.R * CQ.BAL.S + 150; // just outside each pan
+    return { left: mk(CQ.L.BX - off, "left"), right: mk(CQ.L.BX + off, "right") };
   }
   // The child drags the 8 bar off a pan onto its ledge.
   function dragOff(side, ledge, hooks) {
@@ -880,7 +881,7 @@
         const lift = (pt) => {
           const c = b.itemCenter(it);
           grab = pt ? { dx: c.x - pt.x, dy: c.y - pt.y } : { dx: 0, dy: 0 };
-          proxy = CQ.barFlyer(8, CQ.L.PAN_BAR_W);
+          proxy = CQ.barFlyer(8, CQ.L.PAN_BAR_PX);
           proxy.classList.add("glow");
           CQ.world.drag.appendChild(proxy);
           proxy.classList.add("flyer");
@@ -905,7 +906,7 @@
           ledge.classList.remove("active");
           const from = { x: parseFloat(proxy.style.left), y: parseFloat(proxy.style.top) };
           proxy.remove();
-          const fl = CQ.barFlyer(8, CQ.L.PAN_BAR_W);
+          const fl = CQ.barFlyer(8, CQ.L.PAN_BAR_PX);
           CQ.fly(CQ.world.drag, fl, from, ledgePt, { duration: 300, arc: -40, remove: false }).then(() => {
             fl.classList.remove("flyer");
             fl.classList.add("ledge-bar");
@@ -965,7 +966,7 @@
       const from = { x: parseFloat(l.bar.style.left), y: parseFloat(l.bar.style.top) };
       l.bar.remove();
       const to = b.panCenter(side);
-      return CQ.fly(CQ.world.drag, CQ.barFlyer(8, CQ.L.PAN_BAR_W), from, { x: to.x + (side === "left" ? 80 : -80), y: to.y }, { duration: 650, arc: -160 });
+      return CQ.fly(CQ.world.drag, CQ.barFlyer(8, CQ.L.PAN_BAR_PX), from, { x: to.x + (side === "left" ? 80 : -80), y: to.y }, { duration: 650, arc: -160 });
     });
     CQ.audio.play("ui.swoosh");
     await R.when(Promise.all(moves));

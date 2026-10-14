@@ -17,6 +17,13 @@
       CQ.img("temple", "bg", root);
       this.decor = CQ.el("div", "layer decor", root);
       buildVines(this.decor);
+      [
+        { x: 368, y: 64, seed: 4, thick: 13 },
+        { x: 452, y: 34, seed: 9, thick: 11 },
+      ].forEach((d, i) => {
+        const e = CQ.hangRoot(this.decor, d.x, d.y, { seed: d.seed, thick: d.thick, H: 700, cls: "root-deco" });
+        e.style.animationDelay = -i * 1.7 + "s";
+      });
       this.torchLayer = CQ.el("div", "layer torch-layer", root);
       CQ.torches.build(this.torchLayer);
       this.balanceLayer = CQ.el("div", "layer balance-layer", root);
@@ -147,7 +154,8 @@
       });
     }
     head() {
-      return this.state === "awake" ? { x: this.x + 10, y: this.y - 430 } : { x: this.x + 95, y: this.y - 215 };
+      const f = this.k / 1.15; // offsets were tuned at scale 1.15
+      return this.state === "awake" ? { x: this.x + 10 * f, y: this.y - 430 * f } : { x: this.x + 95 * f, y: this.y - 215 * f };
     }
     sleep() {
       this.state = "sleep";
@@ -219,7 +227,8 @@
       CQ.audio.play("grumble.roar");
       CQ.audio.play("grumble.stomp");
       CQ.camera.shake(16, 650);
-      CQ.comic(CONTENT.grumble.roar, { x: this.x + 40, y: this.y - 520 }, { color: "purple", size: 96, dur: 1300 });
+      const f = this.k / 1.15;
+      CQ.comic(CONTENT.grumble.roar, { x: this.x + 30 * f, y: this.y - 200 * f }, { color: "purple", size: 88, dur: 1300 });
       if (hooks.onRoar) hooks.onRoar();
       await CQ.sleep(800);
       if (stale()) return;
@@ -266,6 +275,106 @@
     }
   }
 
+  // ================================================================== hanging tree roots
+  // A twisted tree root that hangs from above the screen, drawn in SVG with its tip at the bottom
+  // centre of a ROOT.W x (opts.H || ROOT.H) box. Zippy's tail curls around the tip: the root is
+  // drawn behind him, so the tail wraps in front of it.
+  const ROOT = { W: 240, H: 1500 };
+  CQ.ROOT = ROOT;
+  // Where the root's tip sits inside the curl of Zippy's tail, measured from the top of his tail
+  // in source-art pixels (the same "?" curl appears in every pose).
+  const ROOT_TIP_SRC = { x: 4, y: 120 };
+  function seeded(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  let rootUid = 0;
+  CQ.rootSVG = function (opts) {
+    opts = opts || {};
+    const W = ROOT.W;
+    const H = opts.H || ROOT.H;
+    const thick = opts.thick || 30;
+    const r = seeded(opts.seed || 5);
+    const u = "rt" + ++rootUid;
+    const cx = W / 2;
+    const f1 = (n) => n.toFixed(1);
+    // centre line: straight near the tip (where the tail grips it), gently wavy higher up
+    const xAt = (y) => {
+      const d = H - y;
+      const env = Math.min(1, Math.max(0, (d - 80) / 180));
+      return cx + env * (8 * Math.sin(d / 110 + 0.5) + 3.5 * Math.sin(d / 37 + 2.1));
+    };
+    const hwAt = (y) => (thick / 2) * (1 + Math.min(0.6, (H - y) / 1200));
+    const tipHW = hwAt(H);
+    const yEnd = H - tipHW;
+    const left = [];
+    const right = [];
+    for (let y = 0; y < yEnd; y += 8) {
+      left.push(`${f1(xAt(y) - hwAt(y))} ${f1(y)}`);
+      right.push(`${f1(xAt(y) + hwAt(y))} ${f1(y)}`);
+    }
+    left.push(`${f1(cx - tipHW)} ${f1(yEnd)}`);
+    right.push(`${f1(cx + tipHW)} ${f1(yEnd)}`);
+    const body = `M ${left.join(" L ")} A ${f1(tipHW)} ${f1(tipHW)} 0 0 0 ${right.pop()} L ${right.reverse().join(" L ")} Z`;
+    // the twist: a darker line winding down the root
+    const twist = [];
+    for (let y = 0; y < yEnd - 20; y += 10) twist.push(`${f1(xAt(y) + hwAt(y) * 0.45 * Math.sin(y / 46))} ${f1(y)}`);
+    // bark grooves and highlights
+    let bark = "";
+    for (let y = 30 + r() * 20; y < yEnd - 40; y += 26 + r() * 22) {
+      const x = xAt(y);
+      const hw = hwAt(y);
+      bark += `<path d="M ${f1(x - hw * 0.62)} ${f1(y)} Q ${f1(x)} ${f1(y + 8)} ${f1(x + hw * 0.5)} ${f1(y + 3)}" stroke="#3b2412" stroke-opacity=".5" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
+      if (r() < 0.6)
+        bark += `<path d="M ${f1(x - hw * 0.15)} ${f1(y + 14)} L ${f1(x + hw * 0.45)} ${f1(y + 19)}" stroke="#d1a06a" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round"/>`;
+    }
+    // side rootlets and leaves (kept away from the tip, where the tail is)
+    let rootlets = "";
+    let leaves = "";
+    const leaf = (x, y, ang, sc) =>
+      `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(ang)}) scale(${f1(sc)})"><path d="M0 0 C 8 -10 26 -10 36 0 C 26 10 8 10 0 0 Z" fill="#6cbf3c" stroke="#24521a" stroke-width="2"/><path d="M2 0 L 31 0" stroke="#3d8a26" stroke-width="1.4"/></g>`;
+    [210, 380, 620, 900, 1180].forEach((d, i) => {
+      const y = H - d;
+      if (y < 30) return;
+      const side = i % 2 ? -1 : 1;
+      const x0 = xAt(y) + side * hwAt(y) * 0.8;
+      const x1 = x0 + side * (34 + r() * 34);
+      const y1 = y + 50 + r() * 60;
+      const c = `M ${f1(x0)} ${f1(y)} Q ${f1(x0 + side * (30 + r() * 16))} ${f1(y + 6)} ${f1(x1)} ${f1(y1)}`;
+      rootlets += `<path d="${c}" stroke="#33200f" stroke-width="8" fill="none" stroke-linecap="round"/><path d="${c}" stroke="#8a5c33" stroke-width="4.4" fill="none" stroke-linecap="round"/>`;
+      leaves += leaf(x0 + side * 4, y - 6, side > 0 ? -18 - r() * 25 : 198 + r() * 25, 0.95 + r() * 0.3);
+    });
+    [300, 520, 760, 1040, 1320].forEach((d, i) => {
+      const y = H - d;
+      if (y < 30) return;
+      const side = i % 2 ? 1 : -1;
+      leaves += leaf(xAt(y) + side * hwAt(y) * 0.85, y, side > 0 ? 25 + r() * 30 : 155 - r() * 30, 0.9 + r() * 0.35);
+    });
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
+      <defs><linearGradient id="${u}" gradientUnits="userSpaceOnUse" x1="${cx - thick}" y1="0" x2="${cx + thick}" y2="0">
+        <stop offset="0" stop-color="#3f2613"/><stop offset=".24" stop-color="#6b4326"/><stop offset=".5" stop-color="#8d6037"/><stop offset=".76" stop-color="#674024"/><stop offset="1" stop-color="#3a2311"/>
+      </linearGradient></defs>
+      ${rootlets}
+      <path d="${body}" fill="url(#${u})" stroke="#2b190b" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M ${twist.join(" L ")}" stroke="#5a3a1d" stroke-opacity=".38" stroke-width="3" fill="none" stroke-linecap="round"/>
+      ${bark}${leaves}</svg>`;
+  };
+  // A root that does not move, with its tip at (tipX, tipY) inside `parent`.
+  CQ.hangRoot = function (parent, tipX, tipY, opts) {
+    opts = opts || {};
+    const e = CQ.el("div", "hang-root" + (opts.cls ? " " + opts.cls : ""), parent, CQ.rootSVG(opts));
+    CQ.pos(e, tipX - ROOT.W / 2, tipY - (opts.H || ROOT.H));
+    return e;
+  };
+  // Tip position for a Zippy sprite drawn at `scale` whose tail top is at (x, y).
+  CQ.rootTipFor = (x, y, scale) => ({ x: x + ROOT_TIP_SRC.x * scale, y: y + ROOT_TIP_SRC.y * scale });
+
   // ================================================================== Zippy
   // Where Zippy's hands are, measured from the tip of his tail, in source-art pixels (scaled at use).
   const HOLD_SRC = {
@@ -290,7 +399,9 @@
       this.swayT = 0;
       this.sway = 0;
       this.tilt = 0.35;
-      this.vine = CQ.el("div", "zippy-vine", layer);
+      // the tree root he hangs from (drawn behind him, so his tail wraps in front of it)
+      this.root = CQ.el("div", "zippy-root", layer, CQ.rootSVG({ seed: 11 }));
+      this.tipOff = CQ.rootTipFor(0, 0, this.k);
       this.rig = CQ.el("div", "zippy-rig", layer);
       this.body = CQ.el("div", "zippy-body", this.rig);
       this.sprite = new CQ.Sprite(this.body, "zippy-sprite", this.k);
@@ -314,12 +425,19 @@
       this.sway = this.swayAmp * Math.sin(this.swayT * 1.7);
       const th = this.theta + this.sway;
       const P = this.P;
-      // The vine is drawn 600px longer above the attach point (off-screen) and pivots on the
-      // attach point itself (transform-origin: 50% 600px in the CSS), so its end meets Zippy's tail.
-      this.vine.style.left = this.A.x - 44 + "px";
-      this.vine.style.top = this.A.y - 600 + "px";
-      this.vine.style.height = Math.max(0, this.len + 600 + 10) + "px";
-      this.vine.style.transform = `rotate(${-th}deg)`;
+      // The root swings from A (above the screen) to a tip inside the curl of his tail. Its SVG is
+      // ROOT.H tall with the tip at the bottom; the part above A is always off-screen.
+      const a = -th * this.tilt * deg;
+      const o = this.tipOff;
+      const ex = P.x + o.x * Math.cos(a) - o.y * Math.sin(a);
+      const ey = P.y + o.x * Math.sin(a) + o.y * Math.cos(a);
+      const len = Math.max(1, Math.hypot(ex - this.A.x, ey - this.A.y));
+      const ang = Math.atan2(ex - this.A.x, ey - this.A.y) / deg;
+      const rs = this.root.style;
+      rs.left = this.A.x - CQ.ROOT.W / 2 + "px";
+      rs.top = this.A.y + len - CQ.ROOT.H + "px";
+      rs.transformOrigin = `${CQ.ROOT.W / 2}px ${CQ.ROOT.H - len}px`;
+      rs.transform = `rotate(${-ang}deg)`;
       this.rig.style.transform = `translate(${P.x}px, ${P.y}px) rotate(${-th * this.tilt}deg)`;
     }
     holdOffset() {
@@ -464,7 +582,7 @@
       if (on) {
         this.pose("ready");
         this.swayAmp = 1;
-        this.moveTo(0, this.baseLen + 70, 320, CQ.ease.out);
+        this.moveTo(0, this.baseLen + 35, 320, CQ.ease.out); // reach down a little (stays clear of Grumble)
       } else {
         this.pose(this.held ? "hold" : "idle");
         this.home(320);
@@ -507,13 +625,13 @@
         }, 900);
       }
     }
-    // Intro: Zippy drops in from the top on his vine and swings to a stop.
+    // Intro: Zippy drops in from above the screen on his tree root and swings to a stop.
     async dropIn() {
       this.swayAmp = 0;
       this.setHeld(null);
       this.pose("swing");
       this.setVisible(true);
-      const y0 = -820;
+      const y0 = -900; // starts fully above the screen
       const yEnd = L.ZIPPY.ay;
       this.A.y = y0;
       this.theta = -40;
@@ -542,7 +660,7 @@
     }
     setVisible(on) {
       this.rig.style.visibility = on ? "visible" : "hidden";
-      this.vine.style.visibility = on ? "visible" : "hidden";
+      this.root.style.visibility = on ? "visible" : "hidden";
     }
     reset() {
       this.A = { x: L.ZIPPY.ax, y: L.ZIPPY.ay };
@@ -559,9 +677,11 @@
   // ================================================================== balance art
   // A classic gold scale drawn in SVG: slim beam with ball ends, a round hub with a ball on top,
   // slim post on a stepped round base, and shallow bowl pans hung from thin rods at their rims.
-  // All sizes are stage pixels. Items sit inside the bowls: the back of the bowl is drawn behind
-  // them and the front lip in front of them.
+  // Sizes below are "balance units"; the whole balance (with everything on its pans) is drawn at
+  // scale S around the pivot, so S makes the balance bigger or smaller in one place.
+  // Items sit inside the bowls: the back of the bowl is drawn behind them, the front lip in front.
   const BAL = {
+    S: 0.86, // drawn size (1 = full size)
     R: 365, // pivot to each hanging point
     RIM_Y: 268, // hanging point down to the pan rim
     ITEMS_Y: 276, // where items rest, just inside the bowl
@@ -571,6 +691,9 @@
   };
   BAL.PAN_BOTTOM = BAL.RIM_Y + BAL.BOWL;
   CQ.BAL = BAL;
+  // On-pan sizes in stage pixels (for bars and crowns flying to and from the pans).
+  L.PAN_BAR_PX = L.PAN_BAR_W * BAL.S;
+  L.CROWN_PX = L.CROWN_W * BAL.S;
   const INK = "#6b4200";
   let artUid = 0;
   const BalanceArt = {
@@ -684,23 +807,28 @@
       this.counting = false;
       this.countN = 0;
 
-      this.stand = A.place(layer, "bal-stand", BX - 565, PY, 1130, 560, "-565 0 1130 560", (u) => A.stand(u));
+      // Everything below is placed relative to the pivot inside one scaled container.
+      this.rig = CQ.el("div", "bal-rig", layer);
+      this.rig.style.transform = `translate(${BX}px, ${PY}px) scale(${BAL.S})`;
+      const rig = this.rig;
+      this.stand = A.place(rig, "bal-stand", -565, 0, 1130, 560, "-565 0 1130 560", (u) => A.stand(u));
       this.sides = {};
       ["left", "right"].forEach((side) => {
-        const g = CQ.el("div", "bal-side " + side, layer);
+        const g = CQ.el("div", "bal-side " + side, rig);
         A.place(g, "bal-back", -200, 0, 400, 350, "-200 0 400 350", (u) => A.panBack(u));
         const items = CQ.el("div", "bal-items", g);
         CQ.pos(items, 0, BAL.ITEMS_Y);
         A.place(g, "bal-front", -200, 0, 400, 350, "-200 0 400 350", (u) => A.panFront(u));
         this.sides[side] = { g, items };
       });
-      this.beam = A.place(layer, "bal-beam", BX - 400, PY - 30, 800, 60, "-400 -30 800 60", (u) => A.beam(u));
-      this.hub = A.place(layer, "bal-hub", BX - 60, PY - 110, 120, 190, "-60 -110 120 190", (u) => A.hub(u));
-      this.emblem = CQ.el("div", "emblem eq", layer);
-      CQ.pos(this.emblem, BX, PY);
+      this.beam = A.place(rig, "bal-beam", -400, -30, 800, 60, "-400 -30 800 60", (u) => A.beam(u));
+      this.hub = A.place(rig, "bal-hub", -60, -110, 120, 190, "-60 -110 120 190", (u) => A.hub(u));
+      this.emblem = CQ.el("div", "emblem eq", rig);
+      CQ.pos(this.emblem, 0, 0);
       this.setEmblem(true, true);
+      // The equation sign hangs on the post at full size (outside the scaled container).
       this.sign = CQ.el("div", "eq-sign hidden", layer);
-      CQ.pos(this.sign, BX, 548);
+      CQ.pos(this.sign, BX, PY + 218 * BAL.S);
       this.pendingClang = false;
       CQ.ticker.add((dt) => this.step(dt));
       this.apply();
@@ -721,17 +849,23 @@
       }
       this.apply();
     }
+    // Balance units (relative to the pivot) -> stage position.
+    toWorld(p) {
+      return { x: L.BX + p.x * BAL.S, y: L.PIVOT_Y + p.y * BAL.S };
+    }
     apply() {
       const th = this.angle * deg;
       const c = Math.cos(th);
       const s = Math.sin(th);
       this.beam.style.transform = `rotate(${this.angle}deg)`;
-      this.ends = {
-        left: { x: L.BX - this.R * c, y: L.PIVOT_Y - this.R * s },
-        right: { x: L.BX + this.R * c, y: L.PIVOT_Y + this.R * s },
+      this.localEnds = {
+        left: { x: -this.R * c, y: -this.R * s },
+        right: { x: this.R * c, y: this.R * s },
       };
-      this.sides.left.g.style.transform = `translate(${this.ends.left.x}px, ${this.ends.left.y}px)`;
-      this.sides.right.g.style.transform = `translate(${this.ends.right.x}px, ${this.ends.right.y}px)`;
+      // stage positions of the two hanging points (used by labels, flights and Zippy)
+      this.ends = { left: this.toWorld(this.localEnds.left), right: this.toWorld(this.localEnds.right) };
+      this.sides.left.g.style.transform = `translate(${this.localEnds.left.x}px, ${this.localEnds.left.y}px)`;
+      this.sides.right.g.style.transform = `translate(${this.localEnds.right.x}px, ${this.localEnds.right.y}px)`;
     }
     makeItem(spec) {
       const im = IM();
@@ -853,20 +987,12 @@
     }
     // World position of an item's centre (follows the beam).
     itemCenter(it) {
-      const side = this.sideOf(it);
-      const e = this.ends[side];
-      return { x: e.x + it.x, y: e.y + BAL.ITEMS_Y + it.y - it.h / 2 };
-    }
-    // Where a main item (crown, or the bar that replaced it) sits on the left pan.
-    mainSlotCenter() {
-      const main = this.items.left.find((it) => it.slot === "main");
-      if (main) return this.itemCenter(main);
-      const e = this.ends.left;
-      return { x: e.x, y: e.y + BAL.ITEMS_Y - 60 };
+      const e = this.localEnds[this.sideOf(it)];
+      return this.toWorld({ x: e.x + it.x, y: e.y + BAL.ITEMS_Y + it.y - it.h / 2 });
     }
     panCenter(side) {
-      const e = this.ends[side];
-      return { x: e.x, y: e.y + BAL.ITEMS_Y - 40 };
+      const e = this.localEnds[side];
+      return this.toWorld({ x: e.x, y: e.y + BAL.ITEMS_Y - 40 });
     }
     evaluate(opts) {
       opts = opts || {};
@@ -1067,7 +1193,7 @@
   };
   CQ.crownFlyer = function (width) {
     const e = CQ.img("crown", "crown-flyer");
-    e.style.width = (width || L.CROWN_W) + "px";
+    e.style.width = (width || L.CROWN_PX) + "px";
     return e;
   };
 
@@ -1148,7 +1274,7 @@
       CQ.pos(bar.slot, bar.home.x, bar.home.y);
       bar.cur = null;
       const to = z.holdPoint("zippy_hold");
-      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, to, { duration: 360, arc: -50, scaleTo: 0.78 });
+      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, to, { duration: 360, arc: -50, scaleTo: L.HELD_BAR_W / L.BAR_W });
       await z.catchBar(bar.value);
       this.busy = false;
       CQ.bars.refresh();
@@ -1173,7 +1299,7 @@
       opts = opts || {};
       CQ.audio.play("bar.return");
       const from = CQ.zippy.holdPoint();
-      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, bar.home, { duration: 520, arc: -140, scaleFrom: 0.78, spin: 360 });
+      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, bar.home, { duration: 520, arc: -140, scaleFrom: L.HELD_BAR_W / L.BAR_W, spin: 360 });
       CQ.audio.play("bar.place");
       bar.slot.classList.remove("gone");
       if (opts.tried) CQ.bars.markTried(bar.value);

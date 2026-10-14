@@ -285,13 +285,21 @@ button:focus-visible,
   pointer-events: auto;
   cursor: pointer;
 }
-.zippy-vine {
+/* Tree roots hanging from above the screen (drawn by CQ.rootSVG). Zippy's root is moved and
+   rotated every frame from js/world.js; the others hang still or sway gently. */
+.zippy-root,
+.hang-root {
   position: absolute;
-  width: 88px;
-  transform-origin: 44px 600px;
-  background: url(assets/bg/vine-e.png) center bottom / 88px auto repeat-y;
   pointer-events: none;
   filter: drop-shadow(0 6px 4px rgba(0, 20, 30, 0.35));
+}
+.zippy-root svg,
+.hang-root svg {
+  display: block;
+}
+.root-deco {
+  transform-origin: 50% 0;
+  animation: sway 6s ease-in-out infinite alternate;
 }
 .zippy-rig {
   position: absolute;
@@ -318,8 +326,8 @@ button:focus-visible,
   pointer-events: none;
 }
 .held.hbar {
-  width: 170px;
-  height: 78px;
+  width: 146px; /* L.HELD_BAR_W in js/engine.js */
+  height: 67px;
   background: url(assets/props/bar.png) center / contain no-repeat;
   filter: drop-shadow(0 6px 4px rgba(0, 0, 0, 0.3));
 }
@@ -328,19 +336,27 @@ button:focus-visible,
   left: 44%;
   top: 57%;
   transform: translate(-50%, -50%);
-  font: 800 50px/1 var(--font);
+  font: 800 43px/1 var(--font);
   color: #6b3e00;
   text-shadow: 0 2px 0 #ffe9a0;
 }
 .held.hcrown img {
   display: block;
-  width: 150px;
+  width: 129px;
   filter: drop-shadow(0 0 14px rgba(255, 216, 77, 0.8));
 }
 
 /* ---------------------------------------------------------------- balance */
 /* The balance is drawn in SVG (see BalanceArt in js/world.js). Back to front: stand, pans
    (rods + inside of the bowl, items, front lip), beam, hub. */
+.bal-rig {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
 .bal-svg,
 .bal-side {
   position: absolute;
@@ -951,9 +967,7 @@ button:focus-visible,
   margin-top: -6px;
 }
 .swap-btn {
-  position: absolute;
-  left: 372px;
-  top: 614px;
+  position: absolute; /* placed under the left pan from js/ui.js */
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
@@ -1220,6 +1234,17 @@ button:focus-visible,
   height: 26px;
   left: -50px;
   bottom: -22px;
+}
+/* dots that lead off to the left, towards the thinker's head */
+.thought.from-left .th-dot.d1 {
+  left: -34px;
+  top: 40%;
+  bottom: auto;
+}
+.thought.from-left .th-dot.d2 {
+  left: -70px;
+  top: 30%;
+  bottom: auto;
 }
 .mini-scene {
   position: relative;
@@ -1526,7 +1551,7 @@ button:focus-visible,
 /* ---------------------------------------------------------------- check panel + equation board */
 .check-panel {
   position: absolute;
-  left: 1040px;
+  left: var(--bx, 1085px); /* balance centre, set from js/ui.js */
   top: 704px;
   width: 920px;
   transform: translateX(-50%);
@@ -1686,7 +1711,7 @@ button:focus-visible,
 }
 .eq-board {
   position: absolute;
-  left: 1040px;
+  left: var(--bx, 1085px); /* balance centre, set from js/ui.js */
   top: 690px;
   width: 800px;
   transform: translateX(-50%);
@@ -1725,7 +1750,7 @@ button:focus-visible,
 }
 .eq-strip {
   position: absolute;
-  left: 1040px;
+  left: var(--bx, 1085px); /* balance centre, set from js/ui.js */
   top: 905px;
   transform: translate(-50%, -50%);
   display: flex;
@@ -1995,12 +2020,6 @@ button:focus-visible,
   width: 320px;
   height: 760px;
   pointer-events: none;
-}
-.nb-vine {
-  left: 156px;
-  top: -400px;
-  height: 640px;
-  transform: none;
 }
 .nb-zippy-rig {
   position: absolute;
@@ -2364,7 +2383,7 @@ button:focus-visible,
 }
 .finale-title {
   position: absolute;
-  left: 50%;
+  left: 1245px; /* centred over the idea cards */
   top: 168px;
   transform: translateX(-50%);
   font: 800 130px/1 var(--font);
@@ -2398,26 +2417,22 @@ button:focus-visible,
   height: 900px;
   pointer-events: none;
 }
-.finale-zippy .nb-vine {
-  left: 186px;
-  top: -340px;
-}
 .finale-zippy .nb-zippy-rig {
-  left: 230px;
-  top: 300px;
+  left: 270px;
+  top: 165px;
 }
 .crown-tower {
   position: absolute;
-  left: 178px;
-  top: 360px;
+  left: 150px;
+  top: 352px;
   width: 0;
   height: 0;
 }
 .tower-crown {
   position: absolute;
-  left: -54px;
-  width: 108px;
-  top: calc(var(--i) * -44px - 60px);
+  left: -50px;
+  width: 100px;
+  top: calc(var(--i) * -40px - 56px);
   transform: rotate(var(--r));
   transform-origin: 50% 100%;
   animation: towerWobble 1.4s ease-in-out infinite alternate;
@@ -2892,6 +2907,7 @@ button:focus-visible,
 
 /* ---------------------------------------------------------------- reduced motion */
 html.reduced-motion .vine-deco,
+html.reduced-motion .root-deco,
 html.reduced-motion .title-bg,
 html.reduced-motion .bar-slot .gbar,
 html.reduced-motion .nb-ch.wave,

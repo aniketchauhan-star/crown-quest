@@ -57,7 +57,8 @@
       this.rollBot = CQ.el("div", "roller bottom", this.scroll);
       this.content = CQ.el("div", "nb-content", this.paper);
       this.zWrap = CQ.el("div", "nb-zippy", this.el);
-      this.zVine = CQ.el("div", "zippy-vine nb-vine", this.zWrap);
+      const tip = CQ.rootTipFor(200, 240, 0.72); // the rig below sits at (200, 240)
+      this.zRoot = CQ.hangRoot(this.zWrap, tip.x, tip.y, { seed: 21, H: 900 });
       this.zRig = CQ.el("div", "nb-zippy-rig", this.zWrap);
       this.z = new CQ.Sprite(this.zRig, "", 0.72);
       this.isOpen = false;
@@ -588,10 +589,10 @@
     const title = CQ.el("div", "finale-title", wrap, c.title);
     title.setAttribute("data-t", c.title);
     const z = CQ.el("div", "finale-zippy", wrap);
-    const vine = CQ.el("div", "zippy-vine nb-vine", z);
-    vine.style.height = "640px";
+    const tip = CQ.rootTipFor(270, 165, 0.72); // the rig below sits at (270, 165)
+    CQ.hangRoot(z, tip.x, tip.y, { seed: 33, H: 1000 });
     const rig = CQ.el("div", "nb-zippy-rig", z);
-    const sp = new CQ.Sprite(rig, "", 0.8);
+    const sp = new CQ.Sprite(rig, "", 0.72);
     sp.play("zippy_laugh", [1, 7, 3, 8, 5], 230, { loop: true }); // celebrating next to his crown tower
     const tower = CQ.el("div", "crown-tower", rig);
     for (let i = 0; i < 8; i++) {
