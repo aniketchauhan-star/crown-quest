@@ -124,7 +124,7 @@ button:focus-visible,
 .veil {
   position: absolute;
   inset: 0;
-  z-index: 45; /* above the game and its menus, under the title screen */
+  z-index: 38; /* above the game, under the menus (a menu opened during a fade stays usable) */
   background: #0b2f39;
   pointer-events: auto;
 }
@@ -252,6 +252,16 @@ button:focus-visible,
   pointer-events: none;
   filter: drop-shadow(0 6px 4px rgba(0, 20, 30, 0.35));
 }
+.zippy-peek {
+  position: absolute; /* inside the background, just behind the tree layer (see CQ.peek) */
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.zippy-fists {
+  pointer-events: none; /* his fists over what he holds (swap sheet) */
+  filter: drop-shadow(0 3px 2px rgba(74, 35, 0, 0.4)); /* a soft shadow where his fingers press on it */
+}
 .zippy-rig {
   position: absolute;
   left: 0;
@@ -285,15 +295,15 @@ button:focus-visible,
 .held.hbar .num {
   position: absolute;
   left: 44%;
-  top: 57%;
+  top: 66%; /* below his fists, which grip the bar's top edge */
   transform: translate(-50%, -50%);
-  font: 800 43px/1 var(--font);
+  font: 800 40px/1 var(--font);
   color: #6b3e00;
   text-shadow: 0 2px 0 #ffe9a0;
 }
 .held.hcrown img {
   display: block;
-  width: 129px;
+  width: 129px; /* L.HELD_CROWN_W in js/engine.js */
   filter: drop-shadow(0 0 14px rgba(255, 216, 77, 0.8));
 }
 
@@ -352,7 +362,7 @@ button:focus-visible,
   filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.3));
 }
 .pan-item.coin .one {
-  font: 800 31px/1 var(--font);
+  font: 800 29px/1 var(--font);
   color: #8a5a00;
   text-shadow: 0 1px 0 #ffeeb0;
   transform: translateY(2px);
@@ -362,21 +372,21 @@ button:focus-visible,
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 48px;
-  height: 48px;
+  width: 45px;
+  height: 45px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(circle at 38% 32%, #43c486, var(--ok) 70%);
   border: 3px solid #0c3d29;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35);
   color: #fff;
-  font: 800 31px/1 var(--font);
+  font: 800 29px/1 var(--font);
   padding-top: 4px;
   place-items: center;
   display: none;
 }
 .pan-item.coin .count.two {
-  font-size: 24px; /* 10, 11… */
+  font-size: 22px; /* 10, 11… */
   letter-spacing: -0.03em;
 }
 .pan-item.coin.counted .one {
@@ -774,65 +784,7 @@ button:focus-visible,
   z-index: 21;
 }
 
-/* ---------------------------------------------------------------- HUD + buttons */
-.hud {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.level-sign {
-  filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.3));
-  background: url(assets/elements/levelSign.png) center / 100% 100% no-repeat;
-  position: absolute;
-  left: 26px;
-  top: 18px;
-  width: 262px;
-  height: 100px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  transform: rotate(-2deg);
-  color: var(--cream);
-  font-weight: 800;
-  text-shadow: 3px 3px 0 #4a2300, -3px 3px 0 #4a2300, 3px -3px 0 #4a2300, -3px -3px 0 #4a2300, 0 5px 0 #4a2300;
-}
-.lv-word {
-  font-size: 46px;
-  line-height: 1;
-  padding-top: 8px;
-}
-.lv-num {
-  font-size: 66px;
-  line-height: 1;
-  padding-top: 8px;
-  color: #ffd84d;
-}
-.pips {
-  position: absolute;
-  left: 30px;
-  top: 128px;
-  display: flex;
-  gap: 3px;
-  padding: 6px 8px;
-  background: rgba(10, 40, 48, 0.55);
-  border-radius: 14px;
-}
-.pip {
-  width: 30px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  filter: grayscale(1) brightness(0.7);
-  opacity: 0.5;
-}
-.pip img {
-  width: 30px;
-}
-.pip.got {
-  filter: drop-shadow(0 0 6px #ffd84d);
-  opacity: 1;
-}
+/* ---------------------------------------------------------------- round buttons (Back, Close) */
 .wbtn {
   position: absolute;
   width: 100px;
@@ -848,34 +800,6 @@ button:focus-visible,
 }
 .wbtn:active {
   transform: translateY(5px);
-}
-.hud-btn {
-  top: 22px;
-}
-.hud-btn.bag {
-  background-image: url(assets/elements/btnGem.png);
-  left: 1546px;
-}
-.hud-btn.restart {
-  background-image: url(assets/elements/btnRestart.png);
-  left: 1664px;
-}
-.hud-btn.menu {
-  background-image: url(assets/elements/btnMenu.png);
-  left: 1782px;
-}
-.badge {
-  position: absolute;
-  right: -10px;
-  top: -10px;
-  min-width: 40px;
-  height: 40px;
-  border-radius: 20px;
-  background: var(--no);
-  color: #fff;
-  font: 800 25px/36px var(--font);
-  border: 3px solid #fff;
-  padding: 0 6px;
 }
 .back-btn {
   background-image: url(assets/elements/btnBack.png);
@@ -923,6 +847,14 @@ button:focus-visible,
 .btn-wood:active {
   transform: translateY(5px);
 }
+.next-btn {
+  position: absolute; /* top right, beside the question bar (CQ.next in js/ui.js) */
+  right: 36px;
+  top: 34px;
+  min-width: 190px;
+  font-size: 46px;
+  pointer-events: auto;
+}
 .btn-wood svg {
   width: 44px;
   height: 44px;
@@ -967,15 +899,25 @@ button:focus-visible,
   z-index: 20; /* the words children read always sit above name bursts and effects */
 }
 .spk {
-  flex: 0 0 82px;
-  width: 82px;
-  height: 82px;
+  /* Zippy's face in a gold medallion (tap it to hear the line again) */
+  position: relative;
+  flex: 0 0 96px;
+  width: 96px;
+  height: 96px;
   padding: 0;
-  border: none;
+  border: 5px solid #4a2300;
   border-radius: 50%;
-  background: url(assets/elements/btnSound.png) center / contain no-repeat;
+  overflow: hidden;
+  background: radial-gradient(circle at 38% 32%, #fff3b0, #ffd84d 45%, #f0a01c);
+  box-shadow: inset 0 -4px 0 rgba(107, 62, 0, 0.35);
   filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.3));
   cursor: pointer;
+}
+.spk img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 .spk:active {
   transform: translateY(4px);
@@ -1099,6 +1041,34 @@ button:focus-visible,
   position: absolute;
   inset: 0;
   pointer-events: none;
+}
+/* "Look here!" (CQ.focus in js/ui.js): the rest fades back; a soft window with a gold ring stays bright */
+.focus {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.focus-hole {
+  position: absolute;
+  box-shadow: 0 0 0 3000px rgba(4, 14, 22, 0.6), inset 0 0 26px 6px rgba(4, 14, 22, 0.45); /* the inner shadow softens its edge */
+}
+.focus-ring {
+  position: absolute;
+  border: 5px solid #ffd84d;
+  box-shadow: 0 0 22px 3px rgba(255, 216, 77, 0.7), inset 0 0 16px rgba(255, 216, 77, 0.4);
+  animation: focusPulse 1.6s ease-in-out infinite;
+}
+@keyframes focusPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 0.65;
+  }
 }
 .thought {
   position: absolute;
@@ -1254,6 +1224,7 @@ button:focus-visible,
 .hand img {
   display: block;
   width: 104px;
+  transform: scaleX(-1); /* mirrored: the finger points up (js/ui.js puts the fingertip on the target) */
 }
 
 /* ---------------------------------------------------------------- gems, Word Treasure, menu, confirm */
@@ -1747,11 +1718,23 @@ button:focus-visible,
   color: var(--ok);
 }
 
-/* ---------------------------------------------------------------- Zippy's Notebook */
+/* ---------------------------------------------------------------- Zippy's formula screen */
+/* The game fades to a soft dark and the equation stands big and bright on it (js/activities.js). */
 .notebook {
   position: absolute;
   inset: 0;
   pointer-events: auto;
+}
+.notebook .nb-dim {
+  /* darkest behind the numbers (the balance must not show through them), a little of the jungle at the edges */
+  background: radial-gradient(ellipse 60% 56% at 54% 50%, rgba(5, 16, 24, 0.96) 0%, rgba(5, 16, 24, 0.95) 60%, rgba(5, 16, 24, 0.86) 100%);
+}
+.nb-stage {
+  position: absolute;
+  left: 360px;
+  top: 150px;
+  width: 1260px;
+  height: 760px;
 }
 .nb-dim {
   position: absolute;
@@ -1760,17 +1743,6 @@ button:focus-visible,
 }
 .nb-dim.light {
   background: rgba(3, 14, 20, 0.38);
-}
-.scroll {
-  position: absolute;
-  left: 360px;
-  top: 172px;
-  width: 1260px;
-  height: 730px; /* SCROLL_OPEN in js/activities.js; rolled up = top + bottom border (153px) */
-  border-style: solid;
-  border-width: 75px 100px 78px 87px;
-  border-image: url(assets/elements/scroll.png) 50 67 52 58 fill / 75px 100px 78px 87px stretch;
-  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.35));
 }
 .nb-content {
   position: absolute;
@@ -1781,10 +1753,14 @@ button:focus-visible,
   justify-content: center;
 }
 .nb-title {
-  font: 800 66px/1.1 var(--font);
-  color: var(--ok);
-  margin-bottom: 70px;
+  position: absolute; /* above the equation, which never moves */
+  left: 0;
+  right: 0;
+  top: 96px;
+  font: 800 70px/1.1 var(--font);
+  color: #74f0ac;
   text-align: center;
+  text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35), 0 0 30px rgba(116, 240, 172, 0.35);
 }
 .eqn {
   position: relative;
@@ -1930,6 +1906,81 @@ button:focus-visible,
   transform: translate(-50%, -100%);
 }
 
+/* On the formula screen everything is bright on the dark fade. --c is each part's colour. */
+.notebook .eqn.big {
+  font-size: 170px;
+  color: #fffaf0;
+  text-shadow: 0 6px 0 rgba(0, 0, 0, 0.35), 0 0 40px rgba(255, 250, 240, 0.2);
+}
+.notebook .tok.hl {
+  color: #2b2100;
+  text-shadow: none;
+  box-shadow: 0 0 0 8px #ffd84d, 0 0 46px 12px rgba(255, 216, 77, 0.5);
+}
+.notebook .var {
+  --c: #ffd84d;
+}
+.notebook .op {
+  --c: #cfdce2;
+}
+.notebook .const {
+  --c: #ffa65e;
+}
+.notebook .lhs {
+  --c: #5ee6dc;
+}
+.notebook .rhs {
+  --c: #ffc35c;
+}
+.notebook .tok.lhs,
+.notebook .tok.rhs {
+  color: var(--c, #5ee6dc);
+}
+.notebook .ghost-power {
+  color: #0b6b66; /* on the highlighted (gold) x */
+}
+.notebook .tok.pulse {
+  color: #74f0ac;
+}
+.notebook .grp-box {
+  border-color: #fffaf0;
+  box-shadow: 0 0 26px rgba(255, 250, 240, 0.28);
+}
+.notebook .grp-box.expr {
+  border-color: #c4a0ff;
+  background: rgba(196, 160, 255, 0.12);
+  box-shadow: 0 0 30px rgba(196, 160, 255, 0.4);
+}
+.notebook .grp-outline {
+  border-color: #74f0ac;
+  box-shadow: 0 0 30px rgba(116, 240, 172, 0.25);
+}
+.notebook .grp-label {
+  color: #07301d;
+  background: #74f0ac;
+  border-color: #74f0ac;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
+}
+.notebook .grp-label.expr {
+  color: #24104a;
+  background: #c4a0ff;
+  border-color: #c4a0ff;
+}
+.notebook .tag {
+  color: #12262e;
+  background: var(--c, #fffaf0);
+  border-color: var(--c, #fffaf0);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
+}
+.notebook .tag-line,
+.notebook .under-bracket {
+  color: var(--c, #fffaf0);
+}
+.notebook .mini-pic,
+.notebook .mini-crown,
+.notebook .mini-balance {
+  filter: drop-shadow(0 0 18px rgba(255, 216, 77, 0.45));
+}
 .nb-zippy {
   position: absolute;
   left: 40px;
@@ -2998,6 +3049,7 @@ button:focus-visible,
 }
 
 /* ---------------------------------------------------------------- reduced motion */
+html.reduced-motion .focus-ring,
 html.reduced-motion .bg-scene img,
 html.reduced-motion .title-bg,
 html.reduced-motion .bar-slot .gbar,

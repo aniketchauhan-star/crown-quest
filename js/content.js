@@ -153,7 +153,6 @@ window.CONTENT = {
   zippy: {
     ooh: "Ooh!",
     sleepTight: "Hee hee! Sleep tight, Grumble!",
-    phew: "Phew!",
     checked: "Phew! Good thing we checked.",
     tryN: "Let's try {v}.",
     tryNext: "Now, let's try {v}.",
@@ -171,6 +170,7 @@ window.CONTENT = {
 
   ui: {
     back: "Back",
+    next: "Next",
     swap: "SWAP",
     tried: "Tried",
     skip: "Skip",
@@ -255,7 +255,7 @@ window.CONTENT = {
       chips: { 15: { lhs: [22, 23, 24] } },
     },
     L9: {
-      n: 9, kind: "two", crown: 7, crowns: 2, leftBar: 4, rightBar: 18, bars: [7, 7, 9], itemScale: 0.7,
+      n: 9, kind: "two", crown: 7, crowns: 2, leftBar: 4, rightBar: 18, bars: [7, 7, 9], itemScale: 0.68,
       chips: { 7: { lhs: [14, 18, 21] } },
     },
   },

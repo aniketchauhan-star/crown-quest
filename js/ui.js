@@ -174,6 +174,7 @@
       CQ.swapBtn.build(uiLayer);
       CQ.bubble.build(uiLayer);
       CQ.spot.build(overlay);
+      CQ.focus.build(overlay);
       CQ.hand.build(uiLayer);
       CQ.checkPanel.build(uiLayer);
       CQ.eqBoard.build(uiLayer);
@@ -189,6 +190,7 @@
       CQ.swapBtn.hide(true);
       CQ.bubble.hide(true);
       CQ.spot.off(true);
+      CQ.focus.off(true);
       CQ.hand.stop();
       CQ.checkPanel.hide(true);
       CQ.eqBoard.hide(true);
@@ -216,68 +218,38 @@
     },
   };
 
-  // ------------------------------------------------------------------ HUD
+  // ------------------------------------------------------------------ crowns (no on-screen HUD)
+  // The screen has no level sign, crown row or corner buttons. The game still counts the crowns; a
+  // collected crown flies up out of the picture with a sparkle. (Esc opens the menu.)
   CQ.hud = {
-    build(ui) {
-      const c = C().ui;
-      this.el = CQ.el("div", "hud hidden", ui);
-      this.sign = CQ.el("div", "level-sign", this.el, `<span class="lv-word">${c.level}</span><span class="lv-num">1</span>`);
-      this.pips = CQ.el("div", "pips", this.el);
-      this.pips.setAttribute("aria-label", "Crowns collected");
-      this.pipEls = [];
-      for (let i = 0; i < CQ.CROWNS_TOTAL; i++) {
-        const p = CQ.el("div", "pip", this.pips);
-        CQ.img("crown", "", p);
-        this.pipEls.push(p);
-      }
-      this.bagBtn = button("wbtn hud-btn bag", '<span class="badge">0</span>', c.wordTreasure, this.el, () => CQ.treasure.open());
-      this.restartBtn = button("wbtn hud-btn restart", "", "Restart level", this.el, () => CQ.flow.askRestart());
-      this.menuBtn = button("wbtn hud-btn menu", "", "Menu", this.el, () => CQ.menu.open());
-      this.crowns = 0;
-    },
-    show(on) {
-      this.el.classList.toggle("hidden", !on);
-    },
-    // n = the level number, or "P" for the practice equations
+    crowns: 0,
+    level: 1,
+    build() {},
+    show() {},
     setLevel(n) {
-      const practice = n === "P";
-      this.sign.querySelector(".lv-word").textContent = practice ? C().ui.practice : C().ui.level;
-      const num = this.sign.querySelector(".lv-num");
-      num.textContent = practice ? "" : n;
-      num.style.display = practice ? "none" : "";
-      CQ.anim(this.sign, [{ transform: "rotate(-2deg) scale(1)" }, { transform: "rotate(2deg) scale(1.12)" }, { transform: "rotate(-2deg) scale(1)" }], {
-        duration: 520,
-        easing: CQ.EASE.back,
-        keep: false,
-      });
+      this.level = n;
     },
     setCrowns(n) {
       this.crowns = n;
-      this.pipEls.forEach((p, i) => p.classList.toggle("got", i < n));
     },
-    pipCenter(i) {
-      const k = Math.min(CQ.CROWNS_TOTAL - 1, Math.max(0, i));
-      return CQ.centerOf(this.pipEls[k]) || { x: 50 + k * 33, y: 146 };
-    },
-    // A crown flies from a world point into the next pip.
     async flyCrown(fromWorld) {
-      const i = this.crowns;
       const from = CQ.camera.toScreen(fromWorld);
-      const to = this.pipCenter(i);
+      const to = { x: CQ.clamp(from.x + 240, 200, CQ.W - 200), y: 70 };
       CQ.audio.play("crown.sparkle");
-      await CQ.fly(CQ.ui.layer, CQ.crownFlyer(120), from, to, { duration: 1250, arc: -200, scaleTo: 0.3, spin: 360 });
-      this.setCrowns(i + 1);
-      CQ.fx.sparkle(CQ.ui.layer, to.x, to.y, 8, 30);
-      CQ.anim(this.pipEls[i], [{ transform: "scale(1)" }, { transform: "scale(1.6)" }, { transform: "scale(1)" }], { duration: 500, easing: CQ.EASE.back, keep: false });
+      await CQ.fly(CQ.ui.layer, CQ.crownFlyer(120), from, to, { duration: 1000, arc: -140, scaleTo: 0.45, spin: 360, fadeOut: true });
+      CQ.fx.sparkle(CQ.ui.layer, to.x, to.y, 12, 50);
+      this.crowns++;
     },
   };
+
 
   // ------------------------------------------------------------------ caption + narration
   CQ.caption = {
     build(ui) {
       this.el = CQ.el("div", "caption hidden", ui);
       this.el.setAttribute("aria-live", "polite");
-      this.spk = button("spk", "", "Hear it again", this.el, () => this.replay());
+      // Zippy's face at the left of the caption; tapping it plays the line again
+      this.spk = button("spk", `<img src="${IMAGES.zippyFace.src}" alt="" draggable="false">`, "Hear it again", this.el, () => this.replay());
       this.txt = CQ.el("div", "cap-text", this.el);
       this.text = null;
       this.busy = false; // true while the child is listening to the line again
@@ -296,6 +268,7 @@
         easing: CQ.EASE.out,
         keep: false,
       });
+      CQ.anim(this.spk, [{ transform: "scale(.85)" }, { transform: "scale(1.08)" }, { transform: "scale(1)" }], { duration: 480, easing: CQ.EASE.back, keep: false });
     },
     fit() {
       let fs = 40;
@@ -369,13 +342,16 @@
     }
   };
 
-  // ------------------------------------------------------------------ pacing: skip ahead (→) and Back
-  // There is no Next button: narrated screens move on by themselves (see CQ.say). The screen now on
-  // show listens here for a teacher's → / PageDown (skip ahead) and, on notebook pages, for Back.
+  // ------------------------------------------------------------------ pacing: Next, → and Back
+  // Narrated screens move on by themselves (see CQ.say). While a line is on, the Next button (top
+  // right), → or PageDown moves on at once; on formula screens Back (or ←) goes back a line. Next
+  // only shows while there is a line to move on from (never while the child has something to do).
   CQ.next = {
     seq: 0,
     build(ui) {
       this.backBtn = button("wbtn back-btn hidden", "", C().ui.back, ui, () => this.fire("back"));
+      this.nextBtn = button("btn-wood next-btn hidden", `<span>${C().ui.next}</span>`, C().ui.next, ui, () => this.fire("next"));
+      this.hideT = 0;
       this.resolver = null;
       this.allowBack = false;
       window.addEventListener("keydown", (e) => {
@@ -389,6 +365,11 @@
       this.allowBack = !!(opts && opts.back);
       this.backBtn.classList.toggle("hidden", !this.allowBack);
       const promise = new Promise((res) => (this.resolver = res));
+      clearTimeout(this.hideT);
+      if (this.nextBtn.classList.contains("hidden")) {
+        this.nextBtn.classList.remove("hidden");
+        CQ.anim(this.nextBtn, [{ opacity: 0, transform: "translateY(-10px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 300, easing: CQ.EASE.out, keep: false });
+      }
       return { id, promise };
     },
     unlisten(id) {
@@ -398,6 +379,11 @@
       this.resolver = null;
       this.allowBack = false;
       this.backBtn.classList.add("hidden");
+      // Next waits a moment before it goes: the next line usually follows at once (no flicker)
+      clearTimeout(this.hideT);
+      this.hideT = setTimeout(() => {
+        if (!this.resolver) this.nextBtn.classList.add("hidden");
+      }, 400);
     },
     fire(what) {
       if (!this.resolver) return;
@@ -596,6 +582,102 @@
     },
   };
 
+  // ------------------------------------------------------------------ focus: "look here!"
+  // At a key teaching moment the rest of the screen fades back and one thing stays bright, in a soft
+  // window with a gold ring. target: an element, a list of elements, a stage rect { x0, y0, x1, y1 },
+  // or a function returning one of those (it is asked again every frame, so the window follows the
+  // balance tipping or a new pan item). A new target while it is on: the window glides over to it.
+  // Taps go through, so the child can still act. opts: { pad, radius, still (measure once), quiet }.
+  // UI pieces (caption, panels, buttons) sit above it and stay bright.
+  CQ.focus = {
+    build(overlay) {
+      this.el = CQ.el("div", "focus hidden", overlay);
+      this.hole = CQ.el("div", "focus-hole", this.el);
+      this.ring = CQ.el("div", "focus-ring", this.el);
+      this.tok = 0;
+      this.get = null;
+      this.tick = null;
+      this.shown = null;
+    },
+    rect(target) {
+      if (typeof target === "function") target = target();
+      if (!target) return null;
+      if (target.x0 != null) return target;
+      let r = null;
+      (Array.isArray(target) ? target : [target]).forEach((e) => {
+        if (!e || !e.isConnected) return;
+        const b = e.getBoundingClientRect();
+        if (!b.width || !b.height) return;
+        const a = CQ.stage.toStage(b.left, b.top);
+        const c = CQ.stage.toStage(b.right, b.bottom);
+        r = r ? { x0: Math.min(r.x0, a.x), y0: Math.min(r.y0, a.y), x1: Math.max(r.x1, c.x), y1: Math.max(r.y1, c.y) } : { x0: a.x, y0: a.y, x1: c.x, y1: c.y };
+      });
+      return r;
+    },
+    apply() {
+      const r = this.get && this.get();
+      if (!r) return;
+      const p = this.pad;
+      let box = { x: r.x0 - p, y: r.y0 - p, w: r.x1 - r.x0 + 2 * p, h: r.y1 - r.y0 + 2 * p };
+      if (this.from) {
+        const k = CQ.ease.inOut(Math.min(1, (performance.now() - this.t0) / 550));
+        const f = this.from;
+        box = { x: CQ.lerp(f.x, box.x, k), y: CQ.lerp(f.y, box.y, k), w: CQ.lerp(f.w, box.w, k), h: CQ.lerp(f.h, box.h, k) };
+        if (k >= 1) this.from = null;
+      }
+      this.shown = box;
+      const rad = Math.min(this.radius, box.w / 2, box.h / 2) + "px";
+      [this.hole, this.ring].forEach((e) => {
+        CQ.box(e, box.x, box.y, box.w, box.h);
+        e.style.borderRadius = rad;
+      });
+    },
+    on(target, opts) {
+      opts = opts || {};
+      const t = ++this.tok;
+      const wasOn = !this.el.classList.contains("hidden") && !!this.shown;
+      if (opts.still) {
+        const r = this.rect(target);
+        this.get = () => r;
+      } else this.get = () => this.rect(target);
+      this.pad = opts.pad != null ? opts.pad : 24;
+      this.radius = opts.radius != null ? opts.radius : 44;
+      this.from = wasOn ? this.shown : null; // glide from where the window is now
+      this.t0 = performance.now();
+      this.el.classList.remove("hidden");
+      this.apply();
+      if (!this.tick) this.tick = CQ.ticker.add(() => this.apply());
+      if (!wasOn) {
+        if (!opts.quiet) CQ.audio.play("focus.in", { volume: 0.6 });
+        CQ.anim(this.ring, [{ opacity: 0, transform: "scale(1.15)" }, { opacity: 1, transform: "scale(1)" }], { duration: 650, easing: CQ.EASE.out, keep: false });
+      }
+      const from = parseFloat(getComputedStyle(this.el).opacity) || 0;
+      CQ.anim(this.el, [{ opacity: wasOn ? from : 0 }, { opacity: 1 }], { duration: 550, essential: true });
+      return t;
+    },
+    // Turn it off in ms (unless something else was focused meanwhile).
+    offAfter(ms) {
+      const t = this.tok;
+      setTimeout(() => t === this.tok && this.off(), ms);
+    },
+    off(now) {
+      const t = ++this.tok;
+      const done = () => {
+        if (t !== this.tok) return;
+        this.el.classList.add("hidden");
+        if (this.tick) this.tick();
+        this.tick = null;
+        this.get = null;
+        this.shown = null;
+      };
+      if (now || this.el.classList.contains("hidden")) {
+        done();
+        return Promise.resolve();
+      }
+      return CQ.anim(this.el, [{ opacity: parseFloat(getComputedStyle(this.el).opacity) || 1 }, { opacity: 0 }], { duration: 500, essential: true }).then(done);
+    },
+  };
+
   // ------------------------------------------------------------------ thought bubble
   CQ.thought = function (wp, html, opts) {
     opts = opts || {};
@@ -636,7 +718,9 @@
       this.el = CQ.el("div", "hand hidden", ui);
       CQ.img("hand", "", this.el);
       this.k = 104 / IMAGES.hand.w; // drawn 104 px wide
-      this.tip = { x: window.GEOM.hand.tipX * this.k, y: window.GEOM.hand.tipY * this.k };
+      // The art points up; it is shown mirrored (flipped horizontally, see .hand img in styles.css), so the
+      // finger points up at what to tap or drag and the hand sits just below it.
+      this.tip = { x: (IMAGES.hand.w - window.GEOM.hand.tipX) * this.k, y: window.GEOM.hand.tipY * this.k };
       this.el.style.transformOrigin = `${this.tip.x}px ${this.tip.y}px`;
       this.seq = 0;
     },
@@ -709,7 +793,7 @@
       this.placeAt(p);
       for (let n = 0; n < times; n++) {
         if (id !== this.seq) return;
-        await CQ.anim(this.el, [{ transform: "translate(0,0) scale(1)" }, { transform: "translate(0,14px) scale(.9)" }, { transform: "translate(0,0) scale(1)" }], {
+        await CQ.anim(this.el, [{ transform: "translate(0,0) scale(1)" }, { transform: "translate(0,-14px) scale(.9)" }, { transform: "translate(0,0) scale(1)" }], {
           duration: 650,
           keep: false,
           essential: true,
@@ -726,13 +810,7 @@
       this.have = new Set(ids);
       this.badge();
     },
-    badge() {
-      const b = CQ.hud.bagBtn && CQ.hud.bagBtn.querySelector(".badge");
-      if (b) {
-        b.textContent = this.have.size;
-        b.style.display = this.have.size ? "" : "none";
-      }
-    },
+    badge() {}, // (no Word Treasure button on screen any more)
     word(id) {
       return C().words.find((w) => w.id === id);
     },
@@ -756,13 +834,13 @@
       });
       CQ.fx.sparkle(CQ.ui.layer, from.x, from.y, 10, 90);
       await CQ.sleep(1300);
-      const gem = CQ.el("div", "", null, CQ.gem(w.color, 80));
-      const start = CQ.centerOf(pop.querySelector(".gp-gem")) || from;
+      CQ.fx.sparkle(CQ.ui.layer, from.x, from.y - 40, 8, 70);
+      await CQ.anim(pop, [{ transform: "translate(-50%,-50%) scale(1)", opacity: 1 }, { transform: "translate(-50%,-50%) translateY(-50px) scale(.6)", opacity: 0 }], {
+        duration: 450,
+        easing: CQ.EASE.in,
+        essential: true,
+      });
       pop.remove();
-      const bag = CQ.centerOf(CQ.hud.bagBtn) || { x: 1596, y: 72 };
-      await CQ.fly(CQ.ui.layer, gem, start, bag, { duration: 750, arc: -160, scaleTo: 0.5 });
-      this.badge();
-      CQ.anim(CQ.hud.bagBtn, [{ transform: "scale(1)" }, { transform: "scale(1.25)" }, { transform: "scale(1)" }], { duration: 420, easing: CQ.EASE.back, keep: false });
     },
   };
 

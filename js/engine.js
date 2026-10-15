@@ -21,14 +21,15 @@
     // (ax, ay) = where the root swings from (off-screen), len = root length to his tail.
     ZIPPY: { ax: 420, ay: -120, len: 236, scale: 0.72 },
     HELD_BAR_W: 146, // a gold bar in Zippy's hands
+    HELD_CROWN_W: 129, // the crown in Zippy's hands (.held.hcrown img in styles.css)
     BAR_BASE: 952, // where the gold bars rest (on the top face of their stone stands)
     BAR_W: 194, // a gold bar on its stand
     STAND_W: 246, // the stone stand under each gold bar (props/brick-stand.png)
     STAND_REST: 44 / 346, // where a bar rests on the stand's top face, as a part of the stand's height
     // sizes of things on the pans, in balance units (the whole balance is drawn at BAL.S)
-    PAN_BAR_W: 150,
-    CROWN_W: 160,
-    COIN_W: 60,
+    PAN_BAR_W: 126,
+    CROWN_W: 150,
+    COIN_W: 56,
   };
   // Crowns to collect: one per level, two in Level 9 (shown as the crown row under the level sign).
   CQ.CROWNS_TOTAL = Object.values(window.CONTENT.levels).reduce((n, l) => n + (l.crowns || 1), 0);
@@ -163,6 +164,13 @@
         localStorage.setItem("cq." + k, JSON.stringify(v));
       } catch (e) {
         /* storage blocked: progress just isn't saved */
+      }
+    },
+    remove(k) {
+      try {
+        localStorage.removeItem("cq." + k);
+      } catch (e) {
+        /* nothing to remove */
       }
     },
   };
@@ -538,6 +546,7 @@
       }
       this.frame = frame;
       this.el.style.backgroundPosition = `${-(frame - 1) * s.w * k}px 0px`;
+      if (this.onShow) safe(() => this.onShow(sheet, frame));
     }
     // Play frames (1-based). dur = ms per frame or an array. Resolves true when finished, false if interrupted.
     play(sheet, frames, dur, opts) {

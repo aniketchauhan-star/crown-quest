@@ -17,28 +17,27 @@
 
   CQ.title = {
     // Only the start-screen artwork and the play button: no words on screen.
-    // The play button carries on where the child left off (or starts the intro the first time);
-    // a chapter link (#L5) starts at that chapter. Menu → Chapters starts any part again.
+    // The play button always starts the game afresh from the intro (a chapter link like #L5 starts at
+    // that chapter instead). Saved progress and the "first time" hints are reset; settings are kept.
     build(root) {
       this.root = root;
       root.innerHTML = "";
       root.setAttribute("aria-label", C().title.name);
       CQ.img("startScreen", "title-bg", root);
-      const prog = CQ.store.get("progress", null);
-      const resume = prog && prog.cp && prog.cp !== "intro" && CQ.flow.ORDER.includes(prog.cp) && !linkCp() ? prog.cp : null;
       this.startBtn = CQ.button(
         "start-btn",
         `<img src="${IMAGES.startButton.src}" alt="" draggable="false">`,
         C().title.start, // read by screen readers only
         root,
-        () => this.go(resume || linkCp() || "intro", !resume)
+        () => this.go(linkCp() || "intro", { reset: true })
       );
       this.sparkle = setInterval(() => CQ.fx.sparkle(root, 1648, 640, 3, 100), 1300); // the crown glints
     },
-    // fresh: start that chapter from its beginning (otherwise carry on where the child left off)
-    async go(cp, fresh) {
+    // opts.reset: forget saved progress and which hints have been seen (a brand new game)
+    async go(cp, opts) {
       if (this.going) return;
       this.going = true;
+      if (opts && opts.reset) ["progress", "practiceAt", "swapDemoSeen", "blankDemoSeen"].forEach((k) => CQ.store.remove(k));
       CQ.audio.init();
       CQ.settings.apply();
       CQ.audio.play("name.burst");
@@ -58,8 +57,7 @@
       });
       this.root.classList.add("hidden");
       clearInterval(this.sparkle);
-      if (fresh) CQ.flow.chapter(cp, { noVeil: true });
-      else CQ.flow.goto(cp, { noVeil: true });
+      CQ.flow.chapter(cp, { noVeil: true });
     },
   };
 
@@ -100,7 +98,7 @@
     });
     loading.classList.add("done");
     setTimeout(() => loading.remove(), 600);
-    if (params.get("autostart")) CQ.title.go(linkCp() || "intro", true); // for automated tests (no sound until a tap)
+    if (params.get("autostart")) CQ.title.go(linkCp() || "intro"); // for automated tests (no sound until a tap)
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

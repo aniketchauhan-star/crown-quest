@@ -509,6 +509,44 @@
     return D;
   });
 
+  cue('zippy.hmm', function (ctx, dest, t, o) { // curious closed-mouth "hmm... mm?" (peeking at Grumble)
+    var p = o.pitch;
+    function hum(t0, d, f0, f1, amp) {
+      var g = G(ctx, 0, dest);
+      env(g.gain, t0, [[0, 0], [0.04, amp], [d - 0.08, amp * 0.85], [d, 0]]);
+      var s = O(ctx, wave(ctx, 'voice'), f0 * p, t0, t0 + d, F(ctx, 'lowpass', 760 * p, 1.2, g));
+      glide(s.frequency, t0, [[0, f0 * p], [d, f1 * p]]);
+      env(vib(ctx, s.frequency, t0, t0 + d, 5.5, 0).gain, t0, [[0, 0], [d, 9 * p]]);
+    }
+    hum(t, 0.42, 400, 370, 0.5);
+    hum(t + 0.52, 0.34, 380, 560, 0.45);
+    return 0.9;
+  });
+
+  cue('slide.up', function (ctx, dest, t, o) { // slide whistle up: zipping away
+    var p = o.pitch, D = 0.6, g = G(ctx, 0, dest);
+    env(g.gain, t, [[0, 0], [0.04, 0.3], [0.5, 0.28], [D, 0]]);
+    var s = O(ctx, 'sine', 520 * p, t, t + D, g);
+    glide(s.frequency, t, [[0, 520 * p], [0.55, 1900 * p]]);
+    env(vib(ctx, s.frequency, t, t + D, 9, 0).gain, t, [[0, 0], [0.1, 22 * p], [D, 40 * p]]);
+    hiss(ctx, dest, t, 'bandpass', 1200 * p, 1.2, 0.12, 0.05, 0.4);
+    return D;
+  });
+
+  cue('slide.down', function (ctx, dest, t, o) { // slide whistle down + a soft boing: here he comes!
+    var p = o.pitch, g = G(ctx, 0, dest);
+    env(g.gain, t, [[0, 0], [0.04, 0.28], [0.6, 0.26], [0.7, 0]]);
+    var s = O(ctx, 'sine', 1800 * p, t, t + 0.7, g);
+    glide(s.frequency, t, [[0, 1800 * p], [0.65, 480 * p]]);
+    env(vib(ctx, s.frequency, t, t + 0.7, 9, 0).gain, t, [[0, 0], [0.1, 30 * p], [0.7, 20 * p]]);
+    var tb = t + 0.62, bg = G(ctx, 0, dest);
+    env(bg.gain, tb, [[0, 0], [0.01, 0.34], [0.3, 0]]);
+    var b = O(ctx, 'triangle', 220 * p, tb, tb + 0.34, bg);
+    glide(b.frequency, tb, [[0, 220 * p], [0.08, 330 * p], [0.3, 180 * p]]);
+    env(vib(ctx, b.frequency, tb, tb + 0.34, 14, 0).gain, tb, [[0, 30 * p], [0.3, 0]]);
+    return 1.0;
+  });
+
   cue('zippy.ooh', function (ctx, dest, t, o) { // curious rising "ooh?"
     var p = o.pitch, e = t + 0.5, g = G(ctx, 0, dest);
     env(g.gain, t, [[0, 0], [0.05, 0.45], [0.36, 0.4], [0.48, 0]]);
@@ -748,6 +786,15 @@
     blip(ctx, dest, t + 0.51, 'sine', 98 * p, 65 * p, 0.08, 0.4, 0.003, 0.6); // timpani
     hiss(ctx, dest, t + 0.51, 'highpass', 6000, 0.7, 0.16, 0.002, 1.2);        // cymbal
     return 2.2;
+  });
+
+  cue('focus.in', function (ctx, dest, t, o) { // "look here": three soft rising bell notes + a breath of air
+    var p = o.pitch, n = [784, 988, 1175];
+    for (var i = 0; i < n.length; i++) chime(ctx, dest, t + i * 0.08, n[i] * p, 0.08, 0.55);
+    var ag = G(ctx, 0, dest);
+    env(ag.gain, t, [[0, 0], [0.16, 0.03], [0.58, 0]]);
+    N(ctx, t, t + 0.6, F(ctx, 'highpass', 6500, 0.7, ag));
+    return 0.65;
   });
 
   cue('scroll.open', function (ctx, dest, t, o) { // parchment unrolling

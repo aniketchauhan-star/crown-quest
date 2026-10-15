@@ -1,6 +1,6 @@
 /*
  * Zippy's Crown Quest: activities.
- * Zippy's Notebook (concept explanations with Back), "Label the parts", "Sort it",
+ * Zippy's formula screen (concept explanations with Back), "Label the parts", "Sort it",
  * the Word Treasure recap chest, and the finale.
  */
 (function () {
@@ -38,7 +38,7 @@
   }
   CQ.groupRect = groupRect;
 
-  // ------------------------------------------------------------------ Zippy's Notebook
+  // ------------------------------------------------------------------ Zippy's formula screen
   const EQ_X2 = [
     { t: "x", id: "x", k: "var" },
     { t: "+", id: "plus", k: "op" },
@@ -48,49 +48,51 @@
   ];
   const LHS = ["x", "plus", "two"];
 
-  // Scroll heights: rolled up (the two rollers together) and open. See .scroll in styles.css.
-  const SCROLL_CLOSED = 153;
-  const SCROLL_OPEN = 730;
+  // Zippy's formula screen: the game fades to a calm dark, and the equation stands big and bright in
+  // the middle. Each beat adds tags, boxes and highlights; what stays the
+  // same from one beat to the next stays still, and only what is new pops in. Zippy hangs at the left
+  // and points. The caption bar above it says the line.
   CQ.notebook = {
     build(overlay) {
       this.el = CQ.el("div", "notebook hidden", overlay);
       this.dim = CQ.el("div", "nb-dim", this.el);
-      this.scroll = CQ.el("div", "scroll", this.el); // the scroll art (see .scroll in styles.css)
-      this.content = CQ.el("div", "nb-content", this.scroll);
+      this.stage = CQ.el("div", "nb-stage", this.el);
+      this.content = CQ.el("div", "nb-content", this.stage);
       this.zWrap = CQ.el("div", "nb-zippy", this.el);
       const end = CQ.vineEndFor(200, 240, 0.72); // the rig below sits at (200, 240)
       this.zVine = CQ.hangVine(this.zWrap, end.x, end.y);
       this.zRig = CQ.el("div", "nb-zippy-rig", this.zWrap);
       this.z = new CQ.Sprite(this.zRig, "", 0.72);
       this.isOpen = false;
+      this.shown = null; // the beat on screen: { state, keys, toks }
     },
     async open() {
       if (this.isOpen) return;
       this.isOpen = true;
       this.el.classList.remove("hidden");
       this.content.innerHTML = "";
+      this.shown = null;
       this.pose("point");
-      CQ.zippy.setVisible(false); // the presenter Zippy takes over while the notebook is open
-      CQ.audio.play("scroll.open");
-      CQ.anim(this.dim, [{ opacity: 0 }, { opacity: 1 }], { duration: 400 });
-      CQ.anim(this.zWrap, [{ transform: "translateY(-700px)" }, { transform: "translateY(0)" }], { duration: 700, easing: CQ.EASE.back, essential: true });
-      CQ.anim(this.content, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 450, essential: true });
-      await CQ.anim(this.scroll, [{ height: SCROLL_CLOSED + "px" }, { height: SCROLL_OPEN + "px" }], { duration: 650, easing: CQ.EASE.out, essential: true });
+      CQ.zippy.setVisible(false); // the presenter Zippy takes over while the formula screen is up
+      CQ.audio.play("focus.in");
+      CQ.anim(this.zWrap, [{ transform: "translateY(-700px)" }, { transform: "translateY(0)" }], { duration: 800, easing: CQ.EASE.back, essential: true });
+      CQ.anim(this.stage, [{ opacity: 0, transform: "scale(.9)" }, { opacity: 1, transform: "scale(1)" }], { duration: 750, delay: 300, easing: CQ.EASE.out, essential: true });
+      await CQ.anim(this.dim, [{ opacity: 0 }, { opacity: 1 }], { duration: 600, essential: true });
     },
     async close() {
       if (!this.isOpen) return;
       this.isOpen = false;
-      CQ.audio.play("scroll.open");
-      CQ.anim(this.zWrap, [{ transform: "translateY(0)" }, { transform: "translateY(-700px)" }], { duration: 620, easing: CQ.EASE.in, essential: true });
-      CQ.anim(this.content, [{ opacity: 1 }, { opacity: 0 }], { duration: 280, essential: true });
-      await CQ.anim(this.scroll, [{ height: SCROLL_OPEN + "px" }, { height: SCROLL_CLOSED + "px" }], { duration: 620, easing: CQ.EASE.inOut, essential: true });
-      await CQ.anim(this.dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 400, essential: true });
+      CQ.audio.play("ui.swoosh");
+      CQ.anim(this.zWrap, [{ transform: "translateY(0)" }, { transform: "translateY(-700px)" }], { duration: 700, easing: CQ.EASE.in, essential: true });
+      CQ.anim(this.stage, [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(.94)" }], { duration: 450, easing: CQ.EASE.in, essential: true });
+      await CQ.anim(this.dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 700, delay: 250, essential: true });
       this.el.classList.add("hidden");
       this.z.stop();
       CQ.zippy.setVisible(true);
     },
     hideNow() {
       this.isOpen = false;
+      this.shown = null;
       this.el.classList.add("hidden");
       this.z.stop();
     },
@@ -103,46 +105,56 @@
       this.pose("cheer");
       setTimeout(() => this.isOpen && this.pose("point"), 1300);
     },
-    // Draw one explanation state. s = { hl, crown, tags, box, mini, label, pulse, mini Balance, outline, lhs, rhs, ghost, title }
+    // Draw one explanation state. s = { hl, crown, tags, box, boxColor, mini, label, pulse, miniBalance,
+    // outline, outlineLabel, lhs, rhs, ghost, title }. Each piece gets a key; pieces that were already on
+    // screen in the last beat appear without a pop, so only the new ones catch the eye.
     render(s) {
+      const sig = JSON.stringify(s);
+      if (this.shown && this.shown.sig === sig) return this.content.querySelector(".eqn");
       const c = this.content;
       c.innerHTML = "";
-      if (s.title) CQ.el("div", "nb-title", c, s.title);
+      const keys = new Set();
+      const add = (el, key) => {
+        el.dataset.key = key;
+        keys.add(key);
+        return el;
+      };
+      if (s.title) add(CQ.el("div", "nb-title", c, s.title), "title:" + s.title);
       const eqn = CQ.eqTokens(c, EQ_X2, "big");
       const tok = (id) => eqn.querySelector(`.tok[data-id="${id}"]`);
       (s.hl || []).forEach((id) => tok(id).classList.add("hl"));
       if (s.lhs) LHS.forEach((id) => tok(id).classList.add("lhs"));
       if (s.rhs) tok("seven").classList.add("rhs");
       (s.pulse || []).forEach((id) => tok(id).classList.add("pulse"));
-      if (s.ghost) CQ.el("sup", "ghost-power", tok("x"), "1");
+      if (s.ghost) add(CQ.el("sup", "ghost-power", tok("x"), "1"), "ghost");
       const d = eqn.deco;
       if (s.box) {
         const r = groupRect(eqn, s.box);
-        const b = CQ.el("div", "grp-box" + (s.boxColor ? " " + s.boxColor : ""), d);
+        const b = add(CQ.el("div", "grp-box" + (s.boxColor ? " " + s.boxColor : ""), d), "box:" + s.box.join() + (s.boxColor || ""));
         CQ.box(b, r.x - 18, r.y - 4, r.w + 36, r.h + 8);
       }
       if (s.outline) {
         const r = groupRect(eqn, EQ_X2.map((t) => t.id));
-        const b = CQ.el("div", "grp-outline", d);
+        const b = add(CQ.el("div", "grp-outline", d), "outline");
         CQ.box(b, r.x - 30, r.y - 14, r.w + 60, r.h + 28);
         if (s.outlineLabel) {
-          const l = CQ.el("div", "grp-label above", d, s.outlineLabel);
+          const l = add(CQ.el("div", "grp-label above", d, s.outlineLabel), "olabel:" + s.outlineLabel);
           CQ.pos(l, r.cx, r.y - 30);
         }
       }
       if (s.label) {
         const r = groupRect(eqn, s.label.ids);
-        const l = CQ.el("div", "grp-label above " + (s.label.color || ""), d, s.label.text);
+        const l = add(CQ.el("div", "grp-label above " + (s.label.color || ""), d, s.label.text), "label:" + s.label.text);
         CQ.pos(l, r.cx, r.y - 22);
       }
       if (s.crown) {
         const r = groupRect(eqn, ["x"]);
-        const i = CQ.img("crown", "mini-crown", d);
+        const i = add(CQ.img("crown", "mini-crown", d), "crown");
         CQ.pos(i, r.cx, r.y - 30);
       }
       if (s.mini) {
         const r = groupRect(eqn, LHS);
-        const m = CQ.el("div", "mini-pic", d);
+        const m = add(CQ.el("div", "mini-pic", d), "mini");
         CQ.img("crown", "mp-crown", m);
         CQ.img("coin", "mp-coin", m);
         CQ.img("coin", "mp-coin", m);
@@ -150,7 +162,7 @@
       }
       if (s.miniBalance) {
         const r = groupRect(eqn, ["eq"]);
-        const m = CQ.el("div", "mini-balance", d);
+        const m = add(CQ.el("div", "mini-balance", d), "miniBalance");
         m.appendChild(CQ.miniBalance({ width: 220 }));
         CQ.pos(m, r.cx, r.y - 40);
       }
@@ -159,16 +171,36 @@
         const r = groupRect(eqn, ids);
         const row = t.row || 0;
         const y = r.y + r.h + 14 + row * 70;
-        const line = CQ.el("div", "tag-line " + (t.color || ""), d);
+        const key = "tag:" + t.text;
+        const line = add(CQ.el("div", "tag-line " + (t.color || ""), d), key);
         CQ.box(line, r.cx - 2, r.y + r.h - 6, 4, y - (r.y + r.h - 6));
-        const tag = CQ.el("div", "tag " + (t.color || ""), d, CQ.rich(t.text));
+        const tag = add(CQ.el("div", "tag " + (t.color || ""), d, CQ.rich(t.text)), key);
         CQ.pos(tag, r.cx, y);
         if (t.bracket) {
-          const br = CQ.el("div", "under-bracket " + (t.color || ""), d);
+          const br = add(CQ.el("div", "under-bracket " + (t.color || ""), d), key);
           CQ.box(br, r.x - 6, r.y + r.h - 2, r.w + 12, 18);
         }
       });
-      CQ.anim(c, [{ opacity: 0.4 }, { opacity: 1 }], { duration: 260, keep: false });
+      // what is new in this beat pops in; the rest was already there
+      const before = this.shown || { keys: new Set(), toks: {} };
+      const toks = {};
+      eqn.querySelectorAll(".tok").forEach((t) => {
+        toks[t.dataset.id] = t.className;
+        if (this.shown && before.toks[t.dataset.id] !== t.className) CQ.anim(t, [{ transform: "scale(.82)" }, { transform: "scale(1.08)" }, { transform: "scale(1)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
+      });
+      c.querySelectorAll("[data-key]").forEach((el, i) => {
+        if (before.keys.has(el.dataset.key)) return;
+        const tf = getComputedStyle(el).transform;
+        const base = tf && tf !== "none" ? tf : "";
+        CQ.anim(el, [{ opacity: 0, transform: `${base} translateY(12px) scale(.9)` }, { opacity: 1, transform: `${base} translateY(0) scale(1)` }], {
+          duration: 520,
+          delay: 120 + i * 40,
+          easing: CQ.EASE.out,
+          keep: false,
+        });
+      });
+      if (this.shown && keys.size) CQ.audio.play("ui.pop", { volume: 0.5 });
+      this.shown = { sig, keys, toks };
       return eqn;
     },
     // Run a list of beats with Next / Back.
