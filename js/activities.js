@@ -7,6 +7,7 @@
   "use strict";
   const CQ = window.CQ;
   const C = () => window.CONTENT;
+  const button = (...a) => CQ.button(...a);
 
   // ------------------------------------------------------------------ equation tokens
   // spec: [{ t: 'x', id: 'x', k: 'var' }, ...]  k: var | op | num | eq
@@ -47,18 +48,18 @@
   ];
   const LHS = ["x", "plus", "two"];
 
+  // Scroll heights: rolled up (the two rollers together) and open. See .scroll in styles.css.
+  const SCROLL_CLOSED = 153;
+  const SCROLL_OPEN = 730;
   CQ.notebook = {
     build(overlay) {
       this.el = CQ.el("div", "notebook hidden", overlay);
       this.dim = CQ.el("div", "nb-dim", this.el);
-      this.scroll = CQ.el("div", "scroll", this.el);
-      this.paper = CQ.el("div", "paper", this.scroll);
-      this.rollTop = CQ.el("div", "roller top", this.scroll);
-      this.rollBot = CQ.el("div", "roller bottom", this.scroll);
-      this.content = CQ.el("div", "nb-content", this.paper);
+      this.scroll = CQ.el("div", "scroll", this.el); // the scroll art (see .scroll in styles.css)
+      this.content = CQ.el("div", "nb-content", this.scroll);
       this.zWrap = CQ.el("div", "nb-zippy", this.el);
-      const tip = CQ.rootTipFor(200, 240, 0.72); // the rig below sits at (200, 240)
-      this.zRoot = CQ.hangRoot(this.zWrap, tip.x, tip.y, { seed: 21, H: 900 });
+      const end = CQ.vineEndFor(200, 240, 0.72); // the rig below sits at (200, 240)
+      this.zVine = CQ.hangVine(this.zWrap, end.x, end.y);
       this.zRig = CQ.el("div", "nb-zippy-rig", this.zWrap);
       this.z = new CQ.Sprite(this.zRig, "", 0.72);
       this.isOpen = false;
@@ -73,17 +74,17 @@
       CQ.audio.play("scroll.open");
       CQ.anim(this.dim, [{ opacity: 0 }, { opacity: 1 }], { duration: 400 });
       CQ.anim(this.zWrap, [{ transform: "translateY(-700px)" }, { transform: "translateY(0)" }], { duration: 700, easing: CQ.EASE.back, essential: true });
-      CQ.anim(this.rollBot, [{ transform: "translateY(-660px)" }, { transform: "translateY(0)" }], { duration: 650, easing: CQ.EASE.out, essential: true });
-      await CQ.anim(this.paper, [{ clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0% 0)" }], { duration: 650, easing: CQ.EASE.out, essential: true });
+      CQ.anim(this.content, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 450, essential: true });
+      await CQ.anim(this.scroll, [{ height: SCROLL_CLOSED + "px" }, { height: SCROLL_OPEN + "px" }], { duration: 650, easing: CQ.EASE.out, essential: true });
     },
     async close() {
       if (!this.isOpen) return;
       this.isOpen = false;
       CQ.audio.play("scroll.open");
-      CQ.anim(this.zWrap, [{ transform: "translateY(0)" }, { transform: "translateY(-700px)" }], { duration: 450, easing: CQ.EASE.in, essential: true });
-      CQ.anim(this.rollBot, [{ transform: "translateY(0)" }, { transform: "translateY(-660px)" }], { duration: 450, easing: CQ.EASE.in, essential: true });
-      await CQ.anim(this.paper, [{ clipPath: "inset(0 0 0% 0)" }, { clipPath: "inset(0 0 100% 0)" }], { duration: 450, easing: CQ.EASE.in, essential: true });
-      await CQ.anim(this.dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 250, essential: true });
+      CQ.anim(this.zWrap, [{ transform: "translateY(0)" }, { transform: "translateY(-700px)" }], { duration: 620, easing: CQ.EASE.in, essential: true });
+      CQ.anim(this.content, [{ opacity: 1 }, { opacity: 0 }], { duration: 280, essential: true });
+      await CQ.anim(this.scroll, [{ height: SCROLL_OPEN + "px" }, { height: SCROLL_CLOSED + "px" }], { duration: 620, easing: CQ.EASE.inOut, essential: true });
+      await CQ.anim(this.dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 400, essential: true });
       this.el.classList.add("hidden");
       this.z.stop();
       CQ.zippy.setVisible(true);
@@ -149,7 +150,8 @@
       }
       if (s.miniBalance) {
         const r = groupRect(eqn, ["eq"]);
-        const m = CQ.el("div", "mini-balance", d, CQ.miniBalanceSVG({ width: 220 }));
+        const m = CQ.el("div", "mini-balance", d);
+        m.appendChild(CQ.miniBalance({ width: 220 }));
         CQ.pos(m, r.cx, r.y - 40);
       }
       (s.tags || []).forEach((t) => {
@@ -201,10 +203,6 @@
           { ids: "two", text: "constant", color: "const" },
         ],
       },
-    },
-    {
-      id: "l4-13b",
-      s: { box: LHS, hl: [], tags: [{ ids: "two", text: "constant: fixed value", color: "const" }] },
       gem: "constant",
     },
     { id: "l4-14", s: { box: LHS, boxColor: "expr", label: { ids: LHS, text: "Algebraic expression", color: "expr" } }, gem: "expression" },
@@ -236,13 +234,14 @@
     const wrap = CQ.el("div", "activity " + cls, CQ.ui.overlay);
     CQ.el("div", "nb-dim", wrap);
     const b = CQ.el("div", "board", wrap);
-    CQ.anim(b, [{ transform: "scale(.85)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 420, easing: CQ.EASE.back, essential: true });
+    CQ.anim(wrap, [{ opacity: 0 }, { opacity: 1 }], { duration: 420, essential: true });
+    CQ.anim(b, [{ transform: "scale(.9)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 600, easing: CQ.EASE.out, essential: true });
     CQ.audio.play("scroll.open");
     wrap.board = b;
     return wrap;
   }
   function closeBoard(wrap) {
-    return CQ.anim(wrap, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, essential: true }).then(() => wrap.remove());
+    return CQ.anim(wrap, [{ opacity: 1 }, { opacity: 0 }], { duration: 480, essential: true }).then(() => wrap.remove());
   }
   // Drag + tap-to-place helper for chips/cards onto targets.
   function makeChip(el, home, ctl) {
@@ -563,22 +562,396 @@
     await closeBoard(wrap);
   };
 
-  // ------------------------------------------------------------------ Word Treasure recap (chest)
-  CQ.activityRecap = async function (ids) {
+  // ------------------------------------------------------------------ A quick recap
+  // Four panels on one equation. Each panel adds one more label (variable, equation, LHS, RHS);
+  // the panels appear one at a time while the narrator reads them.
+  const RECAP_EQ = [
+    { t: "x", id: "x", k: "var" },
+    { t: "+", id: "plus", k: "op" },
+    { t: "4", id: "four" },
+    { t: "=", id: "eq", k: "eq" },
+    { t: "9", id: "nine" },
+  ];
+  function recapLabels(eqn, show, labels) {
+    const d = eqn.deco;
+    const all = groupRect(eqn, RECAP_EQ.map((t) => t.id));
+    const rx = groupRect(eqn, ["x"]);
+    const rl = groupRect(eqn, ["x", "plus", "four"]);
+    const rr = groupRect(eqn, ["nine"]);
+    const tag = (cls, text, x, y, below) => {
+      const e = CQ.el("div", "rc-tag " + cls + (below ? " below" : ""), d, text);
+      CQ.pos(e, x, y);
+      return e;
+    };
+    const brace = (r, up, cls) => CQ.box(CQ.el("div", "brace " + (up ? "up " : "down ") + cls, d), r.x - 8, up ? r.y - 22 : r.y + r.h + 2, r.w + 16, 20);
+    if (show.includes("variable")) {
+      eqn.querySelector('.tok[data-id="x"]').classList.add("rc-var");
+      tag("var", labels.variable, rx.cx - 90, all.y - 46);
+      CQ.box(CQ.el("div", "rc-arrow", d), rx.cx - 50, all.y - 44, 4, 52).style.transform = "rotate(-38deg)";
+    }
+    if (show.includes("equation")) {
+      brace(all, true, "rc-eqb");
+      tag("eqn", labels.equation, all.cx + 70, all.y - 46);
+    }
+    if (show.includes("lhs")) {
+      brace(rl, false, "rc-lhs");
+      tag("lhs", labels.lhs, rl.cx, rl.y + rl.h + 30, true);
+    }
+    if (show.includes("rhs")) {
+      brace(rr, false, "rc-rhs");
+      tag("rhs", labels.rhs, rr.cx + 40, rr.y + rr.h + 30, true);
+    }
+  }
+  CQ.activityRecap = async function () {
+    const c = C().recap;
     const wrap = board("recap-act");
     const b = wrap.board;
-    CQ.el("div", "board-title", b, `${CQ.gemSVG("#3D8BFD", 52)} ${C().ui.wordTreasure}`);
-    const chest = CQ.el("div", "chest", b, '<div class="chest-glow"></div><div class="chest-lid"></div><div class="chest-base"><div class="chest-lock"></div></div>');
-    const grid = CQ.el("div", "word-grid recap-grid", b);
-    await CQ.run.wait(500);
-    chest.classList.add("open");
-    CQ.audio.play("chest.open");
-    const cc = CQ.centerOf(chest);
-    CQ.fx.sparkle(CQ.ui.layer, cc.x, cc.y - 40, 14, 110);
-    await CQ.run.wait(400);
-    CQ.treasure.cards(grid, ids, true);
-    await CQ.say("l4-recap");
+    CQ.el("div", "board-title", b, c.title);
+    const grid = CQ.el("div", "rc-grid", b);
+    const panels = c.panels.map((p, i) => {
+      const card = CQ.el("div", "rc-panel", grid);
+      CQ.el("div", "rc-n", card, String(i + 1));
+      const box = CQ.el("div", "rc-eq-wrap", card);
+      card.eqn = CQ.eqTokens(box, RECAP_EQ, "rc-eq");
+      CQ.el("div", "rc-text", card, CQ.rich(p.text));
+      return card;
+    });
+    await CQ.run.wait(80); // lay the equations out before measuring them for the labels
+    panels.forEach((card, i) => recapLabels(card.eqn, c.panels[i].show, c.labels));
+    await CQ.say("recap-0", { text: c.title + ".", advance: "auto", pause: 200 });
+    for (let i = 0; i < panels.length; i++) {
+      panels[i].classList.add("on");
+      CQ.audio.play("ui.pop");
+      CQ.anim(panels[i], [{ transform: "scale(.85)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 420, easing: CQ.EASE.back, essential: true });
+      await CQ.say(c.panels[i].id, { text: c.panels[i].text });
+    }
+    await CQ.run.wait(300);
     await closeBoard(wrap);
+  };
+
+  // ------------------------------------------------------------------ Practice: try a few equations
+  // The child types x on the keypad and taps Check. Right first time: the check is shown and the
+  // next equation starts. Wrong: the board shows why (LHS ≠ RHS), then solves it step by step with
+  // the child (undo each operation on both sides) and checks the answer in the original equation.
+
+  // The left side worked out for x = a, the way a child would write it, and its value.
+  function workLHS(l, a) {
+    const n = CQ.num;
+    const paren = (v) => (v < 0 ? `(${n(v)})` : n(v));
+    if (l.div) return { text: `[[${n(a)}|${l.div}]] = ${n(a / l.div)}`, value: a / l.div };
+    const add = (u) => (l.op === "+" ? u + l.c : u - l.c);
+    if (l.mul) {
+      const inner = add(a);
+      return { text: `${l.mul}(${n(a)} ${l.op} ${l.c}) = ${l.mul} × ${paren(inner)} = ${n(l.mul * inner)}`, value: l.mul * inner };
+    }
+    const v = add(l.k * a);
+    if (l.k === 1) return { text: `${n(a)} ${l.op} ${l.c} = ${n(v)}`, value: v };
+    return { text: `${l.k} × ${paren(a)} ${l.op} ${l.c} = ${n(l.k * a)} ${l.op} ${l.c} = ${n(v)}`, value: v };
+  }
+  CQ.workLHS = workLHS;
+
+  CQ.activityPractice = async function (startAt) {
+    const P = C().practice;
+    const W = P.words;
+    const T = (s, v) => CQ.fmt(s, v);
+    const wrap = CQ.el("div", "activity practice-act", CQ.ui.overlay);
+    CQ.el("div", "nb-dim", wrap);
+    // Zippy hangs beside the board and cheers the child on.
+    const zw = CQ.el("div", "pr-zippy", wrap);
+    const end = CQ.vineEndFor(200, 240, 0.72);
+    CQ.hangVine(zw, end.x, end.y);
+    const zs = new CQ.Sprite(CQ.el("div", "nb-zippy-rig", zw), "", 0.72);
+    const zpose = (p) => {
+      if (p === "cheer") zs.play("zippy_laugh", [6, 2, 6, 4], 160, { loop: true });
+      else if (p === "oops") zs.show("zippy_scared", 5);
+      else if (p === "think") zs.show("zippy_hold", 3);
+      else zs.play("zippy_reach", [2, 2, 2, 4, 2, 2, 3], [700, 700, 700, 260, 700, 700, 300], { loop: true });
+    };
+    zpose("point");
+    CQ.zippy.setVisible(false); // the presenter Zippy takes over while the board is up
+    CQ.anim(zw, [{ transform: "translateY(-700px)" }, { transform: "translateY(0)" }], { duration: 700, easing: CQ.EASE.back, essential: true });
+    const b = CQ.el("div", "board pr-board", wrap);
+    CQ.anim(b, [{ transform: "scale(.85)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 420, easing: CQ.EASE.back, essential: true });
+    CQ.audio.play("scroll.open");
+    const head = CQ.el("div", "pr-head", b);
+    const stepEl = CQ.el("div", "pr-step", head);
+    const prog = CQ.el("div", "pr-prog", head);
+    const dots = P.problems.map(() => CQ.el("span", "pr-dot", prog));
+    const body = CQ.el("div", "pr-body", b);
+    const main = CQ.el("div", "pr-main", body);
+    const pad = CQ.el("div", "pr-pad hidden", body);
+
+    // ---- the keypad (the computer keyboard works too)
+    let entry = "";
+    let onCheck = null;
+    const valid = () => /^−?\d+(\.\d+)?$/.test(entry);
+    let checkKey = null;
+    const showEntry = () => {
+      const el = main.querySelector(".pr-input");
+      if (el) {
+        el.textContent = entry || "?";
+        el.classList.toggle("empty", !entry);
+      }
+      if (checkKey) checkKey.disabled = !valid();
+    };
+    const press = (k) => {
+      if (!onCheck) return;
+      CQ.audio.play("ui.tap");
+      const digits = entry.replace("−", "").replace(".", "");
+      if (k === "⌫") entry = entry.slice(0, -1);
+      else if (k === "−") entry = entry.startsWith("−") ? entry.slice(1) : "−" + entry;
+      else if (k === ".") {
+        if (!entry.includes(".")) entry += /\d$/.test(entry) ? "." : "0.";
+      } else if (digits.length < 4) entry = (entry === "0" ? "" : entry === "−0" ? "−" : entry) + k;
+      showEntry();
+    };
+    const submit = () => {
+      if (!onCheck || !valid()) return;
+      CQ.audio.play("ui.tap");
+      const f = onCheck;
+      onCheck = null;
+      f(parseFloat(entry.replace("−", "-")));
+    };
+    ["7", "8", "9", "0", "−", "4", "5", "6", ".", "⌫", "1", "2", "3"].forEach((k) =>
+      button("key" + (k === "⌫" ? " del" : ""), k, k === "⌫" ? "Delete" : k === "−" ? "Minus" : k === "." ? "Point" : k, pad, () => press(k))
+    );
+    checkKey = button("key check", W.check, W.check, pad, submit);
+    const onKey = (e) => {
+      if (!onCheck || CQ.pauser.count) return;
+      if (/^[0-9]$/.test(e.key)) press(e.key);
+      else if (e.key === "-" || e.key === "−") press("−");
+      else if (e.key === ".") press(".");
+      else if (e.key === "Backspace") press("⌫");
+      else if (e.key === "Enter") submit();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    CQ.run.onCancel(() => window.removeEventListener("keydown", onKey));
+    // Wait for a number to be typed and Check to be tapped.
+    const typed = () => {
+      entry = "";
+      pad.classList.remove("hidden");
+      showEntry();
+      return CQ.run.when(new Promise((res) => (onCheck = res)));
+    };
+
+    // ---- screens on the board
+    const setStep = (title) => {
+      stepEl.innerHTML = CQ.rich(title);
+      CQ.anim(stepEl, [{ transform: "translateX(-20px)", opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], { duration: 300, keep: false });
+    };
+    const render = (html, withPad) => {
+      pad.classList.toggle("hidden", !withPad);
+      body.classList.toggle("with-pad", !!withPad);
+      main.innerHTML = html;
+      CQ.anim(main, [{ transform: "translateY(16px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }], { duration: 320, easing: CQ.EASE.out, keep: false });
+    };
+    const R = CQ.rich;
+    const sides = (lhs, rhs) =>
+      `<div class="pr-sides"><div class="pr-side lhs"><b>LHS:</b> ${lhs}</div><div class="pr-side rhs"><b>RHS:</b> ${rhs}</div></div>`;
+    const typeRow = (prompt) => `<div class="pr-ans">${R(prompt)} <span class="pr-input empty">?</span></div>`;
+    const markInput = (ok) => {
+      const el = main.querySelector(".pr-input");
+      if (el) el.classList.add(ok ? "ok" : "no");
+    };
+    const cheer = () => {
+      zpose("cheer");
+      setTimeout(() => wrap.isConnected && zpose("point"), 1400);
+    };
+    const sparkleAt = (sel) => {
+      const c = CQ.centerOf(main.querySelector(sel)) || { x: 1100, y: 600 };
+      CQ.fx.sparkle(CQ.ui.layer, c.x, c.y, 10, 90);
+    };
+
+    // A typing step that is not finished until the right number is typed.
+    async function typeUntil(answer, expr) {
+      for (let miss = 0; ; miss++) {
+        const v = await typed();
+        if (Math.abs(v - answer) < 1e-9) {
+          markInput(true);
+          CQ.audio.play("correct");
+          sparkleAt(".pr-input");
+          cheer();
+          return;
+        }
+        markInput(false);
+        CQ.audio.play("tryagain");
+        CQ.track("answer", { activity: "practice", expr, choice: v, correct: false, attempt: miss + 1 });
+        zpose("think");
+        await CQ.run.wait(500);
+        CQ.say("", { text: T(miss === 0 ? P.lines.typeAgain : P.lines.typeHint, { expr, ans: CQ.num(answer) }), advance: "none" });
+        const el = main.querySelector(".pr-input");
+        if (el) el.classList.remove("no");
+      }
+    }
+
+    async function runProblem(i) {
+      const p = P.problems[i];
+      dots.forEach((d, k) => {
+        d.classList.toggle("done", k < i);
+        d.classList.toggle("now", k === i);
+      });
+      // 1) try on your own
+      setStep(P.stepTitles.try);
+      render(
+        `<div class="pr-find">${R(P.find)}</div>` + (p.hint ? `<div class="pr-hint">${R(p.hint)}</div>` : "") + `<div class="pr-eq">${R(p.eq)}</div>` + typeRow("x ="),
+        true
+      );
+      zpose("point");
+      // The keypad works at once; the instructions are read meanwhile, and stop if the child answers first.
+      let answered = false;
+      const first = i === (startAt || 0);
+      (async () => {
+        if (p.hint) await CQ.say("", { text: p.hint, advance: "auto", pause: 150 });
+        if (answered) return;
+        if (!first) return CQ.say("", { text: T(P.lines.find, { eq: p.eq }), advance: "none" });
+        await CQ.say("", { text: T(P.lines.find, { eq: p.eq }), advance: "auto", pause: 100 });
+        if (!answered) CQ.say("", { text: P.lines.howTo, advance: "none" });
+      })().catch(() => {});
+      CQ.idle.arm(() => CQ.caption.replay(), 12000);
+      const a = await typed();
+      answered = true;
+      CQ.idle.disarm();
+      const right = Math.abs(a - p.x) < 1e-9;
+      CQ.track("answer", { activity: "practice", eq: p.eq, choice: a, correct: right });
+      if (right) {
+        // 2) right first time: show the check
+        const w = workLHS(p.lhs, p.x);
+        markInput(true);
+        CQ.audio.play("correct");
+        cheer();
+        await CQ.run.wait(500);
+        setStep(T(P.stepTitles.right, { x: CQ.num(p.x) }));
+        render(
+          `<div class="pr-eq sm">${R(p.eq)}</div><div class="pr-x ok">${R("x = " + CQ.num(p.x))}</div>` +
+            sides(R(w.text), CQ.num(p.rhs)) +
+            `<div class="pr-banner ok">✓ ${R(T(W.bothEqual, { r: CQ.num(p.rhs) }))}</div>`
+        );
+        CQ.fx.confetti(CQ.ui.layer, 1150, 420, 26);
+        CQ.audio.play("confetti");
+        await CQ.say("", { text: T(P.lines.right, { r: CQ.num(p.rhs), x: CQ.num(p.x) }) });
+        return;
+      }
+      // 3) wrong: why it doesn't work
+      const w = workLHS(p.lhs, a);
+      markInput(false);
+      CQ.audio.play("tryagain");
+      zpose("oops");
+      await CQ.run.wait(500);
+      setStep(P.stepTitles.wrong);
+      render(
+        `<div class="pr-x no">${R(W.yourAnswer + " x = " + CQ.num(a))}</div><div class="pr-eq sm">${R(p.eq)}</div>` +
+          sides(R(w.text), CQ.num(p.rhs)) +
+          `<div class="pr-banner no">${R(CQ.num(w.value) + " ≠ " + CQ.num(p.rhs))}</div>` +
+          `<div class="pr-note">${R(W.stepByStep)}</div>`
+      );
+      await CQ.say("", { text: T(P.lines.wrong, { l: CQ.num(w.value), r: CQ.num(p.rhs), a: CQ.num(a) }) });
+      zpose("point");
+      // 4–5) undo each operation on both sides
+      for (const st of p.steps) {
+        setStep(st.title);
+        let html = "";
+        if (st.show) html += `<div class="pr-eq">${R(st.show)}</div>`;
+        if (st.note) html += `<div class="pr-note blue">${R(st.note)}</div>`;
+        if (st.kind === "ask") {
+          html += `<div class="pr-ask">${R(st.say)}</div><div class="pr-choices"></div>`;
+          render(html);
+          CQ.say("", { text: st.say, advance: "none" });
+          const box = main.querySelector(".pr-choices");
+          await CQ.run.when(
+            new Promise((res) => {
+              st.choices.forEach((label, k) => {
+                const btn = button("btn-wood pr-choice", R(label), label, box, () => {
+                  if (k === st.answer) {
+                    btn.classList.add("ok");
+                    CQ.audio.play("correct");
+                    box.querySelectorAll("button").forEach((x) => (x.disabled = true));
+                    cheer();
+                    res();
+                  } else {
+                    CQ.audio.play("tryagain");
+                    btn.classList.add("no");
+                    btn.disabled = true;
+                    CQ.track("answer", { activity: "practice", step: st.title, choice: label, correct: false });
+                    CQ.anim(btn, [{ transform: "translateX(0)" }, { transform: "translateX(-12px)" }, { transform: "translateX(12px)" }, { transform: "translateX(0)" }], { duration: 300, keep: false });
+                    CQ.say("", { text: P.lines.askAgain, advance: "none" });
+                  }
+                });
+              });
+            })
+          );
+          if (st.right) await CQ.say("", { text: st.right, advance: "auto", pause: 300 });
+          continue;
+        }
+        if (st.kind === "act") {
+          html += `<div class="pr-choices"></div>`;
+          render(html);
+          CQ.say("", { text: st.say, advance: "none" });
+          const box = main.querySelector(".pr-choices");
+          const btn = button("btn-wood pr-act glow", R(st.button), st.button, box, () => {});
+          CQ.idle.arm(() => CQ.hand.tapAt(CQ.centerOf(btn)), 8000);
+          await CQ.run.when(new Promise((res) => (btn.onclick = res)));
+          CQ.idle.disarm();
+          CQ.hand.stop();
+          btn.disabled = true;
+          btn.classList.remove("glow");
+          CQ.audio.play("correct");
+          cheer();
+          await CQ.run.wait(500);
+          continue;
+        }
+        // type the result
+        (st.lines || []).forEach((l) => (html += `<div class="pr-line">${R(l)}</div>`));
+        html += typeRow(st.prompt);
+        render(html, true);
+        CQ.say("", { text: st.say, advance: "none" });
+        await typeUntil(st.answer, st.expr);
+        await CQ.run.wait(700);
+      }
+      // 6) check in the original equation
+      setStep(P.stepTitles.check);
+      const w2 = workLHS(p.lhs, p.x);
+      render(
+        `<div class="pr-eq sm">${R(p.eq)}</div><div class="pr-x">${R("x = " + CQ.num(p.x))}</div>` +
+          sides(`${R(p.check.lhs)} = <button type="button" class="blank" data-k="lhs" aria-label="Left-hand side value">?</button>`, CQ.num(p.rhs)) +
+          `<div class="pr-banner ok hidden"></div>`
+      );
+      CQ.say("", { text: T(P.lines.check, { x: CQ.num(p.x) }), advance: "none" });
+      await CQ.pickNumber(main.querySelector(".blank"), main, p.check.options, w2.value, () =>
+        CQ.say("", { text: T(P.lines.checkAgain, { expr: p.check.lhs }), advance: "none" })
+      );
+      const banner = main.querySelector(".pr-banner");
+      banner.innerHTML = `✓ ${R(CQ.num(w2.value) + " = " + CQ.num(p.rhs))} · ${R(W.works)}`;
+      banner.classList.remove("hidden");
+      CQ.anim(banner, [{ transform: "scale(.6)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 380, easing: CQ.EASE.back, essential: true });
+      CQ.audio.play("balance.level");
+      cheer();
+      await CQ.say("", { text: P.lines.checkRight });
+    }
+
+    try {
+      for (let i = startAt || 0; i < P.problems.length; i++) {
+        CQ.store.set("practiceAt", i);
+        await runProblem(i);
+        dots[i].classList.add("done");
+        CQ.fx.sparkle(CQ.ui.layer, CQ.centerOf(dots[i]).x, CQ.centerOf(dots[i]).y, 6, 30);
+      }
+      CQ.store.set("practiceAt", 0);
+      dots.forEach((d) => d.classList.add("done"));
+      setStep(P.stepTitles.done);
+      // a gem for every equation solved
+      const colors = ["#F2C230", "#2BB673", "#9B5DE5", "#1FA3A3", "#E5484D", "#3D8BFD"];
+      render(`<div class="pr-done">${R(CQ.fmt(W.allDone, { n: P.problems.length }))}</div><div class="pr-gems">${P.problems.map((q, k) => CQ.gem(colors[k % colors.length], 96)).join("")}</div>`);
+      zpose("cheer");
+      CQ.fx.confetti(CQ.ui.layer, 1100, 420, 44);
+      CQ.audio.play("fanfare");
+      await CQ.say("p-done");
+      await closeBoard(wrap);
+    } finally {
+      window.removeEventListener("keydown", onKey);
+      CQ.zippy.setVisible(true);
+    }
   };
 
   // ------------------------------------------------------------------ Finale
@@ -589,13 +962,13 @@
     const title = CQ.el("div", "finale-title", wrap, c.title);
     title.setAttribute("data-t", c.title);
     const z = CQ.el("div", "finale-zippy", wrap);
-    const tip = CQ.rootTipFor(270, 165, 0.72); // the rig below sits at (270, 165)
-    CQ.hangRoot(z, tip.x, tip.y, { seed: 33, H: 1000 });
+    const end = CQ.vineEndFor(270, 165, 0.72); // the rig below sits at (270, 165)
+    CQ.hangVine(z, end.x, end.y);
     const rig = CQ.el("div", "nb-zippy-rig", z);
     const sp = new CQ.Sprite(rig, "", 0.72);
     sp.play("zippy_laugh", [1, 7, 3, 8, 5], 230, { loop: true }); // celebrating next to his crown tower
     const tower = CQ.el("div", "crown-tower", rig);
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < CQ.CROWNS_TOTAL; i++) {
       const cr = CQ.img("crown", "tower-crown", tower);
       cr.style.setProperty("--i", i);
       cr.style.setProperty("--r", CQ.rand(-8, 8).toFixed(1) + "deg");
@@ -609,7 +982,7 @@
     let choice;
     const chosen = new Promise((r) => (choice = r));
     CQ.button("btn-wood big", `${CQ.ICON.restart}<span>${C().ui.playAgain}</span>`, C().ui.playAgain, btns, () => choice("again"));
-    CQ.button("btn-wood big", `${CQ.gemSVG("#3D8BFD", 40)}<span>${C().ui.wordTreasure}</span>`, C().ui.wordTreasure, btns, () => CQ.treasure.open());
+    CQ.button("btn-wood big", `${CQ.gem("#3D8BFD", 40)}<span>${C().ui.wordTreasure}</span>`, C().ui.wordTreasure, btns, () => CQ.treasure.open());
     CQ.button("btn-wood big", `${CQ.ICON.menu}<span>${c.chapters}</span>`, c.chapters, btns, () => CQ.menu.open());
     CQ.anim(title, [{ transform: "translateX(-50%) scale(.3)", opacity: 0 }, { transform: "translateX(-50%) scale(1)", opacity: 1 }], { duration: 700, easing: CQ.EASE.back, essential: true });
     CQ.anim(z, [{ transform: "translateY(-800px)" }, { transform: "translateY(0)" }], { duration: 900, easing: CQ.EASE.back, essential: true });

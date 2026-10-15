@@ -1,0 +1,110 @@
+{
+ "tree": {
+  "sheet_x": 21,
+  "sheet_y": 24,
+  "w": 638,
+  "h": 672
+ },
+ "branch": {
+  "sheet_x": 588,
+  "sheet_y": 31,
+  "w": 553,
+  "h": 245
+ },
+ "arch": {
+  "sheet_x": 1155,
+  "sheet_y": 33,
+  "w": 363,
+  "h": 491
+ },
+ "rocks": {
+  "sheet_x": 872,
+  "sheet_y": 226,
+  "w": 278,
+  "h": 174
+ },
+ "bushBig": {
+  "sheet_x": 400,
+  "sheet_y": 364,
+  "w": 281,
+  "h": 215
+ },
+ "bushRound": {
+  "sheet_x": 695,
+  "sheet_y": 411,
+  "w": 241,
+  "h": 152
+ },
+ "fern": {
+  "sheet_x": 952,
+  "sheet_y": 419,
+  "w": 211,
+  "h": 120
+ },
+ "tuft1": {
+  "sheet_x": 944,
+  "sheet_y": 543,
+  "w": 141,
+  "h": 62
+ },
+ "tuft2": {
+  "sheet_x": 1116,
+  "sheet_y": 554,
+  "w": 120,
+  "h": 46
+ },
+ "tuft3": {
+  "sheet_x": 1267,
+  "sheet_y": 565,
+  "w": 101,
+  "h": 34
+ },
+ "tuft4": {
+  "sheet_x": 1402,
+  "sheet_y": 564,
+  "w": 101,
+  "h": 41
+ },
+ "lake": {
+  "sheet_x": 24,
+  "sheet_y": 858,
+  "w": 782,
+  "h": 133
+ },
+ "tiles": {
+  "sheet_x": 811,
+  "sheet_y": 851,
+  "w": 485,
+  "h": 138
+ },
+ "tileA": {
+  "sheet_x": 1262,
+  "sheet_y": 856,
+  "w": 199,
+  "h": 47
+ },
+ "tileB": {
+  "sheet_x": 1293,
+  "sheet_y": 913,
+  "w": 131,
+  "h": 76
+ },
+ "tileC": {
+  "sheet_x": 1419,
+  "sheet_y": 920,
+  "w": 100,
+  "h": 47
+ },
+ "forest": {
+  "sheet_x": 30,
+  "sheet_y": 693,
+  "w": 1478,
+  "h": 147
+ },
+ "mountains": {
+  "sheet_x": 502,
+  "sheet_y": 583,
+  "w": 1010,
+  "h": 129
+ }
+}

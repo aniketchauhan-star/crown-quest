@@ -1,7 +1,8 @@
 /*
  * Zippy's Crown Quest: boot + title screen.
  * Chapter links (handy for teachers): index.html#L5 makes Start begin at that checkpoint
- * (intro, L1–L3, L4a, L4c, L4e, L4g, L5–L8, finale). ?cp=L5 does the same when opened locally.
+ * (intro, L1–L3, L4a, L4c, L4e, L4g, L5–L9, P for the practice equations, finale).
+ * ?cp=L5 does the same when opened locally.
  */
 (function () {
   "use strict";
@@ -15,50 +16,27 @@
   };
 
   CQ.title = {
+    // Only the start-screen artwork and the play button: no words on screen.
+    // The play button carries on where the child left off (or starts the intro the first time);
+    // a chapter link (#L5) starts at that chapter. Menu → Chapters starts any part again.
     build(root) {
-      const t = C().title;
       this.root = root;
       root.innerHTML = "";
+      root.setAttribute("aria-label", C().title.name);
       CQ.img("startScreen", "title-bg", root);
-      const vines = CQ.el("div", "title-vines", root);
-      [
-        { k: "vineC", x: 900, y: -300, s: 0.66 },
-        { k: "vineD", x: 1700, y: -330, s: 0.8 },
-      ].forEach((v, i) => {
-        const im = IMAGES[v.k];
-        const w = CQ.el("div", "vine-deco", vines);
-        CQ.box(w, v.x, v.y, im.w * v.s, im.h * v.s);
-        w.style.animationDelay = -i * 1.4 + "s";
-        CQ.img(v.k, "", w);
-      });
-      const gold = (txt) => `<span class="gold" data-t="${txt}">${txt}</span>`;
-      this.logo = CQ.el(
-        "div",
-        "logo",
-        root,
-        `<div class="logo-line l1">${gold("Zippy's")}</div><div class="logo-line l2">${gold("Crown")} <span class="q-wrap">${gold("Quest")}<img class="logo-crown" src="${IMAGES.crown.src}" alt=""></span></div><div class="logo-sub">${t.subtitle}</div>`
-      );
-      this.logo.setAttribute("role", "heading");
-      this.logo.setAttribute("aria-level", "1");
-      this.logo.setAttribute("aria-label", t.name);
-      CQ.el("div", "title-tag", root, t.tagline);
-      // A returning child: the big button continues, a smaller one starts again from the intro.
       const prog = CQ.store.get("progress", null);
       const resume = prog && prog.cp && prog.cp !== "intro" && CQ.flow.ORDER.includes(prog.cp) && !linkCp() ? prog.cp : null;
-      const label = resume ? t.continue : t.tap;
       this.startBtn = CQ.button(
         "start-btn",
-        `<img src="${IMAGES.startButton.src}" alt="" draggable="false"><span class="plank">${label}</span>`,
-        label,
+        `<img src="${IMAGES.startButton.src}" alt="" draggable="false">`,
+        C().title.start, // read by screen readers only
         root,
-        () => this.go(resume || linkCp() || "intro")
+        () => this.go(resume || linkCp() || "intro", !resume)
       );
-      if (resume) {
-        CQ.button("btn-wood restart-game-btn", `${CQ.ICON.restart}<span>${t.newGame}</span>`, t.newGame, root, () => this.go("intro"));
-      }
-      this.sparkle = setInterval(() => CQ.fx.sparkle(root, 1648, 640, 3, 100), 1300);
+      this.sparkle = setInterval(() => CQ.fx.sparkle(root, 1648, 640, 3, 100), 1300); // the crown glints
     },
-    async go(cp) {
+    // fresh: start that chapter from its beginning (otherwise carry on where the child left off)
+    async go(cp, fresh) {
       if (this.going) return;
       this.going = true;
       CQ.audio.init();
@@ -70,14 +48,18 @@
       });
       await CQ.sleep(240);
       CQ.audio.play("ui.swoosh");
-      await CQ.anim(this.root, [{ clipPath: "circle(150% at 50% 84%)" }, { clipPath: "circle(0% at 50% 84%)" }], {
+      // the title closes in a circle onto the play button
+      const c = CQ.centerOf(this.startBtn) || { x: CQ.W / 2, y: CQ.H * 0.85 };
+      const at = `${((c.x / CQ.W) * 100).toFixed(1)}% ${((c.y / CQ.H) * 100).toFixed(1)}%`;
+      await CQ.anim(this.root, [{ clipPath: `circle(150% at ${at})` }, { clipPath: `circle(0% at ${at})` }], {
         duration: 850,
         easing: CQ.EASE.in,
         essential: true,
       });
       this.root.classList.add("hidden");
       clearInterval(this.sparkle);
-      CQ.flow.goto(cp);
+      if (fresh) CQ.flow.chapter(cp, { noVeil: true });
+      else CQ.flow.goto(cp, { noVeil: true });
     },
   };
 
@@ -118,7 +100,7 @@
     });
     loading.classList.add("done");
     setTimeout(() => loading.remove(), 600);
-    if (params.get("autostart")) CQ.title.go(linkCp() || "intro"); // for automated tests (no sound until a tap)
+    if (params.get("autostart")) CQ.title.go(linkCp() || "intro", true); // for automated tests (no sound until a tap)
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
