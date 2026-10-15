@@ -12,15 +12,232 @@ window.SPRITES = {
 };
 
 window.IMAGES = {
-  vineA: { src: "assets/bg/vine-a.png", w: 392, h: 472 },
-  vineB: { src: "assets/bg/vine-b.png", w: 182, h: 726 },
-  vineC: { src: "assets/bg/vine-c.png", w: 370, h: 582 },
-  vineD: { src: "assets/bg/vine-d.png", w: 248, h: 686 },
   vineE: { src: "assets/bg/vine-e.png", w: 176, h: 814 },
   bar: { src: "assets/props/bar.png", w: 559, h: 258 },
   coin: { src: "assets/props/coin.png", w: 222, h: 220 },
   crown: { src: "assets/props/crown.png", w: 414, h: 338 },
+  brickStand: { src: "assets/props/brick-stand.png", w: 658, h: 346 },
   startButton: { src: "assets/ui/start-button.png", w: 560, h: 466 },
-  temple: { src: "assets/bg/temple.jpg", w: 1920, h: 1080 },
-  startScreen: { src: "assets/ui/start-screen.jpg", w: 1920, h: 1080 },
+  startScreen: { src: "assets/ui/start-screen.jpg", w: 1672, h: 941 },
+  bgSky: { src: "assets/bg/jungle/01-sky.png", w: 1920, h: 1080 },
+  bgClouds: { src: "assets/bg/jungle/02-clouds.png", w: 1429, h: 234 },
+  bgMountainsFar: { src: "assets/bg/jungle/03-mountains-far.png", w: 1450, h: 185 },
+  bgMountains: { src: "assets/bg/jungle/04-mountains.png", w: 1972, h: 252 },
+  bgForest: { src: "assets/bg/jungle/05-forest.png", w: 1697, h: 169 },
+  bgLake: { src: "assets/bg/jungle/06-lake.png", w: 1185, h: 202 },
+  bgFloor: { src: "assets/bg/jungle/07-floor.png", w: 1920, h: 334 },
+  bgLawn: { src: "assets/bg/jungle/08-lawn.png", w: 1920, h: 346 },
+  bgArch: { src: "assets/bg/jungle/09-arch.png", w: 459, h: 620 },
+  bgBranch: { src: "assets/bg/jungle/10-branch.png", w: 762, h: 338 },
+  bgTree: { src: "assets/bg/jungle/11-tree.png", w: 1040, h: 1096 },
+  bgBushFrontRight: { src: "assets/bg/jungle/12-bush-front-right.png", w: 468, h: 358 },
+  beam: { src: "assets/elements/beam.png", w: 1256, h: 123 },
+  stand: { src: "assets/elements/stand.png", w: 180, h: 267 },
+  pan: { src: "assets/elements/pan.png", w: 240, h: 254 },
+  chestClosed: { src: "assets/elements/chestClosed.png", w: 301, h: 241 },
+  chestOpen: { src: "assets/elements/chestOpen.png", w: 297, h: 275 },
+  pedestal: { src: "assets/elements/pedestal.png", w: 300, h: 184 },
+  scroll: { src: "assets/elements/scroll.png", w: 448, h: 189 },
+  panel: { src: "assets/elements/panel.png", w: 343, h: 182 },
+  speech: { src: "assets/elements/speech.png", w: 264, h: 178 },
+  thought: { src: "assets/elements/thought.png", w: 281, h: 182 },
+  levelSign: { src: "assets/elements/levelSign.png", w: 235, h: 94 },
+  pillGreen: { src: "assets/elements/pillGreen.png", w: 287, h: 102 },
+  pillWood: { src: "assets/elements/pillWood.png", w: 281, h: 102 },
+  tile: { src: "assets/elements/tile.png", w: 134, h: 133 },
+  medalGreen: { src: "assets/elements/medalGreen.png", w: 145, h: 145 },
+  medalRed: { src: "assets/elements/medalRed.png", w: 144, h: 145 },
+  btnGem: { src: "assets/elements/btnGem.png", w: 154, h: 148 },
+  btnRestart: { src: "assets/elements/btnRestart.png", w: 154, h: 148 },
+  btnMenu: { src: "assets/elements/btnMenu.png", w: 155, h: 149 },
+  btnBack: { src: "assets/elements/btnBack.png", w: 154, h: 149 },
+  btnClose: { src: "assets/elements/btnClose.png", w: 154, h: 149 },
+  btnSound: { src: "assets/elements/btnSound.png", w: 146, h: 148 },
+  gemYellow: { src: "assets/elements/gemYellow.png", w: 105, h: 102 },
+  gemOrange: { src: "assets/elements/gemOrange.png", w: 106, h: 102 },
+  gemPurple: { src: "assets/elements/gemPurple.png", w: 106, h: 102 },
+  gemGreen: { src: "assets/elements/gemGreen.png", w: 105, h: 102 },
+  gemTeal: { src: "assets/elements/gemTeal.png", w: 106, h: 102 },
+  gemAmber: { src: "assets/elements/gemAmber.png", w: 106, h: 102 },
+  gemBlue: { src: "assets/elements/gemBlue.png", w: 106, h: 102 },
+  gemRed: { src: "assets/elements/gemRed.png", w: 106, h: 103 },
+  flame: { src: "assets/elements/flame.png", w: 93, h: 120 },
+  sparkle: { src: "assets/elements/sparkle.png", w: 97, h: 109 },
+  dust: { src: "assets/elements/dust.png", w: 119, h: 99 },
+  hand: { src: "assets/elements/hand.png", w: 100, h: 139 },
+};
+
+// The background, back to front: where each layer goes in the 1920 x 1080 scene, and its idle motion.
+window.BG_LAYERS = [
+  {
+    "key": "bgSky",
+    "x": 0,
+    "y": 0,
+    "w": 1920,
+    "h": 1080,
+    "anim": null
+  },
+  {
+    "key": "bgClouds",
+    "x": 339,
+    "y": 253,
+    "w": 1429,
+    "h": 234,
+    "anim": "drift"
+  },
+  {
+    "key": "bgMountainsFar",
+    "x": 1527,
+    "y": 350,
+    "w": 1450,
+    "h": 185,
+    "anim": null
+  },
+  {
+    "key": "bgMountains",
+    "x": -134,
+    "y": 327,
+    "w": 1972,
+    "h": 252,
+    "anim": null
+  },
+  {
+    "key": "bgForest",
+    "x": 230,
+    "y": 483,
+    "w": 1697,
+    "h": 169,
+    "anim": null
+  },
+  {
+    "key": "bgLake",
+    "x": 465,
+    "y": 638,
+    "w": 1185,
+    "h": 202,
+    "anim": "shimmer"
+  },
+  {
+    "key": "bgFloor",
+    "x": 0,
+    "y": 746,
+    "w": 1920,
+    "h": 334,
+    "anim": null
+  },
+  {
+    "key": "bgLawn",
+    "x": 0,
+    "y": 734,
+    "w": 1920,
+    "h": 346,
+    "anim": null
+  },
+  {
+    "key": "bgArch",
+    "x": 1502,
+    "y": 167,
+    "w": 459,
+    "h": 620,
+    "anim": null
+  },
+  {
+    "key": "bgBranch",
+    "x": 379,
+    "y": -80,
+    "w": 762,
+    "h": 338,
+    "anim": "branch"
+  },
+  {
+    "key": "bgTree",
+    "x": -149,
+    "y": -287,
+    "w": 1040,
+    "h": 1096,
+    "anim": null
+  },
+  {
+    "key": "bgBushFrontRight",
+    "x": 1602,
+    "y": 804,
+    "w": 468,
+    "h": 358,
+    "anim": "sway"
+  }
+];
+
+// Joints and borders measured on the elements.png pieces (in each piece's own pixels).
+window.GEOM = {
+  "beam": {
+    "left": {
+      "x": 49.5,
+      "y": 60.5,
+      "r": 38.0
+    },
+    "right": {
+      "x": 1205.0,
+      "y": 60.5,
+      "r": 38.5
+    },
+    "hub": {
+      "x": 627.0,
+      "y": 61.0,
+      "r": 51.5
+    },
+    "barTop": 43,
+    "barBottom": 77,
+    "plainL": [
+      104,
+      571
+    ],
+    "plainR": [
+      683,
+      1150
+    ]
+  },
+  "pan": {
+    "ringX": 119.5,
+    "ringY": 38.3,
+    "rimTop": 155,
+    "rimY": 181,
+    "rimL": 3,
+    "rimR": 236,
+    "bottom": 250
+  },
+  "stand": {
+    "cx": 89.2,
+    "top": 3,
+    "ballY": 25,
+    "postTop": 47,
+    "baseTop": 167,
+    "bottom": 262
+  },
+  "hand": {
+    "tipX": 25,
+    "tipY": 3
+  },
+  "thought": {
+    "x0": 30,
+    "y0": 3,
+    "x1": 277,
+    "y1": 164
+  },
+  "speech": {
+    "bodyBottom": 156,
+    "tailX0": 13,
+    "tailX1": 65
+  },
+  "panel": {
+    "left": 26,
+    "right": 31,
+    "top": 26,
+    "bottom": 30
+  },
+  "scroll": {
+    "left": 55,
+    "right": 64,
+    "top": 47,
+    "bottom": 49
+  }
 };
