@@ -1,6 +1,6 @@
 /*
  * Zippy's Crown Quest: the world.
- * The temple room, torches, vines, Grumble, Zippy, the balance scale, the gold bars on their pedestals,
+ * The jungle lake background, Grumble, Zippy, the balance scale, the gold bars on their pedestals,
  * and the "give a bar to Zippy" drag controller. All positions are stage units (1920 x 1080).
  */
 (function () {
@@ -14,26 +14,16 @@
   CQ.world = {
     build(root) {
       this.root = root;
-      CQ.img("temple", "bg", root);
-      this.decor = CQ.el("div", "layer decor", root);
-      buildVines(this.decor);
-      [
-        { x: 368, y: 64, seed: 4, thick: 13 },
-        { x: 452, y: 34, seed: 9, thick: 11 },
-      ].forEach((d, i) => {
-        const e = CQ.hangRoot(this.decor, d.x, d.y, { seed: d.seed, thick: d.thick, H: 700, cls: "root-deco" });
-        e.style.animationDelay = -i * 1.7 + "s";
-      });
-      this.torchLayer = CQ.el("div", "layer torch-layer", root);
-      CQ.torches.build(this.torchLayer);
+      // the jungle lake, in layers (made from "background sheet.png": see jungle-background/README.md)
+      this.decor = CQ.el("div", "layer bg-scene", root);
+      buildBackground(this.decor);
       this.balanceLayer = CQ.el("div", "layer balance-layer", root);
       this.grumbleLayer = CQ.el("div", "layer grumble-layer", root);
       this.barLayer = CQ.el("div", "layer bar-layer", root);
       this.zippyLayer = CQ.el("div", "layer zippy-layer", root);
       this.fx = CQ.el("div", "layer fx-layer", root);
       this.drag = CQ.el("div", "layer drag-layer", root);
-      this.dark = CQ.el("div", "world-dark", root);
-      CQ.torches.buildDark(this.dark);
+      this.dark = CQ.el("div", "world-dark", root); // the intro fades in from dark
       CQ.balance = new Balance(this.balanceLayer);
       CQ.grumble = new Grumble(this.grumbleLayer);
       CQ.bars = new Bars(this.barLayer);
@@ -49,65 +39,15 @@
     },
   };
 
-  // Decorative vines along the top edge and down the pillars (positions tuned to temple.jpg).
-  const VINES = [
-    { k: "vineA", x: -40, y: -170, s: 0.95 },
-    { k: "vineB", x: 150, y: -330, s: 0.8 },
-    { k: "vineC", x: 640, y: -360, s: 0.62 },
-    { k: "vineC", x: 1210, y: -380, s: 0.6, flip: true },
-    { k: "vineD", x: 1470, y: -300, s: 0.82 },
-    { k: "vineA", x: 1560, y: -150, s: 0.95, flip: true },
-    { k: "vineE", x: 1800, y: -230, s: 0.78 },
-  ];
-  function buildVines(layer) {
-    VINES.forEach((v, i) => {
-      const im = IM()[v.k];
-      const wrap = CQ.el("div", "vine-deco", layer);
-      CQ.box(wrap, v.x, v.y, im.w * v.s, im.h * v.s);
-      wrap.style.animationDuration = 5 + (i % 3) * 1.3 + "s";
-      wrap.style.animationDelay = -i * 0.9 + "s";
-      const img = CQ.img(v.k, "", wrap);
-      if (v.flip) img.style.transform = "scaleX(-1)";
+  // The background layers, back to front (BG_LAYERS in assets/sprites.js). Some have a gentle idle
+  // motion: the clouds drift, the branch and the bushes sway (off with Reduced motion).
+  function buildBackground(layer) {
+    (window.BG_LAYERS || []).forEach((ly, i) => {
+      const img = CQ.img(ly.key, ly.anim && ly.anim !== "shimmer" ? "anim-" + ly.anim : "", layer);
+      CQ.box(img, ly.x, ly.y, ly.w, ly.h);
+      if (ly.anim) img.style.animationDelay = (-(i * 1.37) % 6).toFixed(2) + "s"; // no two sway in step
     });
   }
-
-  // ================================================================== torches
-  // Each torch exists twice: the real one in the room, and a copy inside the darkness overlay so the
-  // flames still shine while the room is dark at the start of the intro.
-  const TORCH_SPOTS = [
-    [352, 190],
-    [1568, 190],
-  ];
-  function makeTorch(layer, x, y) {
-    const t = CQ.el("div", "torch lit", layer);
-    CQ.pos(t, x, y);
-    CQ.el("div", "torch-glow", t);
-    CQ.el("div", "flame", t);
-    CQ.el("div", "flame core", t);
-    return t;
-  }
-  CQ.torches = {
-    list: [],
-    darkList: [],
-    build(layer) {
-      this.list = TORCH_SPOTS.map(([x, y]) => makeTorch(layer, x, y));
-    },
-    buildDark(layer) {
-      this.darkList = TORCH_SPOTS.map(([x, y]) => makeTorch(layer, x, y));
-    },
-    set(on) {
-      this.list.concat(this.darkList).forEach((t) => t.classList.toggle("lit", on));
-    },
-    async lightUp() {
-      for (let i = 0; i < this.list.length; i++) {
-        this.list[i].classList.add("lit");
-        if (this.darkList[i]) this.darkList[i].classList.add("lit");
-        CQ.audio.play("torch.fwoom");
-        CQ.fx.sparkle(CQ.world.fx, TORCH_SPOTS[i][0], TORCH_SPOTS[i][1] - 30, 5, 30);
-        await CQ.run.wait(420);
-      }
-    },
-  };
 
   // ================================================================== the drop ring around Zippy's hands
   CQ.dropRing = {
@@ -142,6 +82,11 @@
       this.y = G.y;
       this.rig = CQ.el("div", "grumble-rig", layer);
       CQ.pos(this.rig, this.x, this.y);
+      // his shadow on the ground (it stays put when he squashes, and narrows when he stands up)
+      this.shadow = CQ.el("div", "grumble-shadow", this.rig);
+      const sw = window.SPRITES.grumble_sleep.w * this.k * 1.05;
+      const sh = sw * 0.15;
+      CQ.box(this.shadow, -sw / 2, -sh * 0.5, sw, sh);
       this.squash = CQ.el("div", "grumble-squash", this.rig);
       this.sprite = new CQ.Sprite(this.squash, "grumble-sprite", this.k);
       this.sprite.show("grumble_sleep", 1);
@@ -153,12 +98,17 @@
         this.tapped();
       });
     }
+    // Body centre in world coordinates (for the spotlight).
+    center() {
+      return { x: this.x, y: this.y - (this.state === "awake" ? 200 : 111) * this.k };
+    }
     head() {
       const f = this.k / 1.15; // offsets were tuned at scale 1.15
       return this.state === "awake" ? { x: this.x + 10 * f, y: this.y - 430 * f } : { x: this.x + 95 * f, y: this.y - 215 * f };
     }
     sleep() {
       this.state = "sleep";
+      this.rig.classList.remove("standing");
       this.squash.style.transform = "";
       this.sprite.play("grumble_sleep", [1, 2, 3, 4, 5, 6, 7, 8], [700, 600, 800, 900], {
         loop: true,
@@ -210,6 +160,7 @@
       await this.sprite.play("grumble_wake", [1, 2, 3, 4, 5, 6, 7, 8], 105);
       if (stale()) return;
       this.state = "awake";
+      this.rig.classList.add("standing");
       CQ.audio.play("dust.puff");
       CQ.fx.dust(CQ.world.fx, this.x, this.y - 10, 9);
       this.sprite.show("grumble_roar", 3);
@@ -275,105 +226,42 @@
     }
   }
 
-  // ================================================================== hanging tree roots
-  // A twisted tree root that hangs from above the screen, drawn in SVG with its tip at the bottom
-  // centre of a ROOT.W x (opts.H || ROOT.H) box. Zippy's tail curls around the tip: the root is
-  // drawn behind him, so the tail wraps in front of it.
-  const ROOT = { W: 240, H: 1500 };
-  CQ.ROOT = ROOT;
-  // Where the root's tip sits inside the curl of Zippy's tail, measured from the top of his tail
-  // in source-art pixels (the same "?" curl appears in every pose).
-  const ROOT_TIP_SRC = { x: 4, y: 120 };
-  function seeded(seed) {
-    let a = seed >>> 0;
-    return () => {
-      a = (a + 0x6d2b79f5) >>> 0;
-      let t = a;
-      t = Math.imul(t ^ (t >>> 15), t | 1);
-      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-  let rootUid = 0;
-  CQ.rootSVG = function (opts) {
-    opts = opts || {};
-    const W = ROOT.W;
-    const H = opts.H || ROOT.H;
-    const thick = opts.thick || 30;
-    const r = seeded(opts.seed || 5);
-    const u = "rt" + ++rootUid;
-    const cx = W / 2;
-    const f1 = (n) => n.toFixed(1);
-    // centre line: straight near the tip (where the tail grips it), gently wavy higher up
-    const xAt = (y) => {
-      const d = H - y;
-      const env = Math.min(1, Math.max(0, (d - 80) / 180));
-      return cx + env * (8 * Math.sin(d / 110 + 0.5) + 3.5 * Math.sin(d / 37 + 2.1));
-    };
-    const hwAt = (y) => (thick / 2) * (1 + Math.min(0.6, (H - y) / 1200));
-    const tipHW = hwAt(H);
-    const yEnd = H - tipHW;
-    const left = [];
-    const right = [];
-    for (let y = 0; y < yEnd; y += 8) {
-      left.push(`${f1(xAt(y) - hwAt(y))} ${f1(y)}`);
-      right.push(`${f1(xAt(y) + hwAt(y))} ${f1(y)}`);
-    }
-    left.push(`${f1(cx - tipHW)} ${f1(yEnd)}`);
-    right.push(`${f1(cx + tipHW)} ${f1(yEnd)}`);
-    const body = `M ${left.join(" L ")} A ${f1(tipHW)} ${f1(tipHW)} 0 0 0 ${right.pop()} L ${right.reverse().join(" L ")} Z`;
-    // the twist: a darker line winding down the root
-    const twist = [];
-    for (let y = 0; y < yEnd - 20; y += 10) twist.push(`${f1(xAt(y) + hwAt(y) * 0.45 * Math.sin(y / 46))} ${f1(y)}`);
-    // bark grooves and highlights
-    let bark = "";
-    for (let y = 30 + r() * 20; y < yEnd - 40; y += 26 + r() * 22) {
-      const x = xAt(y);
-      const hw = hwAt(y);
-      bark += `<path d="M ${f1(x - hw * 0.62)} ${f1(y)} Q ${f1(x)} ${f1(y + 8)} ${f1(x + hw * 0.5)} ${f1(y + 3)}" stroke="#3b2412" stroke-opacity=".5" stroke-width="2.2" fill="none" stroke-linecap="round"/>`;
-      if (r() < 0.6)
-        bark += `<path d="M ${f1(x - hw * 0.15)} ${f1(y + 14)} L ${f1(x + hw * 0.45)} ${f1(y + 19)}" stroke="#d1a06a" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round"/>`;
-    }
-    // side rootlets and leaves (kept away from the tip, where the tail is)
-    let rootlets = "";
-    let leaves = "";
-    const leaf = (x, y, ang, sc) =>
-      `<g transform="translate(${f1(x)} ${f1(y)}) rotate(${f1(ang)}) scale(${f1(sc)})"><path d="M0 0 C 8 -10 26 -10 36 0 C 26 10 8 10 0 0 Z" fill="#6cbf3c" stroke="#24521a" stroke-width="2"/><path d="M2 0 L 31 0" stroke="#3d8a26" stroke-width="1.4"/></g>`;
-    [210, 380, 620, 900, 1180].forEach((d, i) => {
-      const y = H - d;
-      if (y < 30) return;
-      const side = i % 2 ? -1 : 1;
-      const x0 = xAt(y) + side * hwAt(y) * 0.8;
-      const x1 = x0 + side * (34 + r() * 34);
-      const y1 = y + 50 + r() * 60;
-      const c = `M ${f1(x0)} ${f1(y)} Q ${f1(x0 + side * (30 + r() * 16))} ${f1(y + 6)} ${f1(x1)} ${f1(y1)}`;
-      rootlets += `<path d="${c}" stroke="#33200f" stroke-width="8" fill="none" stroke-linecap="round"/><path d="${c}" stroke="#8a5c33" stroke-width="4.4" fill="none" stroke-linecap="round"/>`;
-      leaves += leaf(x0 + side * 4, y - 6, side > 0 ? -18 - r() * 25 : 198 + r() * 25, 0.95 + r() * 0.3);
-    });
-    [300, 520, 760, 1040, 1320].forEach((d, i) => {
-      const y = H - d;
-      if (y < 30) return;
-      const side = i % 2 ? 1 : -1;
-      leaves += leaf(xAt(y) + side * hwAt(y) * 0.85, y, side > 0 ? 25 + r() * 30 : 155 - r() * 30, 0.9 + r() * 0.35);
-    });
-    return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
-      <defs><linearGradient id="${u}" gradientUnits="userSpaceOnUse" x1="${cx - thick}" y1="0" x2="${cx + thick}" y2="0">
-        <stop offset="0" stop-color="#3f2613"/><stop offset=".24" stop-color="#6b4326"/><stop offset=".5" stop-color="#8d6037"/><stop offset=".76" stop-color="#674024"/><stop offset="1" stop-color="#3a2311"/>
-      </linearGradient></defs>
-      ${rootlets}
-      <path d="${body}" fill="url(#${u})" stroke="#2b190b" stroke-width="3.5" stroke-linejoin="round"/>
-      <path d="M ${twist.join(" L ")}" stroke="#5a3a1d" stroke-opacity=".38" stroke-width="3" fill="none" stroke-linecap="round"/>
-      ${bark}${leaves}</svg>`;
+  // ================================================================== Zippy's vine (tree bails.png)
+  // Zippy hangs by his tail from the longest green vine in tree bails.png. It comes down from above
+  // the screen and its pointed end sits in the curl of his tail; the vine is drawn behind him, so his
+  // tail wraps in front of it.
+  const VINE = {
+    key: "vineE",
+    scale: 0.6,
+    end: { x: 117, y: 808 }, // the vine's pointed end in vine-e.png
+    top: { x: 85, y: 44 }, // the middle of its top (the strand leans a little)
   };
-  // A root that does not move, with its tip at (tipX, tipY) inside `parent`.
-  CQ.hangRoot = function (parent, tipX, tipY, opts) {
-    opts = opts || {};
-    const e = CQ.el("div", "hang-root" + (opts.cls ? " " + opts.cls : ""), parent, CQ.rootSVG(opts));
-    CQ.pos(e, tipX - ROOT.W / 2, tipY - (opts.H || ROOT.H));
+  // Where the vine's end sits in the curl of Zippy's tail, measured from the top of his tail in
+  // source-art pixels (the same "?" curl appears in every pose).
+  const VINE_END_SRC = { x: 4, y: 120 };
+  const VINE_LEAN = Math.atan2(VINE.top.x - VINE.end.x, VINE.end.y - VINE.top.y);
+  // Vine end position for a Zippy sprite drawn at `scale` whose tail top is at (x, y).
+  CQ.vineEndFor = (x, y, scale) => ({ x: x + VINE_END_SRC.x * scale, y: y + VINE_END_SRC.y * scale });
+  CQ.makeVine = function (parent, cls) {
+    const im = IMAGES[VINE.key];
+    const e = CQ.img(VINE.key, "hang-vine" + (cls ? " " + cls : ""), parent);
+    e.style.width = im.w * VINE.scale + "px";
+    e.style.height = im.h * VINE.scale + "px";
+    e.style.transformOrigin = `${VINE.end.x * VINE.scale}px ${VINE.end.y * VINE.scale}px`;
     return e;
   };
-  // Tip position for a Zippy sprite drawn at `scale` whose tail top is at (x, y).
-  CQ.rootTipFor = (x, y, scale) => ({ x: x + ROOT_TIP_SRC.x * scale, y: y + ROOT_TIP_SRC.y * scale });
+  // Put the vine's end at (x, y), pointing up at `angle` (radians, clockwise from straight up).
+  CQ.placeVine = function (e, x, y, angle) {
+    e.style.left = x - VINE.end.x * VINE.scale + "px";
+    e.style.top = y - VINE.end.y * VINE.scale + "px";
+    e.style.transform = `rotate(${((angle || 0) - VINE_LEAN).toFixed(4)}rad)`;
+  };
+  // A vine hanging straight down to (x, y) (notebook and finale).
+  CQ.hangVine = function (parent, x, y) {
+    const e = CQ.makeVine(parent);
+    CQ.placeVine(e, x, y, 0);
+    return e;
+  };
 
   // ================================================================== Zippy
   // Where Zippy's hands are, measured from the tip of his tail, in source-art pixels (scaled at use).
@@ -399,9 +287,9 @@
       this.swayT = 0;
       this.sway = 0;
       this.tilt = 0.35;
-      // the tree root he hangs from (drawn behind him, so his tail wraps in front of it)
-      this.root = CQ.el("div", "zippy-root", layer, CQ.rootSVG({ seed: 11 }));
-      this.tipOff = CQ.rootTipFor(0, 0, this.k);
+      // the green vine he hangs from (drawn behind him, so his tail wraps in front of it)
+      this.vine = CQ.makeVine(layer, "zippy-vine");
+      this.tipOff = CQ.vineEndFor(0, 0, this.k);
       this.rig = CQ.el("div", "zippy-rig", layer);
       this.body = CQ.el("div", "zippy-body", this.rig);
       this.sprite = new CQ.Sprite(this.body, "zippy-sprite", this.k);
@@ -425,19 +313,12 @@
       this.sway = this.swayAmp * Math.sin(this.swayT * 1.7);
       const th = this.theta + this.sway;
       const P = this.P;
-      // The root swings from A (above the screen) to a tip inside the curl of his tail. Its SVG is
-      // ROOT.H tall with the tip at the bottom; the part above A is always off-screen.
+      // The vine swings from A (above the screen); its pointed end sits in the curl of his tail.
       const a = -th * this.tilt * deg;
       const o = this.tipOff;
       const ex = P.x + o.x * Math.cos(a) - o.y * Math.sin(a);
       const ey = P.y + o.x * Math.sin(a) + o.y * Math.cos(a);
-      const len = Math.max(1, Math.hypot(ex - this.A.x, ey - this.A.y));
-      const ang = Math.atan2(ex - this.A.x, ey - this.A.y) / deg;
-      const rs = this.root.style;
-      rs.left = this.A.x - CQ.ROOT.W / 2 + "px";
-      rs.top = this.A.y + len - CQ.ROOT.H + "px";
-      rs.transformOrigin = `${CQ.ROOT.W / 2}px ${CQ.ROOT.H - len}px`;
-      rs.transform = `rotate(${-ang}deg)`;
+      CQ.placeVine(this.vine, ex, ey, Math.atan2(this.A.x - ex, ey - this.A.y));
       this.rig.style.transform = `translate(${P.x}px, ${P.y}px) rotate(${-th * this.tilt}deg)`;
     }
     holdOffset() {
@@ -582,10 +463,10 @@
       if (on) {
         this.pose("ready");
         this.swayAmp = 1;
-        this.moveTo(0, this.baseLen + 35, 320, CQ.ease.out); // reach down a little (stays clear of Grumble)
+        this.moveTo(0, this.baseLen + 35, 420, CQ.ease.out); // reach down a little (stays clear of Grumble)
       } else {
         this.pose(this.held ? "hold" : "idle");
-        this.home(320);
+        this.home(460);
       }
     }
     async catchBar(value) {
@@ -597,7 +478,7 @@
         easing: CQ.EASE.back,
         keep: false,
       });
-      await this.home(320);
+      await this.home(480);
     }
     async say(text, opts) {
       opts = opts || {};
@@ -660,7 +541,7 @@
     }
     setVisible(on) {
       this.rig.style.visibility = on ? "visible" : "hidden";
-      this.root.style.visibility = on ? "visible" : "hidden";
+      this.vine.style.visibility = on ? "visible" : "hidden";
     }
     reset() {
       this.A = { x: L.ZIPPY.ax, y: L.ZIPPY.ay };
@@ -674,120 +555,186 @@
     }
   }
 
-  // ================================================================== balance art
-  // A classic gold scale drawn in SVG: slim beam with ball ends, a round hub with a ball on top,
-  // slim post on a stepped round base, and shallow bowl pans hung from thin rods at their rims.
-  // Sizes below are "balance units"; the whole balance (with everything on its pans) is drawn at
-  // scale S around the pivot, so S makes the balance bigger or smaller in one place.
-  // Items sit inside the bowls: the back of the bowl is drawn behind them, the front lip in front.
+  // ================================================================== balance (art from elements.png)
+  // The balance is put together from the beam, stand and pan pieces in elements.png; GEOM (in
+  // assets/sprites.js) says where their joints are. Sizes are "balance units": the whole balance,
+  // with everything on its pans, is drawn at scale S around the pivot. Only plain parts are stretched
+  // (the bar between the balls and hub, and the post); balls, hub, base and pans keep their shape.
+  // Each pan is drawn twice: whole behind the items, and just its front lip in front of them, so
+  // things sit inside the bowl.
+  const GM = window.GEOM;
   const BAL = {
-    S: 0.86, // drawn size (1 = full size)
-    R: 365, // pivot to each hanging point
-    RIM_Y: 268, // hanging point down to the pan rim
-    ITEMS_Y: 276, // where items rest, just inside the bowl
-    PAN_RX: 186, // rim half-width
-    PAN_RY: 18, // rim half-height (perspective)
-    BOWL: 78, // bowl depth below the rim
+    S: 0.78, // drawn size (1 = full size)
+    R: 365, // pivot to each hanging point (the centre of an end ball)
+    BEAM_K: 0.85, // beam art pixels -> balance units
+    PAN_K: 1.55, // pan art pixels -> balance units
+    STAND_K: 1.55, // stand art pixels -> balance units
+    FLOOR: 480, // pivot down to the bottom of the base
   };
-  BAL.PAN_BOTTOM = BAL.RIM_Y + BAL.BOWL;
+  BAL.HANG_DY = GM.beam.left.r * BAL.BEAM_K * 0.75; // the pan's ring hooks just under the end ball
+  BAL.PAN_LEFT = -GM.pan.ringX * BAL.PAN_K;
+  BAL.PAN_TOP = BAL.HANG_DY - GM.pan.ringY * BAL.PAN_K;
+  BAL.RIM_Y = BAL.PAN_TOP + GM.pan.rimY * BAL.PAN_K; // hanging point down to the rim's centre line
+  BAL.ITEMS_Y = BAL.RIM_Y + 6; // where items rest, just inside the bowl
+  BAL.PAN_RX = ((GM.pan.rimR - GM.pan.rimL) / 2) * BAL.PAN_K; // rim half-width
+  BAL.PAN_BOTTOM = BAL.PAN_TOP + GM.pan.bottom * BAL.PAN_K;
+  BAL.HUB_R = GM.beam.hub.r * BAL.BEAM_K;
   CQ.BAL = BAL;
   // On-pan sizes in stage pixels (for bars and crowns flying to and from the pans).
   L.PAN_BAR_PX = L.PAN_BAR_W * BAL.S;
   L.CROWN_PX = L.CROWN_W * BAL.S;
-  const INK = "#6b4200";
-  let artUid = 0;
-  const BalanceArt = {
-    defs(u) {
-      return `<defs>
-        <linearGradient id="gv${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3b0"/><stop offset=".28" stop-color="#ffd54f"/><stop offset=".62" stop-color="#f4b52c"/><stop offset="1" stop-color="#d9921b"/></linearGradient>
-        <linearGradient id="gh${u}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#b47610"/><stop offset=".2" stop-color="#f0b02a"/><stop offset=".42" stop-color="#ffe489"/><stop offset=".6" stop-color="#ffd54f"/><stop offset=".84" stop-color="#e9a823"/><stop offset="1" stop-color="#b47610"/></linearGradient>
-        <linearGradient id="gt${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff6c4"/><stop offset="1" stop-color="#f7c948"/></linearGradient>
-        <radialGradient id="gb${u}" cx=".36" cy=".32" r=".72"><stop offset="0" stop-color="#fffbe0"/><stop offset=".35" stop-color="#ffd54f"/><stop offset=".78" stop-color="#e9a823"/><stop offset="1" stop-color="#b47610"/></radialGradient>
-        <linearGradient id="gi${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c08012"/><stop offset=".6" stop-color="#e9a823"/><stop offset="1" stop-color="#f7c948"/></linearGradient>
-        <linearGradient id="go${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe489"/><stop offset=".3" stop-color="#f7c948"/><stop offset=".7" stop-color="#e9a823"/><stop offset="1" stop-color="#bd7e12"/></linearGradient>
-        <radialGradient id="gs${u}"><stop offset="0" stop-color="#03141a" stop-opacity=".42"/><stop offset="1" stop-color="#03141a" stop-opacity="0"/></radialGradient>
-      </defs>`;
-    },
-    // Post, stepped base and soft floor shadows. Origin = pivot.
-    stand(u) {
-      const tier = (y, rx, ry, h) =>
-        `<path d="M ${-rx} ${y} L ${-rx} ${y + h} A ${rx} ${ry} 0 0 0 ${rx} ${y + h} L ${rx} ${y} Z" fill="url(#gh${u})" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>` +
-        `<ellipse cx="0" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#gt${u})" stroke="${INK}" stroke-width="3.5"/>`;
-      return `<ellipse cx="0" cy="506" rx="220" ry="26" fill="url(#gs${u})"/>
-        <ellipse cx="${-BAL.R}" cy="510" rx="150" ry="13" fill="url(#gs${u})" opacity=".6"/>
-        <ellipse cx="${BAL.R}" cy="510" rx="150" ry="13" fill="url(#gs${u})" opacity=".6"/>
-        ${tier(452, 160, 20, 30)}${tier(420, 100, 14, 26)}${tier(392, 60, 10, 22)}
-        <rect x="-16" y="30" width="32" height="352" fill="url(#gh${u})" stroke="${INK}" stroke-width="3.5"/>
-        <rect x="-10" y="40" width="5" height="330" rx="2.5" fill="#fff6c4" opacity=".55"/>
-        <rect x="-28" y="366" width="56" height="18" rx="7" fill="url(#gv${u})" stroke="${INK}" stroke-width="3.5"/>`;
-    },
-    // The beam that tips. Origin = pivot.
-    beam(u) {
-      const R = BAL.R;
-      return `<rect x="${-R}" y="-9" width="${2 * R}" height="18" rx="9" fill="url(#gv${u})" stroke="${INK}" stroke-width="3.5"/>
-        <rect x="${-R + 22}" y="-6" width="${2 * R - 44}" height="4" rx="2" fill="#fff8d6" opacity=".75"/>
-        <circle cx="${-R}" cy="0" r="16" fill="url(#gb${u})" stroke="${INK}" stroke-width="3.5"/>
-        <circle cx="${R}" cy="0" r="16" fill="url(#gb${u})" stroke="${INK}" stroke-width="3.5"/>
-        <circle cx="${-R - 5}" cy="-5" r="4" fill="#fffbe6" opacity=".85"/>
-        <circle cx="${R - 5}" cy="-5" r="4" fill="#fffbe6" opacity=".85"/>`;
-    },
-    // Hub ring (the = / ≠ sign sits inside it), ball finial on top, collar below. Origin = pivot.
-    hub(u) {
-      return `<rect x="-9" y="-60" width="18" height="18" rx="4" fill="url(#gv${u})" stroke="${INK}" stroke-width="3.5"/>
-        <circle cx="0" cy="-76" r="20" fill="url(#gb${u})" stroke="${INK}" stroke-width="3.5"/>
-        <circle cx="-6" cy="-82" r="5" fill="#fffbe6" opacity=".85"/>
-        <rect x="-27" y="38" width="54" height="20" rx="7" fill="url(#gv${u})" stroke="${INK}" stroke-width="3.5"/>
-        <circle cx="0" cy="0" r="45" fill="url(#gb${u})" stroke="${INK}" stroke-width="3.5"/>
-        <circle cx="0" cy="0" r="37" fill="none" stroke="#b47610" stroke-width="2" opacity=".55"/>`;
-    },
-    // Behind the items: hanging ring, the two rods to the rim, and the inside of the bowl. Origin = hanging point.
-    panBack(u) {
-      const { RIM_Y: y, PAN_RX: rx, PAN_RY: ry } = BAL;
-      const rods = `M -3 30 L ${-rx + 6} ${y} M 3 30 L ${rx - 6} ${y}`;
-      return `<path d="${rods}" stroke="${INK}" stroke-width="8.5" stroke-linecap="round" fill="none"/>
-        <path d="${rods}" stroke="#ffd54f" stroke-width="4" stroke-linecap="round" fill="none"/>
-        <circle cx="0" cy="25" r="9" fill="url(#gb${u})" stroke="${INK}" stroke-width="2.5"/>
-        <ellipse cx="0" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#gi${u})" stroke="${INK}" stroke-width="3.5"/>
-        <ellipse cx="0" cy="${y + 3}" rx="${rx - 26}" ry="${ry - 7}" fill="#9c6408" opacity=".22"/>`;
-    },
-    // In front of the items: the bowl's outside and its front lip. Origin = hanging point.
-    panFront(u) {
-      const { RIM_Y: y, PAN_RX: rx, PAN_RY: ry, BOWL: d } = BAL;
-      return `<path d="M ${-rx} ${y} A ${rx} ${ry} 0 0 0 ${rx} ${y} A ${rx} ${d} 0 0 1 ${-rx} ${y} Z" fill="url(#go${u})" stroke="${INK}" stroke-width="3.5" stroke-linejoin="round"/>
-        <path d="M ${-rx + 10} ${y + 4} A ${rx - 8} ${ry - 4} 0 0 0 ${rx - 10} ${y + 4}" fill="none" stroke="#fff4c2" stroke-width="3.5" opacity=".85"/>
-        <path d="M ${-rx + 36} ${y + 24} Q ${-rx + 66} ${y + 50} ${-rx + 118} ${y + 58}" fill="none" stroke="#fffbe6" stroke-width="7" stroke-linecap="round" opacity=".45"/>`;
-    },
-    // An absolutely placed SVG block in stage pixels.
-    place(parent, cls, x, y, w, h, viewBox, body) {
-      const u = "b" + ++artUid;
-      const wrap = CQ.el("div", "bal-svg " + cls, parent);
-      CQ.box(wrap, x, y, w, h);
-      wrap.innerHTML = `<svg viewBox="${viewBox}" width="${w}" height="${h}" aria-hidden="true">${this.defs(u)}${body(u)}</svg>`;
-      return wrap;
-    },
-  };
-  CQ.BalanceArt = BalanceArt;
 
-  // A small, complete balance as one SVG (notebook icon, intro thought bubble).
-  // opts: { width, left: 'bar' | null, right: 'coins3' | null }. Tipping is done in CSS (.tip on a parent).
-  CQ.miniBalanceSVG = function (opts) {
+  // Draw an image onto a canvas as soon as it is ready (it is preloaded, so normally at once).
+  const imgCache = {};
+  function artImage(key) {
+    if (!imgCache[key]) {
+      const i = new Image();
+      i.src = IM()[key].src;
+      imgCache[key] = i;
+    }
+    return imgCache[key];
+  }
+  function whenReady(img, fn) {
+    if (img.complete && img.naturalWidth) fn();
+    else img.addEventListener("load", fn, { once: true });
+  }
+
+  // The beam, at its art's own resolution, with the plain bar shortened so the balls sit at ±R.
+  function beamCanvas() {
+    const b = GM.beam;
+    const im = IM().beam;
+    const half = BAL.R / BAL.BEAM_K; // hub centre to ball centre, in beam-art pixels
+    const W = Math.ceil(2 * (half + b.right.r + 6));
+    const c = document.createElement("canvas");
+    c.width = W;
+    c.height = im.h;
+    c.className = "bal-art bal-beam";
+    const cx = W / 2;
+    const leftX = cx - half - b.left.x; // where the beam art's x=0 lands for the left ball
+    const rightX = cx + half - b.right.x;
+    const hubX = cx - b.hub.x;
+    whenReady(artImage("beam"), () => {
+      const g = c.getContext("2d");
+      const img = artImage("beam");
+      const [l0, l1] = b.plainL;
+      const [r0, r1] = b.plainR;
+      g.drawImage(img, 0, 0, l0, im.h, leftX, 0, l0, im.h); // left ball + collar
+      g.drawImage(img, l0, 0, l1 - l0 + 1, im.h, leftX + l0, 0, hubX + l1 + 1 - (leftX + l0), im.h); // left bar
+      g.drawImage(img, l1 + 1, 0, r0 - l1 - 1, im.h, hubX + l1 + 1, 0, r0 - l1 - 1, im.h); // hub + collars
+      g.drawImage(img, r0, 0, r1 - r0 + 1, im.h, hubX + r0, 0, rightX + r1 + 1 - (hubX + r0), im.h); // right bar
+      g.drawImage(img, r1 + 1, 0, im.w - r1 - 1, im.h, rightX + r1 + 1, 0, im.w - r1 - 1, im.h); // right collar + ball
+    });
+    const k = BAL.BEAM_K;
+    Object.assign(c.style, { width: W * k + "px", height: im.h * k + "px", left: -cx * k + "px", top: -b.hub.y * k + "px" });
+    c.style.transformOrigin = `${cx * k}px ${b.hub.y * k}px`;
+    return c;
+  }
+
+  // The stand, at its art's own resolution, with the post stretched so the base reaches the floor and
+  // the ball on top peeks out just above the hub.
+  function standCanvas() {
+    const s = GM.stand;
+    const im = IM().stand;
+    const k = BAL.STAND_K;
+    const ballR = s.ballY - s.top;
+    const ballCentre = -(BAL.HUB_R + ballR * k * 0.55); // in balance units, above the pivot
+    const need = (BAL.FLOOR - ballCentre) / k; // ball centre to the bottom, in stand-art pixels
+    const extra = Math.max(0, Math.round(need - (s.bottom - s.ballY)));
+    const c = document.createElement("canvas");
+    c.width = im.w;
+    c.height = im.h + extra;
+    c.className = "bal-art bal-stand";
+    whenReady(artImage("stand"), () => {
+      const g = c.getContext("2d");
+      const img = artImage("stand");
+      g.drawImage(img, 0, 0, im.w, s.postTop, 0, 0, im.w, s.postTop); // ball and the top of the post
+      g.drawImage(img, 0, s.postTop, im.w, s.baseTop - s.postTop, 0, s.postTop, im.w, s.baseTop - s.postTop + extra); // post
+      g.drawImage(img, 0, s.baseTop, im.w, im.h - s.baseTop, 0, s.baseTop + extra, im.w, im.h - s.baseTop); // base
+    });
+    Object.assign(c.style, {
+      width: im.w * k + "px",
+      height: (im.h + extra) * k + "px",
+      left: -s.cx * k + "px",
+      top: ballCentre - s.ballY * k + "px",
+    });
+    return c;
+  }
+
+  // One pan: the whole pan behind the items, the items, then the pan's front lip in front of them.
+  function panParts(group) {
+    const im = IM().pan;
+    const k = BAL.PAN_K;
+    const size = { width: im.w * k + "px", height: im.h * k + "px", left: BAL.PAN_LEFT + "px", top: BAL.PAN_TOP + "px" };
+    const back = CQ.img("pan", "bal-art bal-back", group);
+    Object.assign(back.style, size);
+    const items = CQ.el("div", "bal-items", group);
+    CQ.pos(items, 0, BAL.ITEMS_Y);
+    const front = CQ.img("pan", "bal-art bal-front", group);
+    Object.assign(front.style, size);
+    front.style.clipPath = `inset(${GM.pan.rimY * k}px 0 0 0)`;
+    return items;
+  }
+
+  // The = / ≠ medallion in the hub (green when level, red when tipped; the sign itself is drawn here).
+  function emblemParts(parent, cls) {
+    const e = CQ.el("div", "emblem eq" + (cls ? " " + cls : ""), parent);
+    const d = BAL.HUB_R * 2 * 0.94;
+    Object.assign(e.style, { width: d + "px", height: d + "px", fontSize: Math.round(d * 0.72) + "px" });
+    CQ.img("medalGreen", "medal green", e);
+    CQ.img("medalRed", "medal red", e);
+    CQ.el("span", "em-sym", e, "=");
+    return e;
+  }
+
+  // Floor shadows under the base and the pans.
+  function shadows(parent) {
+    [
+      [0, 1, 220],
+      [-BAL.R, 0.55, 150],
+      [BAL.R, 0.55, 150],
+    ].forEach(([x, o, rx]) => {
+      const sh = CQ.el("div", "bal-shadow", parent);
+      CQ.box(sh, x - rx, BAL.FLOOR - 14, rx * 2, 34);
+      sh.style.opacity = o;
+    });
+  }
+
+  // A small, complete balance (notebook icon, intro thought bubble). opts: { width, left: 'bar',
+  // right: 'coins3' }. Tipping is done in CSS (.tip on a parent).
+  CQ.miniBalance = function (opts) {
     opts = opts || {};
-    const u = "m" + ++artUid;
-    const A = BalanceArt;
     const w = opts.width || 150;
-    const coinText = (cx) => `<text x="${cx}" y="258" text-anchor="middle" font-family="Baloo 2, sans-serif" font-weight="800" font-size="34" fill="#8a5a00">1</text>`;
-    const stuff = {
-      bar: `<image href="${IMAGES.bar.src}" x="-80" y="202" width="160" height="74"/>`,
-      coins3: [-70, 0, 70].map((cx) => `<image href="${IMAGES.coin.src}" x="${cx - 32}" y="212" width="64" height="64"/>${coinText(cx)}`).join(""),
-    };
-    const pan = (side, what) =>
-      `<g transform="translate(${side * BAL.R} 0)"><g class="mb-pan mb-pan-${side < 0 ? "l" : "r"}">${A.panBack(u)}${stuff[what] || ""}${A.panFront(u)}</g></g>`;
-    return `<svg class="mini-bal" viewBox="-565 -110 1130 660" width="${w}" height="${Math.round((w * 660) / 1130)}" aria-hidden="true">${A.defs(u)}
-      <g>${A.stand(u)}</g>${pan(-1, opts.left)}${pan(1, opts.right)}
-      <g class="mb-beam">${A.beam(u)}</g><g>${A.hub(u)}</g>
-      <circle class="mb-em" cx="0" cy="0" r="33" stroke="${INK}" stroke-width="3.5"/>
-      <rect x="-15" y="-10" width="30" height="7" rx="3.5" fill="#fff"/><rect x="-15" y="4" width="30" height="7" rx="3.5" fill="#fff"/>
-      <rect class="mb-neq" x="-3.5" y="-20" width="7" height="40" rx="3.5" fill="#fff" transform="rotate(35)"/></svg>`;
+    const s = w / 1130; // the same frame as before: x -565..565, y -110..550 around the pivot
+    const box = CQ.el("div", "mini-bal");
+    Object.assign(box.style, { width: w + "px", height: Math.round(w * (660 / 1130)) + "px" });
+    const rig = CQ.el("div", "mini-rig", box);
+    rig.style.transform = `translate(${565 * s}px, ${110 * s}px) scale(${s})`;
+    shadows(rig);
+    rig.appendChild(standCanvas());
+    [
+      ["l", -1, opts.left],
+      ["r", 1, opts.right],
+    ].forEach(([n, side, what]) => {
+      const holder = CQ.el("div", "mini-side", rig);
+      holder.style.transform = `translate(${side * BAL.R}px, 0px)`;
+      const g = CQ.el("div", `mb-pan mb-pan-${n}`, holder);
+      const items = panParts(g);
+      if (what === "bar") {
+        const b = CQ.img("bar", "mini-item", items);
+        Object.assign(b.style, { width: "160px", left: "-80px", top: "-74px" });
+      } else if (what === "coins3") {
+        [-70, 0, 70].forEach((x) => {
+          const c = CQ.el("div", "mini-item mini-coin", items, '<span class="one">1</span>');
+          Object.assign(c.style, { left: x - 32 + "px", top: "-64px" });
+        });
+      }
+      // the front lip covers the bottom of the items
+      g.appendChild(g.querySelector(".bal-front"));
+    });
+    const beamWrap = CQ.el("div", "mb-beam", rig);
+    beamWrap.appendChild(beamCanvas());
+    emblemParts(rig, "mb-em");
+    return box;
   };
 
   // ================================================================== Balance scale
@@ -795,7 +742,6 @@
     constructor(layer) {
       const BX = L.BX;
       const PY = L.PIVOT_Y;
-      const A = BalanceArt;
       this.layer = layer;
       this.R = BAL.R;
       this.angle = 0;
@@ -804,6 +750,7 @@
       this.items = { left: [], right: [] };
       this.rows = [4, 4, 4];
       this.crownMass = 5;
+      this.itemK = 1; // crowns and bars are drawn smaller in Level 9, so two crowns and a bar fit on a pan
       this.counting = false;
       this.countN = 0;
 
@@ -811,20 +758,15 @@
       this.rig = CQ.el("div", "bal-rig", layer);
       this.rig.style.transform = `translate(${BX}px, ${PY}px) scale(${BAL.S})`;
       const rig = this.rig;
-      this.stand = A.place(rig, "bal-stand", -565, 0, 1130, 560, "-565 0 1130 560", (u) => A.stand(u));
+      shadows(rig);
+      this.stand = rig.appendChild(standCanvas());
       this.sides = {};
       ["left", "right"].forEach((side) => {
         const g = CQ.el("div", "bal-side " + side, rig);
-        A.place(g, "bal-back", -200, 0, 400, 350, "-200 0 400 350", (u) => A.panBack(u));
-        const items = CQ.el("div", "bal-items", g);
-        CQ.pos(items, 0, BAL.ITEMS_Y);
-        A.place(g, "bal-front", -200, 0, 400, 350, "-200 0 400 350", (u) => A.panFront(u));
-        this.sides[side] = { g, items };
+        this.sides[side] = { g, items: panParts(g) };
       });
-      this.beam = A.place(rig, "bal-beam", -400, -30, 800, 60, "-400 -30 800 60", (u) => A.beam(u));
-      this.hub = A.place(rig, "bal-hub", -60, -110, 120, 190, "-60 -110 120 190", (u) => A.hub(u));
-      this.emblem = CQ.el("div", "emblem eq", rig);
-      CQ.pos(this.emblem, 0, 0);
+      this.beam = rig.appendChild(beamCanvas());
+      this.emblem = emblemParts(rig);
       this.setEmblem(true, true);
       // The equation sign hangs on the post at full size (outside the scaled container).
       this.sign = CQ.el("div", "eq-sign hidden", layer);
@@ -834,8 +776,8 @@
       this.apply();
     }
     step(dt) {
-      const k = 55;
-      const c = 7.5;
+      const k = 32; // a soft spring: the beam tips and settles slowly enough to watch
+      const c = 6.2;
       const acc = -k * (this.angle - this.target) - c * this.vel;
       this.vel += acc * dt;
       this.angle += this.vel * dt;
@@ -874,14 +816,15 @@
       let h;
       if (spec.type === "crown") {
         el = CQ.img("crown", "pan-item crown");
-        w = L.CROWN_W;
+        w = L.CROWN_W * this.itemK;
         h = (w * im.crown.h) / im.crown.w;
       } else if (spec.type === "coin") {
         el = CQ.el("div", "pan-item coin", null, '<span class="one">1</span><span class="count"></span>');
         w = h = L.COIN_W;
       } else {
         el = CQ.el("div", "pan-item pbar", null, `<span class="num">${spec.value}</span>`);
-        w = spec.w || L.PAN_BAR_W;
+        w = (spec.w || L.PAN_BAR_W) * this.itemK;
+        if (this.itemK !== 1) el.firstChild.style.fontSize = Math.round(44 * Math.sqrt(this.itemK)) + "px"; // small bars keep a readable number
         h = (w * im.bar.h) / im.bar.w;
       }
       el.style.width = w + "px";
@@ -895,8 +838,13 @@
       }
       return it;
     }
+    // A faded ("ghost") item is only a reminder of where something was: it has no mass.
     mass(side) {
-      return this.items[side].reduce((m, it) => m + (it.type === "coin" ? 1 : it.type === "bar" ? it.value : this.crownMass), 0);
+      return this.items[side].reduce((m, it) => m + (it.ghost ? 0 : it.type === "coin" ? 1 : it.type === "bar" ? it.value : this.crownMass), 0);
+    }
+    ghost(it, on) {
+      it.ghost = !!on;
+      it.el.classList.toggle("ghost", !!on);
     }
     setPan(side, specs, opts) {
       opts = opts || {};
@@ -947,11 +895,16 @@
       let extraW = 0;
       if (coins.length) extraW = Math.min(2, coins.length) * cw - 4;
       if (bars.length) extraW = Math.max(extraW, bars[0].w);
-      const mainW = main.length ? L.CROWN_W : 0;
+      // the crown (or crowns, side by side), then what lies beside them
+      const mainW = main.reduce((w, m) => w + m.w, 0) + Math.max(0, main.length - 1) * 8;
       const gap = mainW && extraW ? 12 : 0;
       let x0 = -(mainW + gap + extraW) / 2;
       const res = new Map();
-      main.forEach((m) => res.set(m, { x: x0 + mainW / 2, y: 0, z: 2 }));
+      let mx = x0;
+      main.forEach((m) => {
+        res.set(m, { x: mx + m.w / 2, y: 0, z: 2 });
+        mx += m.w + 8;
+      });
       x0 += mainW + gap;
       coins.forEach((c, i) => {
         const row = Math.floor(i / 2);
@@ -1017,8 +970,8 @@
     setEmblem(eq, quiet) {
       const was = this.emblem.classList.contains("eq");
       this.emblem.classList.toggle("eq", eq);
-      this.emblem.classList.toggle("neq", !eq);
-      this.emblem.innerHTML = eq ? '<span class="em-sym">=</span>' : '<span class="em-sym neq">=</span>';
+      this.emblem.classList.toggle("ne", !eq); // not "neq": that class draws the ≠ slash
+      this.emblem.querySelector(".em-sym").classList.toggle("neq", !eq); // the slash makes = into ≠
       this.emblem.setAttribute("aria-label", eq ? "The balance is level: both sides are equal" : "The balance is tipped: the sides are not equal");
       if (!quiet && was !== eq) this.flashEmblem();
     }
@@ -1038,19 +991,26 @@
         return;
       }
       this.sign.innerHTML = CQ.rich(text);
+      this.sign.classList.toggle("long", text.length > 11); // e.g. 2 × 7 + 4 = 18 stays between the pans
       this.sign.classList.remove("hidden");
       CQ.anim(this.sign, [{ transform: "translate(-50%,-50%) scale(.6)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], {
         duration: 420,
         easing: CQ.EASE.back,
       });
     }
-    // Coin counting: tap coins to count them (1, 2, 3…), rising clinks.
+    // Coin counting: tap coins to count them (1, 2, 3…), rising clinks. The running count shows on
+    // the coin's own face, so a coin in the row above can never hide it.
+    markCount(it, n) {
+      it.counted = true;
+      it.el.classList.add("counted");
+      const c = it.el.querySelector(".count");
+      c.textContent = n;
+      c.classList.toggle("two", n >= 10);
+    }
     countCoin(it) {
       if (!this.counting || it.counted) return;
-      it.counted = true;
       this.countN++;
-      it.el.classList.add("counted");
-      it.el.querySelector(".count").textContent = this.countN;
+      this.markCount(it, this.countN);
       CQ.audio.play("coin.clink", { index: this.countN });
     }
     clearCounts() {
@@ -1061,6 +1021,7 @@
           it.counted = false;
           it.el.classList.remove("counted");
           it.el.querySelector(".count").textContent = "";
+          it.el.querySelector(".count").classList.remove("two");
         })
       );
     }
@@ -1069,10 +1030,8 @@
       this.countN = startAt || 0;
       const coins = this.items[side].filter((it) => it.type === "coin");
       for (const c of coins) {
-        c.counted = true;
         this.countN++;
-        c.el.classList.add("counted");
-        c.el.querySelector(".count").textContent = this.countN;
+        this.markCount(c, this.countN);
         CQ.audio.play("coin.clink", { index: this.countN });
         await CQ.run.wait(360);
       }
@@ -1089,7 +1048,9 @@
     // Set up a whole level instantly and level the beam.
     setup(cfg) {
       this.crownMass = cfg.crown;
-      const left = [{ type: "crown" }];
+      this.itemK = cfg.itemScale || 1;
+      const left = [];
+      for (let i = 0; i < (cfg.crowns || 1); i++) left.push({ type: "crown" });
       if (cfg.leftBar) left.push({ type: "bar", value: cfg.leftBar, slot: "extra" });
       for (let i = 0; i < (cfg.left || 0); i++) left.push({ type: "coin", slot: "extra" });
       this.setPan("left", left);
@@ -1106,7 +1067,21 @@
     }
   }
 
-  // ================================================================== gold bars on pedestals
+  // ================================================================== gold bars on stone stands
+  // The stand art (props/brick-stand.png): a bar rests on its top face, at y = L.BAR_BASE.
+  const STAND = { w: L.STAND_W, h: (L.STAND_W * IM().brickStand.h) / IM().brickStand.w };
+  STAND.rest = STAND.h * L.STAND_REST;
+  CQ.STAND = STAND;
+  CQ.placeStand = (el, x) => CQ.box(el, x - STAND.w / 2, L.BAR_BASE - STAND.rest, STAND.w, STAND.h);
+  const BAR_H = (L.BAR_W * IM().bar.h) / IM().bar.w; // a bar on its stand
+  // A faded copy of a gold bar (drag hints).
+  function barGhost(v, cls) {
+    const g = CQ.el("div", "gbar bar-ghost" + (cls ? " " + cls : ""), null, `<span class="num">${v}</span>`);
+    g.style.width = L.BAR_W + "px";
+    g.style.height = BAR_H + "px";
+    return g;
+  }
+
   class Bars {
     constructor(layer) {
       this.layer = layer;
@@ -1119,16 +1094,26 @@
       const xs = [L.BX - 270, L.BX, L.BX + 270];
       order.forEach((v, i) => {
         const x = xs[i];
+        // the stone stand: the bar rests on its top face
         const ped = CQ.el("div", "pedestal", this.layer);
-        CQ.pos(ped, x, L.PEDESTAL_TOP);
+        CQ.placeStand(ped, x);
         const slot = CQ.el("div", "bar-slot", this.layer);
         slot.setAttribute("role", "button");
         slot.setAttribute("aria-label", `Gold bar ${v}`);
-        const g = CQ.el("div", "gbar", slot, `<span class="num">${v}</span><span class="shine"></span>`);
-        g.style.animationDelay = -i * 0.7 + "s";
+        slot.style.width = L.BAR_W + "px";
+        slot.style.height = BAR_H + "px";
+        const g = CQ.el("div", "gbar", slot, `<span class="num">${v}</span>`);
         const tag = CQ.el("div", "tried-tag", slot, CONTENT.ui.tried);
-        const bar = { value: v, slot, g, ped, tag, home: { x, y: L.PEDESTAL_TOP - 46 }, cur: null, state: "idle" };
+        const bar = { value: v, slot, g, ped, tag, home: { x, y: L.BAR_BASE - BAR_H / 2 }, cur: null, state: "idle" };
         CQ.pos(slot, bar.home.x, bar.home.y);
+        // a new level: the bars come down onto their stands one after another
+        if (opts.animate)
+          CQ.anim(slot, [{ opacity: 0, transform: "translate(-50%,-50%) translateY(-30px)" }, { opacity: 1, transform: "translate(-50%,-50%) translateY(0)" }], {
+            duration: 520,
+            delay: 200 + i * 130,
+            easing: CQ.EASE.out,
+            keep: false,
+          });
         this.list.push(bar);
         CQ.Give.bind(bar);
       });
@@ -1141,8 +1126,10 @@
       });
       this.list = [];
     }
+    // Level 9 has two bars of the same value: prefer the one Zippy holds, then one still on its pedestal.
     get(v) {
-      return this.list.find((b) => b.value === v);
+      const all = this.list.filter((b) => b.value === v);
+      return all.find((b) => b.state === "held") || all.find((b) => b.state === "idle") || all[0];
     }
     refresh() {
       this.list.forEach((b) => {
@@ -1152,8 +1139,11 @@
       });
     }
     markTried(v) {
-      const b = this.get(v);
+      this.markTriedBar(this.get(v));
+    }
+    markTriedBar(b) {
       if (!b) return;
+      const v = b.value;
       b.state = "tried";
       b.slot.classList.add("tried");
       b.slot.classList.remove("gone", "glow");
@@ -1170,7 +1160,7 @@
     setVisible(on, dur) {
       this.list.forEach((b) => {
         [b.slot, b.ped].forEach((e) => {
-          e.style.transition = `opacity ${dur || 300}ms`;
+          e.style.transition = `opacity ${dur || 500}ms ease`;
           e.style.opacity = on ? "" : "0";
           e.style.pointerEvents = on ? "" : "none";
         });
@@ -1178,7 +1168,33 @@
     }
     center(v) {
       const b = this.get(v);
-      return b ? { x: b.home.x, y: b.home.y } : { x: L.BX, y: L.PEDESTAL_TOP - 46 };
+      return b ? { x: b.home.x, y: b.home.y } : { x: L.BX, y: L.BAR_BASE - BAR_H / 2 };
+    }
+    // "These can be picked up": a faded copy of each bar lifts off it and floats away, one after another.
+    cue(values) {
+      const list = this.list
+        .filter((b) => b.state === "idle" && (!values || values.includes(b.value)))
+        .sort((p, q) => p.home.x - q.home.x);
+      list.forEach((b, i) => {
+        const g = barGhost(b.value, "lift");
+        this.layer.appendChild(g);
+        CQ.pos(g, b.home.x, b.home.y);
+        CQ.anim(
+          g,
+          [
+            { transform: "translate(-50%,-50%) translateY(0) scale(1)", opacity: 0 },
+            { transform: "translate(-50%,-50%) translateY(-24px) scale(1.03)", opacity: 0.62, offset: 0.35 },
+            { transform: "translate(-50%,-50%) translateY(-52px) scale(1.06)", opacity: 0 },
+          ],
+          { duration: 1300, delay: 250 + i * 320, easing: "ease-out", keep: false, essential: true }
+        ).then(() => g.remove());
+      });
+    }
+    // The faded copy the hint hand carries from a bar to Zippy (screen coordinates, in the UI layer).
+    carried(v) {
+      const c = CQ.el("div", "hand-carry");
+      c.appendChild(barGhost(v));
+      return c;
     }
   }
 
@@ -1203,6 +1219,7 @@
     onGive: null,
     busy: false,
     dragging: false,
+    heldBar: null, // the pedestal bar Zippy is holding
     enable(values, onGive) {
       this.allowed = new Set(values);
       this.onGive = onGive;
@@ -1226,6 +1243,12 @@
           grab = { dx: bar.home.x - w.x, dy: bar.home.y - w.y };
           bar.cur = { x: bar.home.x, y: bar.home.y };
           this.dragging = true;
+          // a faded copy stays on the stand: where the bar came from (and goes back to)
+          if (!bar.restGhost) {
+            bar.restGhost = barGhost(bar.value, "rest");
+            CQ.bars.layer.insertBefore(bar.restGhost, bar.slot);
+            CQ.pos(bar.restGhost, bar.home.x, bar.home.y);
+          }
           bar.slot.classList.add("dragging");
           CQ.audio.play("bar.pick");
           CQ.zippy.ready(true);
@@ -1262,24 +1285,33 @@
       CQ.dropRing.hide();
       CQ.hand.stop();
       const z = CQ.zippy;
-      if (z.held && z.held.type === "bar" && z.held.value !== bar.value) {
-        const old = CQ.bars.get(z.held.value);
+      const old = this.heldBar;
+      if (old && old !== bar && z.held && z.held.type === "bar") {
         z.setHeld(null);
-        if (old) this.tossBack(old);
+        this.tossBack(old);
       }
       bar.slot.classList.remove("dragging");
       const from = bar.cur || bar.home;
       bar.state = "held";
       bar.slot.classList.add("gone");
+      this.dropRestGhost(bar);
       CQ.pos(bar.slot, bar.home.x, bar.home.y);
       bar.cur = null;
       const to = z.holdPoint("zippy_hold");
-      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, to, { duration: 360, arc: -50, scaleTo: L.HELD_BAR_W / L.BAR_W });
+      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, to, { duration: 560, arc: -80, scaleTo: L.HELD_BAR_W / L.BAR_W });
       await z.catchBar(bar.value);
+      this.heldBar = bar;
       this.busy = false;
       CQ.bars.refresh();
       const cb = this.onGive;
       if (cb) cb(bar.value);
+    },
+    // After a level swap the held bar is on the pan for good.
+    useHeld() {
+      const b = this.heldBar;
+      this.heldBar = null;
+      if (b) b.state = "used";
+      CQ.bars.refresh();
     },
     returnHome(bar) {
       bar.slot.classList.remove("dragging");
@@ -1289,20 +1321,25 @@
       const from = bar.cur || bar.home;
       bar.cur = null;
       CQ.tween(
-        300,
+        460,
         (k) => CQ.pos(bar.slot, CQ.lerp(from.x, bar.home.x, k), CQ.lerp(from.y, bar.home.y, k)),
         CQ.ease.out
-      );
+      ).then(() => this.dropRestGhost(bar));
+    },
+    dropRestGhost(bar) {
+      if (bar.restGhost) bar.restGhost.remove();
+      bar.restGhost = null;
     },
     // Zippy throws a bar he is holding back onto its pedestal.
     async tossBack(bar, opts) {
       opts = opts || {};
+      if (this.heldBar === bar) this.heldBar = null;
       CQ.audio.play("bar.return");
       const from = CQ.zippy.holdPoint();
-      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, bar.home, { duration: 520, arc: -140, scaleFrom: L.HELD_BAR_W / L.BAR_W, spin: 360 });
+      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, bar.home, { duration: 780, arc: -170, scaleFrom: L.HELD_BAR_W / L.BAR_W });
       CQ.audio.play("bar.place");
       bar.slot.classList.remove("gone");
-      if (opts.tried) CQ.bars.markTried(bar.value);
+      if (opts.tried) CQ.bars.markTriedBar(bar);
       else if (bar.state === "held") bar.state = "idle";
       CQ.bars.refresh();
     },
