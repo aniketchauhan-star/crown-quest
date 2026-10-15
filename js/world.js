@@ -16,7 +16,8 @@
       this.root = root;
       // the jungle lake, in layers (made from "background sheet.png": see jungle-background/README.md)
       this.decor = CQ.el("div", "layer bg-scene", root);
-      buildBackground(this.decor);
+      this.bgImgs = buildBackground(this.decor);
+      CQ.peek.build(this.decor, this.bgImgs.bgTree); // Zippy's head peeking out from behind the tree trunk
       this.balanceLayer = CQ.el("div", "layer balance-layer", root);
       this.grumbleLayer = CQ.el("div", "layer grumble-layer", root);
       this.barLayer = CQ.el("div", "layer bar-layer", root);
@@ -42,12 +43,63 @@
   // The background layers, back to front (BG_LAYERS in assets/sprites.js). Some have a gentle idle
   // motion: the clouds drift, the branch and the bushes sway (off with Reduced motion).
   function buildBackground(layer) {
+    const imgs = {};
     (window.BG_LAYERS || []).forEach((ly, i) => {
       const img = CQ.img(ly.key, ly.anim && ly.anim !== "shimmer" ? "anim-" + ly.anim : "", layer);
       CQ.box(img, ly.x, ly.y, ly.w, ly.h);
       if (ly.anim) img.style.animationDelay = (-(i * 1.37) % 6).toFixed(2) + "s"; // no two sway in step
+      imgs[ly.key] = img;
     });
+    return imgs;
   }
+
+  // ================================================================== Zippy peeking from behind the tree
+  // After a wrong swap Zippy checks on Grumble: only his smiling head leans out from behind the trunk.
+  // A copy of his sprite sits in the background, behind the tree layer, with a soft oval mask around his
+  // head (the tail and body fade away); the trunk hides the rest.
+  const PEEK = {
+    frame: 7, // zippy_hold frame 7: eyes open, smiling
+    face: { x: 210, y: 300 }, // his face centre in that frame (sprite pixels)
+    mask: { x: 180, y: 278, rx: 170, ry: 125 }, // the oval kept around his head (sprite pixels)
+    y: 412, // stage: where his face is
+    hidden: 150, // stage x of his face when he is fully behind the trunk
+    out: 300, // ...and when he leans out (the trunk's edge is at x ~285 here)
+  };
+  CQ.peek = {
+    build(layer, before) {
+      const k = L.ZIPPY.scale;
+      const s = window.SPRITES.zippy_hold;
+      this.el = CQ.el("div", "zippy-peek hidden");
+      layer.insertBefore(this.el, before || null);
+      this.sprite = new CQ.Sprite(this.el, "peek-sprite", k);
+      this.sprite.show("zippy_hold", PEEK.frame);
+      const m = PEEK.mask;
+      const mask = `radial-gradient(${m.rx * k}px ${m.ry * k}px at ${m.x * k}px ${m.y * k}px, #000 88%, transparent 100%)`;
+      Object.assign(this.sprite.el.style, { maskImage: mask, webkitMaskImage: mask, maskRepeat: "no-repeat", webkitMaskRepeat: "no-repeat" });
+      this.face = { x: (PEEK.face.x - s.ax) * k, y: (PEEK.face.y - s.ay) * k }; // from the sprite's anchor
+      this.el.style.transformOrigin = `${this.face.x}px ${this.face.y}px`;
+    },
+    place(x, tilt) {
+      CQ.pos(this.el, x - this.face.x, PEEK.y - this.face.y);
+      this.el.style.transform = `rotate(${(tilt || 0).toFixed(2)}deg)`;
+    },
+    // lean out from behind the trunk (smiling), and back again
+    out(dur) {
+      this.sprite.show("zippy_hold", PEEK.frame);
+      this.place(PEEK.hidden, 0);
+      this.el.classList.remove("hidden");
+      return CQ.tween(dur || 700, (k) => this.place(CQ.lerp(PEEK.hidden, PEEK.out, k), 10 * k), CQ.ease.out, "peek");
+    },
+    back(dur) {
+      return CQ.tween(dur || 380, (k) => this.place(CQ.lerp(PEEK.out, PEEK.hidden, k), 10 * (1 - k)), CQ.ease.in, "peek").then(() => this.hide());
+    },
+    hide() {
+      if (this.el) this.el.classList.add("hidden");
+    },
+    center() {
+      return { x: PEEK.out, y: PEEK.y };
+    },
+  };
 
   // ================================================================== the drop ring around Zippy's hands
   CQ.dropRing = {
@@ -200,6 +252,8 @@
       CQ.audio.play("grumble.yawn");
       await CQ.sleep(1000);
       if (stale()) return;
+      if (hooks.beforeSleep) await hooks.beforeSleep();
+      if (stale()) return;
       CQ.audio.play("grumble.flop");
       CQ.fx.dust(CQ.world.fx, this.x, this.y - 10, 8);
       this.sleep();
@@ -275,6 +329,38 @@
   Object.keys(HOLD_SRC).forEach((k) => {
     HOLD_OFFSET[k] = { x: HOLD_SRC[k].x * L.ZIPPY.scale, y: HOLD_SRC[k].y * L.ZIPPY.scale };
   });
+  // His swap sheet (zippy swap.png) has empty hands. grip is where the game puts what he holds in each
+  // frame, in the cut frame's own pixels (assets/zippy/swap.png): frame 1 is between his open hands (he
+  // takes a bar there), frame 4 is the hand that grabs the crown. In frames 2-8 his fists are drawn
+  // again over what he holds (zippy_swap_hands, see SWAP_FISTS in tools/prepare_assets.py), so his
+  // fingers wrap around it. Re-measure both if the sheet is replaced.
+  const SWAP = {
+    grip: [null, [243, 415], [228, 359], [244, 432], [282, 393], [166, 341], [197, 351], [291, 335], [168, 342]],
+    nudge: { bar: [0, 38], crown: [0, -16] }, // his fingers curl over a bar's top edge (its number stays in view), and round a crown's band
+  };
+  function swapOffset(frame, item) {
+    const S = window.SPRITES.zippy_swap;
+    const g = SWAP.grip[frame] || SWAP.grip[2];
+    const n = SWAP.nudge[item] || [0, 0];
+    return { x: (g[0] + n[0] - S.ax) * L.ZIPPY.scale, y: (g[1] + n[1] - S.ay) * L.ZIPPY.scale };
+  }
+  // After a level's last swap Zippy puts the crown on his own head and wears it while he celebrates and
+  // swings away (zippy crown.png: 1 lift it up, 2 put it on, 3 wow, 4 proud, 5 thumbs up, 6 wave,
+  // 7 laugh, 8 straighten it). Where it sits on his head, from the tip of his tail (sheet pixels):
+  const CROWN_HEAD = { x: 42, y: 160 };
+  const CROWN_POSE = { crownLift: 1, crownOn: 2, wow: 3, proud: 4 };
+  // Scared after a wrong swap, the crown in his hands (zippy scared crown.png): 1 uh-oh, 2 gritted
+  // teeth, 3 side glance, 4 trembling, 5 hiding behind it, 6 gulp, 7 eek! (crown up high), 8 sheepish.
+  // Where the crown is in each frame (centre x, y and its width, in the cut frame's pixels), so it can
+  // jump back to the pan from his hands. Re-measure if the sheet is replaced.
+  const SCARED_CROWN = [null, [208, 361, 144], [203, 355, 131], [201, 361, 151], [213, 361, 95], [186, 292, 182], [194, 345, 109], [205, 161, 150], [245, 363, 120]];
+  const SCARED_POSE = { crownUhOh: 1, crownTeeth: 2, crownGlance: 3, crownShake: 4, crownHide: 5, crownGulp: 6, crownEek: 7, crownSorry: 8 };
+  // Zippy leaves the picture (after a wrong swap, and after each level he wins) and swings back in. He
+  // stays hanging from his vine and swings in big curves; the top of the vine (A) slides along above
+  // the screen, so each big swing carries him out of the picture or into it.
+  const OFF_X = -560; // the vine's top when Zippy is out of the picture
+  const OFF_TH = -85; // ...and the vine's angle there: he is high up on the left, beyond the edge
+  const TILT = 0.35; // how much his body leans with the vine (more in a big swing)
   class Zippy {
     constructor(layer) {
       const Z = L.ZIPPY;
@@ -286,7 +372,7 @@
       this.swayAmp = 2.2;
       this.swayT = 0;
       this.sway = 0;
-      this.tilt = 0.35;
+      this.tilt = TILT;
       // the green vine he hangs from (drawn behind him, so his tail wraps in front of it)
       this.vine = CQ.makeVine(layer, "zippy-vine");
       this.tipOff = CQ.vineEndFor(0, 0, this.k);
@@ -294,9 +380,14 @@
       this.body = CQ.el("div", "zippy-body", this.rig);
       this.sprite = new CQ.Sprite(this.body, "zippy-sprite", this.k);
       this.heldEl = CQ.el("div", "held hidden", this.body);
+      // his fists, drawn again over what he holds (swap sheet only)
+      this.fists = new CQ.Sprite(this.body, "zippy-fists", this.k);
+      this.fists.el.style.display = "none";
       this.held = null;
+      this.wearing = false; // the crown he won is on his head (until the level ends)
       this.poseName = "";
       this.lastTap = 0;
+      this.sprite.onShow = () => this.placeHeld(); // what he holds follows his hands, frame by frame
       this.pose("idle");
       CQ.ticker.add((dt) => this.update(dt));
       this.sprite.el.addEventListener("pointerdown", (e) => {
@@ -321,12 +412,22 @@
       CQ.placeVine(this.vine, ex, ey, Math.atan2(this.A.x - ex, ey - this.A.y));
       this.rig.style.transform = `translate(${P.x}px, ${P.y}px) rotate(${-th * this.tilt}deg)`;
     }
-    holdOffset() {
-      return HOLD_OFFSET[this.sprite.sheet] || HOLD_OFFSET.zippy_hold;
+    // Where he holds things now (or in another sheet and frame), from the tip of his tail.
+    // item ("bar" or "crown") nudges it to sit in his fists on the swap sheet.
+    holdOffset(sheet, frame, item) {
+      sheet = sheet || this.sprite.sheet;
+      item = item || (this.held && this.held.type);
+      if (sheet === "zippy_swap") return swapOffset(frame || this.sprite.frame, item);
+      if (sheet === "zippy_scared_crown") {
+        const S = window.SPRITES.zippy_scared_crown;
+        const c = SCARED_CROWN[frame || this.sprite.frame] || SCARED_CROWN[1];
+        return { x: (c[0] - S.ax) * this.k, y: (c[1] - S.ay) * this.k };
+      }
+      return HOLD_OFFSET[sheet] || HOLD_OFFSET.zippy_hold;
     }
-    holdPoint(sheet) {
+    holdPoint(sheet, frame, item) {
       const P = this.P;
-      const o = sheet ? HOLD_OFFSET[sheet] : this.holdOffset();
+      const o = this.holdOffset(sheet, frame, item);
       const a = -(this.theta + this.sway) * this.tilt * deg;
       return { x: P.x + o.x * Math.cos(a) - o.y * Math.sin(a), y: P.y + o.x * Math.sin(a) + o.y * Math.cos(a) };
     }
@@ -345,6 +446,19 @@
     pose(name) {
       const s = this.sprite;
       this.poseName = name;
+      s.stop(); // a still pose must not be overwritten by the animation that was playing
+      if (SCARED_POSE[name] || name === "crownNervous") {
+        // scared, with the crown in his hands (the sheet draws it)
+        if (name === "crownNervous") s.play("zippy_scared_crown", [2, 3, 2, 6, 4, 2], [420, 380, 420, 380, 460, 380], { loop: true });
+        else s.show("zippy_scared_crown", SCARED_POSE[name]);
+        this.placeHeld();
+        return;
+      }
+      if (CROWN_POSE[name] || this.wearing) {
+        this.crownPose(name);
+        this.placeHeld();
+        return;
+      }
       switch (name) {
         case "idle":
           s.play("zippy_hold", [7, 7, 7, 6, 7, 7, 7, 7], [650, 650, 650, 140, 650, 650, 650, 650], { loop: true });
@@ -352,14 +466,30 @@
         case "talk":
           s.play("zippy_hold", [8, 7], 170, { loop: true });
           break;
-        case "ready":
-          s.play("zippy_hold", [1, 3], 380, { loop: true });
+        case "ready": // a bar is on its way: hands open, ready to take it
+          s.show("zippy_swap", 1);
           break;
-        case "hold":
-          s.play("zippy_hold", [5, 8, 5, 6], [700, 500, 700, 140], { loop: true });
-          break;
+        case "hold": // a bar held at his chest (or the crown hugged)
         case "holdTalk":
-          s.play("zippy_hold", [8, 5], 170, { loop: true });
+          s.show("zippy_swap", this.held && this.held.type === "crown" ? 6 : 2);
+          break;
+        case "reachBar": // swinging over with the bar held out in both fists
+          s.show("zippy_swap", 3);
+          break;
+        case "exchange": // one hand lets go of the bar, the other grabs the crown
+          s.show("zippy_swap", 4);
+          break;
+        case "lift":
+          s.show("zippy_swap", 5);
+          break;
+        case "ooh":
+          s.show("zippy_swap", 6);
+          break;
+        case "look":
+          s.show("zippy_swap", 7);
+          break;
+        case "yes":
+          s.show("zippy_swap", 8);
           break;
         case "curious":
           s.show("zippy_hold", 3);
@@ -382,6 +512,9 @@
         case "swing":
           s.show("zippy_laugh", 1);
           break;
+        case "cheeky":
+          s.play("zippy_hold", [4, 6], 220, { loop: true }); // eyes closed, grinning: "hee hee"
+          break;
         case "shock":
           s.show("zippy_scared", 1);
           break;
@@ -402,14 +535,56 @@
       }
       this.placeHeld();
     }
+    // His poses with the crown on his head (zippy crown.png); everyday names map to the nearest one.
+    crownPose(name) {
+      const s = this.sprite;
+      const C = "zippy_crown";
+      if (CROWN_POSE[name]) return s.show(C, CROWN_POSE[name]);
+      switch (name) {
+        case "idle":
+        case "hold":
+          return s.play(C, [4, 4, 4, 8, 4, 4], [900, 900, 900, 700, 900, 900], { loop: true }); // proud, now and then he straightens it
+        case "talk":
+        case "holdTalk":
+          return s.play(C, [6, 4], 320, { loop: true });
+        case "laugh":
+          return s.play(C, [7, 5, 7, 6], 230, { loop: true });
+        case "celebrate":
+          return s.play(C, [5, 6, 7, 4], 260, { loop: true });
+        case "swing": // waving goodbye as he swings off
+          return s.show(C, 6);
+        case "yes":
+          return s.show(C, 5);
+        case "ooh":
+          return s.show(C, 3);
+        default:
+          return s.show(C, 4);
+      }
+    }
+    // He puts on (or loses) the crown he won: his poses use the crown sheet while it is on his head.
+    wear(on) {
+      this.wearing = !!on;
+      if (on) this.setHeld(null);
+      this.pose(this.poseName || "idle");
+    }
+    // How wide the crown in his hands is drawn now (scared crown sheet), in stage pixels.
+    heldCrownW() {
+      const c = SCARED_CROWN[this.sprite.sheet === "zippy_scared_crown" ? this.sprite.frame : 1] || SCARED_CROWN[1];
+      return c[2] * this.k;
+    }
+    // Where the crown on his head is now (world), for its sparkle.
+    headPoint() {
+      const P = this.P;
+      const o = { x: CROWN_HEAD.x * this.k, y: CROWN_HEAD.y * this.k };
+      const a = -(this.theta + this.sway) * this.tilt * deg;
+      return { x: P.x + o.x * Math.cos(a) - o.y * Math.sin(a), y: P.y + o.x * Math.sin(a) + o.y * Math.cos(a) };
+    }
     setHeld(spec) {
       this.held = spec;
       if (!spec) {
         this.heldEl.className = "held hidden";
         this.heldEl.innerHTML = "";
-        return;
-      }
-      if (spec.type === "bar") {
+      } else if (spec.type === "bar") {
         this.heldEl.className = "held hbar";
         this.heldEl.innerHTML = `<span class="num">${spec.value}</span>`;
       } else {
@@ -421,6 +596,11 @@
     placeHeld() {
       const o = this.holdOffset();
       CQ.pos(this.heldEl, o.x, o.y);
+      // on the swap sheet his fists are drawn again over what he holds
+      const f = this.sprite.sheet === "zippy_swap" ? this.sprite.frame : 0;
+      const on = !!(this.held && f > 1);
+      if (on) this.fists.show("zippy_swap_hands", f);
+      this.fists.el.style.display = on ? "" : "none"; // display, not visibility: hiding Zippy must hide it too
     }
     moveTo(theta, len, dur, ease) {
       const a = { th: this.theta, len: this.len };
@@ -438,9 +618,10 @@
       this.swayAmp = 2.2;
       return this.moveTo(0, this.baseLen, dur == null ? 400 : dur);
     }
-    // Vine angle + length that put Zippy's hands (for a given sheet) on a target point.
-    solveFor(target, sheet) {
-      const o = HOLD_OFFSET[sheet];
+    // Vine angle + length that put a point of Zippy on a target: his hands in a sheet (its name), or
+    // any point given from the tip of his tail.
+    solveFor(target, grip) {
+      const o = typeof grip === "string" ? HOLD_OFFSET[grip] : grip;
       let th = 0;
       let len = this.len;
       for (let i = 0; i < 5; i++) {
@@ -454,9 +635,9 @@
       }
       return { th, len };
     }
-    swingTo(target, dur) {
+    swingTo(target, dur, grip) {
       this.swayAmp = 0;
-      const s = this.solveFor(target, "zippy_reach");
+      const s = this.solveFor(target, grip || "zippy_reach");
       return this.moveTo(s.th, s.len, dur || 650, CQ.ease.inOut);
     }
     ready(on) {
@@ -539,6 +720,74 @@
       this.swayAmp = 2.2;
       this.pose("idle");
     }
+    // Out of the picture on his vine: a little swing back to the right for a run-up, then one big swing
+    // down and up to the left that carries him away over the left edge.
+    async swingAway(dur) {
+      this.swayAmp = 0;
+      const a = { th: this.theta, len: this.len };
+      await CQ.tween(
+        280,
+        (k) => {
+          this.theta = CQ.lerp(a.th, 20, k);
+          this.len = CQ.lerp(a.len, this.baseLen, k);
+        },
+        CQ.ease.out,
+        "zippy"
+      );
+      const x0 = this.A.x;
+      return CQ.tween(
+        dur || 1100,
+        (k) => {
+          const sw = CQ.ease.sine(k); // like a pendulum: fastest at the bottom of the swing
+          this.theta = CQ.lerp(20, OFF_TH, sw);
+          this.tilt = CQ.lerp(TILT, 0.6, sw);
+          this.A.x = CQ.lerp(x0, OFF_X, CQ.ease.in(k)); // the swing carries him off at the end
+        },
+        CQ.ease.linear,
+        "zippy"
+      );
+    }
+    // Out of the picture, ready to swing back in (a new level).
+    offstage() {
+      CQ.stopTween("zippy");
+      this.swayAmp = 0;
+      this.A.x = OFF_X;
+      this.theta = OFF_TH;
+      this.tilt = 0.6;
+      this.len = this.baseLen;
+      this.update(0);
+    }
+    // In from the left edge on his vine: one big swing down and up to the right, then smaller swings
+    // that settle at home (like his first entrance).
+    async swingBack() {
+      const x0 = this.A.x;
+      const th0 = Math.min(this.theta, -30);
+      this.swayAmp = 0;
+      this.len = this.baseLen;
+      await CQ.tween(
+        1200,
+        (k) => {
+          this.A.x = CQ.lerp(x0, L.ZIPPY.ax, CQ.ease.out(k)); // the swing brings him in, then he swings on the spot
+          this.theta = CQ.lerp(th0, 26, CQ.ease.sine(k));
+          this.tilt = CQ.lerp(0.6, TILT, k);
+        },
+        CQ.ease.linear,
+        "zippy"
+      );
+      await CQ.tween(
+        1600,
+        (k, t) => {
+          const tt = t * 1.6;
+          this.theta = 26 * Math.exp(-2.4 * tt) * Math.cos(2 * Math.PI * 0.9 * tt);
+        },
+        CQ.ease.linear,
+        "zippy"
+      );
+      this.A.x = L.ZIPPY.ax;
+      this.theta = 0;
+      this.tilt = TILT;
+      this.swayAmp = 2.2;
+    }
     setVisible(on) {
       this.rig.style.visibility = on ? "visible" : "hidden";
       this.vine.style.visibility = on ? "visible" : "hidden";
@@ -546,6 +795,8 @@
     reset() {
       this.A = { x: L.ZIPPY.ax, y: L.ZIPPY.ay };
       this.theta = 0;
+      this.tilt = TILT;
+      this.wearing = false;
       this.len = this.baseLen;
       this.swayAmp = 2.2;
       this.setHeld(null);
@@ -575,7 +826,20 @@
   BAL.PAN_LEFT = -GM.pan.ringX * BAL.PAN_K;
   BAL.PAN_TOP = BAL.HANG_DY - GM.pan.ringY * BAL.PAN_K;
   BAL.RIM_Y = BAL.PAN_TOP + GM.pan.rimY * BAL.PAN_K; // hanging point down to the rim's centre line
-  BAL.ITEMS_Y = BAL.RIM_Y + 6; // where items rest, just inside the bowl
+  // Things rest on the bowl's floor, a little below the line where its front lip begins, so the lip
+  // hides their bottom edge (they sit IN the bowl, not on top of it).
+  BAL.SINK = 3; // pan-art pixels below the front lip's line (coin faces stay readable)
+  BAL.ITEMS_Y = BAL.PAN_TOP + (GM.pan.innerFront + BAL.SINK) * BAL.PAN_K;
+  // the inside of the bowl as an ellipse (pan-art pixels): the front lip is drawn over things below its front edge
+  BAL.INNER = {
+    cx: GM.pan.ringX,
+    cy: (GM.pan.innerBack + GM.pan.innerFront) / 2,
+    rx: (GM.pan.rimR - GM.pan.rimL) / 2 - 7,
+    ry: (GM.pan.innerFront - GM.pan.innerBack) / 2,
+  };
+  // Coins: stacked rows overlap a little, like a heap; spacing in a row.
+  BAL.COIN_ROW = Math.round(L.COIN_W * 0.78);
+  BAL.COIN_STEP = L.COIN_W + 2;
   BAL.PAN_RX = ((GM.pan.rimR - GM.pan.rimL) / 2) * BAL.PAN_K; // rim half-width
   BAL.PAN_BOTTOM = BAL.PAN_TOP + GM.pan.bottom * BAL.PAN_K;
   BAL.HUB_R = GM.beam.hub.r * BAL.BEAM_K;
@@ -660,6 +924,27 @@
     return c;
   }
 
+  // How much higher the bowl's floor is at x (balance units from the pan's centre) than in the middle:
+  // things near the sides sit higher, so the front lip hides the same small strip of everything.
+  function bowlRise(x) {
+    const I = BAL.INNER;
+    const u = Math.min(0.95, Math.abs(x) / (I.rx * BAL.PAN_K));
+    return -I.ry * (1 - Math.sqrt(1 - u * u)) * BAL.PAN_K;
+  }
+  // The part of the pan drawn in front of the items: everything below the front edge of the bowl's
+  // inside (the front lip and the outside of the bowl), as a clip-path polygon in the pan's own pixels.
+  function frontLipClip(k) {
+    const im = IM().pan;
+    const I = BAL.INNER;
+    const pts = [[0, I.cy]];
+    for (let i = 0; i <= 24; i++) {
+      const x = I.cx - I.rx + (2 * I.rx * i) / 24;
+      const u = (x - I.cx) / I.rx;
+      pts.push([x, I.cy + I.ry * Math.sqrt(Math.max(0, 1 - u * u))]);
+    }
+    pts.push([im.w, I.cy], [im.w, im.h + 2], [0, im.h + 2]);
+    return "polygon(" + pts.map(([x, y]) => `${(x * k).toFixed(1)}px ${(y * k).toFixed(1)}px`).join(", ") + ")";
+  }
   // One pan: the whole pan behind the items, the items, then the pan's front lip in front of them.
   function panParts(group) {
     const im = IM().pan;
@@ -671,7 +956,7 @@
     CQ.pos(items, 0, BAL.ITEMS_Y);
     const front = CQ.img("pan", "bal-art bal-front", group);
     Object.assign(front.style, size);
-    front.style.clipPath = `inset(${GM.pan.rimY * k}px 0 0 0)`;
+    front.style.clipPath = frontLipClip(k);
     return items;
   }
 
@@ -721,11 +1006,11 @@
       const items = panParts(g);
       if (what === "bar") {
         const b = CQ.img("bar", "mini-item", items);
-        Object.assign(b.style, { width: "160px", left: "-80px", top: "-74px" });
+        Object.assign(b.style, { width: "160px", left: "-80px", top: "-86px" });
       } else if (what === "coins3") {
         [-70, 0, 70].forEach((x) => {
           const c = CQ.el("div", "mini-item mini-coin", items, '<span class="one">1</span>');
-          Object.assign(c.style, { left: x - 32 + "px", top: "-64px" });
+          Object.assign(c.style, { left: x - 32 + "px", top: "-76px" });
         });
       }
       // the front lip covers the bottom of the items
@@ -881,7 +1166,7 @@
       items.forEach((it, i) => {
         const p = pos[i] || { x: 0, y: 0, z: 1 };
         it.x = p.x;
-        it.y = p.y;
+        it.y = p.y + bowlRise(p.x); // the bowl's floor curves up towards its sides
         CQ.box(it.el, p.x - it.w / 2, p.y - it.h, it.w, it.h);
         it.el.style.zIndex = p.z || 1;
       });
@@ -891,26 +1176,27 @@
       const extra = items.filter((it) => it.slot !== "main");
       const coins = extra.filter((it) => it.type === "coin");
       const bars = extra.filter((it) => it.type === "bar");
-      const cw = L.COIN_W + 4;
+      const cw = BAL.COIN_STEP;
       let extraW = 0;
-      if (coins.length) extraW = Math.min(2, coins.length) * cw - 4;
+      if (coins.length) extraW = Math.min(2, coins.length) * cw - (cw - L.COIN_W);
       if (bars.length) extraW = Math.max(extraW, bars[0].w);
-      // the crown (or crowns, side by side), then what lies beside them
-      const mainW = main.reduce((w, m) => w + m.w, 0) + Math.max(0, main.length - 1) * 8;
-      const gap = mainW && extraW ? 12 : 0;
+      // the crown (or crowns, side by side: two crowns overlap a little), then what lies beside them
+      const MAIN_GAP = -10;
+      const mainW = main.reduce((w, m) => w + m.w, 0) + Math.max(0, main.length - 1) * MAIN_GAP;
+      const gap = mainW && extraW ? 8 : 0;
       let x0 = -(mainW + gap + extraW) / 2;
       const res = new Map();
       let mx = x0;
       main.forEach((m) => {
         res.set(m, { x: mx + m.w / 2, y: 0, z: 2 });
-        mx += m.w + 8;
+        mx += m.w + MAIN_GAP;
       });
       x0 += mainW + gap;
       coins.forEach((c, i) => {
         const row = Math.floor(i / 2);
         const inRow = Math.min(2, coins.length - row * 2);
-        const rowW = inRow * cw - 4;
-        res.set(c, { x: x0 + (extraW - rowW) / 2 + (i % 2) * cw + L.COIN_W / 2, y: -row * 50, z: 3 + row });
+        const rowW = inRow * cw - (cw - L.COIN_W);
+        res.set(c, { x: x0 + (extraW - rowW) / 2 + (i % 2) * cw + L.COIN_W / 2, y: -row * BAL.COIN_ROW, z: 3 + row });
       });
       bars.forEach((b, i) => res.set(b, { x: x0 + extraW / 2, y: -i * 64, z: 3 + i }));
       return items.map((it) => res.get(it));
@@ -919,7 +1205,7 @@
       const coins = items.filter((it) => it.type === "coin");
       const bars = items.filter((it) => it.type !== "coin");
       const res = new Map();
-      const cw = L.COIN_W + 4;
+      const cw = BAL.COIN_STEP;
       if (bars.length) {
         const total = bars.reduce((s, b) => s + b.w, 0) + (bars.length - 1) * 12;
         let x = -total / 2;
@@ -930,12 +1216,12 @@
       }
       let idx = 0;
       this.rows.forEach((n, r) => {
-        const rowW = n * cw - 4;
+        const rowW = n * cw - (cw - L.COIN_W);
         for (let i = 0; i < n && idx < coins.length; i++) {
-          res.set(coins[idx++], { x: -rowW / 2 + i * cw + L.COIN_W / 2, y: -r * 50, z: 3 + r });
+          res.set(coins[idx++], { x: -rowW / 2 + i * cw + L.COIN_W / 2, y: -r * BAL.COIN_ROW, z: 3 + r });
         }
       });
-      while (idx < coins.length) res.set(coins[idx++], { x: 0, y: -this.rows.length * 50, z: 9 });
+      while (idx < coins.length) res.set(coins[idx++], { x: 0, y: -this.rows.length * BAL.COIN_ROW, z: 9 });
       return items.map((it) => res.get(it));
     }
     // World position of an item's centre (follows the beam).
@@ -1090,6 +1376,7 @@
     setup(values, opts) {
       opts = opts || {};
       this.clear();
+      this.cueN = -1; // the first hint starts at the left-hand bar
       const order = opts.shuffle === false ? values.slice() : CQ.shuffle(values);
       const xs = [L.BX - 270, L.BX, L.BX + 270];
       order.forEach((v, i) => {
@@ -1170,25 +1457,34 @@
       const b = this.get(v);
       return b ? { x: b.home.x, y: b.home.y } : { x: L.BX, y: L.BAR_BASE - BAR_H / 2 };
     }
-    // "These can be picked up": a faded copy of each bar lifts off it and floats away, one after another.
+    // "This can be picked up and given to Zippy": a faded copy of ONE bar lifts off it and floats part
+    // of the way towards Zippy's hands, then fades. Each time it is the next bar (left to right), so the
+    // hint never points at the answer. The bars themselves stay still.
     cue(values) {
       const list = this.list
         .filter((b) => b.state === "idle" && (!values || values.includes(b.value)))
         .sort((p, q) => p.home.x - q.home.x);
-      list.forEach((b, i) => {
-        const g = barGhost(b.value, "lift");
-        this.layer.appendChild(g);
-        CQ.pos(g, b.home.x, b.home.y);
-        CQ.anim(
-          g,
-          [
-            { transform: "translate(-50%,-50%) translateY(0) scale(1)", opacity: 0 },
-            { transform: "translate(-50%,-50%) translateY(-24px) scale(1.03)", opacity: 0.62, offset: 0.35 },
-            { transform: "translate(-50%,-50%) translateY(-52px) scale(1.06)", opacity: 0 },
-          ],
-          { duration: 1300, delay: 250 + i * 320, easing: "ease-out", keep: false, essential: true }
-        ).then(() => g.remove());
-      });
+      if (!list.length) return;
+      const b = list[(this.cueN = (this.cueN || 0) + 1) % list.length];
+      const to = CQ.zippy.holdPoint("zippy_swap", 1);
+      const g = barGhost(b.value, "lift");
+      this.layer.appendChild(g);
+      CQ.pos(g, b.home.x, b.home.y);
+      const dx = (to.x - b.home.x) * 0.32;
+      const dy = (to.y - b.home.y) * 0.32;
+      // up off the stand first, then along a gentle curve towards Zippy
+      const at = (k) =>
+        `translate(-50%,-50%) translate(${(dx * k).toFixed(1)}px, ${(dy * k - 55 * Math.sin(Math.PI * Math.min(1, k * 1.4))).toFixed(1)}px) scale(${(1 - 0.12 * k).toFixed(3)})`;
+      CQ.anim(
+        g,
+        [
+          { transform: at(0), opacity: 0 },
+          { transform: at(0.15), opacity: 0.75, offset: 0.2 },
+          { transform: at(0.6), opacity: 0.6, offset: 0.65 },
+          { transform: at(1), opacity: 0 },
+        ],
+        { duration: 1900, delay: 200, easing: "ease-in-out", keep: false, essential: true }
+      ).then(() => g.remove());
     }
     // The faded copy the hint hand carries from a bar to Zippy (screen coordinates, in the UI layer).
     carried(v) {
@@ -1225,11 +1521,31 @@
       this.onGive = onGive;
       this.busy = false;
       CQ.bars.refresh();
+      this.startCue(values);
     },
     disable() {
       this.allowed = null;
       this.onGive = null;
+      this.stopCue();
       CQ.bars.refresh();
+    },
+    // While the child is choosing, the faded-copy hint (CQ.bars.cue) plays at once and then every few
+    // seconds, until a bar is in Zippy's hands. It waits while a bar is dragged, the hint hand is
+    // showing, or a menu is open.
+    startCue(values) {
+      this.stopCue();
+      const run = () => {
+        if (!this.allowed || this.dragging || this.busy || CQ.pauser.count || document.hidden) return;
+        if (CQ.zippy.held && CQ.zippy.held.type === "bar") return; // SWAP is the next step
+        if (!CQ.hand.el.classList.contains("hidden")) return;
+        CQ.bars.cue(values);
+      };
+      this.cueStart = setTimeout(run, 300);
+      this.cueTimer = setInterval(run, 6000);
+    },
+    stopCue() {
+      clearTimeout(this.cueStart);
+      clearInterval(this.cueTimer);
     },
     can(bar) {
       return !!(this.allowed && this.allowed.has(bar.value) && bar.state === "idle" && !this.busy);
@@ -1297,8 +1613,9 @@
       this.dropRestGhost(bar);
       CQ.pos(bar.slot, bar.home.x, bar.home.y);
       bar.cur = null;
-      const to = z.holdPoint("zippy_hold");
-      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, to, { duration: 560, arc: -80, scaleTo: L.HELD_BAR_W / L.BAR_W });
+      z.pose("ready"); // hands open as it comes
+      const to = z.holdPoint("zippy_swap", 2, "bar");
+      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, to, { duration: 520, arc: -80, scaleTo: L.HELD_BAR_W / L.BAR_W });
       await z.catchBar(bar.value);
       this.heldBar = bar;
       this.busy = false;
@@ -1335,8 +1652,9 @@
       opts = opts || {};
       if (this.heldBar === bar) this.heldBar = null;
       CQ.audio.play("bar.return");
-      const from = CQ.zippy.holdPoint();
-      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, bar.home, { duration: 780, arc: -170, scaleFrom: L.HELD_BAR_W / L.BAR_W });
+      const from = opts.from || CQ.zippy.holdPoint();
+      const scaleFrom = opts.scaleFrom != null ? opts.scaleFrom : L.HELD_BAR_W / L.BAR_W;
+      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, bar.home, { duration: 780, arc: -170, scaleFrom });
       CQ.audio.play("bar.place");
       bar.slot.classList.remove("gone");
       if (opts.tried) CQ.bars.markTriedBar(bar);

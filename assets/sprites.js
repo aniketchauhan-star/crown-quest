@@ -9,6 +9,10 @@ window.SPRITES = {
   zippy_reach: { w: 348, h: 535, count: 8, ax: 128, ay: 6, src: "assets/zippy/reach.png" },
   zippy_laugh: { w: 403, h: 531, count: 8, ax: 178, ay: 6, src: "assets/zippy/laugh.png" },
   zippy_scared: { w: 383, h: 538, count: 8, ax: 151, ay: 6, src: "assets/zippy/scared.png" },
+  zippy_swap: { w: 337, h: 487, count: 8, ax: 152, ay: 6, src: "assets/zippy/swap.png" },
+  zippy_swap_hands: { w: 337, h: 487, count: 8, ax: 152, ay: 6, src: "assets/zippy/swap-hands.png" },
+  zippy_crown: { w: 335, h: 504, count: 8, ax: 117, ay: 6, src: "assets/zippy/crown.png" },
+  zippy_scared_crown: { w: 336, h: 510, count: 8, ax: 147, ay: 6, src: "assets/zippy/scared-crown.png" },
 };
 
 window.IMAGES = {
@@ -31,6 +35,7 @@ window.IMAGES = {
   bgBranch: { src: "assets/bg/jungle/10-branch.png", w: 762, h: 338 },
   bgTree: { src: "assets/bg/jungle/11-tree.png", w: 1040, h: 1096 },
   bgBushFrontRight: { src: "assets/bg/jungle/12-bush-front-right.png", w: 468, h: 358 },
+  zippyFace: { src: "assets/ui/zippy-face.png", w: 232, h: 232 },
   beam: { src: "assets/elements/beam.png", w: 1256, h: 123 },
   stand: { src: "assets/elements/stand.png", w: 180, h: 267 },
   pan: { src: "assets/elements/pan.png", w: 240, h: 254 },
@@ -203,7 +208,9 @@ window.GEOM = {
     "rimY": 181,
     "rimL": 3,
     "rimR": 236,
-    "bottom": 250
+    "bottom": 250,
+    "innerBack": 159,
+    "innerFront": 192
   },
   "stand": {
     "cx": 89.2,

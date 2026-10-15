@@ -20,6 +20,7 @@ What it does
 Re-run it whenever you replace any of the original PNGs (keep the same file names and the 4 x 2 layout).
 """
 import json
+import math
 import os
 import shutil
 import struct
@@ -265,6 +266,11 @@ def split_sheet(path, anchor_mode, cols=4, rows=2):
 
 
 # --------------------------------------------------------------------------- main
+def first_existing(*names):
+    """The first of these source files that is in the folder (a file may be saved under a slightly different name)."""
+    return next((n for n in names if os.path.exists(os.path.join(ROOT, n))), names[0])
+
+
 SHEETS = [
     ("grumble_sleep", "monster slepping.png", "grumble/sleep.png", "bottom"),
     ("grumble_wake", "slightly open his eyes.png", "grumble/wake.png", "bottom"),
@@ -273,6 +279,12 @@ SHEETS = [
     ("zippy_reach", "hold crown.png", "zippy/reach.png", "top"),
     ("zippy_laugh", "winning monkey.png", "zippy/laugh.png", "top"),
     ("zippy_scared", "fail monkey.png", "zippy/scared.png", "top"),
+    # empty-handed: the game puts the real gold bar and crown in his hands (ChatGPT-Zippy-Swap-Prompt.md)
+    ("zippy_swap", "zippy swap.png", "zippy/swap.png", "top"),
+    # he puts the crown on his own head and celebrates wearing it (ChatGPT-Zippy-Crown-Prompt.md)
+    ("zippy_crown", first_existing("zippy crown.png", "zippy crown..png"), "zippy/crown.png", "top"),
+    # scared after a wrong swap, the crown in his hands (ChatGPT-Zippy-Scared-Crown-Prompt.md)
+    ("zippy_scared_crown", "zippy scared crown.png", "zippy/scared-crown.png", "top"),
 ]
 
 # (key, source file, output, crop box or None for auto, downscale factor)
@@ -289,6 +301,108 @@ PROPS = [
 FULLSCREEN = [
     ("startScreen", "start screen.png", "ui/start-screen"),
 ]
+
+# zippy swap.png has empty hands; the game puts the bar or crown he holds at his grip. In frames 2-8
+# his fists are drawn again over what he holds (zippy/swap-hands.png), so his fingers wrap around it.
+# For each frame: a box (x0, y0, x1, y1) around his fists and a seed point on each piece of skin that
+# belongs to them (creases split some fists into pieces), in the cut frame's own pixels. The fists are
+# redrawn cleanly: their skin and creases from the art, inside one smooth dark outline all the way
+# round, so their edge over the bar or crown is crisp (no fur, tummy or stray specks).
+# Re-measure if the sheet is replaced (and SWAP in js/world.js).
+SWAP_FISTS = {
+    2: ((168, 322, 270, 396), [(200, 358), (243, 358)]),
+    3: ((190, 394, 292, 470), [(227, 431), (268, 445)]),
+    4: ((244, 356, 316, 430), [(290, 405)]),
+    5: ((132, 302, 200, 378), [(163, 342)]),
+    6: ((146, 316, 246, 386), [(176, 351), (219, 351)]),
+    7: ((250, 292, 328, 376), [(297, 335), (272, 322), (269, 348)]),
+    8: ((128, 300, 206, 382), [(165, 340)]),
+}
+FIST_LINE = (58, 17, 4)  # the art's outline colour (measured around the fists)
+FIST_LINE_W = 4.5        # ...and its thickness, in the sheet's pixels
+# Zippy's face for the caption bar: a square around his head in a frame of the swap sheet (cx, cy, r).
+FACE = ("zippy_swap", 4, (205, 255, 116))
+
+
+def fist_overlay(sw, sh, strip, cell_w):
+    """Only the fists of each frame, redrawn cleanly: the art's skin and creases inside one smooth outline."""
+    out = bytearray(sw * sh * 4)
+    side = ((1, 0), (-1, 0), (0, 1), (0, -1))
+    disk2 = [(dx, dy) for dx in range(-2, 3) for dy in range(-2, 3) if dx * dx + dy * dy <= 4.5]
+    reach = 7
+    ring = sorted(((dx, dy) for dx in range(-reach, reach + 1) for dy in range(-reach, reach + 1) if dx or dy),
+                  key=lambda d: d[0] * d[0] + d[1] * d[1])
+    sigma = 1.6
+    kern = [math.exp(-(i * i) / (2 * sigma * sigma)) for i in range(-4, 5)]
+    kern = [k / sum(kern) for k in kern]
+    for frame, ((bx0, by0, bx1, by1), seeds) in SWAP_FISTS.items():
+        ox = (frame - 1) * cell_w
+        m = 8  # room around the box for the outline
+        X0, Y0 = bx0 - m, by0 - m
+        W, H = bx1 - bx0 + 2 * m, by1 - by0 + 2 * m
+
+        def at(x, y):
+            return ((Y0 + y) * sw + ox + X0 + x) * 4
+
+        def inside(x, y):
+            return 0 <= x < W and 0 <= y < H
+
+        skin = [[False] * W for _ in range(H)]
+        for y in range(H):
+            for x in range(W):
+                i = at(x, y)
+                r, g, b, a = strip[i], strip[i + 1], strip[i + 2], strip[i + 3]
+                skin[y][x] = a > 40 and r > 200 and g > 150 and b > 95
+        # 1. the pieces of skin under the seeds (only inside the box: never his tummy or face)
+        core = [[False] * W for _ in range(H)]
+        todo = []
+        for sx, sy in seeds:
+            assert skin[sy - Y0][sx - X0], f"fist seed {(sx, sy)} of frame {frame} is not on his skin"
+            todo.append((sx - X0, sy - Y0))
+        while todo:
+            x, y = todo.pop()
+            if m <= x < W - m and m <= y < H - m and skin[y][x] and not core[y][x]:
+                core[y][x] = True
+                todo += [(x + dx, y + dy) for dx, dy in side]
+
+        # 2. one smooth shape: close the creases between the pieces, fill holes, round off small bumps
+        def grow(mask, offs, keep):
+            res = [[False] * W for _ in range(H)]
+            for y in range(H):
+                for x in range(W):
+                    hits = [inside(x + dx, y + dy) and mask[y + dy][x + dx] for dx, dy in offs]
+                    res[y][x] = any(hits) if keep else all(hits)
+            return res
+
+        def fill_holes(mask):
+            outside = [[False] * W for _ in range(H)]
+            todo = [(x, y) for x in range(W) for y in (0, H - 1)] + [(x, y) for y in range(H) for x in (0, W - 1)]
+            while todo:
+                x, y = todo.pop()
+                if inside(x, y) and not mask[y][x] and not outside[y][x]:
+                    outside[y][x] = True
+                    todo += [(x + dx, y + dy) for dx, dy in side]
+            return [[not outside[y][x] for x in range(W)] for y in range(H)]
+
+        core = fill_holes(grow(grow(core, disk2, True), disk2, False))
+        rows = [[sum(kern[k + 4] * (1.0 if 0 <= x + k < W and core[y][x + k] else 0.0) for k in range(-4, 5))
+                 for x in range(W)] for y in range(H)]
+        core = fill_holes([[sum(kern[k + 4] * (rows[y + k][x] if 0 <= y + k < H else 0.0) for k in range(-4, 5)) > 0.5
+                            for x in range(W)] for y in range(H)])
+        # 3. paint: the art inside the shape (any fur at its edge becomes outline), the outline around it
+        for y in range(H):
+            for x in range(W):
+                i = at(x, y)
+                if core[y][x]:
+                    r, g, b = strip[i], strip[i + 1], strip[i + 2]
+                    furry = r > 110 and r - g > 45 and b < 90 and r + g + b > 240
+                    out[i:i + 4] = bytes(FIST_LINE + (255,)) if furry else bytes((r, g, b, 255))
+                    continue
+                d = next((math.sqrt(dx * dx + dy * dy) for dx, dy in ring if inside(x + dx, y + dy) and core[y + dy][x + dx]), None)
+                if d is not None and d < FIST_LINE_W + 0.5:
+                    out[i:i + 4] = bytes(FIST_LINE + (round(255 * min(1.0, FIST_LINE_W + 0.5 - d)),))
+    return out
+
 
 # The game's background: the layers of jungle-background/ (built from "background sheet.png").
 BACKGROUND_DIR = "jungle-background"
@@ -514,8 +628,20 @@ def measure_elements(items):
     widths = [(r[-1][1] - r[0][0], y) for y, r in enumerate(rows) if r]
     rim_w, rim_y = max(widths)
     rim_top = next(y for y in range(int(ring_y) + 20, h) if any(a <= w // 2 <= b for a, b in rows[y]))
+    # the inside of the bowl, down its middle: the dark back outline, the interior, then the dark line
+    # where the front lip begins (things in the pan tuck behind that lip)
+    cx = int(round(ring_x))
+    lum = lambda y: (px[(y * w + cx) * 4] * 3 + px[(y * w + cx) * 4 + 1] * 6 + px[(y * w + cx) * 4 + 2]) / 10
+    y = rim_top
+    while y < h and lum(y) < 140:
+        y += 1  # through the back outline
+    inner_back = y
+    y = rim_y + 2
+    while y < h and lum(y) >= 110:
+        y += 1  # down the interior to the front lip's dark line
     g["pan"] = {"ringX": round(ring_x, 1), "ringY": round(ring_y, 1), "rimTop": rim_top, "rimY": rim_y,
-                "rimL": rows[rim_y][0][0], "rimR": rows[rim_y][-1][1], "bottom": max(y for y, r in enumerate(rows) if r)}
+                "rimL": rows[rim_y][0][0], "rimR": rows[rim_y][-1][1], "bottom": max(y for y, r in enumerate(rows) if r),
+                "innerBack": inner_back, "innerFront": y}
     # stand: top ball, post, base
     w, h, px = items["stand"]
     rows = _rows(w, h, px)
@@ -601,6 +727,24 @@ def main():
         write_png(os.path.join(OUT, dst), sw, sh, strip)
         meta["src"] = "assets/" + dst
         sprites[key] = meta
+        if key == "zippy_swap":
+            write_png(os.path.join(OUT, "zippy/swap-hands.png"), sw, sh, fist_overlay(sw, sh, strip, meta["w"]))
+            sprites["zippy_swap_hands"] = dict(meta, src="assets/zippy/swap-hands.png")
+            print("sheet  zippy_swap_hands -> assets/zippy/swap-hands.png (his fists, over what he holds)")
+        if key == FACE[0]:
+            frame, (cx, cy, r) = FACE[1], FACE[2]
+            x0 = (frame - 1) * meta["w"] + cx - r
+            n = 2 * r
+            face = bytearray(n * n * 4)
+            for yy in range(n):
+                for xx in range(n):
+                    sx, sy = x0 + xx, cy - r + yy
+                    if 0 <= sx < sw and 0 <= sy < sh:
+                        i = (sy * sw + sx) * 4
+                        face[(yy * n + xx) * 4:(yy * n + xx) * 4 + 4] = strip[i:i + 4]
+            write_png(os.path.join(OUT, "ui/zippy-face.png"), n, n, face)
+            images["zippyFace"] = {"src": "assets/ui/zippy-face.png", "w": n, "h": n}
+            print(f"image  zippyFace    -> assets/ui/zippy-face.png ({n}x{n})")
         print(f"sheet  {key:14s} -> assets/{dst} cell {meta['w']}x{meta['h']} anchor ({meta['ax']},{meta['ay']})")
 
     geom = {}

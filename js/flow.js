@@ -20,6 +20,8 @@
   const WORDS_AT = { L4c: 6, L4e: 7, L4g: 7, L5: 8, L6: 8, L7: 8, L8: 8, L9: 8, P: 8, finale: 8 };
   // The gold bars wait off screen while the balance is being explained or solved.
   const BARS_HIDDEN = ["L4a", "L4c", "L4e", "L8", "L9", "P", "finale"];
+  // Levels that open with a new crown appearing on the balance (poof)
+  const POOF_AT = ["L2", "L3", "L4a", "L5", "L6", "L7", "L8", "L9"];
 
   CQ.gen = 0;
 
@@ -38,13 +40,15 @@
         if (veil) await R.when(CQ.veil.cover());
         for (let i = start; i < ORDER.length; i++) {
           const id = ORDER[i];
-          // on to the next level in the same room: the old pieces leave before the new ones arrive
-          const change = i > start && SCENE_OF[ORDER[i - 1]] !== SCENE_OF[id];
+          // a level won (he is wearing its crown) or a new room: Zippy swings off and the screen fades;
+          // the next part is set up behind the fade, and he sneaks back into it
+          const change = i > start && (SCENE_OF[ORDER[i - 1]] !== SCENE_OF[id] || CQ.zippy.wearing);
           if (change) await outro();
           this.current = id;
           CQ.store.set("progress", { cp: id });
           resetScene(id, { animate: change });
           if (veil && i === start) CQ.veil.reveal();
+          if (change) await arrive();
           const res = await STEPS[id]();
           if (res === "again") {
             setTimeout(() => this.chapter("intro"), 0);
@@ -88,6 +92,7 @@
     CQ.Give.busy = false;
     CQ.Give.heldBar = null;
     CQ.dropRing.hide();
+    CQ.peek.hide();
     CQ.zippy.reset();
     CQ.grumble.snoreVol = 1;
     CQ.grumble.squash.style.transform = "";
@@ -101,6 +106,8 @@
     CQ.audio.ambience(true);
     const lv = LV()[SCENE_OF[cp]];
     CQ.balance.setup(lv);
+    // a new level: its crown and coins appear with a poof once Zippy is back (see poof)
+    if (opts.animate && POOF_AT.includes(cp)) ["left", "right"].forEach((s) => CQ.balance.items[s].forEach((it) => (it.el.style.opacity = "0")));
     CQ.bars.setup(lv.bars, { animate: opts.animate && !BARS_HIDDEN.includes(cp) });
     CQ.bars.setVisible(!BARS_HIDDEN.includes(cp));
     if (["L4c", "L4e", "L4g"].includes(cp)) CQ.balance.setSign("x + 2 = 7");
@@ -134,32 +141,49 @@
     if (!e) return;
     CQ.anim(e, [{ opacity: 1 }, { opacity: 0 }], { duration: 250 }).then(() => e.remove());
   }
-  // A level is done: its pieces leave the room gently (the pan items sink into their pans, the bars
-  // fade off their stands, the sign on the post fades) before the next level's pieces arrive.
+  // A level is won: Zippy swings off on his vine, out of the picture, wearing the crown he won (and
+  // waving goodbye), and the screen fades to dark.
   async function outro() {
-    const b = CQ.balance;
+    const z = CQ.zippy;
     CQ.caption.hide();
     CQ.bubble.hide();
     CQ.hand.stop();
     CQ.idle.disarm();
-    ["left", "right"].forEach((s) => {
-      b.items[s].forEach((it, i) =>
-        CQ.anim(it.el, [{ transform: "scale(1) translateY(0)", opacity: 1 }, { transform: "scale(.3) translateY(24px)", opacity: 0 }], {
-          duration: 520,
-          delay: i * 45,
-          easing: CQ.EASE.in,
-          essential: true,
-        })
-      );
-      const p = b.panCenter(s);
-      setTimeout(() => CQ.fx.dust(CQ.world.fx, p.x, p.y + 20, 5), 380);
-    });
-    CQ.bars.list.forEach((bar, i) =>
-      CQ.anim(bar.slot, [{ opacity: 1 }, { opacity: 0 }], { duration: 460, delay: i * 70, essential: true })
-    );
-    if (!b.sign.classList.contains("hidden")) CQ.anim(b.sign, [{ opacity: 1 }, { opacity: 0 }], { duration: 420, essential: true });
-    CQ.audio.play("ui.swoosh");
-    await R.wait(820);
+    z.pose("swing");
+    CQ.audio.play("zippy.whee");
+    setTimeout(() => CQ.audio.play("slide.up"), 300);
+    await R.when(z.swingAway());
+    await R.when(CQ.veil.cover(700));
+  }
+  // The next level is ready behind the fade. The screen fades in on the sleeping Grumble, Zippy's head
+  // peeks out from behind the tree (is Grumble still asleep?), and he swings back in on his vine.
+  async function arrive() {
+    const z = CQ.zippy;
+    z.offstage();
+    CQ.veil.reveal(900);
+    await R.wait(1100);
+    await sneakBack();
+    z.pose("idle");
+  }
+  // Zippy's smiling head leans out from behind the tree trunk ("hmm?"), ducks back, and he swings in.
+  // opts.comic: words to pop up beside his head; opts.pose and opts.sound: how he swings in.
+  async function sneakBack(opts) {
+    opts = opts || {};
+    const z = CQ.zippy;
+    await R.when(CQ.peek.out(700));
+    CQ.audio.play("zippy.hmm");
+    if (opts.comic) {
+      const pc = CQ.peek.center();
+      CQ.comic(opts.comic, { x: pc.x + 150, y: pc.y - 95 }, { color: "yellow", size: 56, dur: 1500 });
+    }
+    await R.wait(opts.comic ? 1500 : 1100);
+    // he's snoring! back behind the tree... and here comes Zippy
+    await R.when(CQ.peek.back(380));
+    await R.wait(380);
+    z.pose(opts.pose || "swing");
+    CQ.audio.play(opts.sound || "zippy.whee");
+    if (opts.giggle) setTimeout(() => CQ.audio.play("zippy.giggle"), 700);
+    await R.when(z.swingBack());
   }
   // A new crown appears on the balance with a sparkle poof.
   function poof() {
@@ -168,14 +192,15 @@
       const p = b.panCenter(s);
       CQ.fx.sparkle(CQ.world.fx, p.x, p.y - 40, 10, 110);
       CQ.fx.dust(CQ.world.fx, p.x, p.y + 20, 6);
-      b.items[s].forEach((it, i) =>
+      b.items[s].forEach((it, i) => {
+        it.el.style.opacity = ""; // they waited hidden while the level changed (resetScene)
         CQ.anim(it.el, [{ transform: "scale(0) translateY(30px)", opacity: 0 }, { transform: "scale(1) translateY(0)", opacity: 1 }], {
           duration: 600,
           delay: 160 + i * 70,
           easing: CQ.EASE.back,
           keep: false,
-        })
-      );
+        });
+      });
     });
     CQ.audio.play("dust.puff");
     CQ.audio.play("crown.sparkle");
@@ -183,6 +208,18 @@
   function glowCrown(on) {
     CQ.balance.glowItems("left", (it) => it.type === "crown", on);
   }
+  // "Look here!" (CQ.focus): the rest of the screen fades back while a line is about one thing.
+  // look(what) moves the bright window there (it glides over from the last thing); look(null) ends it.
+  function look(what, opts) {
+    if (!what) return CQ.focus.off();
+    CQ.focus.on(what, opts);
+  }
+  // what to look at (functions: the pans' contents change while they are looked at)
+  const panEls = (side) => () => [CQ.balance.sides[side].g.querySelector(".bal-back")].concat(CQ.balance.items[side].filter((it) => !it.ghost).map((it) => it.el));
+  const bothPans = () => panEls("left")().concat(panEls("right")());
+  const crownEls = () => CQ.balance.items.left.filter((it) => it.type === "crown" && !it.ghost).map((it) => it.el);
+  const leftBarEls = () => CQ.balance.items.left.filter((it) => it.type === "bar" && !it.ghost).map((it) => it.el);
+  const barEls = () => CQ.bars.list.reduce((a, bar) => a.concat(bar.slot, bar.ped), []);
   // The treasure room's alarm: it rings whenever the balance tips.
   function ringAlarm(volume) {
     CQ.audio.play("alarm", { volume: volume || 1 });
@@ -190,8 +227,11 @@
   }
   // Hint: hand drags from a bar to Zippy.
   function demoGive(v) {
+    const bar = CQ.bars.get(v);
+    // too late: a bar was given meanwhile (the SWAP hint must not be replaced)
+    if (!bar || bar.state !== "idle" || (CQ.zippy.held && CQ.zippy.held.type === "bar") || CQ.Give.busy) return;
     const from = CQ.camera.toScreen(CQ.bars.center(v));
-    const to = CQ.camera.toScreen(CQ.zippy.holdPoint("zippy_hold"));
+    const to = CQ.camera.toScreen(CQ.zippy.holdPoint("zippy_swap", 1)); // into his open hands
     CQ.hand.drag(from, to, 2, { carry: () => CQ.bars.carried(v), carryScale: CQ.L.HELD_BAR_W / CQ.L.BAR_W });
   }
   // The child gives one of `values` to Zippy. Resolves with the value once he has caught it.
@@ -214,7 +254,6 @@
         })
       )
     );
-    CQ.bars.cue(values); // faded copies lift off the bars: they can be picked up
     return given;
   }
   // The child gives a bar to Zippy, then taps SWAP (they may change bars before tapping).
@@ -228,11 +267,11 @@
       }
       CQ.caption.replay();
     }, 8000);
-    CQ.bars.cue(values); // faded copies lift off the bars: they can be picked up
     return R.when(
       new Promise((res) => {
         CQ.Give.enable(values, () => {
           CQ.swapBtn.show(() => {
+            CQ.focus.off();
             CQ.Give.disable();
             CQ.idle.disarm();
             res(CQ.zippy.held.value);
@@ -241,7 +280,12 @@
             firstSwap = false;
             CQ.store.set("swapDemoSeen", true);
             say("swap-tap-swap", { advance: "none" });
-            setTimeout(() => CQ.hand.tapAt(CQ.centerOf(CQ.swapBtn.el)), 500);
+            setTimeout(() => {
+              if (!CQ.swapBtn.cb) return; // already tapped
+              look(CQ.swapBtn.el, { still: true, pad: 18 }); // measured once it has popped in
+              CQ.focus.offAfter(5000);
+              CQ.hand.tapAt(CQ.centerOf(CQ.swapBtn.el));
+            }, 500);
           }
         });
       })
@@ -250,12 +294,15 @@
   async function tossTried(v) {
     const z = CQ.zippy;
     const bar = CQ.Give.heldBar || CQ.bars.get(v);
+    const from = z.holdPoint(); // from his fists, before he lets go
     z.setHeld(null);
     z.pose("idle");
-    if (bar) await R.when(CQ.Give.tossBack(bar, { tried: true }));
+    if (bar) await R.when(CQ.Give.tossBack(bar, { tried: true, from }));
   }
 
-  // ------------------------------------------------------------------ the swap (simultaneous exchange)
+  // ------------------------------------------------------------------ the swap
+  // Zippy swings over with the bar held out in both fists and stops with it just above the crown. One
+  // hand lets go (the bar drops into the crown's place) as the other grabs the crown, and he lifts it.
   async function swapOnPan(v) {
     const z = CQ.zippy;
     const b = CQ.balance;
@@ -265,57 +312,85 @@
     const crown = b.find("left", (it) => it.type === "crown" && !it.ghost);
     const slot = b.items.left.indexOf(crown);
     const target = b.itemCenter(crown);
-    // Zippy swings over and stops just above the crown, holding the bar
-    z.pose("reach");
+    z.pose("reachBar");
     CQ.audio.play("zippy.whee", { volume: 0.6 });
-    await R.when(z.swingTo({ x: target.x, y: target.y - 95 }, 1150));
-    z.pose("grab");
-    await R.wait(250);
-    // the swap, slowly: the bar goes down into the pan while the crown comes up to Zippy (they pass each other)
-    const hand = z.holdPoint();
+    await R.when(z.swingTo({ x: target.x, y: target.y - 70 }, 600, z.holdOffset("zippy_swap", 3, "bar")));
+    // the swap: the bar drops from his hands into the crown's place, the crown jumps into his other hand
+    const barFrom = z.holdPoint("zippy_swap", 3, "bar");
+    z.pose("exchange");
     z.setHeld(null);
     crown.el.style.visibility = "hidden";
+    const grab = z.holdPoint("zippy_swap", 4, "crown");
     CQ.audio.play("ui.swoosh");
     await R.when(
       Promise.all([
-        CQ.fly(CQ.world.drag, CQ.barFlyer(v, barPx()), hand, target, { duration: 950, arc: 0, arcX: 48 }),
-        CQ.fly(CQ.world.drag, CQ.crownFlyer(crownPx()), target, hand, { duration: 950, arc: 0, arcX: -48 }),
+        CQ.fly(CQ.world.drag, CQ.barFlyer(v, barPx()), barFrom, target, { duration: 300, arc: 0, scaleFrom: CQ.L.HELD_BAR_W / barPx() }),
+        CQ.fly(CQ.world.drag, CQ.crownFlyer(crownPx()), target, grab, { duration: 340, arc: -40, scaleTo: CQ.L.HELD_CROWN_W / crownPx() }),
       ])
     );
     CQ.audio.play("bar.place");
     b.removeItem(crown);
     const barItem = b.addItem("left", { type: "bar", value: v, slot: "main" }, slot);
     z.setHeld({ type: "crown" });
-    await R.wait(380); // a beat: the bar is in the pan... now watch the balance
     const d = b.evaluate();
     CQ.track("answer", { level: CQ.flow.current, swap: v, correct: d === 0 });
-    // Zippy swings back so the child can see the bar on the pan while the balance reacts.
-    z.pose(d === 0 ? "hold" : "shock");
-    if (d !== 0) CQ.audio.play("zippy.eek");
-    await R.when(z.home(d === 0 ? 1050 : 650));
+    await R.wait(150);
+    // he lifts the crown and swings back, so the child can watch the balance
+    if (d === 0) z.pose("lift");
+    else {
+      z.setHeld(null); // uh-oh! (his scared sheet draws the crown in his hands)
+      z.pose("crownUhOh");
+      CQ.audio.play("zippy.eek");
+    }
+    await R.when(z.home(d === 0 ? 620 : 460));
+    if (d === 0) z.pose("ooh");
     return { d, barItem };
   }
-  // The crown Zippy is holding flies up into the crown row.
-  async function collectCrown() {
+  // The crown Zippy holds is collected: "ooh!" With opts.wear (a level won) he lifts it up and puts it
+  // on his own head, and wears it while he celebrates and swings away. Otherwise (the first of Level
+  // 9's two crowns) he shows it off and it flies up out of the picture.
+  async function collectCrown(opts) {
+    opts = opts || {};
     const z = CQ.zippy;
     const b = CQ.balance;
     b.wobble();
     CQ.audio.play("balance.level");
     b.flashEmblem();
-    await R.wait(450);
-    z.pose("hold");
+    z.pose("ooh");
+    await R.wait(380);
+    if (opts.wear) {
+      z.setHeld(null); // from here on, the crown is drawn in his crown sheet
+      z.pose("crownLift");
+      CQ.audio.play("ui.swoosh");
+      await R.wait(480);
+      z.pose("crownOn");
+      await R.wait(320);
+      z.wear(true);
+      z.pose("wow");
+      const hp = z.headPoint();
+      CQ.fx.sparkle(CQ.world.fx, hp.x, hp.y, 16, 100);
+      CQ.audio.play("crown.sparkle");
+      CQ.audio.play("correct");
+      CQ.hud.setCrowns(CQ.hud.crowns + 1);
+      await R.wait(700);
+      z.pose("proud");
+      await R.wait(450);
+      return;
+    }
+    z.pose("look");
     const hp = z.holdPoint();
     CQ.fx.sparkle(CQ.world.fx, hp.x, hp.y, 12, 80);
     CQ.audio.play("correct");
-    await R.wait(400);
-    await R.when(CQ.hud.flyCrown(hp));
+    await R.wait(420);
     z.setHeld(null);
+    z.pose("yes"); // thumbs up as it flies away
+    await R.when(CQ.hud.flyCrown(hp));
   }
   // Equal masses: celebration.
   async function celebrate(lineId, vars) {
     const z = CQ.zippy;
     const g = CQ.grumble;
-    await collectCrown();
+    await collectCrown({ wear: true }); // he puts the crown on, and keeps it on until he swings away
     g.snoreVol = 1.8;
     setTimeout(() => (g.snoreVol = 1), 4500);
     z.pose("laugh");
@@ -327,48 +402,59 @@
     CQ.track("level_complete", { level: CQ.hud.crowns });
     if (lineId) await say(lineId, { vars });
   }
-  // Unequal masses: the alarm rings, Grumble wakes, Zippy swaps back, hides, and Grumble goes back to sleep.
+  // Unequal masses: the alarm rings and Grumble wakes up. With a fright, Zippy lets go: the crown jumps
+  // back onto the pan and the wrong bar goes back to its own stand (marked Tried); Zippy runs off the
+  // screen. Grumble looks around, yawns and (after a soft fade: a little later) is asleep again. Zippy's
+  // smiling head peeks out from behind the tree, "hmm?", ducks back, then he swings back in.
   async function wakeAndUndo(v, barItem) {
     const z = CQ.zippy;
     const b = CQ.balance;
     const gen = CQ.gen;
     ringAlarm();
+    z.pose("crownNervous"); // he clutches the crown while the alarm rings
     await R.wait(600);
     await R.when(
       CQ.grumble.wakeUp({
-        onRoar: () => z.pose("nervous"),
+        onStand: () => z.pose("crownHide"), // Grumble gets up: Zippy hides behind the crown
+        onRoar: () => z.pose("crownEek"), // ROAR! a jolt of fright, the crown up high
         afterRoar: async () => {
           if (gen !== CQ.gen) return;
-          // quick! swap the crown back
-          z.pose("reach");
-          const over = b.itemCenter(barItem);
-          await z.swingTo({ x: over.x, y: over.y - 95 }, 560);
+          // "here, take it back!": the crown jumps out of his hands back onto the pan, and the bar goes
+          // home to its stand
+          z.pose("crownSorry");
+          await R.wait(420);
           if (gen !== CQ.gen) return;
-          z.pose("grab");
           const slot = b.itemCenter(barItem);
-          const hand = z.holdPoint();
+          const hand = z.holdPoint(); // the crown in his hands, in this frame
+          const crownFrom = z.heldCrownW() / crownPx();
+          const bar = CQ.Give.heldBar || CQ.bars.get(v);
+          z.pose("shock");
           z.setHeld(null);
           barItem.el.style.visibility = "hidden";
+          CQ.audio.play("zippy.eek");
           await Promise.all([
-            CQ.fly(CQ.world.drag, CQ.crownFlyer(crownPx()), hand, slot, { duration: 560, arc: 0, arcX: -44 }),
-            CQ.fly(CQ.world.drag, CQ.barFlyer(v, barPx()), slot, hand, { duration: 560, arc: 0, arcX: 44 }),
+            CQ.fly(CQ.world.drag, CQ.crownFlyer(crownPx()), hand, slot, { duration: 560, arc: -110, scaleFrom: crownFrom }),
+            bar ? CQ.Give.tossBack(bar, { tried: true, from: slot, scaleFrom: barPx() / CQ.L.BAR_W }) : null,
           ]);
           if (gen !== CQ.gen) return;
           const at = b.items.left.indexOf(barItem);
           b.removeItem(barItem);
           b.addItem("left", { type: "crown" }, at);
-          z.setHeld({ type: "bar", value: v });
           b.evaluate();
-          // ...and hide up the vine while Grumble looks around
+          // ...and he swings away!
           z.pose("hide");
-          await z.moveTo(6, z.baseLen - 80, 560, CQ.ease.out);
+          CQ.audio.play("slide.up");
+          await z.swingAway();
         },
+        beforeSleep: () => CQ.veil.cover(700), // a little later...
       })
     );
-    z.pose("phew");
-    CQ.audio.play("zippy.phew");
-    z.home(800);
-    await R.when(z.say(C().zippy.phew, { keepPose: true }));
+    await R.wait(350);
+    CQ.veil.reveal(900);
+    await R.wait(1200);
+    // only his smiling head leans out from behind the tree: is Grumble asleep? Then he swings back in.
+    await sneakBack({ comic: "Hmm?", pose: "cheeky", sound: "slide.down", giggle: true });
+    z.pose("idle"); // and straight on to the hint
   }
 
   // ------------------------------------------------------------------ INTRO
@@ -447,7 +533,9 @@
     coin.el.classList.add("demo-pop");
     CQ.audio.play("coin.clink", { index: 3 });
     const unit = worldLabel(C().ui.unit, ccoin.x + 140, ccoin.y - 90, "unit-tag");
+    look([coin.el, unit], { pad: 30 });
     await say("intro-6", { advance: "auto", pause: 700 });
+    look(null);
     coin.el.classList.remove("demo-pop");
     removeLabel(unit);
     CQ.ui.skip.classList.add("hidden");
@@ -474,10 +562,12 @@
     const b = CQ.balance;
     if (key !== "L1") poof();
     b.counting = true;
+    if (key === "L1") look(barEls, { pad: 20 }); // which bar? these!
     for (let i = 0; i < L.intro.length; i++) await say(L.intro[i], { advance: i < L.intro.length - 1 ? "auto" : "none" });
     if (key === "L1") {
+      CQ.focus.offAfter(2400); // before the hand shows how
       const v = CQ.bars.list[0].value;
-      setTimeout(() => demoGive(v), 2300); // after the bars have shown they can be picked up
+      setTimeout(() => demoGive(v), 2700); // after the bars have shown they can be picked up
     }
     let attempts = 0;
     for (;;) {
@@ -490,8 +580,7 @@
         await celebrate("swap-correct", { n: L.crown });
         return;
       }
-      await wakeAndUndo(v, barItem);
-      await tossTried(v);
+      await wakeAndUndo(v, barItem); // the bar is back on its stand, marked Tried
       attempts++;
       CQ.track("hint_shown", { level: L.n, tier: attempts >= 2 ? 2 : 1 });
       if (attempts === 1) {
@@ -499,7 +588,9 @@
         say("swap-give", { advance: "none" });
       } else {
         say("swap-hint2", { vars: { n: L.crown }, advance: "none" });
+        look(panEls("right"));
         await R.when(b.autoCount("right"));
+        look(null);
         CQ.bars.glow(L.crown, true);
       }
       b.counting = true;
@@ -513,36 +604,45 @@
     poof();
     z.pose("curious");
     b.glowItems("left", (it) => it.type === "coin", true);
+    look(panEls("left"));
     await say("l4-1");
     b.clearGlow();
     b.glowItems("left");
     b.glowItems("right");
+    look(bothPans);
     await say("l4-2");
     b.clearGlow();
     glowCrown(true);
     z.pose("idle");
-    await say("l4-3");
     const crown = b.find("left", (it) => it.type === "crown");
     const cc = b.itemCenter(crown);
+    look([crown.el]);
+    await say("l4-3");
     const q = worldLabel("?", cc.x, cc.y - 120, "qmark");
+    look([crown.el, q]);
     await say("l4-4");
     removeLabel(q);
     glowCrown(false);
     const under = b.ends.left.y + CQ.BAL.PAN_BOTTOM * CQ.BAL.S + 50; // just below the left pan
     let lx = worldLabel('<i class="v">x</i>', cc.x, under, "xlabel");
+    look([crown.el, lx]);
     await say("l4-5");
     removeLabel(lx);
     lx = worldLabel(CQ.rich("x + 2"), b.ends.left.x, under, "xlabel wide");
+    const lx2 = lx;
     b.glowItems("left");
+    look(() => panEls("left")().concat(lx2));
     await say("l4-6");
     b.clearGlow();
     const r7 = worldLabel("7", b.ends.right.x, under, "xlabel seven");
     b.glowItems("right");
+    look(() => panEls("right")().concat(r7));
     await say("l4-7");
     b.clearGlow();
     // key moment: the scene turns into the equation
     const strip = CQ.el("div", "eq-strip", CQ.ui.layer, `<span class="es a">${CQ.rich("x + 2")}</span><span class="es b">=</span><span class="es c">7</span>`);
     await R.wait(30);
+    look(strip, { pad: 18 });
     const slots = ["a", "b", "c"].map((k) => strip.querySelector(".es." + k));
     const targets = slots.map((s) => CQ.centerOf(s));
     const srcs = [CQ.centerOf(lx), CQ.camera.toScreen({ x: CQ.L.BX, y: CQ.L.PIVOT_Y }), CQ.centerOf(r7)];
@@ -561,6 +661,7 @@
     CQ.fx.sparkle(CQ.ui.layer, targets[1].x, targets[1].y, 12, 200);
     CQ.audio.play("correct");
     await say("l4-8", { hold: 2600 }); // key moment: the scene became an equation
+    look(null);
     await R.when(CQ.anim(strip, [{ opacity: 1 }, { opacity: 0, transform: "translate(-50%,-50%) scale(.4) translateY(-500px)" }], { duration: 600, essential: true }));
     strip.remove();
     b.setSign("x + 2 = 7");
@@ -605,15 +706,19 @@
     };
     await check(4, "l4-25", "l4-25-tap");
     CQ.grumble.stir();
+    look(cp.el, { pad: 16 });
     await say("l4-26");
+    look(null);
     b.clearCounts();
     await R.when(cp.hide());
     CQ.bars.setVisible(true);
     await tossTried(4);
     await check(5, "l4-27", "l4-27-tap");
+    look(cp.el, { pad: 16 });
     await say("l4-28", { advance: "auto" });
     CQ.gems.collect("solution", { x: 1340, y: 420 });
     await say("l4-29");
+    look(null);
     b.clearCounts();
     await R.when(cp.hide());
     CQ.bars.setVisible(true);
@@ -679,13 +784,17 @@
     if (!eq) {
       CQ.grumble.stir();
       await R.when(z.say(C().zippy.checked));
+      look(cp.el, { pad: 16 });
       for (const id of o.notLines || ["check-not"]) await say(id, { vars });
+      look(null);
       await R.when(cp.hide());
       CQ.bars.setVisible(true);
       await tossTried(v);
       return false;
     }
+    if (o.yesLines && o.yesLines.length) look(cp.el, { pad: 16 });
     for (const id of o.yesLines || []) await say(id, { vars });
+    look(null);
     await R.when(cp.hide());
     CQ.bars.setVisible(true);
     return true;
@@ -938,7 +1047,9 @@
     await say("l8-1", { advance: "auto" });
     b.glowItems("left");
     b.glowItems("right");
+    look(bothPans);
     await say("l8-2");
+    look(null);
     b.clearGlow();
     z.pose("idle");
     const bubbles = await trialThoughts();
@@ -949,19 +1060,24 @@
     await R.when(z.say(C().zippy.idea, { keepPose: true }));
     z.pose("idle");
     glowCrown(true);
+    look(crownEls);
     await say("l8-4", { advance: "auto" });
     glowCrown(false);
     // First, split 23 into 8 and 15.
     b.setSign(null);
+    look(panEls("right"));
     await splitBar("right", b.items.right[0], [8, 15]);
     await R.when(eb.show("x + 8 = 8 + 15"));
     await say("l8-5");
     // There are 8 units beside the crown…
     b.glowItems("left", (it) => it.type === "bar");
+    look(leftBarEls);
     await say("l8-6");
     // …so remove 8 from both sides.
     b.glowItems("right", (it) => it.value === 8);
+    look(bothPans);
     await say("l8-7");
+    look(null);
     b.clearGlow();
     const ledges = makeLedges();
     eb.set("x + 8 {{− 8}} = 8 + 15 {{− 8}}");
@@ -975,7 +1091,9 @@
     // Now the crown balances 15 units. So, x = 15.
     eb.set("x = 15", { final: true });
     CQ.audio.play("correct");
+    look(eb.el, { pad: 16 });
     await say("l8-9", { hold: 2600 }); // key moment: x = 15
+    look(null);
     await R.when(eb.hide());
     // Check it in the original equation (the number flies out of the crown: the crown is x).
     await say("l8-10", { advance: "auto" });
@@ -1014,6 +1132,7 @@
       return worldLabel('<i class="v">x</i>', c.x, c.y - 80, "xlabel small");
     });
     glowCrown(true);
+    look(() => crownEls().concat(xs));
     await R.when(eb.show("x + x + 4 = 18"));
     z.pose("idle");
     await say("l9-1");
@@ -1022,19 +1141,23 @@
     const c0 = b.itemCenter(crowns[0]);
     const c1 = b.itemCenter(crowns[1]);
     const two = worldLabel(CQ.rich("2x"), (c0.x + c1.x) / 2, c0.y - 96, "xlabel");
+    look(() => crownEls().concat(two));
     eb.set("2x + 4 = 18");
     await say("l9-2");
     removeLabel(two);
     glowCrown(false);
     // First, let's remove these 4 units.
     b.glowItems("left", (it) => it.type === "bar");
+    look(leftBarEls);
     eb.set("2x <<+ 4>> = 18");
     await say("l9-3");
     b.clearGlow();
     // Split 18 into 4 and 14.
+    look(panEls("right"));
     await splitBar("right", b.items.right[0], [4, 14]);
     eb.set("2x + 4 = 4 + 14");
     await say("l9-4");
+    look(null);
     // Remove 4 from both sides.
     const ledges = makeLedges();
     eb.set("2x + 4 {{− 4}} = 4 + 14 {{− 4}}");
@@ -1054,8 +1177,10 @@
     const d2 = worldLabel("÷ 2", rp.x, rp.y - 150, "xlabel half");
     glowCrown(true);
     b.glowItems("right");
+    look(() => bothPans().concat(d1, d2));
     eb.set("[[2x|2]] = [[14|2]]");
     await say("l9-7");
+    look(null);
     b.clearGlow();
     removeLabel(d1);
     removeLabel(d2);
@@ -1068,7 +1193,9 @@
     CQ.audio.play("correct");
     glowCrown(true);
     b.glowItems("right", (it) => !it.ghost);
+    look(eb.el, { pad: 16 });
     await say("l9-8", { hold: 2600 }); // key moment: x = 7
+    look(null);
     b.clearGlow();
     await R.when(eb.hide());
     // Check in the original equation: everything goes back, then 7 goes in for x.
