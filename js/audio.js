@@ -2,7 +2,7 @@
  * Zippy's Crown Quest - audio.js
  * =====================================================================
  * The complete sound system. Every sound effect, the three music loops and
- * the temple ambience are synthesised live with the Web Audio API; voice
+ * the jungle ambience are synthesised live with the Web Audio API; voice
  * lines use the Web Speech API. The game sounds complete with ZERO audio
  * files, and nothing is ever fetched (works when opened from file://).
  *
@@ -14,7 +14,7 @@
  *   CQAudio.isEnabled(kind)        -> boolean
  *   CQAudio.play(cue, opts)        opts { volume 0..2, pitch x, index int }
  *   CQAudio.music(name)            'title' | 'game' | 'finale' | null
- *   CQAudio.ambience(on)           quiet torch crackle + water drips
+ *   CQAudio.ambience(on)           a soft breeze + distant birds
  *   CQAudio.duck(on)               music bus to 20 %
  *   CQAudio.speak(text, opts)      -> Promise<{spoken}>; opts { who, id }
  *   CQAudio.stopSpeech()
@@ -781,6 +781,17 @@
     return 1.0;
   });
 
+  cue('alarm', function (ctx, dest, t, o) { // the treasure room's alarm bell: two quick "brrring"s
+    var p = o.pitch;
+    for (var k = 0; k < 2; k++) {
+      var t0 = t + k * 0.55;
+      for (var i = 0; i < 10; i++) { // the hammer strikes the bell about 22 times a second
+        partials(ctx, dest, t0 + i * 0.045, 1480 * p, [[1, 1, 0.24], [2.76, 0.42, 0.12], [5.4, 0.18, 0.06]], 0.13 * (1 - i / 16), 0.001);
+      }
+    }
+    return 1.2;
+  });
+
   cue('thought.pop', function (ctx, dest, t, o) { // soft bubble "bloop"
     var p = o.pitch, g = G(ctx, 0, dest);
     env(g.gain, t, [[0, 0], [0.006, 0.4], [0.08, 0.28], [0.2, 0]]);
@@ -1115,7 +1126,7 @@
    * ================================================================== */
   var CAP = { // max simultaneous voices per cue (default 3); oldest is faded out
     'coin.clink': 6, 'ui.tap': 4, 'ui.pop': 4, 'grumble.snoreIn': 2, 'grumble.snoreOut': 2,
-    'grumble.roar': 1, 'grumble.yawn': 1, 'zippy.laugh': 2, 'fanfare': 1, 'tension': 1
+    'grumble.roar': 1, 'grumble.yawn': 1, 'zippy.laugh': 2, 'fanfare': 1, 'tension': 1, 'alarm': 1
   };
   var active = {};   // cue -> [voice]
   var lastPlay = {}; // cue|index -> ctx time (drops accidental double triggers)
@@ -1236,7 +1247,7 @@
   }
 
   /* ================================================================== *
-   * 7. Music control (crossfades) and the temple ambience
+   * 7. Music control (crossfades) and the jungle ambience
    * ================================================================== */
   var players = [], curPlayer = null, wantMusic = null, wantAmb = false, amb = null;
 
@@ -1264,21 +1275,21 @@
       if (amb.stopAt === null) return;
       disposeAmb(); // was fading out: replace it
     }
-    var t = ctx.currentTime, a = { stopAt: null, nextPop: t + 0.4, nextDrip: t + 1.5 + Math.random() * 3 };
+    var t = ctx.currentTime, a = { stopAt: null, nextChirp: t + 1 + Math.random() * 2, nextCall: t + 4 + Math.random() * 5 };
     var bag = hold(function () {
       a.out = G(ctx, 0, sfxBus);
       a.out.gain.setValueAtTime(0, t);
-      a.out.gain.linearRampToValueAtTime(LV.amb, t + 1.2);
-      var src = NL(ctx, t, null), bedG = G(ctx, 0.22, a.out); // one looping noise feeds the flame bed...
-      src.connect(F(ctx, 'lowpass', 380, null, bedG));
-      OL(ctx, 'sine', 0.37, t, G(ctx, 0.09, bedG.gain)); // ...with a slow flicker
-      a.crG = G(ctx, 0, a.out); // ...and the crackle pops (gain spikes)
-      src.connect(F(ctx, 'bandpass', 2800, 0.8, a.crG));
-      a.dl = track(ctx.createDelay(1)); // little cave echo for the drips
-      a.dl.delayTime.value = 0.23;
-      var dlp = F(ctx, 'lowpass', 2200, null, G(ctx, 0.5, a.out));
+      a.out.gain.linearRampToValueAtTime(LV.amb, t + 1.5);
+      // a soft breeze in the leaves: band-limited noise, rising and falling slowly
+      var src = NL(ctx, t, null), bedG = G(ctx, 0.1, a.out);
+      src.connect(F(ctx, 'highpass', 220, null, F(ctx, 'lowpass', 900, null, bedG)));
+      OL(ctx, 'sine', 0.09, t, G(ctx, 0.055, bedG.gain)); // slow gusts
+      OL(ctx, 'sine', 0.23, t, G(ctx, 0.025, bedG.gain));
+      a.dl = track(ctx.createDelay(1)); // a short, soft echo off the trees for the birds
+      a.dl.delayTime.value = 0.17;
+      var dlp = F(ctx, 'lowpass', 3000, null, G(ctx, 0.3, a.out));
       a.dl.connect(dlp);
-      dlp.connect(G(ctx, 0.35, a.dl));
+      dlp.connect(G(ctx, 0.25, a.dl));
     });
     a.nodes = bag.nodes;
     a.srcs = bag.srcs;
@@ -1298,32 +1309,47 @@
     disposeAll(amb.nodes);
     amb = null;
   }
-  function drip(t) { // pitch-dropping sine blip + echo
-    var f = 1100 + Math.random() * 700, a = amb;
+  function chirp(t) { // a small bird nearby: two to four quick "tweet"s
+    var a = amb, base = 2600 + Math.random() * 1600, n = 2 + ((Math.random() * 3) | 0);
     collect(function () {
-      var g = G(ctx, 0, a.out);
-      g.connect(a.dl);
-      ad(g.gain, t, 0.002, 0.18, 0.1);
-      glide(O(ctx, 'sine', f, t, t + 0.14, g).frequency, t, [[0, f], [0.05, f * 0.45]]);
+      for (var i = 0; i < n; i++) {
+        var tt = t + i * (0.1 + Math.random() * 0.05), f = base * (0.94 + Math.random() * 0.12);
+        var g = G(ctx, 0, a.out);
+        g.connect(a.dl);
+        ad(g.gain, tt, 0.005, 0.07, 0.06);
+        glide(O(ctx, 'sine', f, tt, tt + 0.09, g).frequency, tt, [[0, f * 0.8], [0.025, f * 1.12], [0.07, f * 0.96]]);
+      }
+    });
+  }
+  function call(t) { // a bird further away: a soft two-note whistle, "too-wee"
+    var a = amb, f = 1300 + Math.random() * 500, notes = [[0, f, f * 1.06], [0.3, f * 1.22, f * 1.3]];
+    collect(function () {
+      for (var i = 0; i < notes.length; i++) {
+        var tt = t + notes[i][0], g = G(ctx, 0, a.out);
+        g.connect(a.dl);
+        env(g.gain, tt, [[0, 0], [0.04, 0.05], [0.17, 0.04], [0.24, 0]]);
+        var o = O(ctx, 'sine', notes[i][1], tt, tt + 0.26, g);
+        glide(o.frequency, tt, [[0, notes[i][1]], [0.2, notes[i][2]]]);
+        vib(ctx, o.frequency, tt, tt + 0.26, 16, notes[i][1] * 0.01);
+      }
     });
   }
   function ambTick(now, horizon) {
     if (amb.stopAt !== null) { if (now > amb.stopAt + 0.1) disposeAmb(); return; }
     if (!enabled.sfx) { // skip work while effects are muted
-      amb.nextPop = Math.max(amb.nextPop, horizon);
-      amb.nextDrip = Math.max(amb.nextDrip, horizon + 2);
+      amb.nextChirp = Math.max(amb.nextChirp, horizon + 2);
+      amb.nextCall = Math.max(amb.nextCall, horizon + 4);
       return;
     }
-    if (amb.nextPop < now - 0.2) amb.nextPop = now + 0.05;
-    while (amb.nextPop < horizon) { // torch crackle: single pops and little clusters
-      var t = amb.nextPop, cnt = Math.random() < 0.35 ? 2 + ((Math.random() * 2) | 0) : 1;
-      for (var i = 0; i < cnt; i++) spike(amb.crG.gain, t + i * 0.022, 0.1 + Math.random() * 0.3, 0.003 + Math.random() * 0.005);
-      amb.nextPop = t + cnt * 0.022 + 0.15 + Math.pow(Math.random(), 2) * 1.4;
+    if (amb.nextChirp < now - 0.2) amb.nextChirp = now + 1;
+    while (amb.nextChirp < horizon) {
+      chirp(amb.nextChirp);
+      amb.nextChirp += 4 + Math.random() * 7;
     }
-    if (amb.nextDrip < now - 0.2) amb.nextDrip = now + 1;
-    while (amb.nextDrip < horizon) {
-      drip(amb.nextDrip);
-      amb.nextDrip += 3.5 + Math.random() * 6;
+    if (amb.nextCall < now - 0.2) amb.nextCall = now + 2;
+    while (amb.nextCall < horizon) {
+      call(amb.nextCall);
+      amb.nextCall += 9 + Math.random() * 12;
     }
   }
   function ambience(on) {

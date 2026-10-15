@@ -15,19 +15,23 @@
   // Scene layout in stage units (the stage is always 1920 x 1080).
   CQ.L = {
     BX: 1085, // balance centre x
-    PIVOT_Y: 330, // beam pivot y
+    PIVOT_Y: 456, // beam pivot y (the base stands well onto the paving)
     GRUMBLE: { x: 262, y: 950, scale: 1.35 },
     // Zippy hangs by his tail from a tree root that comes down from above the screen.
     // (ax, ay) = where the root swings from (off-screen), len = root length to his tail.
     ZIPPY: { ax: 420, ay: -120, len: 236, scale: 0.72 },
     HELD_BAR_W: 146, // a gold bar in Zippy's hands
-    PEDESTAL_TOP: 968,
-    BAR_W: 220,
+    BAR_BASE: 952, // where the gold bars rest (on the top face of their stone stands)
+    BAR_W: 194, // a gold bar on its stand
+    STAND_W: 246, // the stone stand under each gold bar (props/brick-stand.png)
+    STAND_REST: 44 / 346, // where a bar rests on the stand's top face, as a part of the stand's height
     // sizes of things on the pans, in balance units (the whole balance is drawn at BAL.S)
     PAN_BAR_W: 150,
     CROWN_W: 160,
     COIN_W: 60,
   };
+  // Crowns to collect: one per level, two in Level 9 (shown as the crown row under the level sign).
+  CQ.CROWNS_TOTAL = Object.values(window.CONTENT.levels).reduce((n, l) => n + (l.crowns || 1), 0);
 
   // ------------------------------------------------------------------ DOM + text helpers
   CQ.el = function (tag, cls, parent, html) {
@@ -67,8 +71,13 @@
   const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   // Rich text for captions, bubbles and equations: the variable x in italic serif, real minus signs,
   // superscript powers and a drawn ≠ sign. "x" inside ordinary words (Next, box…) is left alone.
+  // Maths marks: [[a|b]] is a fraction (a over b), {{…}} the blue "same on both sides" highlight,
+  // <<…>> a red highlight.
   CQ.rich = function (s) {
     return esc(s)
+      .replace(/\[\[(.+?)\|(.+?)\]\]/g, '<span class="frac"><span class="fn">$1</span><span class="fd">$2</span></span>')
+      .replace(/\{\{(.+?)\}\}/g, '<span class="same">$1</span>')
+      .replace(/&lt;&lt;(.+?)&gt;&gt;/g, '<span class="hot">$1</span>')
       .replace(/ - /g, " − ")
       .replace(/\^(\d)/g, "<sup>$1</sup>")
       .replace(/²/g, "<sup>2</sup>")
@@ -78,9 +87,15 @@
   // Text for the speech engine: read maths the way a teacher would say it.
   CQ.speakable = function (s) {
     return String(s)
+      .replace(/\[\[(.+?)\|(.+?)\]\]/g, "$1 divided by $2")
+      .replace(/\{\{|\}\}|<<|>>/g, "")
       .replace(/(\d)x(\^2|²)/g, "$1 x squared")
       .replace(/x(\^2|²)/g, "x squared")
       .replace(/(\d)x\b/g, "$1 x")
+      .replace(/(\d)\(/g, "$1 times (")
+      .replace(/ ?× ?/g, " times ")
+      .replace(/ ?÷ ?/g, " divided by ")
+      .replace(/(^|[\s(=])[−-](\d)/g, "$1negative $2")
       .replace(/≠/g, " is not equal to ")
       .replace(/ = /g, " equals ")
       .replace(/ =$/g, " equals")
@@ -90,6 +105,11 @@
       .replace(/\bRHS\b/g, "R H S")
       .replace(/…/g, "... ")
       .replace(/—/g, ", ");
+  };
+  // A number as children write it: a real minus sign, and at most two decimals (12 ÷ 5 = 2.4).
+  CQ.num = function (n) {
+    const r = Math.round(n * 100) / 100;
+    return (r < 0 ? "−" : "") + String(Math.abs(r));
   };
 
   // ------------------------------------------------------------------ maths + easing
@@ -249,6 +269,27 @@
     wait(ms) {
       return this.when(CQ.sleep(ms));
     },
+    // Like wait(), but the clock only runs while the game is on screen and not paused (menu or Word
+    // Treasure open), and while busy() is false. Used for "time to listen and look" before the story
+    // moves on by itself, so a child never misses a screen.
+    hold(ms, busy) {
+      const t = this.token;
+      return this.when(
+        new Promise((res) => {
+          let left = ms;
+          if (!(left > 0)) return res();
+          const off = CQ.ticker.add((dt) => {
+            if (t.cancelled) return off();
+            if (this.gate || document.hidden || (busy && busy())) return;
+            left -= dt * 1000;
+            if (left <= 0) {
+              off();
+              res();
+            }
+          });
+        })
+      );
+    },
     onCancel(fn) {
       if (this.token.cancelled) fn();
       else this.token.fns.add(fn);
@@ -352,6 +393,7 @@
     opts = opts || {};
     const dur = opts.duration || 600;
     const arc = opts.arc != null ? opts.arc : -120;
+    const arcX = opts.arcX || 0; // a sideways curve, so two things swapping places pass each other
     el.classList.add("flyer");
     layer.appendChild(el);
     CQ.pos(el, from.x, from.y);
@@ -364,7 +406,7 @@
       const t = i / 14;
       const e = CQ.ease.inOut(t);
       kf.push({
-        transform: `translate(-50%,-50%) translate(${dx * e}px, ${dy * e + arc * 4 * t * (1 - t)}px) scale(${
+        transform: `translate(-50%,-50%) translate(${dx * e + arcX * 4 * t * (1 - t)}px, ${dy * e + arc * 4 * t * (1 - t)}px) scale(${
           s0 + (s1 - s0) * e
         }) rotate(${(opts.spin || 0) * e}deg)`,
         opacity: opts.fadeOut && i === 14 ? 0 : 1,

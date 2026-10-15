@@ -23,17 +23,123 @@
     check: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 25l9 9 19-20" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
   CQ.ICON = ICON;
-  CQ.gemSVG = (color, size) => {
-    const s = size || 64;
-    return `<svg class="gem" viewBox="0 0 64 56" width="${s}" height="${(s * 56) / 64}" aria-hidden="true">
-      <polygon points="14,3 50,3 61,18 32,53 3,18" fill="${color}" stroke="#3a2a10" stroke-width="3" stroke-linejoin="round"/>
-      <polygon points="14,3 22,18 32,3" fill="#fff" opacity=".45"/><polygon points="32,3 42,18 50,3" fill="#fff" opacity=".22"/>
-      <polygon points="3,18 22,18 32,53" fill="#000" opacity=".1"/><polygon points="42,18 61,18 32,53" fill="#000" opacity=".22"/>
-      <polyline points="3,18 61,18" stroke="#3a2a10" stroke-width="2" fill="none" opacity=".45"/>
-      <polyline points="22,18 32,53 42,18" stroke="#3a2a10" stroke-width="2" fill="none" opacity=".3"/></svg>`;
+  // A gem from elements.png, picked by a word's colour (see CONTENT.words).
+  const GEM_BY_COLOR = {
+    "#F2C230": "gemYellow",
+    "#F08A24": "gemOrange",
+    "#9B5DE5": "gemPurple",
+    "#2BB673": "gemGreen",
+    "#1FA3A3": "gemTeal",
+    "#D9971E": "gemAmber",
+    "#3D8BFD": "gemBlue",
+    "#E5484D": "gemRed",
   };
-  const HAND_SVG =
-    '<svg viewBox="0 0 100 124" width="118" height="146" aria-hidden="true"><path d="M38 9c0-7 11-7 11 0v39h3v-9c0-7 11-7 11 0v11h3v-7c0-7 11-7 11 0v9h2v-3c0-7 11-7 11 0v29c0 23-15 38-36 38h-6c-15 0-23-8-29-19L5 72c-3-6 4-12 10-6l9 10z" fill="#fff" stroke="#1B3A44" stroke-width="5" stroke-linejoin="round"/><path d="M52 50v14M66 52v12M79 56v9" stroke="#1B3A44" stroke-width="3" stroke-linecap="round" opacity=".35"/></svg>';
+  CQ.gem = (color, size) => {
+    const key = GEM_BY_COLOR[String(color).toUpperCase()] || "gemBlue";
+    return `<img class="gem" src="${IMAGES[key].src}" alt="" draggable="false" style="width:${size || 64}px">`;
+  };
+
+  // ------------------------------------------------------------------ stretchable art (elements.png)
+  // Panels, speech bubbles, the notebook scroll and the wooden buttons stretch pieces of
+  // elements.png. styles.css says which piece and where to cut it (border-image), but browsers
+  // paint the nine parts separately and thin seams show between them on a scaled stage. So each
+  // one is repainted into a single canvas behind the element, with the parts overlapping by a
+  // pixel, and again whenever the element changes size.
+  const PATCHED = ".caption, .check-panel, .eq-board, .eq-strip, .eq-sign, .gem-pop, .panel, .board, .idea-card, .bubble, .scroll, .btn-wood";
+  const patchImgs = {};
+  const four = (v) => [v[0], v.length > 1 ? v[1] : v[0], v.length > 2 ? v[2] : v[0], v.length > 3 ? v[3] : v.length > 1 ? v[1] : v[0]]; // top right bottom left
+  const patchRO = typeof ResizeObserver === "function" ? new ResizeObserver((list) => list.forEach((e) => paintPatch(e.target))) : null;
+  function readPatch(el) {
+    const cs = getComputedStyle(el);
+    const m = /url\(["']?(.*?)["']?\)/.exec(cs.borderImageSource || "");
+    if (!m) return null;
+    const border = [cs.borderTopWidth, cs.borderRightWidth, cs.borderBottomWidth, cs.borderLeftWidth].map(parseFloat);
+    const toks = cs.borderImageSlice.trim().split(/\s+/);
+    const slice = four(toks.filter((t) => t !== "fill").map(parseFloat));
+    const len = (list, auto) => four(list.trim().split(/\s+/)).map((t, i) => (/px$/.test(t) ? parseFloat(t) : t === "auto" ? auto[i] : parseFloat(t) * border[i]) || 0);
+    if (!patchImgs[m[1]]) {
+      patchImgs[m[1]] = new Image();
+      patchImgs[m[1]].src = m[1];
+    }
+    return { img: patchImgs[m[1]], border, slice, fill: toks.includes("fill"), widths: len(cs.borderImageWidth, slice), outset: len(cs.borderImageOutset, [0, 0, 0, 0]) };
+  }
+  function paintPatch(el) {
+    const P = el._patch;
+    const im = P && P.img;
+    const bw = el.offsetWidth;
+    const bh = el.offsetHeight;
+    if (!P || !bw || !bh || !im.naturalWidth) return;
+    const [ot, or, ob, ol] = P.outset;
+    const W = bw + ol + or;
+    const H = bh + ot + ob;
+    const res = Math.min(3, Math.max(1, (window.devicePixelRatio || 1) * CQ.stage.scale));
+    const c = P.canvas;
+    const cw = Math.round(W * res);
+    const ch = Math.round(H * res);
+    if (c.width !== cw) c.width = cw;
+    if (c.height !== ch) c.height = ch;
+    Object.assign(c.style, { left: -(P.border[3] + ol) + "px", top: -(P.border[0] + ot) + "px", width: W + "px", height: H + "px" });
+    const g = c.getContext("2d");
+    g.clearRect(0, 0, cw, ch);
+    g.imageSmoothingQuality = "high";
+    // the CSS rule: if opposite parts don't fit, all four shrink by the same factor
+    const [dt, dr, db, dl] = P.widths;
+    const k = Math.min(1, W / Math.max(1, dl + dr), H / Math.max(1, dt + db)) * res;
+    const X = [0, Math.round(dl * k), cw - Math.round(dr * k), cw];
+    const Y = [0, Math.round(dt * k), ch - Math.round(db * k), ch];
+    const [st, sr, sb, sl] = P.slice;
+    const SX = [0, sl, im.naturalWidth - sr, im.naturalWidth];
+    const SY = [0, st, im.naturalHeight - sb, im.naturalHeight];
+    for (let r = 0; r < 3; r++)
+      for (let q = 0; q < 3; q++) {
+        if (r === 1 && q === 1 && !P.fill) continue;
+        const sw = SX[q + 1] - SX[q];
+        const sh = SY[r + 1] - SY[r];
+        const dw = X[q + 1] - X[q];
+        const dh = Y[r + 1] - Y[r];
+        // each part reaches 1px into the next one, so no gap can open between them
+        if (sw > 0 && sh > 0 && dw > 0 && dh > 0) g.drawImage(im, SX[q], SY[r], sw, sh, X[q], Y[r], dw + (q < 2), dh + (r < 2));
+      }
+  }
+  function patch(el) {
+    if (el._patch || !patchRO) return;
+    const P = readPatch(el);
+    if (!P) return;
+    el._patch = P;
+    P.canvas = CQ.el("canvas", "patch");
+    el.insertBefore(P.canvas, el.firstChild);
+    el.classList.add("patched");
+    if (getComputedStyle(el).position === "static") el.style.position = "relative";
+    el.style.borderImageSource = "none"; // the canvas paints it now; the border keeps its size
+    el.style.borderColor = "transparent";
+    if (P.img.complete) paintPatch(el);
+    else P.img.addEventListener("load", () => paintPatch(el), { once: true });
+    patchRO.observe(el);
+  }
+  CQ.patch = {
+    // Patches matching elements under root now and whenever they are added later.
+    watch(root) {
+      if (!patchRO) return; // older browsers keep the CSS border-image
+      root.querySelectorAll(PATCHED).forEach(patch);
+      new MutationObserver((muts) =>
+        muts.forEach((m) => {
+          const t = m.target;
+          // innerHTML on a patched element (the post sign, the equation board) removes its canvas
+          if (t._patch && !t._patch.canvas.isConnected) {
+            t.insertBefore(t._patch.canvas, t.firstChild);
+            paintPatch(t);
+          }
+          m.addedNodes.forEach((n) => {
+            if (n.nodeType !== 1) return;
+            if (n.matches(PATCHED)) patch(n);
+            n.querySelectorAll(PATCHED).forEach(patch);
+          });
+        })
+      ).observe(root, { childList: true, subtree: true });
+      // sharper or softer canvases after the stage is rescaled
+      window.addEventListener("resize", () => document.querySelectorAll(".patched").forEach(paintPatch));
+    },
+  };
 
   function button(cls, html, label, parent, onClick) {
     const b = CQ.el("button", cls, parent, html);
@@ -58,6 +164,7 @@
   CQ.ui = {
     build(uiLayer, overlay, modal) {
       this.layer = uiLayer;
+      CQ.patch.watch(CQ.stage.el);
       CQ.stage.el.style.setProperty("--bx", CQ.L.BX + "px");
       this.overlay = overlay;
       this.modal = modal;
@@ -72,13 +179,14 @@
       CQ.eqBoard.build(uiLayer);
       CQ.treasure.build(modal);
       CQ.menu.build(modal);
+      CQ.veil.build(CQ.stage.el);
       this.skip = button("pill skip hidden", `${C().ui.skip} ⏭`, C().ui.skip, uiLayer, () => CQ.flow && CQ.flow.skipIntro());
     },
     // Remove every transient piece of UI (used when a level or chapter starts).
     reset() {
-      CQ.caption.hide();
-      CQ.next.idle();
-      CQ.swapBtn.hide();
+      CQ.caption.hide(true);
+      CQ.next.clear();
+      CQ.swapBtn.hide(true);
       CQ.bubble.hide(true);
       CQ.spot.off(true);
       CQ.hand.stop();
@@ -91,6 +199,23 @@
     },
   };
 
+  // ------------------------------------------------------------------ veil (a soft dip to dark between chapters)
+  CQ.veil = {
+    build(stage) {
+      this.el = CQ.el("div", "veil hidden", stage);
+    },
+    cover(ms) {
+      const from = this.el.classList.contains("hidden") ? 0 : parseFloat(getComputedStyle(this.el).opacity) || 0;
+      this.el.classList.remove("hidden");
+      return CQ.anim(this.el, [{ opacity: from }, { opacity: 1 }], { duration: ms || 420, easing: "ease-in", essential: true });
+    },
+    reveal(ms) {
+      return CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: ms || 700, easing: "ease-out", essential: true }).then(() => {
+        if (getComputedStyle(this.el).opacity === "0") this.el.classList.add("hidden");
+      });
+    },
+  };
+
   // ------------------------------------------------------------------ HUD
   CQ.hud = {
     build(ui) {
@@ -100,21 +225,26 @@
       this.pips = CQ.el("div", "pips", this.el);
       this.pips.setAttribute("aria-label", "Crowns collected");
       this.pipEls = [];
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < CQ.CROWNS_TOTAL; i++) {
         const p = CQ.el("div", "pip", this.pips);
         CQ.img("crown", "", p);
         this.pipEls.push(p);
       }
-      this.bagBtn = button("wbtn hud-btn bag", CQ.gemSVG("#3D8BFD", 52) + '<span class="badge">0</span>', c.wordTreasure, this.el, () => CQ.treasure.open());
-      this.restartBtn = button("wbtn hud-btn restart", ICON.restart, "Restart level", this.el, () => CQ.flow.askRestart());
-      this.menuBtn = button("wbtn hud-btn menu", ICON.menu, "Menu", this.el, () => CQ.menu.open());
+      this.bagBtn = button("wbtn hud-btn bag", '<span class="badge">0</span>', c.wordTreasure, this.el, () => CQ.treasure.open());
+      this.restartBtn = button("wbtn hud-btn restart", "", "Restart level", this.el, () => CQ.flow.askRestart());
+      this.menuBtn = button("wbtn hud-btn menu", "", "Menu", this.el, () => CQ.menu.open());
       this.crowns = 0;
     },
     show(on) {
       this.el.classList.toggle("hidden", !on);
     },
+    // n = the level number, or "P" for the practice equations
     setLevel(n) {
-      this.sign.querySelector(".lv-num").textContent = n;
+      const practice = n === "P";
+      this.sign.querySelector(".lv-word").textContent = practice ? C().ui.practice : C().ui.level;
+      const num = this.sign.querySelector(".lv-num");
+      num.textContent = practice ? "" : n;
+      num.style.display = practice ? "none" : "";
       CQ.anim(this.sign, [{ transform: "rotate(-2deg) scale(1)" }, { transform: "rotate(2deg) scale(1.12)" }, { transform: "rotate(-2deg) scale(1)" }], {
         duration: 520,
         easing: CQ.EASE.back,
@@ -126,7 +256,7 @@
       this.pipEls.forEach((p, i) => p.classList.toggle("got", i < n));
     },
     pipCenter(i) {
-      const k = Math.min(7, Math.max(0, i));
+      const k = Math.min(CQ.CROWNS_TOTAL - 1, Math.max(0, i));
       return CQ.centerOf(this.pipEls[k]) || { x: 50 + k * 33, y: 146 };
     },
     // A crown flies from a world point into the next pip.
@@ -135,7 +265,7 @@
       const from = CQ.camera.toScreen(fromWorld);
       const to = this.pipCenter(i);
       CQ.audio.play("crown.sparkle");
-      await CQ.fly(CQ.ui.layer, CQ.crownFlyer(120), from, to, { duration: 900, arc: -200, scaleTo: 0.3, spin: 360 });
+      await CQ.fly(CQ.ui.layer, CQ.crownFlyer(120), from, to, { duration: 1250, arc: -200, scaleTo: 0.3, spin: 360 });
       this.setCrowns(i + 1);
       CQ.fx.sparkle(CQ.ui.layer, to.x, to.y, 8, 30);
       CQ.anim(this.pipEls[i], [{ transform: "scale(1)" }, { transform: "scale(1.6)" }, { transform: "scale(1)" }], { duration: 500, easing: CQ.EASE.back, keep: false });
@@ -147,18 +277,22 @@
     build(ui) {
       this.el = CQ.el("div", "caption hidden", ui);
       this.el.setAttribute("aria-live", "polite");
-      this.spk = button("spk", ICON.speaker, "Hear it again", this.el, () => this.replay());
+      this.spk = button("spk", "", "Hear it again", this.el, () => this.replay());
       this.txt = CQ.el("div", "cap-text", this.el);
       this.text = null;
+      this.busy = false; // true while the child is listening to the line again
+      this.replays = 0;
     },
     set(text, opts) {
       this.text = text;
       this.opts = opts || {};
+      this.replays++;
+      this.busy = false;
       this.el.classList.remove("hidden");
       this.txt.innerHTML = CQ.rich(text);
       this.fit();
-      CQ.anim(this.el, [{ transform: "translateY(-14px)", opacity: 0.3 }, { transform: "translateY(0)", opacity: 1 }], {
-        duration: 280,
+      CQ.anim(this.el, [{ transform: "translateY(-12px)", opacity: 0.2 }, { transform: "translateY(0)", opacity: 1 }], {
+        duration: 420,
         easing: CQ.EASE.out,
         keep: false,
       });
@@ -171,67 +305,99 @@
         this.txt.style.fontSize = fs + "px";
       }
     },
-    hide() {
-      this.el.classList.add("hidden");
+    hide(now) {
       this.text = null;
+      this.replays++;
+      this.busy = false;
+      if (now || this.el.classList.contains("hidden")) {
+        this.el.classList.add("hidden");
+        return;
+      }
+      CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, keep: false }).then(() => {
+        if (this.text === null) this.el.classList.add("hidden"); // no new line arrived meanwhile
+      });
     },
+    // 🔊 Hear it again. The story waits until the line has been heard again.
     replay() {
       if (!this.text) return;
       CQ.audio.play("ui.tap");
-      CQ.audio.speak(CQ.speakable(this.text), { who: this.opts.who || "narrator", id: this.opts.id });
+      const n = ++this.replays;
+      this.busy = true;
+      CQ.audio.speak(CQ.speakable(this.text), { who: this.opts.who || "narrator", id: this.opts.id }).then(() => {
+        if (n === this.replays) this.busy = false;
+      });
     },
   };
 
-  // Show + speak a narrator line. advance: 'next' (wait for Next), 'auto' (continue after the voice), 'none'.
+  // Show + speak a narrator line, then move on by itself once it has been heard.
+  //   advance 'hold' (default): after the voice, a pause to look at the screen (opts.hold, or sized to the line)
+  //   advance 'auto': after the voice, a short pause (opts.pause, default 450 ms), for lines that flow on
+  //   advance 'none': show + speak and return at once (an instruction while the child acts)
+  // With the voice off, the caption gets time to be read instead. The clock stops while a menu is open,
+  // the page is hidden, or the child is replaying the line (🔊). Teachers can skip ahead with → (or a
+  // presenter clicker); notebook pages also have Back. Resolves 'next', or 'back' when Back was pressed.
   CQ.say = async function (id, opts) {
     opts = opts || {};
     const text = opts.text || CQ.T(id, opts.vars);
     CQ.caption.set(text, { id, who: opts.who });
     CQ.track("step_start", { id });
-    const t0 = performance.now();
     const speech = CQ.audio.speak(CQ.speakable(text), { who: opts.who || "narrator", id });
-    const advance = opts.advance || "next";
+    const advance = opts.advance || "hold";
     if (advance === "none") return null;
-    const r = await CQ.run.when(speech);
     const words = text.split(/\s+/).length;
-    const minMs = r && r.spoken ? 300 : advance === "auto" ? 900 + words * 300 : 1500;
-    const left = minMs - (performance.now() - t0);
-    if (left > 0) await CQ.run.wait(left);
-    if (advance === "auto") {
-      await CQ.run.wait(opts.pause != null ? opts.pause : 450);
+    const busy = () => CQ.caption.busy;
+    const skip = CQ.next.listen({ back: opts.back });
+    const timeline = (async () => {
+      const t0 = performance.now();
+      const r = await speech;
+      // voice off or unavailable: time to read the caption (a replay already gave that time)
+      const heard = (r && r.spoken) || CQ.caption.busy;
+      const readMs = heard ? 300 : advance === "auto" ? 900 + words * 300 : 1000 + words * 320;
+      const left = readMs - (performance.now() - t0);
+      if (left > 0) await CQ.run.hold(left, busy);
+      const look = advance === "auto" ? (opts.pause != null ? opts.pause : 450) : opts.hold != null ? opts.hold : CQ.next.lookTime(words);
+      await CQ.run.hold(look, busy);
       return "next";
+    })();
+    timeline.catch(() => {}); // a skipped or cancelled step has nothing left to do
+    try {
+      const res = await CQ.run.when(Promise.race([skip.promise, timeline]));
+      if (res !== "next") CQ.audio.stopSpeech(); // skipped ahead or went back
+      return res === "back" ? "back" : "next";
+    } finally {
+      CQ.next.unlisten(skip.id);
     }
-    return CQ.next.wait({ back: opts.back });
   };
 
-  // ------------------------------------------------------------------ Next / Back
+  // ------------------------------------------------------------------ pacing: skip ahead (→) and Back
+  // There is no Next button: narrated screens move on by themselves (see CQ.say). The screen now on
+  // show listens here for a teacher's → / PageDown (skip ahead) and, on notebook pages, for Back.
   CQ.next = {
+    seq: 0,
     build(ui) {
-      this.btn = button("wbtn big next-btn disabled hidden", ICON.next, C().ui.next, ui, () => this.fire("next"));
-      this.backBtn = button("wbtn back-btn hidden", ICON.back, C().ui.back, ui, () => this.fire("back"));
+      this.backBtn = button("wbtn back-btn hidden", "", C().ui.back, ui, () => this.fire("back"));
       this.resolver = null;
+      this.allowBack = false;
       window.addEventListener("keydown", (e) => {
-        if (CQ.menu.isOpen || CQ.treasure.isOpen) return;
+        if (CQ.pauser.count) return; // a menu, Word Treasure or a question is open
         if (e.key === "ArrowRight" || e.key === "PageDown") this.fire("next");
         if (e.key === "ArrowLeft" || e.key === "PageUp") this.fire("back");
       });
     },
-    wait(opts) {
-      opts = opts || {};
-      this.btn.classList.remove("hidden", "disabled");
-      this.btn.classList.add("ready");
-      this.backBtn.classList.toggle("hidden", !opts.back);
-      this.allowBack = !!opts.back;
-      CQ.idle.arm(() => CQ.hand.tapAt(CQ.centerOf(this.btn)), 9000);
-      const p = new Promise((res) => {
-        this.resolver = res;
-      });
-      return CQ.run.when(p).finally(() => {
-        this.resolver = null;
-        this.idle();
-        CQ.idle.disarm();
-        CQ.hand.stop();
-      });
+    listen(opts) {
+      const id = ++this.seq;
+      this.allowBack = !!(opts && opts.back);
+      this.backBtn.classList.toggle("hidden", !this.allowBack);
+      const promise = new Promise((res) => (this.resolver = res));
+      return { id, promise };
+    },
+    unlisten(id) {
+      if (id === this.seq) this.clear(); // otherwise a newer screen is listening now
+    },
+    clear() {
+      this.resolver = null;
+      this.allowBack = false;
+      this.backBtn.classList.add("hidden");
     },
     fire(what) {
       if (!this.resolver) return;
@@ -239,16 +405,11 @@
       CQ.audio.play("ui.tap");
       const r = this.resolver;
       this.resolver = null;
-      r(what);
+      r(what === "back" ? "back" : "skip");
     },
-    idle() {
-      this.btn.classList.add("disabled");
-      this.btn.classList.remove("ready");
-      this.backBtn.classList.add("hidden");
-    },
-    show(on) {
-      this.btn.classList.toggle("hidden", !on);
-      if (!on) this.backBtn.classList.add("hidden");
+    // How long a screen stays after its line has been read, so children can look at it.
+    lookTime(words) {
+      return CQ.clamp(900 + words * 70, 1300, 2600);
     },
   };
 
@@ -265,10 +426,11 @@
       });
       this.cb = null;
       const B = CQ.BAL;
-      CQ.pos(this.el, CQ.L.BX - B.R * B.S, CQ.L.PIVOT_Y + B.PAN_BOTTOM * B.S + 95);
+      CQ.pos(this.el, CQ.L.BX - B.R * B.S, CQ.L.PIVOT_Y + B.PAN_BOTTOM * B.S + 69); // between the pan and the bars
     },
     show(cb) {
       this.cb = cb;
+      this.tok = (this.tok || 0) + 1;
       this.el.classList.remove("hidden");
       CQ.audio.play("ui.pop");
       CQ.anim(this.el, [{ transform: "translate(-50%,-50%) scale(.2)" }, { transform: "translate(-50%,-50%) scale(1)" }], {
@@ -276,9 +438,19 @@
         easing: CQ.EASE.back,
       });
     },
-    hide() {
-      this.el.classList.add("hidden");
+    hide(now) {
       this.cb = null;
+      const t = (this.tok = (this.tok || 0) + 1);
+      if (now || this.el.classList.contains("hidden")) {
+        this.el.classList.add("hidden");
+        return;
+      }
+      CQ.anim(this.el, [{ opacity: 1, transform: "translate(-50%,-50%) scale(1)" }, { opacity: 0, transform: "translate(-50%,-50%) scale(.85)" }], {
+        duration: 260,
+        keep: false,
+      }).then(() => {
+        if (t === this.tok) this.el.classList.add("hidden");
+      });
     },
     wait() {
       return CQ.run.when(new Promise((res) => this.show(res)));
@@ -319,7 +491,7 @@
         this.el.className = "bubble hidden";
         return;
       }
-      CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 200 }).then(() => {
+      CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 320 }).then(() => {
         if (!this.off) this.el.className = "bubble hidden";
       });
     },
@@ -359,50 +531,27 @@
     ).then(() => e.remove());
   };
 
-  // ------------------------------------------------------------------ comic name bursts (intro)
+  // ------------------------------------------------------------------ character name reveal (intro)
+  // Text only: the name drops in letter by letter (straight, never tilted), with a tagline under it.
   CQ.nameBurst = function (text, tag, sx, sy, theme) {
     const e = CQ.el("div", "nameburst " + theme, CQ.ui.layer);
     CQ.pos(e, sx, sy);
-    const spikes = [];
-    for (let i = 0; i < 32; i++) {
-      const a = (i / 32) * Math.PI * 2;
-      const r = i % 2 ? 210 : 290 + (i % 4 === 0 ? 20 : 0);
-      spikes.push(`${(Math.cos(a) * r * 1.5).toFixed(1)},${(Math.sin(a) * r * 0.78).toFixed(1)}`);
-    }
-    CQ.el(
-      "div",
-      "nb-burst",
-      e,
-      `<svg viewBox="-470 -260 940 520" aria-hidden="true"><defs><radialGradient id="nbg-${theme}"><stop offset="0" stop-color="var(--nb-c1)"/><stop offset="1" stop-color="var(--nb-c2)"/></radialGradient></defs><polygon points="${spikes.join(" ")}" fill="url(#nbg-${theme})" stroke="var(--nb-ink)" stroke-width="10" stroke-linejoin="round"/></svg>`
-    );
     const word = CQ.el("div", "nb-word", e);
     Array.from(text).forEach((ch, i) => {
       const s = CQ.el("span", "nb-ch", word, ch);
       s.setAttribute("data-ch", ch);
-      const rot = CQ.rand(-9, 9).toFixed(1) + "deg";
-      s.style.setProperty("--r", rot);
-      CQ.anim(
-        s,
-        [
-          { transform: `translateY(-260px) scale(.2) rotate(${CQ.rand(-80, 80)}deg)`, opacity: 0 },
-          { transform: `translateY(0) scale(1) rotate(${rot})`, opacity: 1 },
-        ],
-        { duration: 560, delay: 120 + i * 85, easing: CQ.EASE.back, essential: true }
-      ).then(() => {
-        s.style.transform = "";
-        s.classList.add("wave");
-        s.style.animationDelay = i * 0.12 + "s";
+      CQ.anim(s, [{ transform: "translateY(-180px) scale(.4)", opacity: 0 }, { transform: "translateY(0) scale(1)", opacity: 1 }], {
+        duration: 520,
+        delay: 120 + i * 85,
+        easing: CQ.EASE.back,
+        essential: true,
       });
     });
     const t = CQ.el("div", "nb-tag", e, tag);
-    CQ.anim(t, [{ transform: "translateX(-50%) scale(0)", opacity: 0 }, { transform: "translateX(-50%) scale(1)", opacity: 1 }], {
+    CQ.anim(t, [{ transform: "translateY(18px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }], {
       duration: 420,
       delay: 220 + text.length * 85,
-      easing: CQ.EASE.back,
-    });
-    CQ.anim(e, [{ transform: "translate(-50%,-50%) scale(.3)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], {
-      duration: 460,
-      easing: CQ.EASE.back,
+      easing: CQ.EASE.out,
       essential: true,
     });
     CQ.audio.play("name.burst");
@@ -455,9 +604,15 @@
     CQ.pos(e, p.x, p.y);
     if (opts.w) e.style.width = opts.w + "px";
     if (opts.h) e.style.height = opts.h + "px";
-    CQ.el("div", "th-dot d1", e);
-    CQ.el("div", "th-dot d2", e);
     const body = CQ.el("div", "th-body", e, html);
+    const T = window.GEOM.thought;
+    const im = IMAGES.thought;
+    Object.assign(body.style, {
+      left: (T.x0 / im.w) * 100 + "%",
+      top: (T.y0 / im.h) * 100 + "%",
+      width: ((T.x1 - T.x0) / im.w) * 100 + "%",
+      height: ((T.y1 - T.y0) / im.h) * 100 + "%",
+    });
     CQ.audio.play("thought.pop");
     CQ.anim(e, [{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], {
       duration: 420,
@@ -470,7 +625,7 @@
   CQ.hideThought = function (e) {
     if (!e) return Promise.resolve();
     return CQ.anim(e, [{ transform: "translate(-50%,-50%) scale(1)", opacity: 1 }, { transform: "translate(-50%,-50%) scale(.4)", opacity: 0 }], {
-      duration: 260,
+      duration: 380,
       essential: true,
     }).then(() => e.remove());
   };
@@ -478,39 +633,75 @@
   // ------------------------------------------------------------------ hand pointer demos
   CQ.hand = {
     build(ui) {
-      this.el = CQ.el("div", "hand hidden", ui, HAND_SVG);
+      this.el = CQ.el("div", "hand hidden", ui);
+      CQ.img("hand", "", this.el);
+      this.k = 104 / IMAGES.hand.w; // drawn 104 px wide
+      this.tip = { x: window.GEOM.hand.tipX * this.k, y: window.GEOM.hand.tipY * this.k };
+      this.el.style.transformOrigin = `${this.tip.x}px ${this.tip.y}px`;
       this.seq = 0;
     },
     placeAt(p) {
-      CQ.pos(this.el, p.x - 41, p.y - 4);
+      CQ.pos(this.el, p.x - this.tip.x, p.y - this.tip.y);
     },
     stop() {
       this.seq++;
       CQ.stopTween("hand");
       this.el.classList.add("hidden");
+      this.dropCarry();
+    },
+    dropCarry() {
+      if (this.carry) this.carry.remove();
+      this.carry = null;
     },
     // Show a drag gesture between two stage points (repeats a few times).
-    async drag(from, to, times) {
+    // opts.carry() makes what the hand carries along (a faded gold bar); opts.carryScale: its size at the end.
+    async drag(from, to, times, opts) {
       const id = ++this.seq;
+      this.dropCarry();
       if (!from || !to) return;
       times = times || 2;
+      opts = opts || {};
+      const alive = () => id === this.seq;
       for (let n = 0; n < times; n++) {
-        if (id !== this.seq) return;
+        if (!alive()) return;
         this.el.classList.remove("hidden");
         this.placeAt(from);
+        const c = opts.carry ? opts.carry() : null;
+        if (c) {
+          this.el.parentNode.insertBefore(c, this.el); // under the hand
+          CQ.pos(c, from.x, from.y);
+          this.carry = c;
+          CQ.anim(c, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, keep: false, essential: true });
+        }
         await CQ.anim(this.el, [{ opacity: 0, transform: "scale(1.2)" }, { opacity: 1, transform: "scale(1)" }], { duration: 300, keep: false, essential: true });
-        if (id !== this.seq) return;
-        await CQ.anim(this.el, [{ transform: "scale(1)" }, { transform: "scale(.88)" }], { duration: 180, keep: false, essential: true });
-        await CQ.tween(1000, (k) => this.placeAt({ x: CQ.lerp(from.x, to.x, k), y: CQ.lerp(from.y, to.y, k) }), CQ.ease.inOut, "hand");
-        if (id !== this.seq) return;
-        await CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 350, keep: false, essential: true });
+        if (!alive()) return;
+        await CQ.anim(this.el, [{ transform: "scale(1)" }, { transform: "scale(.88)" }], { duration: 200, keep: false, essential: true });
+        const s1 = opts.carryScale || 1;
+        await CQ.tween(
+          1350,
+          (k) => {
+            const p = { x: CQ.lerp(from.x, to.x, k), y: CQ.lerp(from.y, to.y, k) };
+            this.placeAt(p);
+            if (c) {
+              CQ.pos(c, p.x, p.y);
+              c.firstChild.style.transform = `translate(-50%,-50%) scale(${CQ.lerp(1, s1, k)})`;
+            }
+          },
+          CQ.ease.inOut,
+          "hand"
+        );
+        if (!alive()) return;
+        if (c) CQ.anim(c, [{ opacity: 1 }, { opacity: 0 }], { duration: 380, essential: true });
+        await CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 380, keep: false, essential: true });
+        this.dropCarry();
         this.el.classList.add("hidden");
-        await CQ.sleep(450);
+        await CQ.sleep(500);
       }
-      if (id === this.seq) this.el.classList.add("hidden");
+      if (alive()) this.el.classList.add("hidden");
     },
     async tapAt(p, times) {
       const id = ++this.seq;
+      this.dropCarry();
       CQ.stopTween("hand"); // an earlier drag demo must not keep moving the hand
       if (!p) return;
       times = times || 2;
@@ -555,7 +746,7 @@
         "div",
         "gem-pop",
         CQ.ui.layer,
-        `<div class="gp-label">${C().ui.newWord}</div><div class="gp-gem">${CQ.gemSVG(w.color, 96)}</div><div class="gp-word">${w.word}</div>`
+        `<div class="gp-label">${C().ui.newWord}</div><div class="gp-gem">${CQ.gem(w.color, 96)}</div><div class="gp-word">${w.word}</div>`
       );
       CQ.pos(pop, from.x, from.y);
       await CQ.anim(pop, [{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], {
@@ -565,7 +756,7 @@
       });
       CQ.fx.sparkle(CQ.ui.layer, from.x, from.y, 10, 90);
       await CQ.sleep(1300);
-      const gem = CQ.el("div", "", null, CQ.gemSVG(w.color, 80));
+      const gem = CQ.el("div", "", null, CQ.gem(w.color, 80));
       const start = CQ.centerOf(pop.querySelector(".gp-gem")) || from;
       pop.remove();
       const bag = CQ.centerOf(CQ.hud.bagBtn) || { x: 1596, y: 72 };
@@ -585,9 +776,9 @@
       const panel = CQ.el("div", "panel treasure-panel", this.el);
       panel.setAttribute("role", "dialog");
       panel.setAttribute("aria-label", C().ui.wordTreasure);
-      CQ.el("h2", "panel-title", panel, `${CQ.gemSVG("#3D8BFD", 56)} ${C().ui.wordTreasure}`);
+      CQ.el("h2", "panel-title", panel, `<img class="pt-chest" src="${IMAGES.chestOpen.src}" alt="" draggable="false"> ${C().ui.wordTreasure}`);
       this.list = CQ.el("div", "word-grid", panel);
-      button("wbtn close-btn", ICON.close, C().ui.close, panel, () => this.close());
+      button("wbtn close-btn", "", C().ui.close, panel, () => this.close());
       this.isOpen = false;
     },
     cards(container, ids, animate) {
@@ -602,7 +793,7 @@
           "div",
           "word-card",
           container,
-          `<div class="wc-gem">${CQ.gemSVG(w.color, 62)}</div><div class="wc-text"><div class="wc-word" style="--c:${w.color}">${w.word}</div><div class="wc-meaning">${CQ.rich(
+          `<div class="wc-gem">${CQ.gem(w.color, 62)}</div><div class="wc-text"><div class="wc-word" style="--c:${w.color}">${w.word}</div><div class="wc-meaning">${CQ.rich(
             w.meaning
           )}</div></div><div class="wc-ex">${CQ.rich(w.example)}</div>`
         );
@@ -611,6 +802,7 @@
             duration: 420,
             delay: i * 260,
             easing: CQ.EASE.back,
+            keep: false,
           });
         return c;
       });
@@ -704,10 +896,10 @@
       C().chapters.forEach((ch, i) => {
         button("chapter", `<span class="ch-n">${i + 1}</span><span class="ch-t">${ch.title}</span><span class="ch-s">${ch.sub}</span>`, ch.title, grid, () => {
           this.close();
-          CQ.flow.goto(ch.id);
+          CQ.flow.chapter(ch.id);
         });
       });
-      button("wbtn close-btn", ICON.close, C().ui.close, panel, () => this.close());
+      button("wbtn close-btn", "", C().ui.close, panel, () => this.close());
       this.isOpen = false;
       window.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
@@ -760,6 +952,74 @@
     });
   };
 
+  // ------------------------------------------------------------------ number picker
+  // The child taps a dashed blank, then picks one of three number tiles. Shared by the Check panel
+  // and the practice board. Resolves with the number of misses once the right tile is picked.
+  CQ.fillBlank = function (b, v) {
+    b.textContent = CQ.num(v);
+    b.classList.add("filled");
+    b.classList.remove("glow");
+    CQ.anim(b, [{ transform: "scale(1.4)" }, { transform: "scale(1)" }], { duration: 360, easing: CQ.EASE.back, keep: false });
+  };
+  CQ.pickNumber = function (b, host, options, correct, onMiss) {
+    let picker = host.querySelector(":scope > .cp-picker");
+    if (!picker) picker = CQ.el("div", "cp-picker hidden", host);
+    let misses = 0;
+    let resolve;
+    b.classList.add("glow");
+    const pick = (v, chip) => {
+      if (v === correct) {
+        picker.classList.add("hidden");
+        CQ.fillBlank(b, v);
+        CQ.audio.play("correct");
+        b.onclick = null;
+        CQ.idle.disarm();
+        CQ.hand.stop();
+        resolve(misses);
+        return;
+      }
+      misses++;
+      CQ.track("answer", { step: b.dataset.k || "pick", choice: v, correct: false, attempt: misses });
+      CQ.audio.play("tryagain");
+      chip.classList.add("wrong");
+      CQ.anim(chip, [{ transform: "translateX(0)" }, { transform: "translateX(-12px)" }, { transform: "translateX(12px)" }, { transform: "translateX(0)" }], {
+        duration: 300,
+        keep: false,
+      });
+      if (onMiss) onMiss(misses);
+      if (misses >= 2) picker.querySelectorAll(".chip").forEach((c) => c.num === correct && c.classList.add("glow"));
+    };
+    const open = () => {
+      CQ.audio.play("ui.pop");
+      picker.innerHTML = "";
+      picker.classList.remove("hidden");
+      const br = b.getBoundingClientRect();
+      const pr = host.getBoundingClientRect();
+      const s = CQ.stage.scale;
+      picker.style.left = (br.left + br.width / 2 - pr.left) / s + "px";
+      picker.style.top = (br.top - pr.top) / s - 20 + "px";
+      options.forEach((v) => {
+        const chip = button("chip", CQ.num(v), CQ.num(v), picker, () => pick(v, chip));
+        chip.num = v; // (a button's own .value is always text)
+        if (misses >= 2 && v === correct) chip.classList.add("glow");
+      });
+    };
+    b.onclick = (e) => {
+      e.stopPropagation();
+      CQ.hand.stop();
+      open();
+    };
+    CQ.idle.arm(() => CQ.hand.tapAt(CQ.centerOf(b)), 8000);
+    // First time ever: show the gesture straight away.
+    if (!CQ.store.get("blankDemoSeen", false)) {
+      CQ.store.set("blankDemoSeen", true);
+      setTimeout(() => {
+        if (b.classList.contains("glow") && picker.classList.contains("hidden")) CQ.hand.tapAt(CQ.centerOf(b));
+      }, 700);
+    }
+    return CQ.run.when(new Promise((res) => (resolve = res)));
+  };
+
   // ------------------------------------------------------------------ Check panel (substitute, find each side, compare)
   CQ.checkPanel = {
     build(ui) {
@@ -769,157 +1029,110 @@
       this.lhs = CQ.el("div", "cp-side lhs", this.row);
       this.rhs = CQ.el("div", "cp-side rhs", this.row);
       this.cmp = CQ.el("div", "cp-compare", this.el);
-      this.picker = CQ.el("div", "cp-picker hidden", this.el);
     },
+    // eq = { k, a, b, rhsGiven }: the equation k·x + a = b (k is 1 except for Level 9's two crowns)
     async show(eq) {
       this.eq = eq;
+      const k = eq.k || 1;
       this.el.classList.remove("hidden");
-      this.eqRow.innerHTML = CQ.rich(`x + ${eq.a} = ${eq.b}`);
-      this.lhs.innerHTML = `<span class="lab">LHS:</span><span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a} =</span><button type="button" class="blank" data-k="lhs" aria-label="Left-hand side value">?</button>`;
+      this.eqRow.innerHTML = CQ.rich(`${k > 1 ? k : ""}x + ${eq.a} = ${eq.b}`);
+      this.lhs.innerHTML = `<span class="lab">LHS:</span>${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a} =</span><button type="button" class="blank" data-k="lhs" aria-label="Left-hand side value">?</button>`;
       this.rhs.innerHTML = `<span class="lab">RHS:</span><button type="button" class="blank" data-k="rhs" aria-label="Right-hand side value">?</button>`;
+      if (eq.rhsGiven) {
+        const r = this.blank("rhs");
+        r.textContent = CQ.num(eq.b);
+        r.classList.add("filled");
+      }
       this.cmp.innerHTML = "";
-      this.picker.classList.add("hidden");
+      this.cmp.className = "cp-compare";
+      const old = this.el.querySelector(":scope > .cp-picker");
+      if (old) old.classList.add("hidden");
       CQ.audio.play("scroll.open");
       await CQ.anim(this.el, [{ transform: "translate(-50%, 60px)", opacity: 0 }, { transform: "translate(-50%, 0)", opacity: 1 }], {
-        duration: 420,
-        easing: CQ.EASE.back,
+        duration: 580,
+        easing: CQ.EASE.out,
         essential: true,
       });
     },
     hide(now) {
-      this.picker.classList.add("hidden");
+      const p = this.el.querySelector(":scope > .cp-picker");
+      if (p) p.classList.add("hidden");
       if (now) {
         this.el.classList.add("hidden");
         return Promise.resolve();
       }
       return CQ.anim(this.el, [{ transform: "translate(-50%, 0)", opacity: 1 }, { transform: "translate(-50%, 60px)", opacity: 0 }], {
-        duration: 300,
+        duration: 440,
+        easing: CQ.EASE.in,
         essential: true,
       }).then(() => this.el.classList.add("hidden"));
     },
     blank(k) {
       return this.el.querySelector(`.blank[data-k="${k}"]`);
     },
-    // The bar's number flies from Zippy's hands into the x slot.
+    // The value flies (from Zippy's hands, or from the crown) into the x slot.
     async substitute(v, fromWorld) {
       const slot = this.lhs.querySelector(".xslot");
       const to = CQ.centerOf(slot);
       const from = fromWorld ? CQ.camera.toScreen(fromWorld) : to;
-      const chip = CQ.el("div", "num-chip", null, String(v));
+      const chip = CQ.el("div", "num-chip", null, CQ.num(v));
       CQ.audio.play("ui.swoosh");
-      await CQ.fly(CQ.ui.layer, chip, from, to, { duration: 650, arc: -180 });
-      slot.innerHTML = `<span class="subbed">${v}</span>`;
+      await CQ.fly(CQ.ui.layer, chip, from, to, { duration: 900, arc: -180 });
+      slot.innerHTML = `<span class="subbed">${CQ.num(v)}</span>`;
       CQ.audio.play("ui.pop");
       CQ.anim(slot, [{ transform: "scale(1.5)" }, { transform: "scale(1)" }], { duration: 380, easing: CQ.EASE.back, keep: false });
     },
     setValue(k, v) {
       const b = this.blank(k);
-      if (!b) return;
-      b.textContent = v;
-      b.classList.add("filled");
-      b.classList.remove("glow");
-      CQ.anim(b, [{ transform: "scale(1.4)" }, { transform: "scale(1)" }], { duration: 360, easing: CQ.EASE.back, keep: false });
+      if (b) CQ.fillBlank(b, v);
     },
-    // Child taps the blank, then picks one of three number chips. Resolves when the right one is chosen.
     fill(k, options, correct, onMiss) {
-      const b = this.blank(k);
-      let misses = 0;
-      b.classList.add("glow");
-      const openPicker = () => {
-        CQ.audio.play("ui.pop");
-        this.picker.innerHTML = "";
-        this.picker.classList.remove("hidden");
-        const br = b.getBoundingClientRect();
-        const pr = this.el.getBoundingClientRect();
-        const s = CQ.stage.scale;
-        this.picker.style.left = (br.left + br.width / 2 - pr.left) / s + "px";
-        this.picker.style.top = (br.top - pr.top) / s - 20 + "px";
-        return options.map((v) => {
-          const chip = button("chip", String(v), String(v), this.picker, () => pick(v, chip));
-          if (misses >= 2 && v === correct) chip.classList.add("glow");
-          return chip;
-        });
-      };
-      let resolve;
-      const pick = (v, chip) => {
-        if (v === correct) {
-          this.picker.classList.add("hidden");
-          this.setValue(k, v);
-          CQ.audio.play("correct");
-          b.onclick = null;
-          CQ.idle.disarm();
-          CQ.hand.stop();
-          resolve(misses);
-        } else {
-          misses++;
-          CQ.track("answer", { step: k, choice: v, correct: false, attempt: misses });
-          CQ.audio.play("tryagain");
-          chip.classList.add("wrong");
-          CQ.anim(chip, [{ transform: "translateX(0)" }, { transform: "translateX(-12px)" }, { transform: "translateX(12px)" }, { transform: "translateX(0)" }], {
-            duration: 300,
-            keep: false,
-          });
-          if (onMiss) onMiss(misses);
-          if (misses >= 2) this.picker.querySelectorAll(".chip").forEach((c) => c.textContent === String(correct) && c.classList.add("glow"));
-        }
-      };
-      b.onclick = (e) => {
-        e.stopPropagation();
-        CQ.hand.stop();
-        openPicker();
-      };
-      CQ.idle.arm(() => CQ.hand.tapAt(CQ.centerOf(b)), 8000);
-      // First time ever: show the gesture straight away.
-      if (!CQ.store.get("blankDemoSeen", false)) {
-        CQ.store.set("blankDemoSeen", true);
-        setTimeout(() => {
-          if (b.classList.contains("glow") && this.picker.classList.contains("hidden")) CQ.hand.tapAt(CQ.centerOf(b));
-        }, 700);
-      }
-      return CQ.run.when(
-        new Promise((res) => {
-          resolve = res;
-        })
-      );
+      return CQ.pickNumber(this.blank(k), this.el, options, correct, onMiss);
     },
-    async compare(l, r) {
+    // LHS = RHS or LHS ≠ RHS, and under it what that means ("4 is not a solution").
+    async compare(l, r, verdict) {
       const eq = l === r;
-      this.cmp.innerHTML = `<span class="cv lhs">${l}</span><span class="csym ${eq ? "ok" : "no"}">${eq ? "=" : '<span class="neq">=</span>'}</span><span class="cv rhs">${r}</span>`;
+      this.cmp.innerHTML =
+        `<div class="cp-cmp-row"><span class="cv lhs">${CQ.num(l)}</span><span class="csym ${eq ? "ok" : "no"}">${eq ? "=" : '<span class="neq">=</span>'}</span><span class="cv rhs">${CQ.num(r)}</span></div>` +
+        (verdict ? `<div class="cp-verdict">${CQ.rich(verdict)}</div>` : "");
       this.cmp.className = "cp-compare " + (eq ? "ok" : "no");
       CQ.audio.play(eq ? "balance.level" : "tryagain");
-      await CQ.anim(this.cmp, [{ transform: "scale(.3)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 420, easing: CQ.EASE.back, essential: true });
+      await CQ.anim(this.cmp, [{ transform: "scale(.3)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 520, easing: CQ.EASE.back, essential: true });
       return eq;
     },
   };
 
-  // ------------------------------------------------------------------ equation board (Level 8)
+  // ------------------------------------------------------------------ equation board (Levels 8 and 9)
+  // One equation under the balance that changes as each step is done to the balance.
   CQ.eqBoard = {
     build(ui) {
       this.el = CQ.el("div", "eq-board hidden", ui);
+      this.row = CQ.el("div", "eb-row", this.el);
     },
-    show(rows) {
+    show(text, opts) {
       this.el.classList.remove("hidden");
-      this.setRows(rows);
+      this.set(text, Object.assign({}, opts, { quiet: true }));
       return CQ.anim(this.el, [{ transform: "translate(-50%, 60px)", opacity: 0 }, { transform: "translate(-50%, 0)", opacity: 1 }], {
-        duration: 420,
-        easing: CQ.EASE.back,
+        duration: 580,
+        easing: CQ.EASE.out,
         essential: true,
       });
     },
-    setRows(rows) {
-      this.el.innerHTML = rows.map((r, i) => `<div class="eb-row r${i}">${r}</div>`).join("");
-    },
-    addRow(html) {
-      const r = CQ.el("div", "eb-row", this.el, html);
-      CQ.anim(r, [{ transform: "translateY(-20px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }], { duration: 380, easing: CQ.EASE.out });
-      return r;
+    // opts.final: the answer (green)
+    set(text, opts) {
+      opts = opts || {};
+      this.row.innerHTML = CQ.rich(text);
+      this.row.classList.toggle("final", !!opts.final);
+      if (opts.quiet) return;
+      CQ.audio.play("ui.pop");
+      CQ.anim(this.row, [{ transform: "scale(.85)", opacity: 0.15 }, { transform: "scale(1)", opacity: 1 }], { duration: 480, easing: CQ.EASE.out, keep: false });
     },
     hide(now) {
       if (now) {
         this.el.classList.add("hidden");
         return Promise.resolve();
       }
-      return CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, essential: true }).then(() => this.el.classList.add("hidden"));
+      return CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 440, essential: true }).then(() => this.el.classList.add("hidden"));
     },
   };
 })();

@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jungle Lake Background</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap">
+<style>
+  :root {
+    --bg: #eef2ea;
+    --panel: #fbfdf8;
+    --ink: #1d2b22;
+    --muted: #5b6b60;
+    --line: #d5ddd0;
+    --accent: #23825a;
+    --accent-ink: #ffffff;
+    --chip: rgba(10, 30, 20, 0.62);
+    --shadow: 0 18px 40px rgba(20, 50, 30, 0.18);
+    --hl: #ffd23f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101613;
+      --panel: #18211c;
+      --ink: #e6efe8;
+      --muted: #9aaba0;
+      --line: #2a3630;
+      --accent: #5ccf93;
+      --accent-ink: #08170f;
+      --chip: rgba(0, 0, 0, 0.6);
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101613;
+    --panel: #18211c;
+    --ink: #e6efe8;
+    --muted: #9aaba0;
+    --line: #2a3630;
+    --accent: #5ccf93;
+    --accent-ink: #08170f;
+    --chip: rgba(0, 0, 0, 0.6);
+    --shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 20px 36px;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 14px; }
+  header h1 {
+    margin: 0;
+    font: 800 clamp(26px, 3.4vw, 38px)/1.1 "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif;
+    text-wrap: balance;
+  }
+  header p { margin: 4px 0 0; color: var(--muted); }
+
+  /* the 1920 x 1080 scene, scaled to the width of the page */
+  .stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    background: #7fd0f6;
+    touch-action: pan-y;
+  }
+  .scene { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+  .scene img { position: absolute; display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
+  .scene img.marked { outline: 4px solid var(--hl); outline-offset: -4px; z-index: 50; }
+
+  /* gentle idle motion (Motion button) */
+  .anim-drift { animation: drift 70s ease-in-out infinite alternate; }
+  @keyframes drift { from { transform: translateX(-24px); } to { transform: translateX(24px); } }
+  .anim-branch { transform-origin: 3% 25%; animation: branch 6.5s ease-in-out infinite alternate; }
+  @keyframes branch { from { transform: rotate(-0.5deg); } to { transform: rotate(0.7deg); } }
+  .anim-sway { transform-origin: 50% 100%; animation: sway 5.5s ease-in-out infinite alternate; }
+  .anim-tuft { transform-origin: 50% 100%; animation: sway 3.2s ease-in-out infinite alternate; }
+  @keyframes sway { from { transform: rotate(-1.2deg); } to { transform: rotate(1.2deg); } }
+  .glint {
+    mix-blend-mode: screen;
+    opacity: 0.4;
+    filter: brightness(1.35) saturate(1.15);
+    -webkit-mask-image: linear-gradient(100deg, transparent 40%, #000 50%, transparent 60%);
+    mask-image: linear-gradient(100deg, transparent 40%, #000 50%, transparent 60%);
+    -webkit-mask-size: 300% 100%;
+    mask-size: 300% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    animation: glint 8s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes glint {
+    from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+    to { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+  }
+  .stage.still .scene img { animation: none !important; }
+  .stage.still .glint { display: none; }
+
+  /* compare with the reference: it shows to the right of the divider */
+  .ref { position: absolute; inset: 0; width: 100%; height: 100%; clip-path: inset(0 0 0 var(--split, 50%)); pointer-events: none; }
+  .divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--split, 50%);
+    width: 44px;
+    margin-left: -22px;
+    cursor: ew-resize;
+    display: grid;
+    place-items: center;
+    touch-action: none;
+  }
+  .divider::before { content: ""; position: absolute; top: 0; bottom: 0; left: 20px; width: 4px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25); }
+  .divider span {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    color: #1d2b22;
+    display: grid;
+    place-items: center;
+    font: 800 18px/1 system-ui, sans-serif;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  .divider:focus-visible span { outline: 3px solid var(--hl); }
+  .chip {
+    position: absolute;
+    top: 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--chip);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    pointer-events: none;
+  }
+  .chip.l { left: 10px; }
+  .chip.r { right: 10px; }
+
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  button.tog {
+    font: 600 14px/1 system-ui, sans-serif;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button.tog[aria-pressed="true"], button.tog[aria-expanded="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.tog:focus-visible { outline: 3px solid var(--hl); outline-offset: 2px; }
+  .size { margin-left: auto; color: var(--muted); font-size: 13px; }
+
+  .panel { background: var(--panel); border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .panel p { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+  .layer-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 4px 16px; }
+  .layer-list li { min-width: 0; }
+  .layer-list label { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 8px; cursor: pointer; }
+  .layer-list label:hover, .layer-list label:focus-within { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+  .layer-list .n { font-variant-numeric: tabular-nums; color: var(--muted); width: 22px; }
+  .layer-list .id { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .layer-list .wh { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .note { color: var(--muted); font-size: 14px; max-width: 75ch; margin: 0; }
+  @media (prefers-reduced-motion: reduce) { .glint { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Jungle Lake Background</h1>
+    <p>Your sheet pieces, arranged like your reference picture: the game's background, kept calm behind the balance.</p>
+  </header>
+
+  <div class="stage" id="stage" role="img" aria-label="Jungle lake background: a big tree on the left, a lake and hills in the middle, a stone arch on the right and a paved floor in front">
+    <div class="scene" id="scene"></div>
+    <img class="ref" id="ref" src="reference.png" alt="" hidden>
+    <div class="divider" id="divider" hidden role="slider" tabindex="0" aria-label="Compare: drag left or right" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span>⟷</span></div>
+    <span class="chip l" id="chipL" hidden>Built from pieces</span>
+    <span class="chip r" id="chipR" hidden>Your reference</span>
+  </div>
+
+  <div class="bar">
+    <button class="tog" id="motionBtn" type="button" aria-pressed="true">Motion</button>
+    <button class="tog" id="compareBtn" type="button" aria-pressed="false">Compare with reference</button>
+    <button class="tog" id="layersBtn" type="button" aria-expanded="false" aria-controls="layersPanel">Layers</button>
+    <span class="size">1920 × 1080</span>
+  </div>
+
+  <section class="panel" id="layersPanel" hidden>
+    <p>Back to front. Untick a layer to hide it; point at one to outline it.</p>
+    <ol class="layer-list" id="layerList"></ol>
+  </section>
+
+  <p class="note">The sheet has no sky, clouds or grass lawn, so those come from your reference picture. The far mountains and forest are colour-matched to it, so they look as far away as they do there.</p>
+</div>
+
+<script src="layout.js"></script>
+<script>
+  (function () {
+    const L = window.LAYOUT;
+    const stage = document.getElementById("stage");
+    const scene = document.getElementById("scene");
+    const imgs = {};
+
+    // the layers, back to front
+    L.layers.forEach((ly, i) => {
+      const add = (cls) => {
+        const im = document.createElement("img");
+        im.src = ly.file;
+        im.alt = "";
+        im.draggable = false;
+        Object.assign(im.style, { left: ly.x + "px", top: ly.y + "px", width: ly.w + "px", height: ly.h + "px" });
+        if (cls) im.className = cls;
+        scene.appendChild(im);
+        return im;
+      };
+      const im = add(ly.anim && ly.anim !== "shimmer" ? "anim-" + ly.anim : "");
+      // no two bushes sway in step
+      if (ly.anim) im.style.animationDelay = (-(i * 1.37) % 6).toFixed(2) + "s";
+      imgs[ly.id] = [im];
+      if (ly.anim === "shimmer") imgs[ly.id].push(add("glint"));
+    });
+
+    // scale the 1920 x 1080 scene to the stage
+    const fit = () => (scene.style.transform = `scale(${stage.clientWidth / L.width})`);
+    new ResizeObserver(fit).observe(stage);
+    fit();
+
+    // motion on / off (off to start with when the device asks for less motion)
+    const motionBtn = document.getElementById("motionBtn");
+    const setMotion = (on) => {
+      stage.classList.toggle("still", !on);
+      motionBtn.setAttribute("aria-pressed", String(on));
+    };
+    setMotion(!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches));
+    motionBtn.addEventListener("click", () => setMotion(stage.classList.contains("still")));
+
+    // compare with the reference
+    const ref = document.getElementById("ref");
+    const divider = document.getElementById("divider");
+    const chips = [document.getElementById("chipL"), document.getElementById("chipR")];
+    const compareBtn = document.getElementById("compareBtn");
+    let split = 50;
+    const setSplit = (v) => {
+      split = Math.max(0, Math.min(100, v));
+      stage.style.setProperty("--split", split + "%");
+      divider.setAttribute("aria-valuenow", String(Math.round(split)));
+    };
+    const setCompare = (on) => {
+      [ref, divider, ...chips].forEach((e) => (e.hidden = !on));
+      compareBtn.setAttribute("aria-pressed", String(on));
+      if (on) setSplit(50);
+    };
+    compareBtn.addEventListener("click", () => setCompare(ref.hidden));
+    const fromEvent = (e) => {
+      const r = stage.getBoundingClientRect();
+      setSplit(((e.clientX - r.left) / r.width) * 100);
+    };
+    divider.addEventListener("pointerdown", (e) => {
+      divider.setPointerCapture(e.pointerId);
+      fromEvent(e);
+    });
+    divider.addEventListener("pointermove", (e) => {
+      if (divider.hasPointerCapture(e.pointerId)) fromEvent(e);
+    });
+    divider.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowLeft") setSplit(split - 5);
+      else if (e.key === "ArrowRight") setSplit(split + 5);
+      else return;
+      e.preventDefault();
+    });
+
+    // the layer list
+    const list = document.getElementById("layerList");
+    L.layers.forEach((ly, i) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<label><input type="checkbox" checked><span class="n">${i + 1}</span><span class="id"></span><span class="wh">${ly.w}×${ly.h}</span></label>`;
+      li.querySelector(".id").textContent = ly.id;
+      const box = li.querySelector("input");
+      box.addEventListener("change", () => imgs[ly.id].forEach((im) => (im.hidden = !box.checked)));
+      const mark = (on) => imgs[ly.id][0].classList.toggle("marked", on);
+      li.addEventListener("mouseenter", () => mark(true));
+      li.addEventListener("mouseleave", () => mark(false));
+      box.addEventListener("focus", () => mark(true));
+      box.addEventListener("blur", () => mark(false));
+      list.appendChild(li);
+    });
+    const layersBtn = document.getElementById("layersBtn");
+    const panel = document.getElementById("layersPanel");
+    layersBtn.addEventListener("click", () => {
+      panel.hidden = !panel.hidden;
+      layersBtn.setAttribute("aria-expanded", String(!panel.hidden));
+    });
+  })();
+</script>
+</body>
+</html>
