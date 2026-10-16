@@ -45,7 +45,7 @@
   // paint the nine parts separately and thin seams show between them on a scaled stage. So each
   // one is repainted into a single canvas behind the element, with the parts overlapping by a
   // pixel, and again whenever the element changes size.
-  const PATCHED = ".caption, .check-panel, .eq-board, .eq-strip, .eq-sign, .gem-pop, .panel, .board, .idea-card, .bubble, .scroll, .btn-wood";
+  const PATCHED = ".caption, .check-panel, .eq-board, .eq-strip, .eq-sign, .gem-pop, .panel, .board, .idea-card, .bubble, .btn-wood";
   const patchImgs = {};
   const four = (v) => [v[0], v.length > 1 ? v[1] : v[0], v.length > 2 ? v[2] : v[0], v.length > 3 ? v[3] : v.length > 1 ? v[1] : v[0]]; // top right bottom left
   const patchRO = typeof ResizeObserver === "function" ? new ResizeObserver((list) => list.forEach((e) => paintPatch(e.target))) : null;
@@ -343,15 +343,15 @@
   };
 
   // ------------------------------------------------------------------ pacing: Next, → and Back
-  // Narrated screens move on by themselves (see CQ.say). While a line is on, the Next button (top
-  // right), → or PageDown moves on at once; on formula screens Back (or ←) goes back a line. Next
-  // only shows while there is a line to move on from (never while the child has something to do).
+  // Narrated screens move on by themselves (see CQ.say). The Next button (top right) is always there
+  // during the quest: while a line is on it moves on to the next line at once (so do → and PageDown);
+  // at any other moment (the child's turn, an animation) it goes on to the next part of the quest
+  // (CQ.flow.next). On formula screens Back (or ←) goes back a line.
   CQ.next = {
     seq: 0,
     build(ui) {
       this.backBtn = button("wbtn back-btn hidden", "", C().ui.back, ui, () => this.fire("back"));
-      this.nextBtn = button("btn-wood next-btn hidden", `<span>${C().ui.next}</span>`, C().ui.next, ui, () => this.fire("next"));
-      this.hideT = 0;
+      this.nextBtn = button("btn-wood next-btn hidden", `<span>${C().ui.next}</span>`, C().ui.next, ui, () => this.tapNext());
       this.resolver = null;
       this.allowBack = false;
       window.addEventListener("keydown", (e) => {
@@ -365,12 +365,21 @@
       this.allowBack = !!(opts && opts.back);
       this.backBtn.classList.toggle("hidden", !this.allowBack);
       const promise = new Promise((res) => (this.resolver = res));
-      clearTimeout(this.hideT);
-      if (this.nextBtn.classList.contains("hidden")) {
+      return { id, promise };
+    },
+    // The Next button is shown from the first chapter on, and hidden on the finale (it has its own buttons).
+    showNext(on) {
+      const hidden = this.nextBtn.classList.contains("hidden");
+      if (on && hidden) {
         this.nextBtn.classList.remove("hidden");
         CQ.anim(this.nextBtn, [{ opacity: 0, transform: "translateY(-10px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 300, easing: CQ.EASE.out, keep: false });
-      }
-      return { id, promise };
+      } else if (!on) this.nextBtn.classList.add("hidden");
+    },
+    tapNext() {
+      if (this.resolver) return this.fire("next"); // a line is on: the next line
+      if (CQ.pauser.count) return;
+      CQ.audio.play("ui.tap");
+      if (CQ.flow) CQ.flow.next(); // otherwise: the next part of the quest
     },
     unlisten(id) {
       if (id === this.seq) this.clear(); // otherwise a newer screen is listening now
@@ -379,11 +388,6 @@
       this.resolver = null;
       this.allowBack = false;
       this.backBtn.classList.add("hidden");
-      // Next waits a moment before it goes: the next line usually follows at once (no flicker)
-      clearTimeout(this.hideT);
-      this.hideT = setTimeout(() => {
-        if (!this.resolver) this.nextBtn.classList.add("hidden");
-      }, 400);
     },
     fire(what) {
       if (!this.resolver) return;
@@ -412,7 +416,7 @@
       });
       this.cb = null;
       const B = CQ.BAL;
-      CQ.pos(this.el, CQ.L.BX - B.R * B.S, CQ.L.PIVOT_Y + B.PAN_BOTTOM * B.S + 69); // between the pan and the bars
+      CQ.pos(this.el, CQ.L.BX - B.R * B.S, CQ.L.PIVOT_Y + (B.HANG_Y + B.PAN_BOTTOM) * B.S + 52); // between the left plate and the bars
     },
     show(cb) {
       this.cb = cb;
@@ -587,7 +591,8 @@
   // window with a gold ring. target: an element, a list of elements, a stage rect { x0, y0, x1, y1 },
   // or a function returning one of those (it is asked again every frame, so the window follows the
   // balance tipping or a new pan item). A new target while it is on: the window glides over to it.
-  // Taps go through, so the child can still act. opts: { pad, radius, still (measure once), quiet }.
+  // Taps go through, so the child can still act. opts: { pad, radius, still (measure once), quiet,
+  // ring: false (no gold ring) }. dimAll() fades everything back, with no window.
   // UI pieces (caption, panels, buttons) sit above it and stay bright.
   CQ.focus = {
     build(overlay) {
@@ -642,6 +647,7 @@
       } else this.get = () => this.rect(target);
       this.pad = opts.pad != null ? opts.pad : 24;
       this.radius = opts.radius != null ? opts.radius : 44;
+      this.ring.style.display = opts.ring === false ? "none" : "";
       this.from = wasOn ? this.shown : null; // glide from where the window is now
       this.t0 = performance.now();
       this.el.classList.remove("hidden");
@@ -654,6 +660,9 @@
       const from = parseFloat(getComputedStyle(this.el).opacity) || 0;
       CQ.anim(this.el, [{ opacity: wasOn ? from : 0 }, { opacity: 1 }], { duration: 550, essential: true });
       return t;
+    },
+    dimAll(opts) {
+      return this.on({ x0: -99, y0: -99, x1: -98, y1: -98 }, Object.assign({ pad: 0, ring: false }, opts));
     },
     // Turn it off in ms (unless something else was focused meanwhile).
     offAfter(ms) {

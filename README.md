@@ -18,7 +18,7 @@ The game screen has no level sign, crown row or corner buttons, so nothing distr
 |---|---|
 | Jump to any chapter | Press Esc → Chapters (there is no menu button on screen) |
 | Share a link that starts at a chapter | Add `#` and the chapter to the address, e.g. `index.html#L5`. Start then opens that chapter. |
-| Pace | Each screen moves on by itself after its line is read, with a short pause to look. To move on sooner, tap **Next** (top right, shown while a line is on) or press → or a presenter clicker. ← goes back on formula screens. |
+| Pace | Each screen moves on by itself after its line is read, with a short pause to look. The **Next** button (top right) is always there: during a line it moves on to the next line, and at any other moment it goes on to the next part of the quest. → or a presenter clicker also moves on a line. ← goes back on formula screens. |
 | Pause | The Esc key. The story holds until you close the menu. |
 | Sound | Esc → Music, Sound effects and Voice switches |
 
@@ -28,7 +28,7 @@ The chapter names you can use after `#`: `intro`, `L1`, `L2`, `L3`, `L4a` (myste
 
 | Chapter | Learning |
 |---|---|
-| Intro | Meet Zippy, then Grumble. If the balance tips, the alarm wakes Grumble. Each coin is 1 unit. |
+| Intro | Meet Zippy, then Grumble. If the balance tips, the alarm wakes Grumble: a cloud over sleeping Grumble shows it while the rest of the screen fades. Each coin is 1 unit. |
 | Levels 1–3: The Swap | Drag a gold bar to Zippy, tap SWAP. The right bar keeps the balance level. |
 | Level 4: The Mystery Crown | The crown becomes **x**, so the scene turns into **x + 2 = 7**. Words (on the formula screen): variable, constant, algebraic expression, equation, LHS, RHS, linear equation in one variable. Activities: label the parts of 4x + 3 = 19; sort linear and nonlinear equations; a quick recap. Try & Check finds the **solution**. |
 | Levels 5–7: Check It | Check before you swap: replace x, find each side, compare. Level 5 is guided; in 6 and 7 the child chooses. |
@@ -37,7 +37,7 @@ The chapter names you can use after `#`: `intro`, `L1`, `L2`, `L3`, `L4a` (myste
 | Practice | Six equations typed on a keypad: x + 6 = 17, 3x + 5 = 26, x − 7 = 12, x ÷ 4 = 6, 2x + 7 = 1, 3(x + 2) = 21. Right first time: the check is shown. Otherwise the board explains why (LHS ≠ RHS) and solves it step by step with the child, then checks it. |
 | Finale | Three key ideas and all 10 crowns. |
 
-The story moves on by itself, so children only tap when there's something to do: dragging a bar, tapping SWAP, picking a number, or typing an answer and tapping Check. The Next button is there for anyone who has finished reading a line and wants to move on sooner; it hides while the child has something to do. The pause after each line stops while the menu is open, and while a child taps Zippy's face in the question bar to hear the line again.
+The story moves on by itself, so children only tap when there's something to do: dragging a bar, tapping SWAP, picking a number, or typing an answer and tapping Check. The Next button is for anyone who wants to move on sooner. Tapped during a line, it goes to the next line. Tapped while the child has something to do, it skips ahead to the next part of the quest. The pause after each line stops while the menu is open, and while a child taps Zippy's face in the question bar to hear the line again.
 
 Mistakes are safe, and a little funny. When a wrong swap tips the balance:
 - The alarm rings and Grumble wakes up and roars.
@@ -103,9 +103,16 @@ The game is complete without any audio files: every sound effect, the music and 
 
 **The stone stand** under each gold bar (and the Level 8–9 "Taken off" stands) is `break stand .png`. The tool copies it to `assets/props/brick-stand.png`.
 
-**The balance and the interface pieces** come from `elements.png`, a sheet of 34 pieces made with the prompt in `ChatGPT-Asset-Sheet-Prompt.md`. `tools/prepare_assets.py` cuts the sheet into `assets/elements/` (one PNG per piece). It also measures the points the game needs and writes them as `GEOM` in `assets/sprites.js`: the beam's ends and hub, the pan's ring and rim, the top of the stand, the hand's fingertip and the thought cloud. To change a piece, make a new sheet with the same rows in the same order (`ELEMENT_ROWS` in the tool) and run the tool. If a row has the wrong number of pieces, it stops and says which row.
+**The balance** is the wooden one in `new balance .png`, a sheet of separate parts: beam, hub, post, base, plate, rope hanger and leaves. `tools/prepare_assets.py` cuts each part out by its box (`BALANCE_PARTS`) into `assets/balance/`. The game puts the parts together like the picture of the finished balance (`ART` in the balance section of `js/world.js`):
+- The beam tips behind the hub, which stays upright.
+- Each plate hangs from its rope under the beam and stays level.
+- Things stand on the plates.
 
-- **Balance.** It is built from the beam, pan and stand pieces (the balance section of `js/world.js`). Only the plain bar and the post stretch. `BAL.S` is its overall size. `BEAM_K`, `PAN_K` and `STAND_K` match the three pieces' sizes to each other.
+If the sheet is replaced, re-measure `BALANCE_PARTS` and `ART`.
+
+**The interface pieces** come from `elements.png`, a sheet of 34 pieces made with the prompt in `ChatGPT-Asset-Sheet-Prompt.md`. `tools/prepare_assets.py` cuts the sheet into `assets/elements/`, one PNG for each of the 20 pieces the game uses (`UNUSED_ELEMENTS` in the tool lists the 14 it leaves out, the old gold balance among them). It also measures the points the game needs and writes them as `GEOM` in `assets/sprites.js`: the hand's fingertip, the thought cloud, the speech bubble and the panel's border, plus where each balance part was on its sheet. To change a piece, make a new sheet with the same rows in the same order (`ELEMENT_ROWS` in the tool) and run the tool. If a row has the wrong number of pieces, it stops and says which row.
+
+- **Balance.** `BAL.S` is its overall size, and `ART_K` matches the parts to the size of the things on the plates. The beam's middle stretches a little so the ropes hang where they do in the picture.
 - **Stretched pieces.** The caption bar, panels and boards, speech bubbles and the wooden buttons all stretch without bending their corners. Each rule in `styles.css` names its piece and where to cut it (`border-image`). `CQ.patch` in `js/ui.js` then paints each piece in one go, so no seams show. If new art has a thicker or thinner frame, change the cut numbers in those rules:
   - panel: `30 35 34 30`
   - speech bubble: `82 132 94 130` (cut through the middle of the oval)
@@ -125,7 +132,7 @@ The game is complete without any audio files: every sound effect, the music and 
 - `GRUMBLE.scale`: Grumble's size, with `x` and `y` for where he sits.
 - `BX` and `PIVOT_Y`: where the balance stands. `PIVOT_Y` is set so its base stands on the paving.
 - `BAR_BASE`, `BAR_W` and `STAND_W`: where the gold bars rest, and the bars' and stands' sizes. `STAND_REST` is where a bar sits on the stand's top face.
-- `CROWN_W`, `COIN_W` and `PAN_BAR_W`: the sizes of things on the pans. They sit inside the bowl, with the bowl's front lip covering just their bottom edge; things near the sides sit a little higher, following the bowl's curve. `BAL.SINK` in `js/world.js` sets how deep they sit. Keep coin faces fully visible: children tap them to count.
+- `CROWN_W`, `COIN_W` and `PAN_BAR_W`: the sizes of things on the plates (they stand on the plate's top). Keep coin faces fully visible: children tap them to count.
 
 Zippy hangs by his tail from the longest vine in `tree bails.png` (`vineE`; see `CQ.makeVine` in `js/world.js`). The vine comes down from the tree's branch, and its tip sits in the curl of his tail.
 

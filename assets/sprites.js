@@ -36,28 +36,24 @@ window.IMAGES = {
   bgTree: { src: "assets/bg/jungle/11-tree.png", w: 1040, h: 1096 },
   bgBushFrontRight: { src: "assets/bg/jungle/12-bush-front-right.png", w: 468, h: 358 },
   zippyFace: { src: "assets/ui/zippy-face.png", w: 232, h: 232 },
-  beam: { src: "assets/elements/beam.png", w: 1256, h: 123 },
-  stand: { src: "assets/elements/stand.png", w: 180, h: 267 },
-  pan: { src: "assets/elements/pan.png", w: 240, h: 254 },
-  chestClosed: { src: "assets/elements/chestClosed.png", w: 301, h: 241 },
+  balBeam: { src: "assets/balance/beam.png", w: 924, h: 152 },
+  balHub: { src: "assets/balance/hub.png", w: 280, h: 285 },
+  balPost: { src: "assets/balance/post.png", w: 184, h: 597 },
+  balBase: { src: "assets/balance/base.png", w: 462, h: 205 },
+  balPlate: { src: "assets/balance/plate.png", w: 442, h: 158 },
+  balHanger: { src: "assets/balance/hanger.png", w: 377, h: 429 },
+  balLeaves: { src: "assets/balance/leaves.png", w: 288, h: 200 },
+  balLeafL: { src: "assets/balance/leafL.png", w: 113, h: 153 },
+  balLeafR: { src: "assets/balance/leafR.png", w: 105, h: 137 },
   chestOpen: { src: "assets/elements/chestOpen.png", w: 297, h: 275 },
-  pedestal: { src: "assets/elements/pedestal.png", w: 300, h: 184 },
-  scroll: { src: "assets/elements/scroll.png", w: 448, h: 189 },
   panel: { src: "assets/elements/panel.png", w: 343, h: 182 },
   speech: { src: "assets/elements/speech.png", w: 264, h: 178 },
   thought: { src: "assets/elements/thought.png", w: 281, h: 182 },
-  levelSign: { src: "assets/elements/levelSign.png", w: 235, h: 94 },
   pillGreen: { src: "assets/elements/pillGreen.png", w: 287, h: 102 },
   pillWood: { src: "assets/elements/pillWood.png", w: 281, h: 102 },
   tile: { src: "assets/elements/tile.png", w: 134, h: 133 },
-  medalGreen: { src: "assets/elements/medalGreen.png", w: 145, h: 145 },
-  medalRed: { src: "assets/elements/medalRed.png", w: 144, h: 145 },
-  btnGem: { src: "assets/elements/btnGem.png", w: 154, h: 148 },
-  btnRestart: { src: "assets/elements/btnRestart.png", w: 154, h: 148 },
-  btnMenu: { src: "assets/elements/btnMenu.png", w: 155, h: 149 },
   btnBack: { src: "assets/elements/btnBack.png", w: 154, h: 149 },
   btnClose: { src: "assets/elements/btnClose.png", w: 154, h: 149 },
-  btnSound: { src: "assets/elements/btnSound.png", w: 146, h: 148 },
   gemYellow: { src: "assets/elements/gemYellow.png", w: 105, h: 102 },
   gemOrange: { src: "assets/elements/gemOrange.png", w: 106, h: 102 },
   gemPurple: { src: "assets/elements/gemPurple.png", w: 106, h: 102 },
@@ -66,7 +62,6 @@ window.IMAGES = {
   gemAmber: { src: "assets/elements/gemAmber.png", w: 106, h: 102 },
   gemBlue: { src: "assets/elements/gemBlue.png", w: 106, h: 102 },
   gemRed: { src: "assets/elements/gemRed.png", w: 106, h: 103 },
-  flame: { src: "assets/elements/flame.png", w: 93, h: 120 },
   sparkle: { src: "assets/elements/sparkle.png", w: 97, h: 109 },
   dust: { src: "assets/elements/dust.png", w: 119, h: 99 },
   hand: { src: "assets/elements/hand.png", w: 100, h: 139 },
@@ -174,52 +169,6 @@ window.BG_LAYERS = [
 
 // Joints and borders measured on the elements.png pieces (in each piece's own pixels).
 window.GEOM = {
-  "beam": {
-    "left": {
-      "x": 49.5,
-      "y": 60.5,
-      "r": 38.0
-    },
-    "right": {
-      "x": 1205.0,
-      "y": 60.5,
-      "r": 38.5
-    },
-    "hub": {
-      "x": 627.0,
-      "y": 61.0,
-      "r": 51.5
-    },
-    "barTop": 43,
-    "barBottom": 77,
-    "plainL": [
-      104,
-      571
-    ],
-    "plainR": [
-      683,
-      1150
-    ]
-  },
-  "pan": {
-    "ringX": 119.5,
-    "ringY": 38.3,
-    "rimTop": 155,
-    "rimY": 181,
-    "rimL": 3,
-    "rimR": 236,
-    "bottom": 250,
-    "innerBack": 159,
-    "innerFront": 192
-  },
-  "stand": {
-    "cx": 89.2,
-    "top": 3,
-    "ballY": 25,
-    "postTop": 47,
-    "baseTop": 167,
-    "bottom": 262
-  },
   "hand": {
     "tipX": 25,
     "tipY": 3
@@ -241,10 +190,42 @@ window.GEOM = {
     "top": 26,
     "bottom": 30
   },
-  "scroll": {
-    "left": 55,
-    "right": 64,
-    "top": 47,
-    "bottom": 49
+  "balance": {
+    "balBeam": {
+      "x": 45,
+      "y": 86
+    },
+    "balHub": {
+      "x": 985,
+      "y": 30
+    },
+    "balPost": {
+      "x": 1323,
+      "y": 24
+    },
+    "balBase": {
+      "x": 839,
+      "y": 432
+    },
+    "balPlate": {
+      "x": 33,
+      "y": 434
+    },
+    "balHanger": {
+      "x": 470,
+      "y": 254
+    },
+    "balLeaves": {
+      "x": 56,
+      "y": 723
+    },
+    "balLeafL": {
+      "x": 408,
+      "y": 765
+    },
+    "balLeafR": {
+      "x": 521,
+      "y": 781
+    }
   }
 };
