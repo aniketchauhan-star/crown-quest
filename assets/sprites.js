@@ -13,6 +13,7 @@ window.SPRITES = {
   zippy_swap_hands: { w: 337, h: 487, count: 8, ax: 152, ay: 6, src: "assets/zippy/swap-hands.png" },
   zippy_crown: { w: 335, h: 504, count: 8, ax: 117, ay: 6, src: "assets/zippy/crown.png" },
   zippy_scared_crown: { w: 336, h: 510, count: 8, ax: 147, ay: 6, src: "assets/zippy/scared-crown.png" },
+  zippy_bar: { w: 363, h: 500, count: 8, ax: 146, ay: 6, src: "assets/zippy/bar.png" },
 };
 
 window.IMAGES = {
@@ -20,7 +21,7 @@ window.IMAGES = {
   bar: { src: "assets/props/bar.png", w: 559, h: 258 },
   coin: { src: "assets/props/coin.png", w: 222, h: 220 },
   crown: { src: "assets/props/crown.png", w: 414, h: 338 },
-  brickStand: { src: "assets/props/brick-stand.png", w: 658, h: 346 },
+  brickStand: { src: "assets/props/brick-stand.png", w: 726, h: 292 },
   startButton: { src: "assets/ui/start-button.png", w: 560, h: 466 },
   startScreen: { src: "assets/ui/start-screen.jpg", w: 1672, h: 941 },
   bgSky: { src: "assets/bg/jungle/01-sky.png", w: 1920, h: 1080 },
@@ -227,5 +228,79 @@ window.GEOM = {
       "x": 521,
       "y": 781
     }
-  }
+  },
+  "zippyBar": [
+    {
+      "cx": 231.0,
+      "cy": 337.0,
+      "w": 153,
+      "fx": 231.1,
+      "fy": 341.1,
+      "fh": 68.6,
+      "tilt": -0.6
+    },
+    {
+      "cx": 207.0,
+      "cy": 366.5,
+      "w": 155,
+      "fx": 207.2,
+      "fy": 369.7,
+      "fh": 67.7,
+      "tilt": -0.6
+    },
+    {
+      "cx": 209.5,
+      "cy": 367.0,
+      "w": 156,
+      "fx": 209.7,
+      "fy": 370.2,
+      "fh": 67.0,
+      "tilt": -0.1
+    },
+    {
+      "cx": 196.0,
+      "cy": 361.0,
+      "w": 159,
+      "fx": 196.3,
+      "fy": 364.9,
+      "fh": 67.3,
+      "tilt": -1.3
+    },
+    {
+      "cx": 196.5,
+      "cy": 310.5,
+      "w": 166,
+      "fx": 196.1,
+      "fy": 314.6,
+      "fh": 66.0,
+      "tilt": 0.0
+    },
+    {
+      "cx": 233.0,
+      "cy": 417.0,
+      "w": 163,
+      "fx": 235.6,
+      "fy": 421.1,
+      "fh": 65.0,
+      "tilt": 0.0
+    },
+    {
+      "cx": 213.5,
+      "cy": 422.0,
+      "w": 166,
+      "fx": 218.2,
+      "fy": 425.5,
+      "fh": 64.0,
+      "tilt": 0.0
+    },
+    {
+      "cx": 258.5,
+      "cy": 338.0,
+      "w": 136,
+      "fx": 258.6,
+      "fy": 342.1,
+      "fh": 64.2,
+      "tilt": 4.4
+    }
+  ]
 };

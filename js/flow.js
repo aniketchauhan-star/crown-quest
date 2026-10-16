@@ -249,7 +249,7 @@
     if (!bar || bar.state !== "idle" || (CQ.zippy.held && CQ.zippy.held.type === "bar") || CQ.Give.busy) return;
     const from = CQ.camera.toScreen(CQ.bars.center(v));
     const to = CQ.camera.toScreen(CQ.zippy.holdPoint("zippy_swap", 1)); // into his open hands
-    CQ.hand.drag(from, to, 2, { carry: () => CQ.bars.carried(v), carryScale: CQ.L.HELD_BAR_W / CQ.L.BAR_W });
+    CQ.hand.drag(from, to, 2, { carry: () => CQ.bars.carried(v), carryScale: CQ.zippy.barBox(1).w / CQ.L.BAR_W });
   }
   // The child gives one of `values` to Zippy. Resolves with the value once he has caught it.
   function giveBar(values, opts) {
@@ -311,10 +311,14 @@
   async function tossTried(v) {
     const z = CQ.zippy;
     const bar = CQ.Give.heldBar || CQ.bars.get(v);
-    const from = z.holdPoint(); // from his fists, before he lets go
+    if (z.held && z.held.type === "bar") {
+      z.pose("giveBack"); // "not this one": he holds it out to give it back
+      await R.wait(450);
+    }
+    const from = z.barBox(); // from his hands, before he lets go
     z.setHeld(null);
     z.pose("idle");
-    if (bar) await R.when(CQ.Give.tossBack(bar, { tried: true, from }));
+    if (bar) await R.when(CQ.Give.tossBack(bar, { tried: true, from, scaleFrom: from.w / CQ.L.BAR_W }));
   }
 
   // ------------------------------------------------------------------ the swap
@@ -329,19 +333,22 @@
     const crown = b.find("left", (it) => it.type === "crown" && !it.ghost);
     const slot = b.items.left.indexOf(crown);
     const target = b.itemCenter(crown);
-    z.pose("reachBar");
+    z.pose("reachBar"); // leaning down with the bar held out below him
     CQ.audio.play("zippy.whee", { volume: 0.6 });
-    await R.when(z.swingTo({ x: target.x, y: target.y - 70 }, 600, z.holdOffset("zippy_swap", 3, "bar")));
+    // he swings over until the bar, as he puts it down, is just above the crown
+    await R.when(z.swingTo({ x: target.x, y: target.y - 70 }, 600, z.barOffset(7)));
+    z.pose("putDown");
+    await R.wait(120);
     // the swap: the bar drops from his hands into the crown's place, the crown jumps into his other hand
-    const barFrom = z.holdPoint("zippy_swap", 3, "bar");
-    z.pose("exchange");
+    const barFrom = z.barBox(7);
     z.setHeld(null);
+    z.pose("exchange");
     crown.el.style.visibility = "hidden";
     const grab = z.holdPoint("zippy_swap", 4, "crown");
     CQ.audio.play("ui.swoosh");
     await R.when(
       Promise.all([
-        CQ.fly(CQ.world.drag, CQ.barFlyer(v, barPx()), barFrom, target, { duration: 300, arc: 0, scaleFrom: CQ.L.HELD_BAR_W / barPx() }),
+        CQ.fly(CQ.world.drag, CQ.barFlyer(v, barPx()), barFrom, target, { duration: 300, arc: 0, scaleFrom: barFrom.w / barPx() }),
         CQ.fly(CQ.world.drag, CQ.crownFlyer(crownPx()), target, grab, { duration: 340, arc: -40, scaleTo: CQ.L.HELD_CROWN_W / crownPx() }),
       ])
     );
@@ -718,6 +725,7 @@
       CQ.bars.setVisible(false);
       await R.when(cp.show({ a: 2, b: 7 }));
       await R.when(cp.substitute(v, z.holdPoint()));
+      z.pose("barThink"); // he looks at the bar while the sides are worked out
       await R.when(b.autoCount("left", v));
       cp.setValue("lhs", v + 2);
       await R.wait(500);
@@ -725,6 +733,7 @@
       await R.wait(400);
       const eq = v + 2 === 7;
       await R.when(cp.compare(v + 2, 7, CQ.fmt(eq ? C().ui.verdictYes : C().ui.verdictNot, { v })));
+      z.pose(eq ? "barShow" : "hold"); // it works: he shows the bar off
       return eq;
     };
     await check(4, "l4-25", "l4-25-tap");
@@ -742,6 +751,7 @@
     CQ.gems.collect("solution", { x: 1340, y: 420 });
     await say("l4-29");
     look(null);
+    z.pose("hold");
     b.clearCounts();
     await R.when(cp.hide());
     CQ.bars.setVisible(true);
@@ -781,6 +791,7 @@
     // The line is spoken while the number flies into x; both finish before the next instruction.
     const line = o.line ? say(o.line, { vars, advance: "auto", pause: 0 }) : null;
     await R.when(cp.substitute(v, o.from || z.holdPoint()));
+    if (z.held && z.held.type === "bar") z.pose("barThink"); // he looks at the bar while the sides are worked out
     if (line) await line;
     if (o.auto) {
       cp.setValue("lhs", s);
@@ -806,6 +817,7 @@
     CQ.balance.clearCounts();
     if (!eq) {
       CQ.grumble.stir();
+      if (z.held && z.held.type === "bar") z.pose("hold");
       await R.when(z.say(C().zippy.checked));
       look(cp.el, { pad: 16 });
       for (const id of o.notLines || ["check-not"]) await say(id, { vars });
@@ -816,8 +828,10 @@
       return false;
     }
     if (o.yesLines && o.yesLines.length) look(cp.el, { pad: 16 });
+    if (z.held && z.held.type === "bar") z.pose("barShow"); // it works: he shows the bar off
     for (const id of o.yesLines || []) await say(id, { vars });
     look(null);
+    if (z.held && z.held.type === "bar") z.pose("hold");
     await R.when(cp.hide());
     CQ.bars.setVisible(true);
     return true;
@@ -882,11 +896,11 @@
   }
 
   // ------------------------------------------------------------------ Levels 8 and 9: the smart way
-  // Two "Taken off" stone ledges just outside the pans.
+  // Two "Taken off" stools just outside the plates.
   function makeLedges() {
     const mk = (x, side) => {
       const l = CQ.el("div", "ledge " + side, CQ.world.drag, `<span>${C().ui.takenOff}</span>`);
-      CQ.placeStand(l, x); // a stone stand, like the ones under the gold bars
+      CQ.placeStand(l, x); // a stool, like the ones under the gold bars
       l.rest = { x, y: CQ.L.BAR_BASE }; // where a bar rests on it
       CQ.anim(l, [{ opacity: 0, transform: "translateY(24px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
       return l;
