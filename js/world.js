@@ -334,13 +334,14 @@
     HOLD_OFFSET[k] = { x: HOLD_SRC[k].x * L.ZIPPY.scale, y: HOLD_SRC[k].y * L.ZIPPY.scale };
   });
   // His swap sheet (zippy swap.png) has empty hands. grip is where the game puts what he holds in each
-  // frame, in the cut frame's own pixels (assets/zippy/swap.png): frame 1 is between his open hands (he
-  // takes a bar there), frame 4 is the hand that grabs the crown. In frames 2-8 his fists are drawn
-  // again over what he holds (zippy_swap_hands, see SWAP_FISTS in tools/prepare_assets.py), so his
-  // fingers wrap around it. Re-measure both if the sheet is replaced.
+  // frame, in the cut frame's own pixels (assets/zippy/swap.png): frame 1 is between his open hands (a
+  // bar comes to him there), frame 4 is the hand that grabs the crown. When he holds the crown (frames
+  // 4-8), his fists are drawn again over it (zippy_swap_hands, see SWAP_FISTS in
+  // tools/prepare_assets.py), so his fingers wrap around it. A bar is held with his bar sheet instead
+  // (zippy bar.png, below). Re-measure both if the sheet is replaced.
   const SWAP = {
     grip: [null, [243, 415], [228, 359], [244, 432], [282, 393], [166, 341], [197, 351], [291, 335], [168, 342]],
-    nudge: { bar: [0, 38], crown: [0, -16] }, // his fingers curl over a bar's top edge (its number stays in view), and round a crown's band
+    nudge: { crown: [0, -16] }, // his fingers curl round the crown's band
   };
   function swapOffset(frame, item) {
     const S = window.SPRITES.zippy_swap;
@@ -359,6 +360,15 @@
   // jump back to the pan from his hands. Re-measure if the sheet is replaced.
   const SCARED_CROWN = [null, [208, 361, 144], [203, 355, 131], [201, 361, 151], [213, 361, 95], [186, 292, 182], [194, 345, 109], [205, 161, 150], [245, 363, 120]];
   const SCARED_POSE = { crownUhOh: 1, crownTeeth: 2, crownGlance: 3, crownShake: 4, crownHide: 5, crownGulp: 6, crownEek: 7, crownSorry: 8 };
+  // Holding a gold bar (zippy bar.png): his fingers hold a blank bar by its ends, and the game prints the
+  // bar's number on its front face. 1 catch, 2 hold, 3 talk, 4 think, 5 show it off, 6 reach down, 7 put
+  // it down, 8 give it back. GEOM.zippyBar (measured by tools/prepare_assets.py) says for each frame where
+  // the bar is (cx, cy, w), the middle of its front face (fx, fy), the face's height (fh) and the bar's
+  // tilt, in the cut frame's pixels.
+  const BAR_POSE = { barCatch: 1, hold: 2, idle: 2, barThink: 4, barShow: 5, reachBar: 6, putDown: 7, giveBack: 8 };
+  const BAR_NUM = 0.75; // the number's size, as a part of the front face's height
+  const BAR_FULL = 1.08; // the whole bar's width, as a part of the gold that shows between his fingers
+  const barGeom = (frame) => window.GEOM.zippyBar[(frame || 2) - 1] || window.GEOM.zippyBar[1];
   // Zippy leaves the picture (after a wrong swap, and after each level he wins) and swings back in. He
   // stays hanging from his vine and swings in big curves; the top of the vine (A) slides along above
   // the screen, so each big swing carries him out of the picture or into it.
@@ -422,6 +432,12 @@
       sheet = sheet || this.sprite.sheet;
       item = item || (this.held && this.held.type);
       if (sheet === "zippy_swap") return swapOffset(frame || this.sprite.frame, item);
+      if (sheet === "zippy_bar") {
+        // the middle of the bar's front face, where its number is
+        const S = window.SPRITES.zippy_bar;
+        const g = barGeom(frame || this.sprite.frame);
+        return { x: (g.fx - S.ax) * this.k, y: (g.fy - S.ay) * this.k };
+      }
       if (sheet === "zippy_scared_crown") {
         const S = window.SPRITES.zippy_scared_crown;
         const c = SCARED_CROWN[frame || this.sprite.frame] || SCARED_CROWN[1];
@@ -434,6 +450,26 @@
       const o = this.holdOffset(sheet, frame, item);
       const a = -(this.theta + this.sway) * this.tilt * deg;
       return { x: P.x + o.x * Math.cos(a) - o.y * Math.sin(a), y: P.y + o.x * Math.sin(a) + o.y * Math.cos(a) };
+    }
+    // The bar in his hands in a frame of his bar sheet (by default the frame on show, or his "hold"
+    // frame): barOffset is its middle from the tip of his tail; barBox is its middle on the stage, its
+    // width and its tilt. Bars flying to and from his hands match it.
+    barOffset(frame) {
+      const S = window.SPRITES.zippy_bar;
+      const g = barGeom(frame);
+      return { x: (g.cx - S.ax) * this.k, y: (g.cy - S.ay) * this.k };
+    }
+    barBox(frame) {
+      frame = frame || (this.sprite.sheet === "zippy_bar" ? this.sprite.frame : 2);
+      const o = this.barOffset(frame);
+      const P = this.P;
+      const a = -(this.theta + this.sway) * this.tilt * deg;
+      return {
+        x: P.x + o.x * Math.cos(a) - o.y * Math.sin(a),
+        y: P.y + o.x * Math.sin(a) + o.y * Math.cos(a),
+        w: barGeom(frame).w * BAR_FULL * this.k,
+        tilt: barGeom(frame).tilt - (this.theta + this.sway) * this.tilt,
+      };
     }
     // Generous drop zone around Zippy for little fingers.
     zone() {
@@ -460,6 +496,13 @@
       }
       if (CROWN_POSE[name] || this.wearing) {
         this.crownPose(name);
+        this.placeHeld();
+        return;
+      }
+      if (this.held && this.held.type === "bar" && (BAR_POSE[name] || name === "holdTalk" || name === "talk")) {
+        // holding a gold bar: his bar sheet draws it, and its number is printed on it (placeHeld)
+        if (name === "holdTalk" || name === "talk") s.play("zippy_bar", [3, 2], 170, { loop: true });
+        else s.show("zippy_bar", BAR_POSE[name]);
         this.placeHeld();
         return;
       }
@@ -598,6 +641,15 @@
       this.placeHeld();
     }
     placeHeld() {
+      // A bar on his bar sheet: the sheet draws the bar, so only its number goes on (on its front face,
+      // as big as the face allows, tilted with the bar). Anywhere else the whole bar is drawn.
+      const bar = !!(this.held && this.held.type === "bar");
+      const onSheet = bar && this.sprite.sheet === "zippy_bar";
+      this.heldEl.classList.toggle("hbar", bar && !onSheet);
+      this.heldEl.classList.toggle("hnum", onSheet);
+      const g = onSheet ? barGeom(this.sprite.frame) : null;
+      this.heldEl.style.fontSize = g ? (g.fh * BAR_NUM * this.k).toFixed(1) + "px" : "";
+      this.heldEl.style.setProperty("--tilt", (g ? g.tilt : 0) + "deg");
       const o = this.holdOffset();
       CQ.pos(this.heldEl, o.x, o.y);
       // on the swap sheet his fists are drawn again over what he holds
@@ -656,7 +708,8 @@
     }
     async catchBar(value) {
       this.setHeld({ type: "bar", value });
-      this.pose("hold");
+      this.pose("barCatch"); // his fingers close round its ends...
+      setTimeout(() => this.poseName === "barCatch" && this.pose("hold"), 380); // ...and he holds it
       CQ.audio.play("zippy.catch");
       CQ.anim(this.body, [{ transform: "translateY(0)" }, { transform: "translateY(22px) scale(1.04,.96)" }, { transform: "translateY(0)" }], {
         duration: 360,
@@ -835,7 +888,7 @@
     hubLeaves: { l: [518, 916], r: [524, 916], dx: 145, at: -50, tilt: 20 }, // each leaf's stem, set beside the hub, leaning out
   };
   const BAL = {
-    S: 0.78, // drawn size (1 = full size)
+    S: 0.7, // drawn size (1 = full size)
     R: ART.R * ART_K, // pivot to each hanging point
     HANG_Y: ART.hangY * ART_K,
     PLATE_TOP: (ART.ropeEnd - ART.knot.y - 5 - (ART.plate.top - ART.plate.y)) * ART_K, // hanging point down to the plate's top edge
@@ -1323,8 +1376,8 @@
     }
   }
 
-  // ================================================================== gold bars on stone stands
-  // The stand art (props/brick-stand.png): a bar rests on its top face, at y = L.BAR_BASE.
+  // ================================================================== gold bars on wooden stools
+  // The stool art (props/brick-stand.png): a bar rests on its plank top, at y = L.BAR_BASE.
   const STAND = { w: L.STAND_W, h: (L.STAND_W * IM().brickStand.h) / IM().brickStand.w };
   STAND.rest = STAND.h * L.STAND_REST;
   CQ.STAND = STAND;
@@ -1351,7 +1404,7 @@
       const xs = [L.BX - 270, L.BX, L.BX + 270];
       order.forEach((v, i) => {
         const x = xs[i];
-        // the stone stand: the bar rests on its top face
+        // the stool: the bar rests on its plank top
         const ped = CQ.el("div", "pedestal", this.layer);
         CQ.placeStand(ped, x);
         const slot = CQ.el("div", "bar-slot", this.layer);
@@ -1584,8 +1637,8 @@
       CQ.pos(bar.slot, bar.home.x, bar.home.y);
       bar.cur = null;
       z.pose("ready"); // hands open as it comes
-      const to = z.holdPoint("zippy_swap", 2, "bar");
-      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, to, { duration: 520, arc: -80, scaleTo: L.HELD_BAR_W / L.BAR_W });
+      const to = z.barBox(1); // it lands where his fingers close round it (his catch frame)
+      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, to, { duration: 520, arc: -80, scaleTo: to.w / L.BAR_W });
       await z.catchBar(bar.value);
       this.heldBar = bar;
       this.busy = false;
@@ -1622,8 +1675,9 @@
       opts = opts || {};
       if (this.heldBar === bar) this.heldBar = null;
       CQ.audio.play("bar.return");
-      const from = opts.from || CQ.zippy.holdPoint();
-      const scaleFrom = opts.scaleFrom != null ? opts.scaleFrom : L.HELD_BAR_W / L.BAR_W;
+      const box = CQ.zippy.barBox(); // from his hands, at the size he holds it
+      const from = opts.from || box;
+      const scaleFrom = opts.scaleFrom != null ? opts.scaleFrom : box.w / L.BAR_W;
       await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, bar.home, { duration: 780, arc: -170, scaleFrom });
       CQ.audio.play("bar.place");
       bar.slot.classList.remove("gone");

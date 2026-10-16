@@ -101,7 +101,7 @@ The game is complete without any audio files: every sound effect, the music and 
 1. Edit `LAYOUT` in `jungle-background/tools/make_background.py` and run it. This tool needs numpy, Pillow and scipy.
 2. Run `python3 tools/prepare_assets.py`, which copies the layers into `assets/bg/jungle/`.
 
-**The stone stand** under each gold bar (and the Level 8–9 "Taken off" stands) is `break stand .png`. The tool copies it to `assets/props/brick-stand.png`.
+**The wooden stool** under each gold bar (and the Level 8–9 "Taken off" stools) is `break stand .png`. The tool copies it to `assets/props/brick-stand.png`. `STAND_REST` in `js/engine.js` says where a bar rests on its top.
 
 **The balance** is the wooden one in `new balance .png`, a sheet of separate parts: beam, hub, post, base, plate, rope hanger and leaves. `tools/prepare_assets.py` cuts each part out by its box (`BALANCE_PARTS`) into `assets/balance/`. The game puts the parts together like the picture of the finished balance (`ART` in the balance section of `js/world.js`):
 - The beam tips behind the hub, which stays upright.
@@ -117,7 +117,14 @@ If the sheet is replaced, re-measure `BALANCE_PARTS` and `ART`.
   - panel: `30 35 34 30`
   - speech bubble: `82 132 94 130` (cut through the middle of the oval)
   - wooden button: `0 51 0 51`
-- **Zippy's swap:** `zippy swap.png` (made with `ChatGPT-Zippy-Swap-Prompt.md`) has empty hands. The game puts the real gold bar, with its number, and the crown in his hands. It then draws his fists again over them, so his fingers curl over the bar's top edge and its number stays in view. The fists are redrawn cleanly: the art's skin and creases inside one smooth outline, with a soft shadow where they press, so no fur, tummy or stray marks show on the bar or crown. To set this up:
+- **Zippy holding a gold bar:** `zippy bar.png` (made with `ChatGPT-Zippy-Bar-Prompt.md`) has his fingers really round a blank bar. The game prints the bar's number on its front face, and the frames match what he does:
+  - catch it (1), hold it (2), talk (3);
+  - look at it while the child checks it (4), and show it off when it works (5);
+  - reach down to the plate (6) and put it down (7);
+  - hand a wrong bar back (8).
+
+  `tools/prepare_assets.py` finds the bar in each frame by its gold colour. It measures where the bar is, the middle of its front face and its tilt (`GEOM.zippyBar`), so the number lands on the face and bars flying to or from his hands match his. A new sheet needs no re-measuring, as long as the bar stays gold with its front face clear.
+- **Zippy's swap:** `zippy swap.png` (made with `ChatGPT-Zippy-Swap-Prompt.md`) has empty hands. Its open hands are ready to catch a bar, and in the swap he grabs and lifts the crown with it (the game puts the real crown in his hand). His fists are drawn again over the crown: the art's skin and creases inside one smooth outline, with a soft shadow where they press. To set this up:
   - `SWAP_FISTS` in `tools/prepare_assets.py` has a box around the fists and a seed point on each piece of fist skin.
   - `SWAP` in `js/world.js` has where he grips in each frame.
 

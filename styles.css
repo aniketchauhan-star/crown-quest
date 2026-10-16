@@ -287,7 +287,7 @@ button:focus-visible,
   pointer-events: none;
 }
 .held.hbar {
-  width: 146px; /* L.HELD_BAR_W in js/engine.js */
+  width: 146px; /* a whole bar in his hands, in a pose without his bar sheet */
   height: 67px;
   background: url(assets/props/bar.png) center / contain no-repeat;
   filter: drop-shadow(0 6px 4px rgba(0, 0, 0, 0.3));
@@ -295,11 +295,22 @@ button:focus-visible,
 .held.hbar .num {
   position: absolute;
   left: 44%;
-  top: 66%; /* below his fists, which grip the bar's top edge */
+  top: 57%;
   transform: translate(-50%, -50%);
   font: 800 40px/1 var(--font);
   color: #6b3e00;
   text-shadow: 0 2px 0 #ffe9a0;
+}
+/* a bar in his hands on his bar sheet: the sheet draws the bar; this is its number, on the bar's front face
+   (js/world.js sets its size and tilt for each frame) */
+.held.hnum {
+  transform: translate(-50%, -50%) rotate(var(--tilt, 0deg));
+  font-weight: 800;
+  line-height: 1;
+  font-family: var(--font);
+  color: #6b3e00;
+  text-shadow: 0 2px 0 #ffe9a0, 0 -1px 0 rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
 }
 .held.hcrown img {
   display: block;
@@ -727,7 +738,7 @@ button:focus-visible,
 .ledge span {
   position: absolute;
   left: 50%;
-  top: 54%; /* on the stand's middle row of blocks */
+  top: 57%; /* on the rounded front edge of the stool's top */
   transform: translate(-50%, -50%);
   white-space: nowrap;
   font: 800 23px/1 var(--font);

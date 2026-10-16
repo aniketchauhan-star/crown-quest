@@ -15,17 +15,16 @@
   // Scene layout in stage units (the stage is always 1920 x 1080).
   CQ.L = {
     BX: 1085, // balance centre x
-    PIVOT_Y: 340, // the balance's pivot (the hub's centre): its base stands on the paving, above the gold bars
+    PIVOT_Y: 390, // the balance's pivot (the hub's centre): its base stands on the paving, above the gold bars
     GRUMBLE: { x: 262, y: 950, scale: 1.35 },
     // Zippy hangs by his tail from a tree root that comes down from above the screen.
     // (ax, ay) = where the root swings from (off-screen), len = root length to his tail.
     ZIPPY: { ax: 420, ay: -120, len: 236, scale: 0.72 },
-    HELD_BAR_W: 146, // a gold bar in Zippy's hands
     HELD_CROWN_W: 129, // the crown in Zippy's hands (.held.hcrown img in styles.css)
-    BAR_BASE: 952, // where the gold bars rest (on the top face of their stone stands)
+    BAR_BASE: 978, // where the gold bars rest (on the plank tops of their wooden stools)
     BAR_W: 194, // a gold bar on its stand
-    STAND_W: 246, // the stone stand under each gold bar (props/brick-stand.png)
-    STAND_REST: 44 / 346, // where a bar rests on the stand's top face, as a part of the stand's height
+    STAND_W: 250, // the wooden stool under each gold bar (props/brick-stand.png, from "break stand .png")
+    STAND_REST: 112 / 292, // where a bar rests on the stool's plank top, as a part of the stool's height
     // sizes of things on the pans, in balance units (the whole balance is drawn at BAL.S)
     PAN_BAR_W: 126,
     CROWN_W: 150,

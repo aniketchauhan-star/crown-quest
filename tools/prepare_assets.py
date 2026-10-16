@@ -285,6 +285,8 @@ SHEETS = [
     ("zippy_crown", first_existing("zippy crown.png", "zippy crown..png"), "zippy/crown.png", "top"),
     # scared after a wrong swap, the crown in his hands (ChatGPT-Zippy-Scared-Crown-Prompt.md)
     ("zippy_scared_crown", "zippy scared crown.png", "zippy/scared-crown.png", "top"),
+    # holding a blank gold bar by its ends; the game prints its number on it (ChatGPT-Zippy-Bar-Prompt.md)
+    ("zippy_bar", "zippy bar.png", "zippy/bar.png", "top"),
 ]
 
 # (key, source file, output, crop box or None for auto, downscale factor)
@@ -294,7 +296,7 @@ PROPS = [
     ("bar", "number bricks.png", "props/bar.png", None, 2),
     ("coin", "number coin.png", "props/coin.png", None, 4),
     ("crown", "crown.png", "props/crown.png", None, 3),
-    ("brickStand", "break stand .png", "props/brick-stand.png", None, 2),  # the stone stand under each gold bar
+    ("brickStand", "break stand .png", "props/brick-stand.png", None, 2),  # the wooden stool under each gold bar
     ("startButton", "start button.png", "ui/start-button.png", None, 2),
 ]
 
@@ -302,16 +304,15 @@ FULLSCREEN = [
     ("startScreen", "start screen.png", "ui/start-screen"),
 ]
 
-# zippy swap.png has empty hands; the game puts the bar or crown he holds at his grip. In frames 2-8
-# his fists are drawn again over what he holds (zippy/swap-hands.png), so his fingers wrap around it.
+# zippy swap.png has empty hands; the game puts the crown he holds at his grip. In frames 4-8 his
+# fists are drawn again over it (zippy/swap-hands.png), so his fingers wrap around it. (A bar is held
+# with zippy bar.png, which draws it in his hands.)
 # For each frame: a box (x0, y0, x1, y1) around his fists and a seed point on each piece of skin that
 # belongs to them (creases split some fists into pieces), in the cut frame's own pixels. The fists are
 # redrawn cleanly: their skin and creases from the art, inside one smooth dark outline all the way
 # round, so their edge over the bar or crown is crisp (no fur, tummy or stray specks).
 # Re-measure if the sheet is replaced (and SWAP in js/world.js).
 SWAP_FISTS = {
-    2: ((168, 322, 270, 396), [(200, 358), (243, 358)]),
-    3: ((190, 394, 292, 470), [(227, 431), (268, 445)]),
     4: ((244, 356, 316, 430), [(290, 405)]),
     5: ((132, 302, 200, 378), [(163, 342)]),
     6: ((146, 316, 246, 386), [(176, 351), (219, 351)]),
@@ -320,6 +321,53 @@ SWAP_FISTS = {
 }
 FIST_LINE = (58, 17, 4)  # the art's outline colour (measured around the fists)
 FIST_LINE_W = 4.5        # ...and its thickness, in the sheet's pixels
+# zippy bar.png: Zippy holds a blank gold bar by its ends, and the game prints the bar's number on its
+# front face. bar_in_hands() finds the bar in each cut frame by its gold colour and measures, in the cut
+# frame's own pixels: its middle and width (bars flying to and from his hands match it), and the middle of
+# its front face, the face's height and the bar's tilt (where the number goes, how big, at what angle).
+BAR_FACE_Y = 0.57  # the front face's middle, down from the bar's top edge (as on the gold bar art)
+
+
+def bar_in_hands(sw, sh, strip, cell_w, count):
+    frames = []
+    for f in range(count):
+        ox = f * cell_w
+        gold = bytearray(cell_w * sh)
+        for y in range(sh):
+            row = (y * sw + ox) * 4
+            for x in range(cell_w):
+                i = row + x * 4
+                r, g, b, a = strip[i], strip[i + 1], strip[i + 2], strip[i + 3]
+                if a > 150 and r > 200 and g > 150 and b < 120 and g * 100 > r * 66:
+                    gold[y * cell_w + x] = 1
+        labels, comps = _label(cell_w, sh, gold)
+        big = max(comps, key=lambda k: comps[k][4])
+        x0, y0, x1, y1, n, sx, sy = comps[big]
+        # its top and bottom edges across the middle half (clear of his fingers), as straight lines
+        tops, bottoms = [], []
+        for x in range(x0 + (x1 - x0) // 4, x1 - (x1 - x0) // 4 + 1):
+            ys = [y for y in range(y0, y1 + 1) if labels[y * cell_w + x] == big]
+            if ys:
+                tops.append((x, ys[0]))
+                bottoms.append((x, ys[-1]))
+
+        def fit(pts):
+            mx = sum(p[0] for p in pts) / len(pts)
+            my = sum(p[1] for p in pts) / len(pts)
+            sxx = sum((p[0] - mx) ** 2 for p in pts) or 1
+            k = sum((p[0] - mx) * (p[1] - my) for p in pts) / sxx
+            return lambda x: my + k * (x - mx), k
+
+        top, kt = fit(tops)
+        bottom, kb = fit(bottoms)
+        cx = sx / n
+        t, btm = top(cx), bottom(cx)
+        frames.append({"cx": round((x0 + x1) / 2, 1), "cy": round((y0 + y1) / 2, 1), "w": x1 - x0 + 1,
+                       "fx": round(cx, 1), "fy": round(t + BAR_FACE_Y * (btm - t), 1), "fh": round(btm - t, 1),
+                       "tilt": round(math.degrees(math.atan((kt + kb) / 2)), 1)})
+    return frames
+
+
 # Zippy's face for the caption bar: a square around his head in a frame of the swap sheet (cx, cy, r).
 FACE = ("zippy_swap", 4, (205, 255, 116))
 
@@ -703,11 +751,15 @@ def main():
 
     bg_layers = copy_background(images)
 
+    bar_frames = None
     for key, src, dst, mode in SHEETS:
         sw, sh, strip, meta = split_sheet(os.path.join(ROOT, src), mode)
         write_png(os.path.join(OUT, dst), sw, sh, strip)
         meta["src"] = "assets/" + dst
         sprites[key] = meta
+        if key == "zippy_bar":
+            bar_frames = bar_in_hands(sw, sh, strip, meta["w"], meta["count"])
+            print("sheet  zippy_bar: the bar measured in " + ", ".join(f"{i + 1}: {b['fx']:.0f},{b['fy']:.0f} {b['tilt']:+.0f}°" for i, b in enumerate(bar_frames)))
         if key == "zippy_swap":
             write_png(os.path.join(OUT, "zippy/swap-hands.png"), sw, sh, fist_overlay(sw, sh, strip, meta["w"]))
             sprites["zippy_swap_hands"] = dict(meta, src="assets/zippy/swap-hands.png")
@@ -757,6 +809,8 @@ def main():
         print(f"elements: {len(used)} of {len(items)} pieces -> assets/elements/ (measured: {', '.join(geom)})")
     if bal_geom:
         geom["balance"] = bal_geom
+    if bar_frames:
+        geom["zippyBar"] = bar_frames
 
     def js_obj(d):
         lines = []
