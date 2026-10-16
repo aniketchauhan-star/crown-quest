@@ -1,4 +1,4 @@
-"""Cuts the 18 pieces out of "background sheet.png" (in the project folder) into ../pieces/.
+"""Cuts the 8 pieces the background uses out of "background sheet.png" (in the project folder) into ../pieces/.
 
 Each piece is trimmed to its own size and keeps its transparency. The mountains and the forest touch
 on the sheet, so they are separated by colour, the small gap left in the mountains is filled, and
@@ -20,14 +20,11 @@ ROOT = os.path.dirname(HERE)
 SHEET = os.path.join(os.path.dirname(ROOT), "background sheet.png")
 OUT = os.path.join(ROOT, "pieces")
 
-# Where each piece is on the sheet (x0, y0, x1, y1).
+# Where each piece is on the sheet (x0, y0, x1, y1). The sheet's small details (rocks, grass tufts,
+# the fern, the round bush, the loose tiles) are left out: the game screens stay calm without them.
 BOXES = {
     "tree": (21, 24, 658, 696), "branch": (588, 32, 1141, 276), "arch": (1156, 33, 1518, 524),
-    "rocks": (873, 227, 1150, 400), "bushBig": (401, 364, 681, 578), "bushRound": (695, 412, 936, 562),
-    "fern": (953, 419, 1162, 536), "tuft1": (944, 545, 1085, 604), "tuft2": (1116, 555, 1235, 598),
-    "tuft3": (1267, 565, 1368, 598), "tuft4": (1403, 565, 1503, 604), "lake": (24, 859, 806, 990),
-    "tiles": (811, 853, 1296, 986), "tileA": (1263, 856, 1461, 902), "tileB": (1294, 913, 1424, 987),
-    "tileC": (1419, 921, 1519, 966),
+    "bushBig": (401, 364, 681, 578), "lake": (24, 859, 806, 990), "tiles": (811, 853, 1296, 986),
 }
 STRIP = (30, 584, 1512, 838)  # the mountains + forest strip (they touch)
 

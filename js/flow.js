@@ -28,6 +28,8 @@
   CQ.flow = {
     started: false,
     current: null,
+    jumping: false, // a Next-button jump is under way
+    arriving: false, // Zippy is sneaking back into a new level (see arrive)
     // opts.noVeil: the title screen's own transition already covers the change
     async goto(cp, opts) {
       opts = opts || {};
@@ -45,6 +47,7 @@
           const change = i > start && (SCENE_OF[ORDER[i - 1]] !== SCENE_OF[id] || CQ.zippy.wearing);
           if (change) await outro();
           this.current = id;
+          CQ.next.showNext(id !== "finale");
           CQ.store.set("progress", { cp: id });
           resetScene(id, { animate: change });
           if (veil && i === start) CQ.veil.reveal();
@@ -68,6 +71,15 @@
     skipIntro() {
       CQ.audio.stopSpeech();
       this.goto("L1");
+    },
+    // The Next button when no line is on: the start of the next part of the quest. While Zippy is
+    // arriving in a level, it starts that level at once instead (skipping only his entrance).
+    next() {
+      const i = ORDER.indexOf(this.current);
+      if (i < 0 || i >= ORDER.length - 1 || this.jumping) return;
+      this.jumping = true; // one jump per tap, even when tapped twice quickly
+      setTimeout(() => (this.jumping = false), 1500);
+      this.chapter(this.arriving ? this.current : ORDER[i + 1]);
     },
     async askRestart() {
       if (!this.current) return;
@@ -159,11 +171,16 @@
   // peeks out from behind the tree (is Grumble still asleep?), and he swings back in on his vine.
   async function arrive() {
     const z = CQ.zippy;
-    z.offstage();
-    CQ.veil.reveal(900);
-    await R.wait(1100);
-    await sneakBack();
-    z.pose("idle");
+    CQ.flow.arriving = true;
+    try {
+      z.offstage();
+      CQ.veil.reveal(900);
+      await R.wait(1100);
+      await sneakBack();
+      z.pose("idle");
+    } finally {
+      CQ.flow.arriving = false;
+    }
   }
   // Zippy's smiling head leans out from behind the tree trunk ("hmm?"), ducks back, and he swings in.
   // opts.comic: words to pop up beside his head; opts.pose and opts.sound: how he swings in.
@@ -215,7 +232,7 @@
     CQ.focus.on(what, opts);
   }
   // what to look at (functions: the pans' contents change while they are looked at)
-  const panEls = (side) => () => [CQ.balance.sides[side].g.querySelector(".bal-back")].concat(CQ.balance.items[side].filter((it) => !it.ghost).map((it) => it.el));
+  const panEls = (side) => () => [CQ.balance.sides[side].g.querySelector(".bal-plate")].concat(CQ.balance.items[side].filter((it) => !it.ghost).map((it) => it.el));
   const bothPans = () => panEls("left")().concat(panEls("right")());
   const crownEls = () => CQ.balance.items.left.filter((it) => it.type === "crown" && !it.ghost).map((it) => it.el);
   const leftBarEls = () => CQ.balance.items.left.filter((it) => it.type === "bar" && !it.ghost).map((it) => it.el);
@@ -506,12 +523,16 @@
     CQ.spot.off();
     g.snoreVol = 1;
     await R.when(CQ.camera.to(960, 540, 1, 1300));
-    // If the balance tips, the alarm will wake Grumble. (Zippy imagines it.)
+    // If the balance tips, the alarm will wake Grumble: a cloud above sleeping Grumble's head, its trail
+    // pointing at him, shows it (the balance tips, RING! RING!, and he wakes up roaring). Everything else
+    // fades back, so the cloud is all there is to look at.
     CQ.audio.play("zippy.gulp");
-    const th = CQ.thought({ x: z.center().x + 340, y: z.center().y - 20 }, miniTipScene(), { w: 500, h: 300, cls: "from-left" });
-    th.querySelector(".mini-scene").prepend(CQ.miniBalance({ width: 270, left: "bar", right: "coins3" }));
-    const miniG = new CQ.Sprite(th.querySelector(".ms-grumble"), "", 0.3);
+    const gh = g.headTop();
+    const th = CQ.thought({ x: gh.x + 380, y: gh.y - 250 }, miniTipScene(), { w: 760, h: 500, cls: "over-grumble" }); // its trail ends at his head
+    th.querySelector(".mini-scene").prepend(CQ.miniBalance({ width: 290, left: "bar", right: "coins3" }));
+    const miniG = new CQ.Sprite(th.querySelector(".ms-grumble"), "", 0.4);
     miniG.show("grumble_roar", 7);
+    CQ.focus.dimAll();
     setTimeout(() => {
       if (!th.isConnected) return;
       th.classList.add("tip");
@@ -521,6 +542,7 @@
       if (th.isConnected) CQ.audio.play("grumble.roar", { volume: 0.35 });
     }, 1900);
     await say("intro-4", { advance: "auto", pause: 1000 });
+    look(null);
     await CQ.hideThought(th);
     // Let's replace the crown with something just as heavy.
     const bar = CQ.bars.list[0];
@@ -541,8 +563,9 @@
     CQ.ui.skip.classList.add("hidden");
   }
   function miniTipScene() {
-    // the mini balance is added after; the alarm word shows when it tips
-    return `<div class="mini-scene"><div class="ms-alarm">${C().grumble.alarm}</div><div class="ms-grumble"></div></div>`;
+    // the mini balance is added after; when it tips, the alarm word shows and an arrow points at Grumble
+    const arrow = `<svg class="ms-arrow" viewBox="0 0 100 54" aria-hidden="true"><path d="M6 27 H66" stroke="#6b3e00" stroke-width="22" stroke-linecap="round"/><path d="M6 27 H66" stroke="#ffd84d" stroke-width="12" stroke-linecap="round"/><path d="M60 7 L95 27 L60 47 Z" fill="#ffd84d" stroke="#6b3e00" stroke-width="5" stroke-linejoin="round"/></svg>`;
+    return `<div class="mini-scene"><div class="ms-alarm">${C().grumble.alarm}</div>${arrow}<div class="ms-grumble"></div></div>`;
   }
   // Curved double arrow between two world points (drawn in the world drag layer).
   function swapArrow(a, b) {

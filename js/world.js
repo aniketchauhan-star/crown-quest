@@ -154,6 +154,10 @@
     center() {
       return { x: this.x, y: this.y - (this.state === "awake" ? 200 : 111) * this.k };
     }
+    // The top of his head as he sleeps (his head is on the right), where a thought about him points.
+    headTop() {
+      return { x: this.x + 140 * this.k, y: this.y - 212 * this.k };
+    }
     head() {
       const f = this.k / 1.15; // offsets were tuned at scale 1.15
       return this.state === "awake" ? { x: this.x + 10 * f, y: this.y - 430 * f } : { x: this.x + 95 * f, y: this.y - 215 * f };
@@ -806,43 +810,44 @@
     }
   }
 
-  // ================================================================== balance (art from elements.png)
-  // The balance is put together from the beam, stand and pan pieces in elements.png; GEOM (in
-  // assets/sprites.js) says where their joints are. Sizes are "balance units": the whole balance,
-  // with everything on its pans, is drawn at scale S around the pivot. Only plain parts are stretched
-  // (the bar between the balls and hub, and the post); balls, hub, base and pans keep their shape.
-  // Each pan is drawn twice: whole behind the items, and just its front lip in front of them, so
-  // things sit inside the bowl.
-  const GM = window.GEOM;
+  // ================================================================== balance (art: new balance .png)
+  // The balance is put together from the parts of "new balance .png" (cut into assets/balance/ by
+  // tools/prepare_assets.py), laid out like the user's picture of the finished balance. Sizes are
+  // "balance units": the whole balance, with everything on its pans, is drawn at scale S around the
+  // pivot (the hub's centre). The parts are drawn at ART_K of their art size. ART says where they go,
+  // in pixels measured on the sheet (GEOM.balance has where each cut part was on it).
+  // Back to front: floor shadow, base, the leaves at the post's foot, post, pans (plate, rope hanger,
+  // the things on the plate), the leaves beside the hub, beam (it tips), hub (it stays upright: the
+  // beam turns behind it). Re-measure ART if the sheet is replaced.
+  const GB = window.GEOM.balance;
+  const ART_K = 0.795; // sheet pixels -> balance units
+  const ART = {
+    pivot: { x: 1124.5, y: 171.5 }, // the hub's centre
+    R: 425, // pivot to each hanging point, under the rope wrapped round the beam
+    hangY: 58, // ...just below the beam: the hanger's knot tucks behind it
+    beam: { axisY: 167, wrapL: 139, wrapR: 869, cutL: 170, cutR: 840 }, // between the cuts it is stretched, so the wraps sit at ±R
+    knot: { x: 658.5, y: 254 }, // the top of the rope hanger's knot: it hangs from the hanging point
+    ropeEnd: 682, // where the hanger's ropes end, on the plate's top
+    plate: { x: 253, y: 434, top: 488 }, // the plate's centre, its top edge, and the line across its top (where the ropes land)
+    post: { x: 1414, y: 24, at: 100 }, // the post's centre and top; its top goes `at` below the pivot, behind the hub
+    base: { x: 1075, y: 432, at: 603 }, // the base's centre and top; its top goes `at` below the pivot
+    feet: { x: 200, y: 922, k: 0.62, dx: 95, at: 683 }, // the three leaves (bottom centre), twice beside the post's foot; the post hides each inner leaf
+    hubLeaves: { l: [518, 916], r: [524, 916], dx: 145, at: -50, tilt: 20 }, // each leaf's stem, set beside the hub, leaning out
+  };
   const BAL = {
     S: 0.78, // drawn size (1 = full size)
-    R: 365, // pivot to each hanging point (the centre of an end ball)
-    BEAM_K: 0.85, // beam art pixels -> balance units
-    PAN_K: 1.55, // pan art pixels -> balance units
-    STAND_K: 1.55, // stand art pixels -> balance units
-    FLOOR: 480, // pivot down to the bottom of the base
+    R: ART.R * ART_K, // pivot to each hanging point
+    HANG_Y: ART.hangY * ART_K,
+    PLATE_TOP: (ART.ropeEnd - ART.knot.y - 5 - (ART.plate.top - ART.plate.y)) * ART_K, // hanging point down to the plate's top edge
   };
-  BAL.HANG_DY = GM.beam.left.r * BAL.BEAM_K * 0.75; // the pan's ring hooks just under the end ball
-  BAL.PAN_LEFT = -GM.pan.ringX * BAL.PAN_K;
-  BAL.PAN_TOP = BAL.HANG_DY - GM.pan.ringY * BAL.PAN_K;
-  BAL.RIM_Y = BAL.PAN_TOP + GM.pan.rimY * BAL.PAN_K; // hanging point down to the rim's centre line
-  // Things rest on the bowl's floor, a little below the line where its front lip begins, so the lip
-  // hides their bottom edge (they sit IN the bowl, not on top of it).
-  BAL.SINK = 3; // pan-art pixels below the front lip's line (coin faces stay readable)
-  BAL.ITEMS_Y = BAL.PAN_TOP + (GM.pan.innerFront + BAL.SINK) * BAL.PAN_K;
-  // the inside of the bowl as an ellipse (pan-art pixels): the front lip is drawn over things below its front edge
-  BAL.INNER = {
-    cx: GM.pan.ringX,
-    cy: (GM.pan.innerBack + GM.pan.innerFront) / 2,
-    rx: (GM.pan.rimR - GM.pan.rimL) / 2 - 7,
-    ry: (GM.pan.innerFront - GM.pan.innerBack) / 2,
-  };
+  // Things stand on the plate's top, a little in front of the line across it.
+  BAL.ITEMS_Y = BAL.PLATE_TOP + (ART.plate.top - ART.plate.y + 7) * ART_K;
+  BAL.PAN_BOTTOM = BAL.PLATE_TOP + IM().balPlate.h * ART_K; // hanging point down to the plate's bottom
+  BAL.FLOOR = (ART.base.at + IM().balBase.h) * ART_K; // pivot down to the bottom of the base
+  BAL.HUB_R = (IM().balHub.w / 2) * ART_K;
   // Coins: stacked rows overlap a little, like a heap; spacing in a row.
   BAL.COIN_ROW = Math.round(L.COIN_W * 0.78);
   BAL.COIN_STEP = L.COIN_W + 2;
-  BAL.PAN_RX = ((GM.pan.rimR - GM.pan.rimL) / 2) * BAL.PAN_K; // rim half-width
-  BAL.PAN_BOTTOM = BAL.PAN_TOP + GM.pan.bottom * BAL.PAN_K;
-  BAL.HUB_R = GM.beam.hub.r * BAL.BEAM_K;
   CQ.BAL = BAL;
   // On-pan sizes in stage pixels (for bars and crowns flying to and from the pans).
   L.PAN_BAR_PX = L.PAN_BAR_W * BAL.S;
@@ -863,162 +868,125 @@
     else img.addEventListener("load", fn, { once: true });
   }
 
-  // The beam, at its art's own resolution, with the plain bar shortened so the balls sit at ±R.
+  // One part at ART_K (times k): its point (ax, ay) on the sheet lands at (x, y), in balance units.
+  // turn: degrees, about that point.
+  function part(key, parent, ax, ay, x, y, cls, k, turn) {
+    k = ART_K * (k || 1);
+    const im = IM()[key];
+    const o = GB[key];
+    const e = CQ.img(key, "bal-art " + (cls || ""), parent);
+    const ox = (ax - o.x) * k;
+    const oy = (ay - o.y) * k;
+    Object.assign(e.style, { width: im.w * k + "px", height: im.h * k + "px", left: x - ox + "px", top: y - oy + "px" });
+    if (turn) {
+      e.style.transformOrigin = `${ox}px ${oy}px`;
+      e.style.transform = `rotate(${turn}deg)`;
+    }
+    return e;
+  }
+
+  // The beam, with its middle (between the two rope wraps) stretched so the wraps sit at ±R. It
+  // turns about the pivot: the point midway between the wraps, on its axis.
   function beamCanvas() {
-    const b = GM.beam;
-    const im = IM().beam;
-    const half = BAL.R / BAL.BEAM_K; // hub centre to ball centre, in beam-art pixels
-    const W = Math.ceil(2 * (half + b.right.r + 6));
+    const B = ART.beam;
+    const im = IM().balBeam;
+    const o = GB.balBeam;
+    const cutL = B.cutL - o.x;
+    const cutR = B.cutR - o.x;
+    const mid = 2 * ART.R - (B.cutL - B.wrapL) - (B.wrapR - B.cutR); // the stretched middle's width
+    const W = Math.round(cutL + mid + (im.w - cutR));
     const c = document.createElement("canvas");
     c.width = W;
     c.height = im.h;
     c.className = "bal-art bal-beam";
-    const cx = W / 2;
-    const leftX = cx - half - b.left.x; // where the beam art's x=0 lands for the left ball
-    const rightX = cx + half - b.right.x;
-    const hubX = cx - b.hub.x;
-    whenReady(artImage("beam"), () => {
+    whenReady(artImage("balBeam"), () => {
       const g = c.getContext("2d");
-      const img = artImage("beam");
-      const [l0, l1] = b.plainL;
-      const [r0, r1] = b.plainR;
-      g.drawImage(img, 0, 0, l0, im.h, leftX, 0, l0, im.h); // left ball + collar
-      g.drawImage(img, l0, 0, l1 - l0 + 1, im.h, leftX + l0, 0, hubX + l1 + 1 - (leftX + l0), im.h); // left bar
-      g.drawImage(img, l1 + 1, 0, r0 - l1 - 1, im.h, hubX + l1 + 1, 0, r0 - l1 - 1, im.h); // hub + collars
-      g.drawImage(img, r0, 0, r1 - r0 + 1, im.h, hubX + r0, 0, rightX + r1 + 1 - (hubX + r0), im.h); // right bar
-      g.drawImage(img, r1 + 1, 0, im.w - r1 - 1, im.h, rightX + r1 + 1, 0, im.w - r1 - 1, im.h); // right collar + ball
+      const img = artImage("balBeam");
+      g.drawImage(img, 0, 0, cutL, im.h, 0, 0, cutL, im.h); // left end + wrap
+      g.drawImage(img, cutL, 0, cutR - cutL, im.h, cutL, 0, mid, im.h); // the middle, stretched
+      g.drawImage(img, cutR, 0, im.w - cutR, im.h, cutL + mid, 0, im.w - cutR, im.h); // right wrap + end
     });
-    const k = BAL.BEAM_K;
-    Object.assign(c.style, { width: W * k + "px", height: im.h * k + "px", left: -cx * k + "px", top: -b.hub.y * k + "px" });
-    c.style.transformOrigin = `${cx * k}px ${b.hub.y * k}px`;
+    const k = ART_K;
+    const cx = B.wrapL - o.x + ART.R; // the pivot, in the canvas
+    const cy = B.axisY - o.y;
+    Object.assign(c.style, { width: W * k + "px", height: im.h * k + "px", left: -cx * k + "px", top: -cy * k + "px" });
+    c.style.transformOrigin = `${cx * k}px ${cy * k}px`;
     return c;
   }
 
-  // The stand, at its art's own resolution, with the post stretched so the base reaches the floor and
-  // the ball on top peeks out just above the hub.
-  function standCanvas() {
-    const s = GM.stand;
-    const im = IM().stand;
-    const k = BAL.STAND_K;
-    const ballR = s.ballY - s.top;
-    const ballCentre = -(BAL.HUB_R + ballR * k * 0.55); // in balance units, above the pivot
-    const need = (BAL.FLOOR - ballCentre) / k; // ball centre to the bottom, in stand-art pixels
-    const extra = Math.max(0, Math.round(need - (s.bottom - s.ballY)));
-    const c = document.createElement("canvas");
-    c.width = im.w;
-    c.height = im.h + extra;
-    c.className = "bal-art bal-stand";
-    whenReady(artImage("stand"), () => {
-      const g = c.getContext("2d");
-      const img = artImage("stand");
-      g.drawImage(img, 0, 0, im.w, s.postTop, 0, 0, im.w, s.postTop); // ball and the top of the post
-      g.drawImage(img, 0, s.postTop, im.w, s.baseTop - s.postTop, 0, s.postTop, im.w, s.baseTop - s.postTop + extra); // post
-      g.drawImage(img, 0, s.baseTop, im.w, im.h - s.baseTop, 0, s.baseTop + extra, im.w, im.h - s.baseTop); // base
-    });
-    Object.assign(c.style, {
-      width: im.w * k + "px",
-      height: (im.h + extra) * k + "px",
-      left: -s.cx * k + "px",
-      top: ballCentre - s.ballY * k + "px",
-    });
-    return c;
+  // The parts that stay still, behind the pans: base, the leaves at the post's foot, and the post.
+  function standParts(parent) {
+    const A = ART;
+    const k = ART_K;
+    part("balBase", parent, A.base.x, A.base.y, 0, A.base.at * k, "bal-base");
+    [-1, 1].forEach((side) => part("balLeaves", parent, A.feet.x, A.feet.y, side * A.feet.dx * k, A.feet.at * k, "bal-feet", A.feet.k));
+    part("balPost", parent, A.post.x, A.post.y, 0, A.post.at * k, "bal-post");
   }
-
-  // How much higher the bowl's floor is at x (balance units from the pan's centre) than in the middle:
-  // things near the sides sit higher, so the front lip hides the same small strip of everything.
-  function bowlRise(x) {
-    const I = BAL.INNER;
-    const u = Math.min(0.95, Math.abs(x) / (I.rx * BAL.PAN_K));
-    return -I.ry * (1 - Math.sqrt(1 - u * u)) * BAL.PAN_K;
+  // The leaves beside the hub (behind the beam) and the hub itself (in front of it).
+  function hubLeaves(parent) {
+    const H = ART.hubLeaves;
+    part("balLeafL", parent, H.l[0], H.l[1], -H.dx * ART_K, H.at * ART_K, "bal-leaf", 1, -H.tilt);
+    part("balLeafR", parent, H.r[0], H.r[1], H.dx * ART_K, H.at * ART_K, "bal-leaf", 1, H.tilt);
   }
-  // The part of the pan drawn in front of the items: everything below the front edge of the bowl's
-  // inside (the front lip and the outside of the bowl), as a clip-path polygon in the pan's own pixels.
-  function frontLipClip(k) {
-    const im = IM().pan;
-    const I = BAL.INNER;
-    const pts = [[0, I.cy]];
-    for (let i = 0; i <= 24; i++) {
-      const x = I.cx - I.rx + (2 * I.rx * i) / 24;
-      const u = (x - I.cx) / I.rx;
-      pts.push([x, I.cy + I.ry * Math.sqrt(Math.max(0, 1 - u * u))]);
-    }
-    pts.push([im.w, I.cy], [im.w, im.h + 2], [0, im.h + 2]);
-    return "polygon(" + pts.map(([x, y]) => `${(x * k).toFixed(1)}px ${(y * k).toFixed(1)}px`).join(", ") + ")";
+  function hubPart(parent) {
+    return part("balHub", parent, ART.pivot.x, ART.pivot.y, 0, 0, "bal-hub");
   }
-  // One pan: the whole pan behind the items, the items, then the pan's front lip in front of them.
+  // One pan, at its hanging point (its group follows the beam): the plate, its rope hanger, and the
+  // things on the plate in front of both.
   function panParts(group) {
-    const im = IM().pan;
-    const k = BAL.PAN_K;
-    const size = { width: im.w * k + "px", height: im.h * k + "px", left: BAL.PAN_LEFT + "px", top: BAL.PAN_TOP + "px" };
-    const back = CQ.img("pan", "bal-art bal-back", group);
-    Object.assign(back.style, size);
+    part("balPlate", group, ART.plate.x, ART.plate.y, 0, BAL.PLATE_TOP, "bal-plate");
+    part("balHanger", group, ART.knot.x, ART.knot.y, 0, 0, "bal-hanger");
     const items = CQ.el("div", "bal-items", group);
     CQ.pos(items, 0, BAL.ITEMS_Y);
-    const front = CQ.img("pan", "bal-art bal-front", group);
-    Object.assign(front.style, size);
-    front.style.clipPath = frontLipClip(k);
     return items;
   }
-
-  // The = / ≠ medallion in the hub (green when level, red when tipped; the sign itself is drawn here).
-  function emblemParts(parent, cls) {
-    const e = CQ.el("div", "emblem eq" + (cls ? " " + cls : ""), parent);
-    const d = BAL.HUB_R * 2 * 0.94;
-    Object.assign(e.style, { width: d + "px", height: d + "px", fontSize: Math.round(d * 0.72) + "px" });
-    CQ.img("medalGreen", "medal green", e);
-    CQ.img("medalRed", "medal red", e);
-    CQ.el("span", "em-sym", e, "=");
-    return e;
-  }
-
-  // Floor shadows under the base and the pans.
+  // A soft shadow on the floor under the base.
   function shadows(parent) {
-    [
-      [0, 1, 220],
-      [-BAL.R, 0.55, 150],
-      [BAL.R, 0.55, 150],
-    ].forEach(([x, o, rx]) => {
-      const sh = CQ.el("div", "bal-shadow", parent);
-      CQ.box(sh, x - rx, BAL.FLOOR - 14, rx * 2, 34);
-      sh.style.opacity = o;
-    });
+    const sh = CQ.el("div", "bal-shadow", parent);
+    const rx = (IM().balBase.w / 2) * ART_K * 1.05;
+    CQ.box(sh, -rx, BAL.FLOOR - 18, rx * 2, 36);
   }
 
-  // A small, complete balance (notebook icon, intro thought bubble). opts: { width, left: 'bar',
-  // right: 'coins3' }. Tipping is done in CSS (.tip on a parent).
+  // A small, complete balance (formula screen, intro thought bubble). opts: { width, left: 'bar',
+  // right: 'coins3' }. A parent with .tip tips it (CSS; --tl and --tr say where its pans go).
   CQ.miniBalance = function (opts) {
     opts = opts || {};
     const w = opts.width || 150;
-    const s = w / 1130; // the same frame as before: x -565..565, y -110..550 around the pivot
+    const halfW = BAL.R + (IM().balPlate.w / 2) * ART_K + 6; // the whole balance, in balance units
+    const top = 200 * ART_K; // above the pivot: the leaves beside the hub
+    const s = w / (2 * halfW);
     const box = CQ.el("div", "mini-bal");
-    Object.assign(box.style, { width: w + "px", height: Math.round(w * (660 / 1130)) + "px" });
+    Object.assign(box.style, { width: w + "px", height: Math.round((top + BAL.FLOOR + 10) * s) + "px" });
     const rig = CQ.el("div", "mini-rig", box);
-    rig.style.transform = `translate(${565 * s}px, ${110 * s}px) scale(${s})`;
+    rig.style.transform = `translate(${halfW * s}px, ${top * s}px) scale(${s})`;
     shadows(rig);
-    rig.appendChild(standCanvas());
+    standParts(rig);
     [
       ["l", -1, opts.left],
       ["r", 1, opts.right],
     ].forEach(([n, side, what]) => {
       const holder = CQ.el("div", "mini-side", rig);
-      holder.style.transform = `translate(${side * BAL.R}px, 0px)`;
+      holder.style.transform = `translate(${side * BAL.R}px, ${BAL.HANG_Y}px)`;
       const g = CQ.el("div", `mb-pan mb-pan-${n}`, holder);
+      // tipped 14°, its hanging point turns about the pivot
+      const th = 14 * deg;
+      const x = side * BAL.R;
+      const y = BAL.HANG_Y;
+      box.style.setProperty(`--t${n}`, `translate(${(x * Math.cos(th) - y * Math.sin(th) - x).toFixed(1)}px, ${(x * Math.sin(th) + y * Math.cos(th) - y).toFixed(1)}px)`);
       const items = panParts(g);
       if (what === "bar") {
         const b = CQ.img("bar", "mini-item", items);
-        Object.assign(b.style, { width: "160px", left: "-80px", top: "-86px" });
+        Object.assign(b.style, { width: "160px", left: "-80px", top: "-74px" });
       } else if (what === "coins3") {
-        [-70, 0, 70].forEach((x) => {
+        [-70, 0, 70].forEach((cx) => {
           const c = CQ.el("div", "mini-item mini-coin", items, '<span class="one">1</span>');
-          Object.assign(c.style, { left: x - 32 + "px", top: "-76px" });
+          Object.assign(c.style, { left: cx - 32 + "px", top: "-64px" });
         });
       }
-      // the front lip covers the bottom of the items
-      g.appendChild(g.querySelector(".bal-front"));
     });
-    const beamWrap = CQ.el("div", "mb-beam", rig);
-    beamWrap.appendChild(beamCanvas());
-    emblemParts(rig, "mb-em");
+    hubLeaves(rig);
+    CQ.el("div", "mb-beam", rig).appendChild(beamCanvas());
+    hubPart(rig);
     return box;
   };
 
@@ -1044,18 +1012,20 @@
       this.rig.style.transform = `translate(${BX}px, ${PY}px) scale(${BAL.S})`;
       const rig = this.rig;
       shadows(rig);
-      this.stand = rig.appendChild(standCanvas());
+      standParts(rig);
       this.sides = {};
       ["left", "right"].forEach((side) => {
         const g = CQ.el("div", "bal-side " + side, rig);
         this.sides[side] = { g, items: panParts(g) };
       });
+      hubLeaves(rig);
       this.beam = rig.appendChild(beamCanvas());
-      this.emblem = emblemParts(rig);
+      this.hub = hubPart(rig);
+      this.level = true;
       this.setEmblem(true, true);
-      // The equation sign hangs on the post at full size (outside the scaled container).
+      // The equation sign hangs on the post, below the hub, at full size (outside the scaled container).
       this.sign = CQ.el("div", "eq-sign hidden", layer);
-      CQ.pos(this.sign, BX, PY + 218 * BAL.S);
+      CQ.pos(this.sign, BX, PY + 270 * BAL.S);
       this.pendingClang = false;
       CQ.ticker.add((dt) => this.step(dt));
       this.apply();
@@ -1085,9 +1055,11 @@
       const c = Math.cos(th);
       const s = Math.sin(th);
       this.beam.style.transform = `rotate(${this.angle}deg)`;
+      // the hanging points (just under the beam) turn with it about the pivot
+      const hy = BAL.HANG_Y;
       this.localEnds = {
-        left: { x: -this.R * c, y: -this.R * s },
-        right: { x: this.R * c, y: this.R * s },
+        left: { x: -this.R * c - hy * s, y: -this.R * s + hy * c },
+        right: { x: this.R * c - hy * s, y: this.R * s + hy * c },
       };
       // stage positions of the two hanging points (used by labels, flights and Zippy)
       this.ends = { left: this.toWorld(this.localEnds.left), right: this.toWorld(this.localEnds.right) };
@@ -1166,7 +1138,7 @@
       items.forEach((it, i) => {
         const p = pos[i] || { x: 0, y: 0, z: 1 };
         it.x = p.x;
-        it.y = p.y + bowlRise(p.x); // the bowl's floor curves up towards its sides
+        it.y = p.y;
         CQ.box(it.el, p.x - it.w / 2, p.y - it.h, it.w, it.h);
         it.el.style.zIndex = p.z || 1;
       });
@@ -1253,23 +1225,21 @@
     wobble(v) {
       this.vel += v || 9;
     }
+    // Level or not: said for screen readers on the hub, and a flash at the hub when it changes.
     setEmblem(eq, quiet) {
-      const was = this.emblem.classList.contains("eq");
-      this.emblem.classList.toggle("eq", eq);
-      this.emblem.classList.toggle("ne", !eq); // not "neq": that class draws the ≠ slash
-      this.emblem.querySelector(".em-sym").classList.toggle("neq", !eq); // the slash makes = into ≠
-      this.emblem.setAttribute("aria-label", eq ? "The balance is level: both sides are equal" : "The balance is tipped: the sides are not equal");
+      const was = this.level;
+      this.level = eq;
+      this.hub.alt = eq ? "The balance is level: both sides are equal" : "The balance is tipped: the sides are not equal";
       if (!quiet && was !== eq) this.flashEmblem();
     }
     flashEmblem() {
-      CQ.anim(this.emblem, [{ transform: "translate(-50%,-50%) scale(1)" }, { transform: "translate(-50%,-50%) scale(1.5)" }, { transform: "translate(-50%,-50%) scale(1)" }], {
+      CQ.anim(this.hub, [{ transform: "scale(1)" }, { transform: "scale(1.12)" }, { transform: "scale(1)" }], {
         duration: 520,
         easing: CQ.EASE.back,
         keep: false,
         essential: true,
       });
-      const c = { x: L.BX, y: L.PIVOT_Y };
-      CQ.fx.ring(CQ.world.fx, c.x, c.y, this.emblem.classList.contains("eq") ? "#2BB673" : "#C8473B");
+      CQ.fx.ring(CQ.world.fx, L.BX, L.PIVOT_Y, this.level ? "#2BB673" : "#C8473B");
     }
     setSign(text) {
       if (!text) {

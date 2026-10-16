@@ -404,6 +404,50 @@ def fist_overlay(sw, sh, strip, cell_w):
     return out
 
 
+# --------------------------------------------------------------------------- the balance
+# "new balance .png" is a sheet of separate balance parts. Each part is cut out by its box: inside a box
+# only its biggest piece is kept (with its soft edge), so the edge of a neighbour that pokes in is left
+# out. js/world.js puts the parts together (ART there), laid out like the user's picture of the finished
+# balance. GEOM.balance keeps where each cut part was on the sheet, so world.js can use points measured
+# on the sheet. Re-measure the boxes and ART if the sheet is replaced.
+BALANCE_FILES = ("new balance .png", "new balance.png")
+BALANCE_PARTS = [
+    ("balBeam", (45, 86, 970, 238)),
+    ("balHub", (985, 30, 1265, 315)),
+    ("balPost", (1323, 24, 1507, 621)),
+    ("balBase", (839, 432, 1302, 637)),
+    ("balPlate", (33, 434, 475, 593)),
+    ("balHanger", (470, 254, 848, 683)),  # the rope that hangs a plate from the beam
+    ("balLeaves", (56, 723, 345, 923)),  # three leaves: two of them show at each side of the post's foot
+    ("balLeafL", (408, 765, 521, 919)),  # the pair of leaves cut in two: one each side of the hub
+    ("balLeafR", (521, 765, 626, 919)),
+]
+
+
+def cut_part(w, h, px, box):
+    """The biggest piece inside box (x0, y0, x1, y1) with its soft edge, trimmed: (x, y, w, h, rgba)."""
+    x0, y0, x1, y1 = box
+    W, H = x1 - x0, y1 - y0
+    alpha = [px[((y0 + y) * w + x0 + x) * 4 + 3] for y in range(H) for x in range(W)]
+    solid = bytearray(1 if a > ALPHA_SOLID else 0 for a in alpha)
+    labels, comps = _label(W, H, solid)
+    big = max(comps, key=lambda k: comps[k][4])
+    keep = bytearray(1 if lab == big else 0 for lab in labels)
+    for _ in range(EDGE_RADIUS):  # its soft edge, never another piece
+        grow = [p for p in range(W * H) if not keep[p] and not solid[p] and alpha[p] and (
+            (p % W and keep[p - 1]) or (p % W < W - 1 and keep[p + 1]) or (p >= W and keep[p - W]) or (p < W * (H - 1) and keep[p + W]))]
+        for p in grow:
+            keep[p] = 1
+    out = bytearray(W * H * 4)
+    for p in range(W * H):
+        if keep[p]:
+            y, x = divmod(p, W)
+            i = ((y0 + y) * w + x0 + x) * 4
+            out[p * 4:p * 4 + 4] = px[i:i + 4]
+    cx0, cy0, cx1, cy1 = content_box(W, H, out)
+    return x0 + cx0, y0 + cy0, cx1 - cx0, cy1 - cy0, crop(W, H, out, cx0, cy0, cx1 - cx0, cy1 - cy0)
+
+
 # The game's background: the layers of jungle-background/ (built from "background sheet.png").
 BACKGROUND_DIR = "jungle-background"
 
@@ -442,6 +486,11 @@ ELEMENT_ROWS = [
     ["gemYellow", "gemOrange", "gemPurple", "gemGreen", "gemTeal", "gemAmber", "gemBlue", "gemRed",
      "flame", "sparkle", "dust", "hand"],
 ]
+# Pieces the game no longer shows: the old gold balance (beam, pan, stand and its = / ≠ medals; the
+# balance is now cut from "new balance .png"), the corner buttons, level sign, speaker, scroll, torch
+# flame, closed chest and the old pedestal. They are still cut, so the rows line up, but not written.
+UNUSED_ELEMENTS = {"beam", "pan", "stand", "medalGreen", "medalRed", "chestClosed", "pedestal", "scroll", "levelSign",
+                   "btnGem", "btnRestart", "btnMenu", "btnSound", "flame"}
 
 
 def _label(w, h, solid):
@@ -585,74 +634,6 @@ def _rows(w, h, px, thr=128):
 def measure_elements(items):
     """Joints and borders the game needs, in the cut pieces' own pixels."""
     g = {}
-    # beam: end balls, hub and the plain bar between them
-    w, h, px = items["beam"]
-    cols = []
-    for x in range(w):
-        ys = [y for y in range(h) if px[(y * w + x) * 4 + 3] > 128]
-        cols.append((ys[0], ys[-1]) if ys else None)
-    heights = sorted(c[1] - c[0] + 1 for c in cols if c)
-    bar = heights[len(heights) // 2]
-    tall, runs = [i for i, c in enumerate(cols) if c and c[1] - c[0] + 1 > bar * 1.6], []
-    for x in tall:
-        if runs and runs[-1][1] == x - 1:
-            runs[-1][1] = x
-        else:
-            runs.append([x, x])
-    runs = [r for r in runs if r[1] - r[0] >= 6]
-    hub = min(runs, key=lambda r: abs((r[0] + r[1]) / 2 - w / 2))
-    def centre(r):
-        mid = (r[0] + r[1]) // 2
-        return {"x": round((r[0] + r[1]) / 2, 1), "y": round((cols[mid][0] + cols[mid][1]) / 2, 1), "r": round((r[1] - r[0] + 1) / 2, 1)}
-    bar_cols = [c for c in cols if c and c[1] - c[0] + 1 <= bar * 1.1]
-    # the plain bar on each side of the hub (between the collars): the part the game may stretch
-    pruns = []
-    for x in (i for i, c in enumerate(cols) if c and c[1] - c[0] + 1 <= bar * 1.1):
-        if pruns and pruns[-1][1] == x - 1:
-            pruns[-1][1] = x
-        else:
-            pruns.append([x, x])
-    longest = lambda rs: max(rs, key=lambda r: r[1] - r[0])
-    plain_l = longest([r for r in pruns if r[0] > runs[0][1] and r[1] < hub[0]])
-    plain_r = longest([r for r in pruns if r[0] > hub[1] and r[1] < runs[-1][0]])
-    g["beam"] = {"left": centre(runs[0]), "right": centre(runs[-1]), "hub": centre(hub),
-                 "barTop": sorted(c[0] for c in bar_cols)[len(bar_cols) // 2],
-                 "barBottom": sorted(c[1] for c in bar_cols)[len(bar_cols) // 2],
-                 "plainL": plain_l, "plainR": plain_r}
-    # pan: hanging ring (centre of its hole), rim (widest row), bottom
-    w, h, px = items["pan"]
-    rows = _rows(w, h, px)
-    hole = [y for y in range(min(h, 80)) if len(rows[y]) == 2 and rows[y][1][0] - rows[y][0][1] < 30]
-    ring_y = sum(hole) / len(hole)
-    ring_x = sum((rows[y][0][1] + rows[y][1][0]) / 2 for y in hole) / len(hole)
-    widths = [(r[-1][1] - r[0][0], y) for y, r in enumerate(rows) if r]
-    rim_w, rim_y = max(widths)
-    rim_top = next(y for y in range(int(ring_y) + 20, h) if any(a <= w // 2 <= b for a, b in rows[y]))
-    # the inside of the bowl, down its middle: the dark back outline, the interior, then the dark line
-    # where the front lip begins (things in the pan tuck behind that lip)
-    cx = int(round(ring_x))
-    lum = lambda y: (px[(y * w + cx) * 4] * 3 + px[(y * w + cx) * 4 + 1] * 6 + px[(y * w + cx) * 4 + 2]) / 10
-    y = rim_top
-    while y < h and lum(y) < 140:
-        y += 1  # through the back outline
-    inner_back = y
-    y = rim_y + 2
-    while y < h and lum(y) >= 110:
-        y += 1  # down the interior to the front lip's dark line
-    g["pan"] = {"ringX": round(ring_x, 1), "ringY": round(ring_y, 1), "rimTop": rim_top, "rimY": rim_y,
-                "rimL": rows[rim_y][0][0], "rimR": rows[rim_y][-1][1], "bottom": max(y for y, r in enumerate(rows) if r),
-                "innerBack": inner_back, "innerFront": y}
-    # stand: top ball, post, base
-    w, h, px = items["stand"]
-    rows = _rows(w, h, px)
-    span = {y: (r[0][0], r[-1][1]) for y, r in enumerate(rows) if r}
-    top = min(span)
-    ball_y = max(range(top, top + int(h * 0.3)), key=lambda y: span[y][1] - span[y][0])
-    post_w = min(span[y][1] - span[y][0] for y in range(ball_y, top + int(h * 0.75)))
-    post_top = next(y for y in range(ball_y, h) if span[y][1] - span[y][0] <= post_w * 1.3)
-    base_top = next(y for y in range(post_top, h) if span[y][1] - span[y][0] > post_w * 1.6)
-    g["stand"] = {"cx": round(sum(a + b for a, b in span.values()) / 2 / len(span), 1), "top": top, "ballY": ball_y,
-                  "postTop": post_top, "baseTop": base_top, "bottom": max(span)}
     # hand: fingertip
     w, h, px = items["hand"]
     rows = _rows(w, h, px)
@@ -671,11 +652,11 @@ def measure_elements(items):
     body_bottom = max(y for y, r in enumerate(rows) if r and r[-1][1] - r[0][0] > widest * 0.6)
     tail = [x for y in range(body_bottom + 4, h) for a, b in rows[y] for x in (a, b)]
     g["speech"] = {"bodyBottom": body_bottom, "tailX0": min(tail) if tail else 0, "tailX1": max(tail) if tail else 0}
-    # parchment panel and scroll: border thickness (where the light paper starts)
+    # parchment panel: border thickness (where the light paper starts)
     def light(px, w, x, y):
         i = (y * w + x) * 4
         return px[i + 3] > 200 and (px[i] + px[i + 1] + px[i + 2]) / 3 > 200
-    for key in ("panel", "scroll"):
+    for key in ("panel",):
         w, h, px = items[key]
         my, mx = h // 2, w // 2
         g[key] = {"left": next(x for x in range(w) if light(px, w, x, my)),
@@ -747,14 +728,35 @@ def main():
             print(f"image  zippyFace    -> assets/ui/zippy-face.png ({n}x{n})")
         print(f"sheet  {key:14s} -> assets/{dst} cell {meta['w']}x{meta['h']} anchor ({meta['ax']},{meta['ay']})")
 
+    bal_geom = {}
+    bal_src = first_existing(*BALANCE_FILES)
+    if os.path.exists(os.path.join(ROOT, bal_src)):
+        w, h, px = read_png(os.path.join(ROOT, bal_src))
+        bal_dir = os.path.join(OUT, "balance")
+        if os.path.isdir(bal_dir):
+            shutil.rmtree(bal_dir)
+        for key, box in BALANCE_PARTS:
+            x, y, cw, ch, img = cut_part(w, h, px, box)
+            name = key[3].lower() + key[4:]  # balBeam -> beam
+            write_png(os.path.join(bal_dir, name + ".png"), cw, ch, img)
+            images[key] = {"src": f"assets/balance/{name}.png", "w": cw, "h": ch}
+            bal_geom[key] = {"x": x, "y": y}
+        print(f"balance: {len(BALANCE_PARTS)} parts -> assets/balance/")
+
     geom = {}
     if os.path.exists(os.path.join(ROOT, ELEMENTS_FILE)):
         items = cut_elements(os.path.join(ROOT, ELEMENTS_FILE))
-        for name, (cw, ch, img) in items.items():
-            write_png(os.path.join(OUT, "elements", name + ".png"), cw, ch, img)
+        el_dir = os.path.join(OUT, "elements")
+        if os.path.isdir(el_dir):
+            shutil.rmtree(el_dir)  # pieces that are no longer used go too
+        used = {k: v for k, v in items.items() if k not in UNUSED_ELEMENTS}
+        for name, (cw, ch, img) in used.items():
+            write_png(os.path.join(el_dir, name + ".png"), cw, ch, img)
             images[name] = {"src": f"assets/elements/{name}.png", "w": cw, "h": ch}
         geom = measure_elements(items)
-        print(f"elements: {len(items)} pieces -> assets/elements/ (measured: {', '.join(geom)})")
+        print(f"elements: {len(used)} of {len(items)} pieces -> assets/elements/ (measured: {', '.join(geom)})")
+    if bal_geom:
+        geom["balance"] = bal_geom
 
     def js_obj(d):
         lines = []

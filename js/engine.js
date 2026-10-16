@@ -15,7 +15,7 @@
   // Scene layout in stage units (the stage is always 1920 x 1080).
   CQ.L = {
     BX: 1085, // balance centre x
-    PIVOT_Y: 456, // beam pivot y (the base stands well onto the paving)
+    PIVOT_Y: 340, // the balance's pivot (the hub's centre): its base stands on the paving, above the gold bars
     GRUMBLE: { x: 262, y: 950, scale: 1.35 },
     // Zippy hangs by his tail from a tree root that comes down from above the screen.
     // (ax, ay) = where the root swings from (off-screen), len = root length to his tail.
