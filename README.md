@@ -44,7 +44,7 @@ Mistakes are safe, and a little funny. When a wrong swap tips the balance:
 - Zippy gets a fright with the crown in his hands. He clutches it while the alarm rings, hides behind it when Grumble stands up, and jumps at the roar.
 - He sheepishly gives it back: the crown jumps out of his hands onto the pan, and the wrong bar goes back to its own stand, marked "Tried".
 - Zippy swings away on his vine, up and out of the picture, empty-handed.
-- Grumble looks around and yawns, and after a soft fade he is asleep again.
+- Grumble stands a moment (facing front) and yawns, and after a soft fade he is asleep again.
 - Only Zippy's smiling head peeks out from behind the tree ("Hmm?"). He ducks back, then swings in with a slide whistle and a giggle.
 
 Every task gives a short hint after the first miss and a full explanation after the second.
@@ -139,7 +139,7 @@ If the sheet is replaced, re-measure `BALANCE_PARTS` and `ART`.
 - `GRUMBLE.scale`: Grumble's size, with `x` and `y` for where he sits.
 - `BX` and `PIVOT_Y`: where the balance stands. `PIVOT_Y` is set so its base stands on the paving.
 - `BAR_BASE`, `BAR_W` and `STAND_W`: where the gold bars rest, and the bars' and stands' sizes. `STAND_REST` is where a bar sits on the stand's top face.
-- `CROWN_W`, `COIN_W` and `PAN_BAR_W`: the sizes of things on the plates (they stand on the plate's top). Keep coin faces fully visible: children tap them to count.
+- `CROWN_W`, `COIN_W` and `PAN_BAR_W`: the sizes of things on the plates (they stand on the plate's top). Keep coin faces fully visible: children tap them to count. `CROWN_W` is a crown of 5 units: a heavier crown is drawn bigger (its width goes with the cube root of its mass, `crownW()` in js/world.js), so Level 8's 15-unit crown and its 8 bar just fill the plate.
 
 Zippy hangs by his tail from the longest vine in `tree bails.png` (`vineE`; see `CQ.makeVine` in `js/world.js`). The vine comes down from the tree's branch, and its tip sits in the curl of his tail.
 

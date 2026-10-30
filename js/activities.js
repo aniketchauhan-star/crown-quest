@@ -188,18 +188,28 @@
         toks[t.dataset.id] = t.className;
         if (this.shown && before.toks[t.dataset.id] !== t.className) CQ.anim(t, [{ transform: "scale(.82)" }, { transform: "scale(1.08)" }, { transform: "scale(1)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
       });
-      c.querySelectorAll("[data-key]").forEach((el, i) => {
-        if (before.keys.has(el.dataset.key)) return;
+      // one new piece at a time (a tag comes with its line and bracket), so each can be followed
+      const fresh = [];
+      c.querySelectorAll("[data-key]").forEach((el) => {
+        const key = el.dataset.key;
+        if (before.keys.has(key)) return;
+        let n = fresh.indexOf(key);
+        if (n < 0) n = fresh.push(key) - 1;
         const tf = getComputedStyle(el).transform;
         const base = tf && tf !== "none" ? tf : "";
         CQ.anim(el, [{ opacity: 0, transform: `${base} translateY(12px) scale(.9)` }, { opacity: 1, transform: `${base} translateY(0) scale(1)` }], {
           duration: 520,
-          delay: 120 + i * 40,
+          delay: 120 + n * 450,
           easing: CQ.EASE.out,
           keep: false,
         });
       });
-      if (this.shown && keys.size) CQ.audio.play("ui.pop", { volume: 0.5 });
+      if (this.shown)
+        fresh.forEach((key, n) =>
+          setTimeout(() => {
+            if (this.shown && this.shown.sig === sig) CQ.audio.play("ui.pop", { volume: 0.5 });
+          }, 120 + n * 450)
+        );
       this.shown = { sig, keys, toks };
       return eqn;
     },
@@ -211,7 +221,7 @@
         this.render(b.s);
         if (b.gem && !CQ.gems.have.has(b.gem)) {
           this.cheer();
-          CQ.gems.collect(b.gem, { x: 1340, y: 360 });
+          CQ.gems.collect(b.gem);
         }
         const r = await CQ.say(b.id, { back: i > 0 });
         i += r === "back" ? -1 : 1;
