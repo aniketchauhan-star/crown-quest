@@ -533,8 +533,9 @@ button:focus-visible,
   animation: none;
   filter: drop-shadow(0 22px 14px rgba(0, 0, 0, 0.4));
 }
-.bar-slot.gone {
-  visibility: hidden;
+.bar-slot.gone,
+.bar-slot.waiting {
+  visibility: hidden; /* waiting: a new level's bars come in after the balance (js/flow.js poof) */
 }
 .bar-slot.glow .gbar {
   animation: barGlow 1.1s ease-in-out infinite alternate; /* a soft glow, the bar itself stays still */
@@ -1186,27 +1187,6 @@ button:focus-visible,
 }
 
 /* ---------------------------------------------------------------- gems, Word Treasure, menu, confirm */
-.gem-pop {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  padding: 2px 16px 0;
-  text-align: center;
-  z-index: 65;
-  pointer-events: none;
-}
-.gp-label {
-  font: 800 30px/1 var(--font);
-  color: var(--no);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.gp-gem {
-  margin: 6px 0 2px;
-}
-.gp-word {
-  font: 800 42px/1.1 var(--font);
-  color: var(--ink);
-}
 .gem {
   display: inline-block;
   vertical-align: middle;
@@ -2967,7 +2947,6 @@ button:focus-visible,
 .eq-board,
 .eq-strip,
 .eq-sign,
-.gem-pop,
 .panel,
 .board,
 .idea-card {
@@ -2991,9 +2970,6 @@ button:focus-visible,
   border-width: 8px;
   border-image-width: 26px 30px 29px 26px;
   border-image-outset: 18px 22px 21px 18px;
-}
-.gem-pop {
-  filter: drop-shadow(0 0 28px rgba(255, 216, 77, 0.85));
 }
 
 /* js/ui.js repaints each stretched piece into one canvas behind its element (no seams) */

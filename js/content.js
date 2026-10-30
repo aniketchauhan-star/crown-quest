@@ -151,7 +151,6 @@ window.CONTENT = {
 
   // Zippy's own lines (speech bubble + his voice).
   zippy: {
-    ooh: "Ooh!",
     sleepTight: "Hee hee! Sleep tight, Grumble!",
     checked: "Phew! Good thing we checked.",
     tryN: "Let's try {v}.",
@@ -176,7 +175,6 @@ window.CONTENT = {
     skip: "Skip",
     level: "Level",
     practice: "Practice",
-    newWord: "New word!",
     wordTreasure: "Word Treasure",
     wordTreasureEmpty: "Your treasure is empty. New words appear here as you play!",
     close: "Close",

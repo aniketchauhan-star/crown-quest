@@ -396,6 +396,8 @@
   };
 
   // Fly an element (centre-anchored) from one stage point to another along an arc.
+  // opts.filterFrom / filterTo: the CSS filter it starts / ends with (its own by default), so a flight
+  // can start looking like the thing it leaves and land looking like the thing it becomes.
   CQ.fly = function (layer, el, from, to, opts) {
     opts = opts || {};
     const dur = opts.duration || 600;
@@ -408,16 +410,30 @@
     const dy = to.y - from.y;
     const s0 = opts.scaleFrom != null ? opts.scaleFrom : 1;
     const s1 = opts.scaleTo != null ? opts.scaleTo : 1;
+    // opts.soft: up first (the top of the arc a third of the way), then it settles gently into place
+    const lift = opts.soft ? (t) => 6.75 * t * (1 - t) * (1 - t) : (t) => 4 * t * (1 - t);
     const kf = [];
     for (let i = 0; i <= 14; i++) {
       const t = i / 14;
       const e = CQ.ease.inOut(t);
       kf.push({
-        transform: `translate(-50%,-50%) translate(${dx * e + arcX * 4 * t * (1 - t)}px, ${dy * e + arc * 4 * t * (1 - t)}px) scale(${
+        transform: `translate(-50%,-50%) translate(${dx * e + arcX * 4 * t * (1 - t)}px, ${dy * e + arc * lift(t)}px) scale(${
           s0 + (s1 - s0) * e
         }) rotate(${(opts.spin || 0) * e}deg)`,
         opacity: opts.fadeOut && i === 14 ? 0 : 1,
       });
+    }
+    if (opts.filterFrom || opts.filterTo) {
+      const own = getComputedStyle(el).filter;
+      kf[0].filter = opts.filterFrom || own;
+      kf[14].filter = opts.filterTo || own;
+    }
+    // a bar's number can grow or shrink on the way (bars on the pans and in Zippy's hands have their
+    // own number sizes): numFrom / numTo in px at the flyer's own size
+    const num = (opts.numFrom || opts.numTo) && el.querySelector(".num");
+    if (num) {
+      const own = parseFloat(getComputedStyle(num).fontSize);
+      num.animate([{ fontSize: (opts.numFrom || own) + "px" }, { fontSize: (opts.numTo || own) + "px" }], { duration: dur, easing: "ease-in-out", fill: "forwards" });
     }
     return CQ.anim(el, kf, { duration: dur, easing: "linear", essential: true }).then(() => {
       if (opts.remove !== false) el.remove();

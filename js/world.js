@@ -204,7 +204,7 @@
       await this.sprite.play("grumble_wake", [5, 4, 3, 2, 1], 140);
       this.sleep();
     }
-    // A wrong swap: wake up, pop up, roar, look around, yawn and flop back to sleep.
+    // A wrong swap: wake up, pop up, roar, stand a moment, yawn and flop back to sleep.
     // hooks.afterRoar runs while he is standing (Zippy swaps the crown back then).
     async wakeUp(hooks) {
       hooks = hooks || {};
@@ -244,13 +244,9 @@
       if (stale()) return;
       if (hooks.afterRoar) await hooks.afterRoar();
       if (stale()) return;
-      // looks around suspiciously
+      // awake, he stands there a moment (facing front: he doesn't turn to look left and right)
       this.sprite.show("grumble_roar", 1);
-      await CQ.anim(this.squash, [{ transform: "scaleX(1)" }, { transform: "scaleX(-1)" }], { duration: 160, essential: true });
-      await CQ.sleep(520);
-      if (stale()) return;
-      await CQ.anim(this.squash, [{ transform: "scaleX(-1)" }, { transform: "scaleX(1)" }], { duration: 160, essential: true });
-      await CQ.sleep(420);
+      await CQ.sleep(1000);
       if (stale()) return;
       this.sprite.show("grumble_roar", 2);
       CQ.audio.play("grumble.yawn");
@@ -1126,7 +1122,7 @@
       let h;
       if (spec.type === "crown") {
         el = CQ.img("crown", "pan-item crown");
-        w = L.CROWN_W * this.itemK;
+        w = this.crownW();
         h = (w * im.crown.h) / im.crown.w;
       } else if (spec.type === "coin") {
         el = CQ.el("div", "pan-item coin", null, '<span class="one">1</span><span class="count"></span>');
@@ -1147,6 +1143,11 @@
         });
       }
       return it;
+    }
+    // A heavier crown is a bigger crown. Its width goes with the cube root of its mass (like a real
+    // gold crown: twice the gold is 1.26 times as wide), L.CROWN_W at 5 units.
+    crownW() {
+      return L.CROWN_W * this.itemK * Math.cbrt(this.crownMass / 5);
     }
     // A faded ("ghost") item is only a reminder of where something was: it has no mass.
     mass(side) {
@@ -1178,6 +1179,29 @@
         if (i >= 0) this.items[side].splice(i, 1);
       });
       it.el.remove();
+    }
+    // The swap: a new thing stands in another's place on the same pan. It starts hidden (it shows when
+    // what flies there lands), and the rest of the pan glides over to make room instead of jumping.
+    // keepOld: the old thing stays on show where it is (no longer weighed) until the caller removes its
+    // element, so the pan is never empty while the new one is on its way.
+    replaceItem(old, spec, keepOld) {
+      const side = this.sideOf(old);
+      const at = this.items[side].indexOf(old);
+      const was = new Map(this.items[side].map((it) => [it, { x: it.x, y: it.y }]));
+      this.items[side].splice(at, 1);
+      if (!keepOld) old.el.remove();
+      const it = this.addItem(side, spec, at);
+      it.el.style.visibility = "hidden";
+      this.items[side].forEach((o) => {
+        const p = was.get(o);
+        if (!p || (p.x === o.x && p.y === o.y)) return;
+        CQ.anim(o.el, [{ transform: `translate(${p.x - o.x}px, ${p.y - o.y}px)` }, { transform: "translate(0px, 0px)" }], {
+          duration: 420,
+          easing: CQ.EASE.out,
+          keep: false,
+        });
+      });
+      return it;
     }
     sideOf(it) {
       return this.items.left.includes(it) ? "left" : "right";
@@ -1416,18 +1440,26 @@
         const tag = CQ.el("div", "tried-tag", slot, CONTENT.ui.tried);
         const bar = { value: v, slot, g, ped, tag, home: { x, y: L.BAR_BASE - BAR_H / 2 }, cur: null, state: "idle" };
         CQ.pos(slot, bar.home.x, bar.home.y);
-        // a new level: the bars come down onto their stands one after another
-        if (opts.animate)
-          CQ.anim(slot, [{ opacity: 0, transform: "translate(-50%,-50%) translateY(-30px)" }, { opacity: 1, transform: "translate(-50%,-50%) translateY(0)" }], {
-            duration: 520,
-            delay: 200 + i * 130,
-            easing: CQ.EASE.out,
-            keep: false,
-          });
+        // a new level: the bars wait out of sight until the level's things come in (arrive)
+        if (opts.wait) slot.classList.add("waiting");
         this.list.push(bar);
         CQ.Give.bind(bar);
       });
       this.refresh();
+    }
+    // The waiting bars come down onto their stands one after another (left to right), from `at` ms.
+    arrive(at) {
+      this.list
+        .filter((b) => b.slot.classList.contains("waiting"))
+        .forEach((b, i) => {
+          b.slot.classList.remove("waiting");
+          CQ.anim(b.slot, [{ opacity: 0, transform: "translate(-50%,-50%) translateY(-30px)" }, { opacity: 1, transform: "translate(-50%,-50%) translateY(0)" }], {
+            duration: 520,
+            delay: (at || 0) + i * 320,
+            easing: CQ.EASE.out,
+            keep: false,
+          });
+        });
     }
     clear() {
       this.list.forEach((b) => {
@@ -1678,7 +1710,7 @@
       const box = CQ.zippy.barBox(); // from his hands, at the size he holds it
       const from = opts.from || box;
       const scaleFrom = opts.scaleFrom != null ? opts.scaleFrom : box.w / L.BAR_W;
-      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, bar.home, { duration: 780, arc: -170, scaleFrom });
+      await CQ.fly(CQ.world.drag, CQ.barFlyer(bar.value), from, bar.home, { duration: 780, arc: -170, scaleFrom, filterFrom: opts.filterFrom, numFrom: opts.numFrom });
       CQ.audio.play("bar.place");
       bar.slot.classList.remove("gone");
       if (opts.tried) CQ.bars.markTriedBar(bar);

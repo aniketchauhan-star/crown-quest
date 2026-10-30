@@ -45,7 +45,7 @@
   // paint the nine parts separately and thin seams show between them on a scaled stage. So each
   // one is repainted into a single canvas behind the element, with the parts overlapping by a
   // pixel, and again whenever the element changes size.
-  const PATCHED = ".caption, .check-panel, .eq-board, .eq-strip, .eq-sign, .gem-pop, .panel, .board, .idea-card, .bubble, .btn-wood";
+  const PATCHED = ".caption, .check-panel, .eq-board, .eq-strip, .eq-sign, .panel, .board, .idea-card, .bubble, .btn-wood";
   const patchImgs = {};
   const four = (v) => [v[0], v.length > 1 ? v[1] : v[0], v.length > 2 ? v[2] : v[0], v.length > 3 ? v[3] : v.length > 1 ? v[1] : v[0]]; // top right bottom left
   const patchRO = typeof ResizeObserver === "function" ? new ResizeObserver((list) => list.forEach((e) => paintPatch(e.target))) : null;
@@ -195,7 +195,7 @@
       CQ.checkPanel.hide(true);
       CQ.eqBoard.hide(true);
       CQ.idle.disarm();
-      this.layer.querySelectorAll(".comic, .nameburst, .thought, .gem-pop, .flyer").forEach((e) => e.remove());
+      this.layer.querySelectorAll(".comic, .nameburst, .thought, .flyer").forEach((e) => e.remove());
       this.overlay.querySelectorAll(".thought, .flyer").forEach((e) => e.remove());
       this.skip.classList.add("hidden");
     },
@@ -820,36 +820,9 @@
       this.badge();
     },
     badge() {}, // (no Word Treasure button on screen any more)
-    word(id) {
-      return C().words.find((w) => w.id === id);
-    },
-    async collect(id, from) {
-      if (this.have.has(id)) return;
+    // A word just taught goes into the Word Treasure (quietly: no "New word!" card pops up).
+    collect(id) {
       this.have.add(id);
-      const w = this.word(id);
-      if (!w) return;
-      CQ.audio.play("gem.collect");
-      const pop = CQ.el(
-        "div",
-        "gem-pop",
-        CQ.ui.layer,
-        `<div class="gp-label">${C().ui.newWord}</div><div class="gp-gem">${CQ.gem(w.color, 96)}</div><div class="gp-word">${w.word}</div>`
-      );
-      CQ.pos(pop, from.x, from.y);
-      await CQ.anim(pop, [{ transform: "translate(-50%,-50%) scale(.2)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], {
-        duration: 450,
-        easing: CQ.EASE.back,
-        essential: true,
-      });
-      CQ.fx.sparkle(CQ.ui.layer, from.x, from.y, 10, 90);
-      await CQ.sleep(1300);
-      CQ.fx.sparkle(CQ.ui.layer, from.x, from.y - 40, 8, 70);
-      await CQ.anim(pop, [{ transform: "translate(-50%,-50%) scale(1)", opacity: 1 }, { transform: "translate(-50%,-50%) translateY(-50px) scale(.6)", opacity: 0 }], {
-        duration: 450,
-        easing: CQ.EASE.in,
-        essential: true,
-      });
-      pop.remove();
     },
   };
 

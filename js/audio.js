@@ -719,15 +719,6 @@
     return 0.35;
   });
 
-  cue('gem.collect', function (ctx, dest, t, o) { // C-E-G-C arpeggio + shimmer
-    var p = o.pitch, r = o.rnd, n = [1046.5, 1318.5, 1568, 2093], hi = [4186, 4699, 5274, 6272];
-    for (var i = 0; i < 4; i++) chime(ctx, dest, t + i * 0.06, n[i] * p, 0.24, i === 3 ? 0.58 : 0.42);
-    for (var j = 0; j < 8; j++) {
-      blip(ctx, dest, t + 0.2 + j * 0.055 + r() * 0.02, 'sine', hi[(r() * 4) | 0] * p, 0, 0, 0.05, 0.001, 0.08);
-    }
-    return 0.8;
-  });
-
   cue('crown.sparkle', function (ctx, dest, t, o) { // shimmering high pings 2-4 kHz
     var p = o.pitch, r = o.rnd, n = [2093, 2349, 2637, 3136, 3520, 3951];
     for (var i = 0; i < 10; i++) {
