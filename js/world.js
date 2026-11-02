@@ -329,32 +329,33 @@
   Object.keys(HOLD_SRC).forEach((k) => {
     HOLD_OFFSET[k] = { x: HOLD_SRC[k].x * L.ZIPPY.scale, y: HOLD_SRC[k].y * L.ZIPPY.scale };
   });
-  // His swap sheet (zippy swap.png) has empty hands. grip is where the game puts what he holds in each
-  // frame, in the cut frame's own pixels (assets/zippy/swap.png): frame 1 is between his open hands (a
-  // bar comes to him there), frame 4 is the hand that grabs the crown. When he holds the crown (frames
-  // 4-8), his fists are drawn again over it (zippy_swap_hands, see SWAP_FISTS in
-  // tools/prepare_assets.py), so his fingers wrap around it. A bar is held with his bar sheet instead
-  // (zippy bar.png, below). Re-measure both if the sheet is replaced.
+  // His swap sheet (zippy swap.png) has empty hands. grip is where his hands are in each frame, in the
+  // cut frame's own pixels (assets/zippy/swap.png): frame 1 is between his open hands (a bar comes to
+  // him there). Nothing is put in his hands on this sheet: he holds a bar with his bar sheet (zippy
+  // bar.png, below) and the crown with his crown sheet (lifted up in both hands) or, in a fright, his
+  // scared crown sheet; those sheets draw it in his fingers. Re-measure if the sheet is replaced.
   const SWAP = {
     grip: [null, [243, 415], [228, 359], [244, 432], [282, 393], [166, 341], [197, 351], [291, 335], [168, 342]],
-    nudge: { crown: [0, -16] }, // his fingers curl round the crown's band
   };
-  function swapOffset(frame, item) {
+  function swapOffset(frame) {
     const S = window.SPRITES.zippy_swap;
     const g = SWAP.grip[frame] || SWAP.grip[2];
-    const n = SWAP.nudge[item] || [0, 0];
-    return { x: (g[0] + n[0] - S.ax) * L.ZIPPY.scale, y: (g[1] + n[1] - S.ay) * L.ZIPPY.scale };
+    return { x: (g[0] - S.ax) * L.ZIPPY.scale, y: (g[1] - S.ay) * L.ZIPPY.scale };
   }
   // After a level's last swap Zippy puts the crown on his own head and wears it while he celebrates and
   // swings away (zippy crown.png: 1 lift it up, 2 put it on, 3 wow, 4 proud, 5 thumbs up, 6 wave,
   // 7 laugh, 8 straighten it). Where it sits on his head, from the tip of his tail (sheet pixels):
   const CROWN_HEAD = { x: 42, y: 160 };
   const CROWN_POSE = { crownLift: 1, crownOn: 2, wow: 3, proud: 4 };
+  // In frame 1 he lifts the crown up in both hands, and he holds the crown he has just won like that
+  // until he puts it on. Its centre, width and tilt (degrees, clockwise) in the cut frame's pixels: the
+  // crown he grabs from the pan flies there. Re-measure if the sheet is replaced.
+  const CROWN_LIFT = { x: 231, y: 116, w: 190, tilt: 7 };
   // Scared after a wrong swap, the crown in his hands (zippy scared crown.png): 1 uh-oh, 2 gritted
   // teeth, 3 side glance, 4 trembling, 5 hiding behind it, 6 gulp, 7 eek! (crown up high), 8 sheepish.
   // Where the crown is in each frame (centre x, y and its width, in the cut frame's pixels), so it can
   // jump back to the pan from his hands. Re-measure if the sheet is replaced.
-  const SCARED_CROWN = [null, [208, 361, 144], [203, 355, 131], [201, 361, 151], [213, 361, 95], [186, 292, 182], [194, 345, 109], [205, 161, 150], [245, 363, 120]];
+  const SCARED_CROWN = [null, [208, 346, 180], [203, 355, 131], [201, 361, 151], [213, 361, 95], [186, 292, 182], [194, 345, 109], [205, 161, 150], [245, 363, 120]];
   const SCARED_POSE = { crownUhOh: 1, crownTeeth: 2, crownGlance: 3, crownShake: 4, crownHide: 5, crownGulp: 6, crownEek: 7, crownSorry: 8 };
   // Holding a gold bar (zippy bar.png): his fingers hold a blank bar by its ends, and the game prints the
   // bar's number on its front face. 1 catch, 2 hold, 3 talk, 4 think, 5 show it off, 6 reach down, 7 put
@@ -390,9 +391,6 @@
       this.body = CQ.el("div", "zippy-body", this.rig);
       this.sprite = new CQ.Sprite(this.body, "zippy-sprite", this.k);
       this.heldEl = CQ.el("div", "held hidden", this.body);
-      // his fists, drawn again over what he holds (swap sheet only)
-      this.fists = new CQ.Sprite(this.body, "zippy-fists", this.k);
-      this.fists.el.style.display = "none";
       this.held = null;
       this.wearing = false; // the crown he won is on his head (until the level ends)
       this.poseName = "";
@@ -423,11 +421,9 @@
       this.rig.style.transform = `translate(${P.x}px, ${P.y}px) rotate(${-th * this.tilt}deg)`;
     }
     // Where he holds things now (or in another sheet and frame), from the tip of his tail.
-    // item ("bar" or "crown") nudges it to sit in his fists on the swap sheet.
-    holdOffset(sheet, frame, item) {
+    holdOffset(sheet, frame) {
       sheet = sheet || this.sprite.sheet;
-      item = item || (this.held && this.held.type);
-      if (sheet === "zippy_swap") return swapOffset(frame || this.sprite.frame, item);
+      if (sheet === "zippy_swap") return swapOffset(frame || this.sprite.frame);
       if (sheet === "zippy_bar") {
         // the middle of the bar's front face, where its number is
         const S = window.SPRITES.zippy_bar;
@@ -439,11 +435,16 @@
         const c = SCARED_CROWN[frame || this.sprite.frame] || SCARED_CROWN[1];
         return { x: (c[0] - S.ax) * this.k, y: (c[1] - S.ay) * this.k };
       }
+      if (sheet === "zippy_crown") {
+        // the crown lifted up in both hands (frame 1)
+        const S = window.SPRITES.zippy_crown;
+        return { x: (CROWN_LIFT.x - S.ax) * this.k, y: (CROWN_LIFT.y - S.ay) * this.k };
+      }
       return HOLD_OFFSET[sheet] || HOLD_OFFSET.zippy_hold;
     }
-    holdPoint(sheet, frame, item) {
+    holdPoint(sheet, frame) {
       const P = this.P;
-      const o = this.holdOffset(sheet, frame, item);
+      const o = this.holdOffset(sheet, frame);
       const a = -(this.theta + this.sway) * this.tilt * deg;
       return { x: P.x + o.x * Math.cos(a) - o.y * Math.sin(a), y: P.y + o.x * Math.sin(a) + o.y * Math.cos(a) };
     }
@@ -495,6 +496,12 @@
         this.placeHeld();
         return;
       }
+      if (this.held && this.held.type === "crown") {
+        // the crown he has just won, lifted up in both hands (his crown sheet draws it)
+        s.show("zippy_crown", CROWN_POSE.crownLift);
+        this.placeHeld();
+        return;
+      }
       if (this.held && this.held.type === "bar" && (BAR_POSE[name] || name === "holdTalk" || name === "talk")) {
         // holding a gold bar: his bar sheet draws it, and its number is printed on it (placeHeld)
         if (name === "holdTalk" || name === "talk") s.play("zippy_bar", [3, 2], 170, { loop: true });
@@ -512,9 +519,9 @@
         case "ready": // a bar is on its way: hands open, ready to take it
           s.show("zippy_swap", 1);
           break;
-        case "hold": // a bar held at his chest (or the crown hugged)
+        case "hold": // his hands at his chest
         case "holdTalk":
-          s.show("zippy_swap", this.held && this.held.type === "crown" ? 6 : 2);
+          s.show("zippy_swap", 2);
           break;
         case "reachBar": // swinging over with the bar held out in both fists
           s.show("zippy_swap", 3);
@@ -610,6 +617,13 @@
       if (on) this.setHeld(null);
       this.pose(this.poseName || "idle");
     }
+    // The crown in his hands on the stage (its centre, width and tilt): lifted up in both hands (crown
+    // sheet), or clutched in fright (the scared crown sheet's first frame).
+    crownInHands(scared) {
+      const p = this.holdPoint(scared ? "zippy_scared_crown" : "zippy_crown", 1);
+      const c = scared ? { w: SCARED_CROWN[1][2], tilt: 0 } : CROWN_LIFT;
+      return { x: p.x, y: p.y, w: c.w * this.k, tilt: c.tilt - (this.theta + this.sway) * this.tilt };
+    }
     // How wide the crown in his hands is drawn now (scared crown sheet), in stage pixels.
     heldCrownW() {
       const c = SCARED_CROWN[this.sprite.sheet === "zippy_scared_crown" ? this.sprite.frame : 1] || SCARED_CROWN[1];
@@ -624,15 +638,13 @@
     }
     setHeld(spec) {
       this.held = spec;
-      if (!spec) {
-        this.heldEl.className = "held hidden";
-        this.heldEl.innerHTML = "";
-      } else if (spec.type === "bar") {
+      if (spec && spec.type === "bar") {
         this.heldEl.className = "held hbar";
         this.heldEl.innerHTML = `<span class="num">${spec.value}</span>`;
       } else {
-        this.heldEl.className = "held hcrown";
-        this.heldEl.innerHTML = `<img src="${IM().crown.src}" alt="" draggable="false">`;
+        // nothing, or the crown (his crown sheets draw it in his hands)
+        this.heldEl.className = "held hidden";
+        this.heldEl.innerHTML = "";
       }
       this.placeHeld();
     }
@@ -648,11 +660,6 @@
       this.heldEl.style.setProperty("--tilt", (g ? g.tilt : 0) + "deg");
       const o = this.holdOffset();
       CQ.pos(this.heldEl, o.x, o.y);
-      // on the swap sheet his fists are drawn again over what he holds
-      const f = this.sprite.sheet === "zippy_swap" ? this.sprite.frame : 0;
-      const on = !!(this.held && f > 1);
-      if (on) this.fists.show("zippy_swap_hands", f);
-      this.fists.el.style.display = on ? "" : "none"; // display, not visibility: hiding Zippy must hide it too
     }
     moveTo(theta, len, dur, ease) {
       const a = { th: this.theta, len: this.len };

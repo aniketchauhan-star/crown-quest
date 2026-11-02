@@ -20,7 +20,6 @@
     // Zippy hangs by his tail from a tree root that comes down from above the screen.
     // (ax, ay) = where the root swings from (off-screen), len = root length to his tail.
     ZIPPY: { ax: 420, ay: -120, len: 236, scale: 0.72 },
-    HELD_CROWN_W: 129, // the crown in Zippy's hands (.held.hcrown img in styles.css)
     BAR_BASE: 978, // where the gold bars rest (on the plank tops of their wooden stools)
     BAR_W: 194, // a gold bar on its stand
     STAND_W: 250, // the wooden stool under each gold bar (props/brick-stand.png, from "break stand .png")

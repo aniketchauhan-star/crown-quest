@@ -232,11 +232,12 @@
     setCrowns(n) {
       this.crowns = n;
     },
-    async flyCrown(fromWorld) {
+    async flyCrown(fromWorld, width) {
       const from = CQ.camera.toScreen(fromWorld);
       const to = { x: CQ.clamp(from.x + 240, 200, CQ.W - 200), y: 70 };
+      const w = width || 120; // its width as it sets off; it ends 54 px wide
       CQ.audio.play("crown.sparkle");
-      await CQ.fly(CQ.ui.layer, CQ.crownFlyer(120), from, to, { duration: 1000, arc: -140, scaleTo: 0.45, spin: 360, fadeOut: true });
+      await CQ.fly(CQ.ui.layer, CQ.crownFlyer(w), from, to, { duration: 1000, arc: -140, scaleTo: 54 / w, spin: 360, fadeOut: true });
       CQ.fx.sparkle(CQ.ui.layer, to.x, to.y, 12, 50);
       this.crowns++;
     },
