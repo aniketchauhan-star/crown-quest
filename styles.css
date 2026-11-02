@@ -900,6 +900,18 @@ button:focus-visible,
   color: var(--ink);
   padding-top: 4px;
 }
+/* a recorded line types itself out as it is said: letters wait, hidden, in their places */
+.cap-text.typing .ch:not(.on) {
+  visibility: hidden;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .bubble {
   position: absolute;
   max-width: 600px;

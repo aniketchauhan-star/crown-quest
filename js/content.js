@@ -2,7 +2,8 @@
  * Zippy's Crown Quest: all words, numbers and feedback live here.
  * Teachers can edit any text or level number in this file without touching the game logic.
  * {n}, {v}, {a}, {b}, {s} are filled in by the game (see the comments next to each block).
- * Each line ID is also the file name for an optional recorded voice line: assets/vo/<id>.mp3
+ * Every line the game shows is also recorded (assets/vo/, matched by its exact text). If you change
+ * the words of a line, record it again: see docs/VOICEOVER.md. Until then it is read by the device voice.
  *
  * Maths in any text: x is set in italics by itself; "x^2" shows a power; "[[x|4]]" is a fraction
  * (x over 4); "{{− 8}}" is the "same on both sides" highlight; "<<+ 4>>" is a red highlight.
@@ -433,10 +434,9 @@ window.CONTENT = {
     chapters: "Chapters",
   },
 
-  // Sound settings. To use recorded audio, set recordedVoice: true and add assets/vo/<line id>.mp3,
-  // or map any sound cue to a file, e.g. overrides: { "zippy.laugh": "assets/audio/zippy-laugh.mp3" }.
+  // Sound effects: map any sound cue to a recorded file, e.g. overrides: { "zippy.laugh": "assets/audio/zippy-laugh.mp3" }.
+  // (The voice lines are in assets/vo/, see docs/VOICEOVER.md.)
   audio: {
-    recordedVoice: false,
     overrides: {},
   },
 };

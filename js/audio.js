@@ -2,9 +2,9 @@
  * Zippy's Crown Quest - audio.js
  * =====================================================================
  * The complete sound system. Every sound effect, the three music loops and
- * the jungle ambience are synthesised live with the Web Audio API; voice
- * lines use the Web Speech API. The game sounds complete with ZERO audio
- * files, and nothing is ever fetched (works when opened from file://).
+ * the jungle ambience are synthesised live with the Web Audio API. Voice
+ * lines are recorded clips (assets/vo/, found through js/voice.js); a line
+ * without a clip uses the Web Speech API. Works when opened from file://.
  *
  * Load with a classic tag:  <script src="js/audio.js"></script>
  * Exposes exactly one global: window.CQAudio
@@ -16,14 +16,15 @@
  *   CQAudio.music(name)            'title' | 'game' | 'finale' | null
  *   CQAudio.ambience(on)           a soft breeze + distant birds
  *   CQAudio.duck(on)               music bus to 20 %
- *   CQAudio.speak(text, opts)      -> Promise<{spoken}>; opts { who, id }
+ *   CQAudio.speak(text, opts)      -> Promise<{spoken}>; opts { who, line, onStart }
+ *                                  line: the text on screen (finds its clip);
+ *                                  onStart({ clip, secs, rate }) once the voice starts
  *   CQAudio.stopSpeech()
  *   CQAudio.cues                   array of every cue name
  *   CQAudio._renderCueOffline(cue, opts)    test hook -> {peak, rms, duration}
  *   CQAudio._renderMusicOffline(name, secs) test hook -> {peak, rms, duration}
  *
- * Optional recorded audio (declared in content.js; only listed paths load):
- *   CONTENT.audio.recordedVoice = true  -> try assets/vo/<id>.mp3 first
+ * Optional recorded sound effects (declared in content.js; only listed paths load):
  *   CONTENT.audio.overrides = { 'coin.clink': 'assets/audio/coin.mp3' }
  *
  * Every public method is wrapped so it can never throw into the game. If
@@ -1074,13 +1075,14 @@
    *    -> safety soft-clip (transparent below 0.8) -> speakers.
    *    Ambience rides on sfxBus, so it follows the sfx toggle.
    * ================================================================== */
-  var LV = { master: 0.9, music: 0.32, sfx: 0.8, amb: 0.3, duck: 0.2 };
+  var LV = { master: 0.9, music: 0.32, sfx: 0.8, amb: 0.3, duck: 0.2, ambDuck: 0.4 };
   var enabled = { music: true, sfx: true, voice: true };
   var ctx = null, master = null, comp = null, musicBus = null, sfxBus = null;
   var duckGame = false, duckSpeech = false, autoSuspended = false, listening = false;
 
   function musicTarget() { return enabled.music ? LV.music * ((duckGame || duckSpeech) ? LV.duck : 1) : 0; }
   function sfxTarget() { return enabled.sfx ? LV.sfx : 0; }
+  function ambTarget() { return LV.amb * (duckSpeech ? LV.ambDuck : 1); } // the jungle steps back under the voice
 
   // Smoothly move a param from wherever it is now to v over secs.
   function rampTo(param, v, secs, c) {
@@ -1317,7 +1319,7 @@
     var bag = hold(function () {
       a.out = G(ctx, 0, sfxBus);
       a.out.gain.setValueAtTime(0, t);
-      a.out.gain.linearRampToValueAtTime(LV.amb, t + 1.5);
+      a.out.gain.linearRampToValueAtTime(ambTarget(), t + 1.5);
       // a soft breeze in the leaves: band-limited noise, rising and falling slowly
       var src = NL(ctx, t, null), bedG = G(ctx, 0.1, a.out);
       src.connect(F(ctx, 'highpass', 220, null, F(ctx, 'lowpass', 900, null, bedG)));
@@ -1428,7 +1430,7 @@
   }
 
   /* ================================================================== *
-   * 9. Speech: Web Speech API voices, optional recorded voice lines
+   * 9. Speech: recorded voice lines (js/voice.js), else Web Speech API voices
    * ================================================================== */
   var VOICE_CFG = {
     narrator: { rate: 0.95, pitch: 1.05 },
@@ -1436,7 +1438,8 @@
     grumble: { rate: 0.8, pitch: 0.3 } // sleepy and low
   };
   var NOVELTY = /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|deranged|hysterical/i;
-  var bestVoice = null, speechUnlocked = false, curJob = null, lastCancelAt = 0, voEl = null;
+  var bestVoice = null, speechUnlocked = false, curJob = null, lastCancelAt = 0;
+  var VO = win.CQVoice || null;
 
   function langOf(v) { return String(v.lang || '').replace(/_/g, '-').toLowerCase(); }
   function voiceScore(v) {
@@ -1476,24 +1479,12 @@
     } catch (e) { /* ignore */ }
   }
 
+  // Music and the jungle ambience step back while a voice speaks, and come back afterwards.
   function setSpeechDuck(on) {
     duckSpeech = on;
-    if (ctx) rampTo(musicBus.gain, musicTarget(), 0.25);
-  }
-  function recordedVoiceOn() { var a = contentAudio(); return !!(a && a.recordedVoice === true); }
-  function getVoEl() {
-    if (!voEl && typeof win.Audio === 'function') { voEl = new win.Audio(); voEl.preload = 'auto'; }
-    return voEl;
-  }
-  function silentWav() { // tiny silent WAV built in memory (unlocks the VO element on iOS)
-    var n = 64, b = new Uint8Array(44 + n * 2), v = new DataView(b.buffer), s = '', i;
-    function str(o, x) { for (var j = 0; j < x.length; j++) b[o + j] = x.charCodeAt(j); }
-    str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
-    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
-    v.setUint32(24, 8000, true); v.setUint32(28, 16000, true); v.setUint16(32, 2, true);
-    v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
-    for (i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
-    return 'data:audio/wav;base64,' + win.btoa(s);
+    if (!ctx) return;
+    rampTo(musicBus.gain, musicTarget(), 0.25);
+    if (amb && amb.stopAt === null) rampTo(amb.out.gain, ambTarget(), 0.25);
   }
 
   // Cancel whatever is speaking. Its promise resolves {spoken:false}.
@@ -1536,11 +1527,15 @@
     if (since < 120) job.timers.push(setTimeout(go, 120 - since)); else go();
   }
 
-  function speakRecorded(job, id, fallback) {
-    var el = getVoEl(), fell = false, mySrc;
+  // A recorded line plays on the one shared <audio> element. When it starts, job.told() passes its
+  // length on (the caption types the words as they are said). A clip that won't load or play hands
+  // the line to the device voice; one that stalls once playing can hold the story up for at most
+  // its remaining length + 0.6 s.
+  function speakClip(job, clip, fallback) {
+    var el = VO.element(), fell = false, mySrc;
     function detach() { el.onended = el.onerror = el.onplaying = null; }
     function fb() {
-      if (fell || job.done) return;
+      if (fell || job.done || job.started) return;
       fell = true;
       detach();
       try { el.pause(); } catch (e) { /* ignore */ }
@@ -1549,33 +1544,41 @@
     }
     if (!el) { fallback(); return; }
     detach();
-    el.src = 'assets/vo/' + encodeURIComponent(id) + '.mp3';
-    mySrc = el.src;
+    el.muted = false;
     el.volume = 1;
+    el.src = clip.src;
+    mySrc = el.src;
+    el.defaultPlaybackRate = el.playbackRate = VO.rate; // a new src resets the rate
     job.audio = el;
-    el.onerror = function () { if (el.src === mySrc) fb(); };
+    el.onerror = function () { if (el.src !== mySrc) return; if (job.started) job.finish(true); else fb(); };
     el.onended = function () { if (el.src === mySrc) job.finish(true); };
     el.onplaying = function () {
       if (el.src !== mySrc || job.started) return;
       job.started = true;
-      var d = isFinite(el.duration) && el.duration > 0 ? el.duration : 15;
-      job.timers.push(setTimeout(function () { job.finish(true); }, (d + 1.5) * 1000));
+      var left = Math.max(0, clip.secs - (el.currentTime || 0)) / VO.rate;
+      job.timers.push(setTimeout(function () { job.finish(true); }, left * 1000 + 600));
+      job.told({ clip: true, secs: clip.secs, rate: VO.rate });
     };
-    job.timers.push(setTimeout(function () { if (!job.started) fb(); }, 3000)); // stalled load
+    job.timers.push(setTimeout(fb, 3000)); // stalled load
     try {
       var pr = el.play();
-      if (pr && pr.catch) pr.catch(function () { if (!job.started) fb(); });
+      if (pr && pr.catch) pr.catch(fb);
     } catch (e) { fb(); }
   }
 
   function startSpeech(text, opts, settle) {
     cancelSpeech();
     text = (text === null || text === undefined ? '' : String(text)).replace(/\s+/g, ' ').trim();
-    var id = opts.id !== undefined && opts.id !== null && opts.id !== '' ? String(opts.id) : null;
-    var useRec = !!id && recordedVoiceOn() && typeof win.Audio === 'function';
-    if (!enabled.voice || !text || (!useRec && !(synth && Utter))) { settle(false); return; }
+    var clip = VO && opts.line !== undefined && opts.line !== null ? VO.lookup(opts.line) : null;
+    var toldStart = false;
+    function told(info) { // opts.onStart, exactly once: { clip: true, secs, rate } or { clip: false }
+      if (toldStart) return;
+      toldStart = true;
+      if (typeof opts.onStart === 'function') { try { opts.onStart(info); } catch (e) { warnOnce('onStart failed', e); } }
+    }
+    if (!enabled.voice || !text || (!clip && !(synth && Utter))) { told({ clip: false }); settle(false); return; }
     var who = Object.prototype.hasOwnProperty.call(VOICE_CFG, opts.who) ? opts.who : 'narrator';
-    var job = { done: false, started: false, timers: [], audio: null, utter: null };
+    var job = { done: false, started: false, timers: [], audio: null, utter: null, told: told };
     job.finish = function (spoken) { // resolves exactly once
       if (job.done) return;
       job.done = true;
@@ -1592,8 +1595,9 @@
     };
     curJob = job;
     setSpeechDuck(true);
-    if (useRec) speakRecorded(job, id, function () { speakSynth(job, text, who); });
-    else speakSynth(job, text, who);
+    var synthInstead = function () { told({ clip: false }); speakSynth(job, text, who); };
+    if (clip) speakClip(job, clip, synthInstead);
+    else synthInstead();
   }
 
   function speak(text, opts) {
@@ -1614,7 +1618,8 @@
   }
   function stopSpeech() {
     cancelSpeech();
-    if (voEl) { try { voEl.pause(); } catch (e) { /* ignore */ } }
+    var el = VO && VO.element();
+    if (el) { try { el.pause(); } catch (e) { /* ignore */ } }
   }
 
   /* ================================================================== *
@@ -1646,16 +1651,7 @@
       } catch (e) { /* ignore */ }
       refreshVoices();
     }
-    if (recordedVoiceOn() && !curJob) { // unlock the shared VO element for later, non-gesture plays
-      var el = getVoEl();
-      if (el && !el.src) {
-        try {
-          el.src = silentWav();
-          var pr = el.play();
-          if (pr && pr.catch) pr.catch(noop);
-        } catch (e) { /* ignore */ }
-      }
-    }
+    if (VO && !curJob) VO.unlock(); // the voice lines may then play without a tap (and start loading)
   }
 
   function setEnabled(kind, on) {
