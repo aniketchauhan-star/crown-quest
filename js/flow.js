@@ -1187,7 +1187,7 @@
       const v = await giveBar(L.bars.filter((x) => CQ.bars.get(x).state !== "tried"), { idleLine: true });
       if (v !== 15) {
         await checkRoutine(L, v, { line: "check-lets", find: "check-find-lhs", rhsGiven: true });
-        say("l8-give", { advance: "none" });
+        say("l8-give", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
         continue;
       }
       await swapAfterCheck(15, { noCheer: true, line: "l8-15", sign: "15 + 8 = 23" });
@@ -1290,7 +1290,7 @@
       const v = await giveBar(L.bars.filter((x) => CQ.bars.list.some((bar) => bar.value === x && bar.state === "idle")), { idleLine: true });
       if (v !== 7) {
         await checkRoutine(L, v, { line: "check-lets", find: "check-find-lhs", rhsGiven: true });
-        say(swapped ? "l9-give2" : "l9-give", { advance: "none" });
+        say(swapped ? "l9-give2" : "l9-give", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
         continue;
       }
       swapped++;

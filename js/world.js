@@ -720,7 +720,7 @@
       const talkPose = this.held ? "holdTalk" : "talk";
       if (!opts.keepPose) this.pose(talkPose);
       const owner = CQ.bubble.show(text, () => this.center(), { who: "zippy" });
-      const r = await CQ.audio.speak(CQ.speakable(text), { who: "zippy", id: opts.id });
+      const r = await CQ.audio.speak(CQ.speakable(text), { who: "zippy", line: text });
       if (!r || !r.spoken) await CQ.sleep(Math.max(1100, text.split(" ").length * 330));
       if (!opts.keepPose && this.poseName === talkPose) this.pose(prev === talkPose ? (this.held ? "hold" : "idle") : prev);
       if (!opts.keepBubble) CQ.bubble.hide(false, owner);
@@ -866,8 +866,8 @@
   // pivot (the hub's centre). The parts are drawn at ART_K of their art size. ART says where they go,
   // in pixels measured on the sheet (GEOM.balance has where each cut part was on it).
   // Back to front: floor shadow, base, the leaves at the post's foot, post, pans (plate, rope hanger,
-  // the things on the plate), the leaves beside the hub, beam (it tips), hub (it stays upright: the
-  // beam turns behind it). Re-measure ART if the sheet is replaced.
+  // the things on the plate), beam (it tips), hub (it stays upright: the beam turns behind it). The
+  // sheet's two leaves beside the hub (balLeafL/R) are left out. Re-measure ART if the sheet is replaced.
   const GB = window.GEOM.balance;
   const ART_K = 0.795; // sheet pixels -> balance units
   const ART = {
@@ -881,7 +881,6 @@
     post: { x: 1414, y: 24, at: 100 }, // the post's centre and top; its top goes `at` below the pivot, behind the hub
     base: { x: 1075, y: 432, at: 603 }, // the base's centre and top; its top goes `at` below the pivot
     feet: { x: 200, y: 922, k: 0.62, dx: 95, at: 683 }, // the three leaves (bottom centre), twice beside the post's foot; the post hides each inner leaf
-    hubLeaves: { l: [518, 916], r: [524, 916], dx: 145, at: -50, tilt: 20 }, // each leaf's stem, set beside the hub, leaning out
   };
   const BAL = {
     S: 0.7, // drawn size (1 = full size)
@@ -971,12 +970,7 @@
     [-1, 1].forEach((side) => part("balLeaves", parent, A.feet.x, A.feet.y, side * A.feet.dx * k, A.feet.at * k, "bal-feet", A.feet.k));
     part("balPost", parent, A.post.x, A.post.y, 0, A.post.at * k, "bal-post");
   }
-  // The leaves beside the hub (behind the beam) and the hub itself (in front of it).
-  function hubLeaves(parent) {
-    const H = ART.hubLeaves;
-    part("balLeafL", parent, H.l[0], H.l[1], -H.dx * ART_K, H.at * ART_K, "bal-leaf", 1, -H.tilt);
-    part("balLeafR", parent, H.r[0], H.r[1], H.dx * ART_K, H.at * ART_K, "bal-leaf", 1, H.tilt);
-  }
+  // The hub, in front of the beam.
   function hubPart(parent) {
     return part("balHub", parent, ART.pivot.x, ART.pivot.y, 0, 0, "bal-hub");
   }
@@ -1002,7 +996,7 @@
     opts = opts || {};
     const w = opts.width || 150;
     const halfW = BAL.R + (IM().balPlate.w / 2) * ART_K + 6; // the whole balance, in balance units
-    const top = 200 * ART_K; // above the pivot: the leaves beside the hub
+    const top = 200 * ART_K; // the frame's top, above the pivot (a little above the hub)
     const s = w / (2 * halfW);
     const box = CQ.el("div", "mini-bal");
     Object.assign(box.style, { width: w + "px", height: Math.round((top + BAL.FLOOR + 10) * s) + "px" });
@@ -1033,7 +1027,6 @@
         });
       }
     });
-    hubLeaves(rig);
     CQ.el("div", "mb-beam", rig).appendChild(beamCanvas());
     hubPart(rig);
     return box;
@@ -1067,7 +1060,6 @@
         const g = CQ.el("div", "bal-side " + side, rig);
         this.sides[side] = { g, items: panParts(g) };
       });
-      hubLeaves(rig);
       this.beam = rig.appendChild(beamCanvas());
       this.hub = hubPart(rig);
       this.level = true;

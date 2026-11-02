@@ -244,25 +244,43 @@
 
 
   // ------------------------------------------------------------------ caption + narration
+  // A recorded line (js/voice.js) types itself out at the pace of its voice, so the words appear as
+  // they are said; a tap on the words shows the whole line at once (the voice carries on). A line
+  // without a recording shows at once, as before.
   CQ.caption = {
     build(ui) {
       this.el = CQ.el("div", "caption hidden", ui);
-      this.el.setAttribute("aria-live", "polite");
       // Zippy's face at the left of the caption; tapping it plays the line again
       this.spk = button("spk", `<img src="${IMAGES.zippyFace.src}" alt="" draggable="false">`, "Hear it again", this.el, () => this.replay());
       this.txt = CQ.el("div", "cap-text", this.el);
+      this.txt.setAttribute("aria-hidden", "true"); // screen readers get the whole line at once instead:
+      this.sr = CQ.el("div", "sr-only", this.el);
+      this.sr.setAttribute("aria-live", "polite");
+      this.txt.addEventListener("click", () => this.reveal());
       this.text = null;
       this.busy = false; // true while the child is listening to the line again
       this.replays = 0;
+      this.line = 0; // counts lines, so a voice that starts late can tell its line has gone
+      this.chars = null; // a typing line's letters
+      this.typing = 0; // the line whose voice has started typing it
     },
     set(text, opts) {
       this.text = text;
       this.opts = opts || {};
       this.replays++;
       this.busy = false;
+      const n = ++this.line;
+      this.chars = null;
       this.el.classList.remove("hidden");
+      this.txt.classList.remove("typing");
       this.txt.innerHTML = CQ.rich(text);
+      this.sr.textContent = CQ.speakable(text);
       this.fit();
+      // a recorded line waits for its voice to start; if it never does, the line shows anyway
+      if (!this.opts.quiet && CQ.audio.isEnabled("voice") && window.CQVoice && CQVoice.lookup(text)) {
+        this.hideLetters();
+        setTimeout(() => this.typing !== n && this.reveal(n), 3500);
+      }
       CQ.anim(this.el, [{ transform: "translateY(-12px)", opacity: 0.2 }, { transform: "translateY(0)", opacity: 1 }], {
         duration: 420,
         easing: CQ.EASE.out,
@@ -278,8 +296,58 @@
         this.txt.style.fontSize = fs + "px";
       }
     },
+    // Each letter in its own span, hidden until it is typed: the line keeps its final layout and size.
+    hideLetters() {
+      const chars = [];
+      const walk = (node) =>
+        Array.from(node.childNodes).forEach((c) => {
+          if (c.nodeType === 1) return walk(c);
+          if (c.nodeType !== 3) return;
+          const frag = document.createDocumentFragment();
+          for (const ch of c.textContent) {
+            const s = document.createElement("span");
+            s.className = "ch";
+            s.textContent = ch;
+            frag.appendChild(s);
+            chars.push(s);
+          }
+          c.replaceWith(frag);
+        });
+      walk(this.txt);
+      this.chars = chars;
+      this.txt.classList.add("typing");
+    },
+    // For CQ.say: when line n's voice starts, { clip, secs, rate } types its letters at the voice's
+    // pace (finishing just before the voice does); a voice without a clip shows the line at once.
+    voiced(n) {
+      return (v) => {
+        const chars = this.chars;
+        if (n !== this.line || !chars) return;
+        if (!v || !v.clip) return this.reveal(n);
+        this.typing = n;
+        const ms = Math.max(16, ((v.secs - 0.35) * 1000) / chars.length) / (v.rate || 1);
+        const t0 = performance.now();
+        let shown = 0;
+        const step = (now) => {
+          if (this.chars !== chars) return; // shown in full, or replaced by another line
+          const k = Math.min(chars.length, Math.floor((now - t0) / ms) + 1);
+          while (shown < k) chars[shown++].classList.add("on");
+          if (shown < chars.length) requestAnimationFrame(step);
+          else this.reveal(n);
+        };
+        requestAnimationFrame(step);
+      };
+    },
+    // The whole line now (with n: only if line n is still the one on screen).
+    reveal(n) {
+      if ((n != null && n !== this.line) || !this.chars) return;
+      this.chars = null;
+      this.txt.classList.remove("typing");
+    },
     hide(now) {
       this.text = null;
+      this.line++;
+      this.chars = null;
       this.replays++;
       this.busy = false;
       if (now || this.el.classList.contains("hidden")) {
@@ -293,10 +361,11 @@
     // 🔊 Hear it again. The story waits until the line has been heard again.
     replay() {
       if (!this.text) return;
+      this.reveal();
       CQ.audio.play("ui.tap");
       const n = ++this.replays;
       this.busy = true;
-      CQ.audio.speak(CQ.speakable(this.text), { who: this.opts.who || "narrator", id: this.opts.id }).then(() => {
+      CQ.audio.speak(CQ.speakable(this.text), { who: this.opts.who || "narrator", line: this.text }).then(() => {
         if (n === this.replays) this.busy = false;
       });
     },
@@ -309,12 +378,17 @@
   // With the voice off, the caption gets time to be read instead. The clock stops while a menu is open,
   // the page is hidden, or the child is replaying the line (🔊). Teachers can skip ahead with → (or a
   // presenter clicker); notebook pages also have Back. Resolves 'next', or 'back' when Back was pressed.
+  //   opts.quiet: a prompt brought back after a hint is shown again but not said again
   CQ.say = async function (id, opts) {
     opts = opts || {};
     const text = opts.text || CQ.T(id, opts.vars);
-    CQ.caption.set(text, { id, who: opts.who });
+    CQ.caption.set(text, { id, who: opts.who, quiet: opts.quiet });
+    const line = CQ.caption.line;
     CQ.track("step_start", { id });
-    const speech = CQ.audio.speak(CQ.speakable(text), { who: opts.who || "narrator", id });
+    const speech = opts.quiet
+      ? Promise.resolve({ spoken: false })
+      : CQ.audio.speak(CQ.speakable(text), { who: opts.who || "narrator", line: text, onStart: CQ.caption.voiced(line) });
+    speech.then(() => CQ.caption.reveal(line)); // however the voice ended, the whole line is on screen
     const advance = opts.advance || "hold";
     if (advance === "none") return null;
     const words = text.split(/\s+/).length;
