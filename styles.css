@@ -258,10 +258,6 @@ button:focus-visible,
   height: 0;
   pointer-events: none;
 }
-.zippy-fists {
-  pointer-events: none; /* his fists over what he holds (swap sheet) */
-  filter: drop-shadow(0 3px 2px rgba(74, 35, 0, 0.4)); /* a soft shadow where his fingers press on it */
-}
 .zippy-rig {
   position: absolute;
   left: 0;
@@ -312,16 +308,11 @@ button:focus-visible,
   text-shadow: 0 2px 0 #ffe9a0, 0 -1px 0 rgba(0, 0, 0, 0.2);
   white-space: nowrap;
 }
-.held.hcrown img {
-  display: block;
-  width: 129px; /* L.HELD_CROWN_W in js/engine.js */
-  filter: drop-shadow(0 0 14px rgba(255, 216, 77, 0.8));
-}
 
 /* ---------------------------------------------------------------- balance */
 /* The balance is put together from the parts of "new balance .png" (see js/world.js), back to front:
    floor shadow, base, the leaves at the post's foot, post, pans (plate, rope hanger, the things on the
-   plate), the leaves beside the hub, beam (it tips), hub. */
+   plate), beam (it tips), hub. */
 .bal-rig {
   position: absolute;
   left: 0;

@@ -334,8 +334,9 @@
   }
 
   // ------------------------------------------------------------------ the swap
-  // Zippy swings over with the bar held out in both fists and stops with it just above the crown. One
-  // hand lets go (the bar drops into the crown's place) as the other grabs the crown, and he lifts it.
+  // Zippy swings over with the bar held out in both fists and stops with it just above the crown. He
+  // lets go (the bar drops into the crown's place) as the crown jumps up into his hands: he lifts it up
+  // in both hands, or, when the balance is about to tip, clutches it in fright.
   async function swapOnPan(v) {
     const z = CQ.zippy;
     const b = CQ.balance;
@@ -350,7 +351,7 @@
     await R.when(z.swingTo({ x: target.x, y: target.y - (crown.h * CQ.BAL.S) / 2 - 27 }, 600, z.barOffset(7)));
     z.pose("putDown");
     await R.wait(120);
-    // the swap: the bar drops from his hands into the crown's place, the crown jumps into his other hand
+    // the swap: the bar drops from his hands into the crown's place, the crown jumps up into his hands
     const barFrom = z.barBox(7);
     const handNum = parseFloat(z.heldEl.style.fontSize) || 0; // the number printed on the bar in his hands
     z.setHeld(null);
@@ -360,7 +361,8 @@
     const panLook = getComputedStyle(crown.el).filter; // it leaves the plate looking as it did there
     const barItem = b.replaceItem(crown, { type: "bar", value: v, slot: "main" }); // the bar lands standing on the plate
     const barTo = b.itemCenter(barItem);
-    const grab = z.holdPoint("zippy_swap", 4, "crown");
+    const level = b.mass("left") === b.mass("right"); // (the bar already counts in the crown's place)
+    const hands = z.crownInHands(!level); // where his crown sheet (or his scared one) draws the crown
     CQ.audio.play("ui.swoosh");
     await R.when(
       Promise.all([
@@ -372,27 +374,28 @@
           numFrom: handNum ? handNum / (barFrom.w / barPx()) : 0,
           numTo: panNumPx(barItem),
         }),
-        CQ.fly(CQ.world.drag, CQ.crownFlyer(crownPxWas), target, grab, {
+        CQ.fly(CQ.world.drag, CQ.crownFlyer(crownPxWas), target, hands, {
           duration: 340,
           arc: -40,
-          scaleTo: CQ.L.HELD_CROWN_W / crownPxWas,
+          scaleTo: hands.w / crownPxWas,
+          spin: hands.tilt,
           filterFrom: panLook,
         }),
       ])
     );
     CQ.audio.play("bar.place");
     barItem.el.style.visibility = "";
-    z.setHeld({ type: "crown" });
+    if (level) {
+      z.setHeld({ type: "crown" });
+      z.pose("lift"); // he lifts it up in both hands (his crown sheet draws it)
+    } else {
+      z.pose("crownUhOh"); // uh-oh! (his scared sheet draws the crown in his hands)
+      CQ.audio.play("zippy.eek");
+    }
     const d = b.evaluate();
     CQ.track("answer", { level: CQ.flow.current, swap: v, correct: d === 0 });
     await R.wait(150);
-    // he lifts the crown and swings back, so the child can watch the balance
-    if (d === 0) z.pose("lift");
-    else {
-      z.setHeld(null); // uh-oh! (his scared sheet draws the crown in his hands)
-      z.pose("crownUhOh");
-      CQ.audio.play("zippy.eek");
-    }
+    // he swings back with the crown, so the child can watch the balance
     await R.when(z.home(d === 0 ? 620 : 460));
     if (d === 0) z.pose("ooh");
     return { d, barItem };
@@ -429,13 +432,13 @@
       return;
     }
     z.pose("look");
-    const hp = z.holdPoint();
+    const hp = z.crownInHands();
     CQ.fx.sparkle(CQ.world.fx, hp.x, hp.y, 12, 80);
     CQ.audio.play("correct");
     await R.wait(420);
     z.setHeld(null);
     z.pose("yes"); // thumbs up as it flies away
-    await R.when(CQ.hud.flyCrown(hp));
+    await R.when(CQ.hud.flyCrown(hp, hp.w));
   }
   // Equal masses: celebration.
   async function celebrate(lineId, vars) {
