@@ -19,7 +19,7 @@
   const WORD_ORDER = ["variable", "constant", "expression", "equation", "lhs", "rhs", "linear", "solution"];
   const WORDS_AT = { L4c: 6, L4e: 7, L4g: 7, L5: 8, L6: 8, L7: 8, L8: 8, L9: 8, P: 8, finale: 8 };
   // The gold bars wait off screen while the balance is being explained or solved.
-  const BARS_HIDDEN = ["L4a", "L4c", "L4e", "L8", "L9", "P", "finale"];
+  const BARS_HIDDEN = ["L4a", "L4c", "L4e", "L4g", "L8", "L9", "P", "finale"];
   // Levels that open with a new crown appearing on the balance (poof)
   const POOF_AT = ["L2", "L3", "L4a", "L5", "L6", "L7", "L8", "L9"];
 
@@ -544,7 +544,7 @@
     // Meet Zippy! He spots a golden crown.
     const drop = z.dropIn();
     await R.wait(650);
-    CQ.spot.on(() => z.center(), 270);
+    CQ.spot.on(() => z.center(), 270, CQ.world.zippyLayer);
     await R.when(drop);
     const zp = CQ.camera.toScreen(z.center());
     const zb = CQ.nameBurst(C().names.zippy, C().names.zippyTag, zp.x + 640, zp.y - 110, "orange");
@@ -566,7 +566,7 @@
     // Grumble guards the treasure. Luckily, he's asleep!
     await R.when(CQ.camera.to(300, 760, 1.65, 1300));
     g.snoreVol = 2.2;
-    CQ.spot.on(() => g.center(), 430); // the same spotlight as Zippy's
+    CQ.spot.on(() => g.center(), 430, CQ.world.grumbleLayer); // the same spotlight as Zippy's
     await R.wait(450);
     const gb = CQ.nameBurst(C().names.grumble, C().names.grumbleTag, 1250, 400, "purple");
     await say("intro-2", { advance: "auto" });
@@ -717,7 +717,7 @@
     // key moment: the scene turns into the equation
     const strip = CQ.el("div", "eq-strip", CQ.ui.layer, `<span class="es a">${CQ.rich("x + 2")}</span><span class="es b">=</span><span class="es c">7</span>`);
     await R.wait(30);
-    look(strip, { pad: 18 });
+    look(strip, { pad: 18, ring: false });
     const slots = ["a", "b", "c"].map((k) => strip.querySelector(".es." + k));
     const targets = slots.map((s) => CQ.centerOf(s));
     const srcs = [CQ.centerOf(lx), CQ.camera.toScreen({ x: CQ.L.BX, y: CQ.L.PIVOT_Y }), CQ.centerOf(r7)];
@@ -754,55 +754,19 @@
     await CQ.activitySort();
     await CQ.activityRecap();
   }
+  // Finding the crown's mass, like the PPT: on the formula screen, try 4 (6 ≠ 7, not a solution), then
+  // 5 (7 = 7, the solution). Back in the room: the crown's mass is 5 units, so the child gives Zippy
+  // the 5 bar and he makes the swap.
   async function runL4g() {
-    const z = CQ.zippy;
-    const b = CQ.balance;
-    const cp = CQ.checkPanel;
-    await say("l4-23", { advance: "auto" });
-    await say("l4-24");
-    // Try a value: Zippy is given that bar, it goes in for x, and the coins are counted on from it.
-    const check = async (v, line, tap) => {
-      CQ.bars.setVisible(true);
-      CQ.bars.glow(v, true);
-      await say(line, { advance: "auto", pause: 150 });
-      say(tap, { advance: "none" });
-      await giveBar([v], { glow: true });
-      CQ.bars.setVisible(false);
-      await R.when(cp.show({ a: 2, b: 7 }));
-      await R.when(cp.substitute(v, z.holdPoint()));
-      z.pose("barThink"); // he looks at the bar while the sides are worked out
-      await R.when(b.autoCount("left", v));
-      cp.setValue("lhs", v + 2);
-      await R.wait(500);
-      cp.setValue("rhs", 7);
-      await R.wait(400);
-      const eq = v + 2 === 7;
-      await R.when(cp.compare(v + 2, 7, CQ.fmt(eq ? C().ui.verdictYes : C().ui.verdictNot, { v })));
-      z.pose(eq ? "barShow" : "hold"); // it works: he shows the bar off
-      return eq;
-    };
-    await check(4, "l4-25", "l4-25-tap");
-    CQ.grumble.stir();
-    look(cp.el, { pad: 16 });
-    await say("l4-26");
-    look(null);
-    b.clearCounts();
-    await R.when(cp.hide());
-    CQ.bars.setVisible(true);
-    await tossTried(4);
-    await check(5, "l4-27", "l4-27-tap");
-    look(cp.el, { pad: 16 });
-    await say("l4-28", { advance: "auto" });
-    CQ.gems.collect("solution");
-    await say("l4-29");
-    look(null);
-    z.pose("hold");
-    b.clearCounts();
-    await R.when(cp.hide());
-    CQ.bars.setVisible(true);
-    // The crown's mass is 5 units. Zippy can use the 5-unit bar! (He is already holding it.)
+    await R.when(CQ.notebook.open());
+    await CQ.notebook.run(CQ.NB_TRY);
+    await R.when(CQ.notebook.close());
+    CQ.bars.setVisible(true, 700); // the gold bars come back for the swap
+    CQ.bars.glow(5, true);
     await say("l4-30", { advance: "auto" });
-    await swapAfterCheck(5);
+    say("l1-2", { advance: "none" }); // Drag it to Zippy, then tap Swap.
+    const v = await giveThenSwap([5]);
+    await swapAndCollect(v);
   }
 
   // ------------------------------------------------------------------ the Check routine (Levels 5–9)
@@ -832,6 +796,7 @@
     CQ.balance.counting = false;
     CQ.balance.clearCounts();
     CQ.bars.setVisible(false);
+    look([cp.el, z.body], { ring: false, quiet: true }); // the scene goes soft: the balance, Zippy and the check under it stay sharp
     await R.when(cp.show({ k, a, b: bb, rhsGiven: o.rhsGiven }));
     // The line is spoken while the number flies into x; both finish before the next instruction.
     const line = o.line ? say(o.line, { vars, advance: "auto", pause: 0 }) : null;
@@ -864,7 +829,7 @@
       CQ.grumble.stir();
       if (z.held && z.held.type === "bar") z.pose("hold");
       await R.when(z.say(C().zippy.checked));
-      look(cp.el, { pad: 16 });
+      look(cp.el, { pad: 16, ring: false });
       for (const id of o.notLines || ["check-not"]) await say(id, { vars });
       look(null);
       await R.when(cp.hide());
@@ -872,7 +837,7 @@
       await tossTried(v);
       return false;
     }
-    if (o.yesLines && o.yesLines.length) look(cp.el, { pad: 16 });
+    if (o.yesLines && o.yesLines.length) look(cp.el, { pad: 16, ring: false });
     if (z.held && z.held.type === "bar") z.pose("barShow"); // it works: he shows the bar off
     for (const id of o.yesLines || []) await say(id, { vars });
     look(null);
@@ -888,6 +853,11 @@
     CQ.idle.arm(() => CQ.hand.tapAt(CQ.centerOf(CQ.swapBtn.el)), 8000);
     await R.when(CQ.swapBtn.wait());
     CQ.idle.disarm();
+    return swapAndCollect(v, o);
+  }
+  // SWAP was tapped with a bar that works: the swap, "That works!", and he collects the crown.
+  async function swapAndCollect(v, o) {
+    o = o || {};
     const { d } = await swapOnPan(v);
     if (d !== 0) return d;
     CQ.Give.useHeld();
@@ -904,9 +874,7 @@
     const L = LV().L5;
     const z = CQ.zippy;
     poof();
-    await say(L.intro[0], { advance: "auto" });
     CQ.balance.setSign(`x + ${L.left} = ${sum(L.right)}`);
-    for (let i = 1; i < L.intro.length; i++) await say(L.intro[i], { advance: "auto" });
     for (let i = 0; i < L.tries.length; i++) {
       const v = L.tries[i];
       await R.when(z.say(CQ.fmt(i ? C().zippy.tryNext : C().zippy.tryN, { v })));
@@ -1173,7 +1141,7 @@
     // Now the crown balances 15 units. So, x = 15.
     eb.set("x = 15", { final: true });
     CQ.audio.play("correct");
-    look(eb.el, { pad: 16 });
+    look(eb.el, { pad: 16, ring: false });
     await say("l8-9", { hold: 2600 }); // key moment: x = 15
     look(null);
     await R.when(eb.hide());
@@ -1206,7 +1174,6 @@
     const eb = CQ.eqBoard;
     poof();
     z.pose("curious");
-    await say("l9-0", { advance: "auto" });
     // Each crown has the same mass, x.
     const crowns = b.items.left.filter((it) => it.type === "crown");
     const xs = crowns.map((cr) => {
@@ -1275,7 +1242,7 @@
     CQ.audio.play("correct");
     glowCrown(true);
     b.glowItems("right", (it) => !it.ghost);
-    look(eb.el, { pad: 16 });
+    look(eb.el, { pad: 16, ring: false });
     await say("l9-8", { hold: 2600 }); // key moment: x = 7
     look(null);
     b.clearGlow();

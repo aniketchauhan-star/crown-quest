@@ -1071,9 +1071,10 @@
       this.hub = hubPart(rig);
       this.level = true;
       this.setEmblem(true, true);
-      // The equation sign hangs on the post, below the hub, at full size (outside the scaled container).
+      // The equation, as clear text above the balance (under the caption), at full size (outside the
+      // scaled container): numbers above the balance, the working-out below it.
       this.sign = CQ.el("div", "eq-sign hidden", layer);
-      CQ.pos(this.sign, BX, PY + 270 * BAL.S);
+      CQ.pos(this.sign, BX, PY - 156);
       this.pendingClang = false;
       CQ.ticker.add((dt) => this.step(dt));
       this.apply();
