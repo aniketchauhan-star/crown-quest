@@ -48,8 +48,8 @@
   ];
   const LHS = ["x", "plus", "two"];
 
-  // Zippy's formula screen: the game fades to a calm dark, and the equation stands big and bright in
-  // the middle. Each beat adds tags, boxes and highlights; what stays the
+  // Zippy's formula screen: the scene goes soft behind a light veil (blurred, not dark), and the
+  // equation stands big and clear on it. Each beat adds tags, boxes and highlights; what stays the
   // same from one beat to the next stays still, and only what is new pops in. Zippy hangs at the left
   // and points. The caption bar above it says the line.
   CQ.notebook = {
@@ -70,6 +70,7 @@
       if (this.isOpen) return;
       this.isOpen = true;
       this.el.classList.remove("hidden");
+      CQ.soft.set("notebook", []); // the whole scene blurs behind it
       this.content.innerHTML = "";
       this.shown = null;
       this.pose("point");
@@ -82,6 +83,7 @@
     async close() {
       if (!this.isOpen) return;
       this.isOpen = false;
+      CQ.soft.set("notebook", false); // the scene sharpens as the screen fades
       CQ.audio.play("ui.swoosh");
       CQ.anim(this.zWrap, [{ transform: "translateY(0)" }, { transform: "translateY(-700px)" }], { duration: 700, easing: CQ.EASE.in, essential: true });
       CQ.anim(this.stage, [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(.94)" }], { duration: 450, easing: CQ.EASE.in, essential: true });
@@ -92,6 +94,7 @@
     },
     hideNow() {
       this.isOpen = false;
+      CQ.soft.set("notebook", false);
       this.shown = null;
       this.el.classList.add("hidden");
       this.z.stop();
@@ -106,8 +109,10 @@
       setTimeout(() => this.isOpen && this.pose("point"), 1300);
     },
     // Draw one explanation state. s = { hl, crown, tags, box, boxColor, mini, label, pulse, miniBalance,
-    // outline, outlineLabel, lhs, rhs, ghost, title }. Each piece gets a key; pieces that were already on
-    // screen in the last beat appear without a pop, so only the new ones catch the eye.
+    // outline, outlineLabel, lhs, rhs, ghost, title, rows, eq }. rows are lines worked out under the
+    // equation ({ t, cls }: cls "big", "no" red, "ok" green); eq: false leaves the equation out. Each
+    // piece gets a key; pieces that were already on screen in the last beat appear without a pop, so only
+    // the new ones catch the eye.
     render(s) {
       const sig = JSON.stringify(s);
       if (this.shown && this.shown.sig === sig) return this.content.querySelector(".eqn");
@@ -119,8 +124,8 @@
         keys.add(key);
         return el;
       };
+      const eqn = CQ.eqTokens(c, EQ_X2, s.eq === false ? "big gone" : "big");
       if (s.title) add(CQ.el("div", "nb-title", c, s.title), "title:" + s.title);
-      const eqn = CQ.eqTokens(c, EQ_X2, "big");
       const tok = (id) => eqn.querySelector(`.tok[data-id="${id}"]`);
       (s.hl || []).forEach((id) => tok(id).classList.add("hl"));
       if (s.lhs) LHS.forEach((id) => tok(id).classList.add("lhs"));
@@ -165,6 +170,10 @@
         const m = add(CQ.el("div", "mini-balance", d), "miniBalance");
         m.appendChild(CQ.miniBalance({ width: 220 }));
         CQ.pos(m, r.cx, r.y - 40);
+      }
+      if (s.rows) {
+        const rows = CQ.el("div", "nb-rows", c);
+        s.rows.forEach((r) => add(CQ.el("div", "nb-row " + (r.cls || ""), rows, CQ.rich(r.t)), "row:" + r.t));
       }
       (s.tags || []).forEach((t) => {
         const ids = Array.isArray(t.ids) ? t.ids : [t.ids];
@@ -264,6 +273,18 @@
       gem: "rhs",
     },
   ];
+  // Trying values for x, like the PPT's slides 24–26: each side worked out for 4 (they differ, so 4 is
+  // not a solution) and for 5 (both sides equal 7, so 5 is the solution).
+  CQ.NB_TRY = [
+    { id: "l4-23", s: {} },
+    { id: "l4-24", s: {} },
+    { id: "l4-25", s: { rows: [{ t: "LHS: 4 + 2 = 6" }, { t: "RHS: 7" }] } },
+    { id: "l4-26", s: { eq: false, rows: [{ t: "6 ≠ 7", cls: "big no" }, { t: "4 is not a solution", cls: "no" }] } },
+    { id: "l4-27", s: { rows: [{ t: "LHS: 5 + 2 = 7" }, { t: "RHS: 7" }] } },
+    { id: "l4-28", s: { eq: false, rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] } },
+    { id: "l4-29", s: { eq: false, rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] }, gem: "solution" },
+  ];
+
   CQ.NB_LINEAR = [
     { id: "l4-19", s: { hl: ["x"], tags: [{ ids: "x", text: "One variable: x", color: "var" }] } },
     { id: "l4-20", s: { hl: ["x"], ghost: true, tags: [{ ids: "x", text: "x means x¹", color: "var" }] } },
@@ -271,10 +292,28 @@
     { id: "l4-22", s: { title: "Linear equation in one variable", outline: true }, gem: "linear" },
   ];
 
+  // Things come in one at a time, so a child can follow: each element fades up in turn, gap ms apart
+  // (the CSS translate property, so their own transforms are left alone).
+  function oneByOne(els, gap, start) {
+    els.forEach((el, i) => {
+      if (!el) return;
+      el.style.opacity = "0";
+      CQ.anim(el, [{ opacity: 0, translate: "0 18px" }, { opacity: 1, translate: "0 0" }], {
+        duration: 420,
+        delay: (start || 0) + i * (gap || 260),
+        easing: CQ.EASE.out,
+        keep: false,
+        essential: true,
+      }).then(() => (el.style.opacity = ""));
+    });
+  }
+  CQ.oneByOne = oneByOne;
+
   // ------------------------------------------------------------------ shared board for activities
   function board(cls) {
     const wrap = CQ.el("div", "activity " + cls, CQ.ui.overlay);
     CQ.el("div", "nb-dim", wrap);
+    CQ.soft.set("activity", []); // the scene blurs behind the activity
     const b = CQ.el("div", "board", wrap);
     CQ.anim(wrap, [{ opacity: 0 }, { opacity: 1 }], { duration: 420, essential: true });
     CQ.anim(b, [{ transform: "scale(.9)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 600, easing: CQ.EASE.out, essential: true });
@@ -283,6 +322,7 @@
     return wrap;
   }
   function closeBoard(wrap) {
+    CQ.soft.set("activity", false);
     return CQ.anim(wrap, [{ opacity: 1 }, { opacity: 0 }], { duration: 480, essential: true }).then(() => wrap.remove());
   }
   // Drag + tap-to-place helper for chips/cards onto targets.
@@ -481,6 +521,8 @@
       makeChip(el, { x: 600 + i * 240, y: rowY }, ctl);
       chips.push(el);
     });
+    // one at a time: the equation, its braces and lines, each empty box, the note, then each label
+    oneByOne([eqn, ...d.querySelectorAll(".brace"), ...d.querySelectorAll(".lead"), ...targets, b.querySelector(".board-note"), ...chips], 160, 300);
     await CQ.say("", { text: c.title, advance: "auto", pause: 100 });
     const firstChip = chips.find((ch) => ch.label === "Variable");
     CQ.hand.drag(CQ.centerOf(firstChip), CQ.centerOf(targets[0]), 1);
@@ -590,6 +632,7 @@
       makeChip(el, { x: 600 + (i % 3) * 360, y: 750 + Math.floor(i / 3) * 110 }, ctl);
       cards.push(el);
     });
+    oneByOne([bins.linear, bins.nonlinear, ...cards], 220, 300); // the two boxes, then each card
     await CQ.say("", { text: c.title, advance: "auto", pause: 100 });
     const demo = cards[0];
     CQ.hand.drag(CQ.centerOf(demo), CQ.centerOf(bins[demo.card.linear ? "linear" : "nonlinear"]), 1);
@@ -698,6 +741,7 @@
     const T = (s, v) => CQ.fmt(s, v);
     const wrap = CQ.el("div", "activity practice-act", CQ.ui.overlay);
     CQ.el("div", "nb-dim", wrap);
+    CQ.soft.set("activity", []);
     // Zippy hangs beside the board and cheers the child on.
     const zw = CQ.el("div", "pr-zippy", wrap);
     const end = CQ.vineEndFor(200, 240, 0.72);
@@ -787,7 +831,7 @@
       pad.classList.toggle("hidden", !withPad);
       body.classList.toggle("with-pad", !!withPad);
       main.innerHTML = html;
-      CQ.anim(main, [{ transform: "translateY(16px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }], { duration: 320, easing: CQ.EASE.out, keep: false });
+      oneByOne([...main.children], 320); // each line of the step comes in turn
     };
     const R = CQ.rich;
     const sides = (lhs, rhs) =>
@@ -1001,6 +1045,7 @@
     const c = C().finale;
     const wrap = CQ.el("div", "activity finale-act", CQ.ui.overlay);
     CQ.el("div", "nb-dim light", wrap);
+    CQ.soft.set("activity", []);
     const title = CQ.el("div", "finale-title", wrap, c.title);
     title.setAttribute("data-t", c.title);
     const z = CQ.el("div", "finale-zippy", wrap);
@@ -1041,6 +1086,7 @@
     await CQ.say("fin-2", { advance: "none" });
     const r = await CQ.run.when(chosen);
     clearInterval(iv);
+    CQ.soft.set("activity", false);
     wrap.remove();
     return r;
   };

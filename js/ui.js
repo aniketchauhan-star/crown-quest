@@ -45,7 +45,7 @@
   // paint the nine parts separately and thin seams show between them on a scaled stage. So each
   // one is repainted into a single canvas behind the element, with the parts overlapping by a
   // pixel, and again whenever the element changes size.
-  const PATCHED = ".caption, .check-panel, .eq-board, .eq-strip, .eq-sign, .panel, .board, .idea-card, .bubble, .btn-wood";
+  const PATCHED = ".caption, .panel, .bubble, .btn-wood";
   const patchImgs = {};
   const four = (v) => [v[0], v.length > 1 ? v[1] : v[0], v.length > 2 ? v[2] : v[0], v.length > 3 ? v[3] : v.length > 1 ? v[1] : v[0]]; // top right bottom left
   const patchRO = typeof ResizeObserver === "function" ? new ResizeObserver((list) => list.forEach((e) => paintPatch(e.target))) : null;
@@ -191,6 +191,7 @@
       CQ.bubble.hide(true);
       CQ.spot.off(true);
       CQ.focus.off(true);
+      CQ.soft.clear();
       CQ.hand.stop();
       CQ.checkPanel.hide(true);
       CQ.eqBoard.hide(true);
@@ -631,6 +632,8 @@
   };
 
   // ------------------------------------------------------------------ spotlight
+  // A character is introduced: the rest of the scene blurs (CQ.soft) while the character's own layer
+  // stays sharp, and a light veil gathers round them. layer: the world layer of the character.
   CQ.spot = {
     build(overlay) {
       this.el = CQ.el("div", "spotlight hidden", overlay);
@@ -640,16 +643,18 @@
     },
     apply() {
       const p = CQ.camera.toScreen(this.get());
-      this.el.style.background = `radial-gradient(circle at ${p.x}px ${p.y}px, rgba(0,0,0,0) ${this.r}px, rgba(3,12,20,.76) ${this.r + 80}px)`;
+      this.el.style.background = `radial-gradient(circle at ${p.x}px ${p.y}px, rgba(252,249,241,0) ${this.r}px, rgba(252,249,241,.32) ${this.r + 140}px)`;
     },
-    on(target, r) {
+    on(target, r, layer) {
       this.get = typeof target === "function" ? target : () => target;
       this.el.classList.remove("hidden");
+      CQ.soft.set("spot", layer ? [layer] : []);
       if (!this.tick) this.tick = CQ.ticker.add(() => this.apply());
       const r0 = 1400;
       return CQ.tween(650, (k) => (this.r = CQ.lerp(r0, r, k)), CQ.ease.out, "spot");
     },
     off(now) {
+      CQ.soft.set("spot", false);
       if (now) {
         this.el.classList.add("hidden");
         if (this.tick) this.tick();
@@ -661,18 +666,49 @@
     },
   };
 
+  // ------------------------------------------------------------------ soft: the scene blurred
+  // The scene's layers (background, Grumble, Zippy, the gold bars…) go soft, blurred and a little paler,
+  // so that what matters stands out: a look-here moment keeps the balance sharp, and a formula screen or
+  // an activity blurs the whole scene behind it. Each owner ("focus", "notebook", "activity") asks for
+  // the layers it keeps sharp ([] = none); a layer is soft while any owner wants it soft.
+  CQ.soft = {
+    owners: new Map(),
+    set(owner, keep) {
+      if (keep === false) this.owners.delete(owner);
+      else this.owners.set(owner, keep);
+      this.apply();
+    },
+    clear() {
+      this.owners.clear();
+      this.apply();
+    },
+    apply() {
+      const root = CQ.world && CQ.world.root;
+      if (!root) return;
+      document.body.classList.toggle("soft-all", [...this.owners.values()].some((keep) => !keep.length));
+      root.querySelectorAll(":scope > .layer").forEach((l) => {
+        let soft = false;
+        this.owners.forEach((keep) => {
+          if (!keep.includes(l)) soft = true;
+        });
+        l.classList.toggle("soft", soft);
+      });
+    },
+  };
+
   // ------------------------------------------------------------------ focus: "look here!"
-  // At a key teaching moment the rest of the screen fades back and one thing stays bright, in a soft
-  // window with a gold ring. target: an element, a list of elements, a stage rect { x0, y0, x1, y1 },
+  // At a key teaching moment the rest of the screen goes soft (blurred, not dark) and one thing stays
+  // sharp, in a window with a gold ring. target: an element, a list of elements, a stage rect { x0, y0, x1, y1 },
   // or a function returning one of those (it is asked again every frame, so the window follows the
   // balance tipping or a new pan item). A new target while it is on: the window glides over to it.
   // Taps go through, so the child can still act. opts: { pad, radius, still (measure once), quiet,
-  // ring: false (no gold ring) }. dimAll() fades everything back, with no window.
-  // UI pieces (caption, panels, buttons) sit above it and stay bright.
+  // ring: false (no gold ring) }. dimAll() blurs everything, with no window.
+  // The blur is the scene's own layers going soft (CQ.soft): the balance, the labels on it and the
+  // layer of whatever is looked at stay sharp; the background, Grumble and Zippy blur (unless looked at).
+  // UI pieces (caption, text, buttons) sit above it and stay sharp.
   CQ.focus = {
     build(overlay) {
       this.el = CQ.el("div", "focus hidden", overlay);
-      this.hole = CQ.el("div", "focus-hole", this.el);
       this.ring = CQ.el("div", "focus-ring", this.el);
       this.tok = 0;
       this.get = null;
@@ -706,11 +742,20 @@
         if (k >= 1) this.from = null;
       }
       this.shown = box;
-      const rad = Math.min(this.radius, box.w / 2, box.h / 2) + "px";
-      [this.hole, this.ring].forEach((e) => {
-        CQ.box(e, box.x, box.y, box.w, box.h);
-        e.style.borderRadius = rad;
+      CQ.box(this.ring, box.x, box.y, box.w, box.h);
+      this.ring.style.borderRadius = Math.min(this.radius, box.w / 2, box.h / 2) + "px";
+    },
+    // The world layers that stay sharp: the balance, the labels and flights over it, sparkles, and the
+    // layer of each thing looked at (Grumble, Zippy, the gold bars…).
+    sharpLayers(target) {
+      const w = CQ.world;
+      const keep = [w.balanceLayer, w.drag, w.fx];
+      const t = typeof target === "function" ? target() : target;
+      (Array.isArray(t) ? t : [t]).forEach((e) => {
+        const l = e && e.closest ? e.closest(".layer") : null;
+        if (l && l.parentNode === w.root && !keep.includes(l)) keep.push(l);
       });
+      return keep;
     },
     on(target, opts) {
       opts = opts || {};
@@ -726,6 +771,7 @@
       this.from = wasOn ? this.shown : null; // glide from where the window is now
       this.t0 = performance.now();
       this.el.classList.remove("hidden");
+      CQ.soft.set("focus", opts.blurAll ? [] : this.sharpLayers(target));
       this.apply();
       if (!this.tick) this.tick = CQ.ticker.add(() => this.apply());
       if (!wasOn) {
@@ -737,7 +783,7 @@
       return t;
     },
     dimAll(opts) {
-      return this.on({ x0: -99, y0: -99, x1: -98, y1: -98 }, Object.assign({ pad: 0, ring: false }, opts));
+      return this.on({ x0: -99, y0: -99, x1: -98, y1: -98 }, Object.assign({ pad: 0, ring: false, blurAll: true }, opts));
     },
     // Turn it off in ms (unless something else was focused meanwhile).
     offAfter(ms) {
@@ -746,6 +792,7 @@
     },
     off(now) {
       const t = ++this.tok;
+      CQ.soft.set("focus", false); // the scene sharpens as the ring fades
       const done = () => {
         if (t !== this.tok) return;
         this.el.classList.add("hidden");
@@ -1131,8 +1178,10 @@
       const br = b.getBoundingClientRect();
       const pr = host.getBoundingClientRect();
       const s = CQ.stage.scale;
+      const below = host.classList.contains("check-panel"); // under the balance: the tiles open below the blank
+      picker.classList.toggle("below", below);
       picker.style.left = (br.left + br.width / 2 - pr.left) / s + "px";
-      picker.style.top = (br.top - pr.top) / s - 20 + "px";
+      picker.style.top = (below ? (br.bottom - pr.top) / s + 18 : (br.top - pr.top) / s - 20) + "px";
       options.forEach((v) => {
         const chip = button("chip", CQ.num(v), CQ.num(v), picker, () => pick(v, chip));
         chip.num = v; // (a button's own .value is always text)
@@ -1182,12 +1231,16 @@
       this.cmp.className = "cp-compare";
       const old = this.el.querySelector(":scope > .cp-picker");
       if (old) old.classList.add("hidden");
-      CQ.audio.play("scroll.open");
-      await CQ.anim(this.el, [{ transform: "translate(-50%, 60px)", opacity: 0 }, { transform: "translate(-50%, 0)", opacity: 1 }], {
-        duration: 580,
-        easing: CQ.EASE.out,
-        essential: true,
-      });
+      // under the balance, one side at a time: the left side, then the right side
+      const rise = [{ transform: "translateY(36px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }];
+      this.el.style.opacity = "";
+      this.el.style.transform = "";
+      this.rhs.style.opacity = "0";
+      CQ.audio.play("ui.pop");
+      await CQ.anim(this.lhs, rise, { duration: 520, easing: CQ.EASE.out, essential: true });
+      CQ.audio.play("ui.pop", { volume: 0.7 });
+      await CQ.anim(this.rhs, rise, { duration: 520, easing: CQ.EASE.out, essential: true });
+      this.rhs.style.opacity = "";
     },
     hide(now) {
       const p = this.el.querySelector(":scope > .cp-picker");

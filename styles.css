@@ -34,6 +34,8 @@
   --cream: #fff4d6;
   --font: "Baloo 2", "Arial Rounded MT Bold", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
   --math: "Noto Serif", Cambria, "Times New Roman", serif;
+  /* text on the scene has no panel behind it: a soft white glow keeps it clear on any background */
+  --halo: 0 0 3px #fff, 0 0 8px rgba(255, 255, 255, 0.95), 0 0 20px rgba(255, 255, 255, 0.9);
   /* one fixed look (the temple at night), the same in light and dark mode */
   color-scheme: dark;
 }
@@ -457,16 +459,22 @@ button:focus-visible,
   transform: translate(-50%, -50%) rotate(35deg);
 }
 .eq-sign {
-  position: absolute;
+  position: absolute; /* above the balance, under the caption (js/world.js) */
   z-index: 6;
   transform: translate(-50%, -50%);
-  padding: 0 12px 0 14px;
-  font: 800 54px/1.15 var(--font);
+  font: 800 68px/1.15 var(--font);
   color: var(--ink);
+  text-shadow: var(--halo);
   white-space: nowrap;
 }
 .eq-sign.long {
-  font-size: 44px;
+  font-size: 60px;
+}
+.eq-sign {
+  transition: opacity 0.4s;
+}
+.soft-all .eq-sign {
+  opacity: 0 !important; /* it rests while the whole scene is blurred (its pop-in leaves an inline opacity) */
 }
 .v {
   font-family: var(--math);
@@ -670,41 +678,26 @@ button:focus-visible,
   text-shadow: 5px 5px 0 #6b3e00, -5px 5px 0 #6b3e00, 5px -5px 0 #6b3e00, -5px -5px 0 #6b3e00, 0 12px 18px rgba(0, 0, 0, 0.4);
 }
 .wlabel.xlabel {
-  font: 800 74px/1.1 var(--font);
-  background: #ffd84d;
+  font: 800 84px/1.1 var(--font);
   color: var(--ink);
-  border: 5px solid #8a6a00;
-  border-radius: 20px;
-  padding: 2px 26px 0;
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
+  text-shadow: var(--halo);
 }
 .wlabel.xlabel.seven {
-  background: #fff;
-  border-color: var(--rhs);
   color: var(--rhs);
 }
 .wlabel.xlabel.small {
-  font-size: 46px;
-  padding: 0 13px;
-  border-width: 4px;
-  border-radius: 13px;
+  font-size: 54px;
 }
 .wlabel.xlabel.half {
-  font-size: 52px;
-  background: #e8f1ff;
-  border-color: var(--same);
+  font-size: 60px;
   color: var(--same);
 }
 .wlabel.unit-tag,
 .wlabel.coins-tag,
 .wlabel.split-tag {
-  font: 800 42px/1 var(--font);
-  background: var(--parch);
-  border: 5px solid var(--parch-b);
-  border-radius: 18px;
-  padding: 12px 20px 6px;
+  font: 800 46px/1 var(--font);
   color: var(--ink);
-  box-shadow: 0 6px 0 rgba(94, 52, 21, 0.3);
+  text-shadow: var(--halo);
 }
 .mini-coins img {
   width: 34px;
@@ -1015,16 +1008,27 @@ button:focus-visible,
   inset: 0;
   pointer-events: none;
 }
-/* "Look here!" (CQ.focus in js/ui.js): the rest fades back; a soft window with a gold ring stays bright */
+/* "Look here!" (CQ.focus in js/ui.js): the rest of the scene blurs (CQ.soft); a gold ring marks the thing */
 .focus {
   position: absolute;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
 }
-.focus-hole {
-  position: absolute;
-  box-shadow: 0 0 0 3000px rgba(4, 14, 22, 0.6), inset 0 0 26px 6px rgba(4, 14, 22, 0.45); /* the inner shadow softens its edge */
+/* The scene's layers go soft (blurred and a little paler, not dark) behind a look-here moment, a
+   formula screen or an activity (CQ.soft in js/ui.js). The background is drawn a touch larger while it
+   is blurred, so its blurred edge never shows; its idle motion rests meanwhile. */
+#world > .layer {
+  transition: filter 0.5s ease, transform 0.5s ease;
+}
+#world > .layer.soft {
+  filter: blur(8px) saturate(0.85) brightness(1.06);
+}
+#world > .bg-scene.soft {
+  transform: scale(1.015);
+}
+#world > .bg-scene.soft img {
+  animation-play-state: paused;
 }
 .focus-ring {
   position: absolute;
@@ -1396,44 +1400,37 @@ button:focus-visible,
 }
 
 /* ---------------------------------------------------------------- check panel + equation board */
+/* The check, under the balance, as plain text (no panel); the equation itself is on the post sign. */
 .check-panel {
   position: absolute;
   left: var(--bx, 1085px); /* balance centre, set from js/ui.js */
-  top: 745px;
-  width: 860px;
+  top: 852px; /* just under the balance's base */
+  width: 980px;
   transform: translateX(-50%);
-  padding: 6px 16px 8px;
   pointer-events: auto;
   text-align: center;
+  text-shadow: var(--halo);
   z-index: 5;
 }
 .cp-eq {
-  font: 800 54px/1.1 var(--font);
-  color: var(--ink);
+  display: none;
 }
 .cp-row {
   display: flex;
   justify-content: center;
-  gap: 34px;
-  margin-top: 8px;
-  font: 800 46px/1 var(--font);
+  gap: 64px;
+  font: 800 52px/1 var(--font);
 }
 .cp-side {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 18px;
-  border-radius: 22px;
 }
 .cp-side.lhs {
   color: var(--lhs);
-  background: rgba(23, 112, 112, 0.1);
-  border: 4px solid rgba(23, 112, 112, 0.4);
 }
 .cp-side.rhs {
   color: var(--rhs);
-  background: rgba(185, 122, 22, 0.1);
-  border: 4px solid rgba(185, 122, 22, 0.45);
 }
 .cp-side .lab {
   font-size: 36px;
@@ -1489,8 +1486,8 @@ button:focus-visible,
   font: 800 64px/1 var(--font);
 }
 .cp-verdict {
-  margin-top: 2px;
-  font: 800 31px/1.1 var(--font);
+  margin-top: 4px;
+  font: 800 40px/1.1 var(--font);
 }
 .cp-compare.ok .cp-verdict {
   color: var(--ok);
@@ -1510,14 +1507,6 @@ button:focus-visible,
 .csym.no {
   color: var(--no);
 }
-.cp-compare.ok {
-  background: rgba(30, 122, 85, 0.1);
-  border-radius: 20px;
-}
-.cp-compare.no {
-  background: rgba(200, 71, 59, 0.1);
-  border-radius: 20px;
-}
 .cp-picker {
   position: absolute;
   transform: translate(-50%, -100%);
@@ -1529,6 +1518,15 @@ button:focus-visible,
   border-radius: 24px;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
   z-index: 3;
+}
+/* under the balance the number tiles open below the blank, with no box round them */
+.cp-picker.below {
+  transform: translate(-50%, 0);
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  text-shadow: none;
 }
 .chip {
   width: 112px;
@@ -1577,12 +1575,12 @@ button:focus-visible,
 .eq-board {
   position: absolute;
   left: var(--bx, 1085px); /* balance centre, set from js/ui.js */
-  top: 772px;
+  top: 850px; /* just under the balance's base, as plain text */
   min-width: 520px;
   transform: translateX(-50%);
-  padding: 4px 36px 0;
-  font: 800 64px/1.3 var(--font);
+  font: 800 72px/1.3 var(--font);
   color: var(--ink);
+  text-shadow: var(--halo);
   text-align: center;
   white-space: nowrap;
   z-index: 5;
@@ -1627,14 +1625,14 @@ button:focus-visible,
 .eq-strip {
   position: absolute;
   left: var(--bx, 1085px); /* balance centre, set from js/ui.js */
-  top: 905px;
+  top: 920px; /* under the balance, as plain text */
   transform: translate(-50%, -50%);
   display: flex;
   gap: 36px;
   align-items: center;
-  padding: 4px 30px 0;
-  font: 800 112px/1.1 var(--font);
+  font: 800 120px/1.1 var(--font);
   color: var(--ink);
+  text-shadow: var(--halo);
   z-index: 6;
   pointer-events: none;
 }
@@ -1667,8 +1665,8 @@ button:focus-visible,
   pointer-events: auto;
 }
 .notebook .nb-dim {
-  /* darkest behind the numbers (the balance must not show through them), a little of the jungle at the edges */
-  background: radial-gradient(ellipse 60% 56% at 54% 50%, rgba(5, 16, 24, 0.96) 0%, rgba(5, 16, 24, 0.95) 60%, rgba(5, 16, 24, 0.86) 100%);
+  /* a light veil over the blurred scene: palest behind the numbers, a little of the jungle at the edges */
+  background: radial-gradient(ellipse 62% 58% at 54% 42%, rgba(252, 249, 241, 0.88) 0%, rgba(252, 249, 241, 0.74) 60%, rgba(252, 249, 241, 0.5) 100%);
 }
 .nb-stage {
   position: absolute;
@@ -1680,10 +1678,13 @@ button:focus-visible,
 .nb-dim {
   position: absolute;
   inset: 0;
-  background: rgba(3, 14, 20, 0.58);
+  background: rgba(252, 249, 241, 0.6); /* a light veil over the blurred scene (CQ.soft), not a dark one */
 }
 .nb-dim.light {
-  background: rgba(3, 14, 20, 0.38);
+  background: rgba(252, 249, 241, 0.35);
+}
+.activity > .nb-dim:not(.light) {
+  background: radial-gradient(ellipse 64% 60% at 52% 52%, rgba(252, 249, 241, 0.88) 0%, rgba(252, 249, 241, 0.76) 62%, rgba(252, 249, 241, 0.55) 100%);
 }
 .nb-content {
   position: absolute;
@@ -1691,17 +1692,15 @@ button:focus-visible,
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 140px; /* the equation sits in the upper part of the screen, always in the same place */
 }
 .nb-title {
-  position: absolute; /* above the equation, which never moves */
-  left: 0;
-  right: 0;
-  top: 96px;
+  margin-top: 46px; /* under the equation, which never moves */
   font: 800 70px/1.1 var(--font);
-  color: #74f0ac;
+  color: var(--ok);
   text-align: center;
-  text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35), 0 0 30px rgba(116, 240, 172, 0.35);
+  text-shadow: var(--halo);
 }
 .eqn {
   position: relative;
@@ -1847,80 +1846,58 @@ button:focus-visible,
   transform: translate(-50%, -100%);
 }
 
-/* On the formula screen everything is bright on the dark fade. --c is each part's colour. */
+/* On the formula screen the numbers are dark and clear on the light veil, with a soft white glow. */
 .notebook .eqn.big {
   font-size: 170px;
-  color: #fffaf0;
-  text-shadow: 0 6px 0 rgba(0, 0, 0, 0.35), 0 0 40px rgba(255, 250, 240, 0.2);
+  color: var(--ink);
+  text-shadow: 0 0 24px rgba(255, 255, 255, 0.95), 0 0 6px rgba(255, 255, 255, 0.9);
+}
+.notebook .eqn.gone {
+  display: none;
+}
+/* lines worked out under the equation (trying a value): LHS: 4 + 2 = 6, 6 ≠ 7, 7 = 7 */
+.notebook .nb-rows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.notebook .eqn.big + .nb-rows {
+  margin-top: 10px;
+}
+.notebook .nb-row {
+  font: 800 92px/1.3 var(--font);
+  color: var(--ink);
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.95), 0 0 6px rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+}
+.notebook .nb-row.big {
+  font-size: 150px;
+}
+.notebook .nb-row.no {
+  color: var(--no);
+}
+.notebook .nb-row.ok {
+  color: var(--ok);
 }
 .notebook .tok.hl {
-  color: #2b2100;
   text-shadow: none;
-  box-shadow: 0 0 0 8px #ffd84d, 0 0 46px 12px rgba(255, 216, 77, 0.5);
-}
-.notebook .var {
-  --c: #ffd84d;
-}
-.notebook .op {
-  --c: #cfdce2;
-}
-.notebook .const {
-  --c: #ffa65e;
-}
-.notebook .lhs {
-  --c: #5ee6dc;
-}
-.notebook .rhs {
-  --c: #ffc35c;
-}
-.notebook .tok.lhs,
-.notebook .tok.rhs {
-  color: var(--c, #5ee6dc);
+  box-shadow: 0 0 0 8px #ffd84d, 0 0 30px 8px rgba(255, 216, 77, 0.55);
 }
 .notebook .ghost-power {
   color: #0b6b66; /* on the highlighted (gold) x */
 }
-.notebook .tok.pulse {
-  color: #74f0ac;
-}
-.notebook .grp-box {
-  border-color: #fffaf0;
-  box-shadow: 0 0 26px rgba(255, 250, 240, 0.28);
-}
-.notebook .grp-box.expr {
-  border-color: #c4a0ff;
-  background: rgba(196, 160, 255, 0.12);
-  box-shadow: 0 0 30px rgba(196, 160, 255, 0.4);
-}
+.notebook .grp-box,
 .notebook .grp-outline {
-  border-color: #74f0ac;
-  box-shadow: 0 0 30px rgba(116, 240, 172, 0.25);
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.85);
 }
-.notebook .grp-label {
-  color: #07301d;
-  background: #74f0ac;
-  border-color: #74f0ac;
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
-}
-.notebook .grp-label.expr {
-  color: #24104a;
-  background: #c4a0ff;
-  border-color: #c4a0ff;
-}
+.notebook .grp-label,
 .notebook .tag {
-  color: #12262e;
-  background: var(--c, #fffaf0);
-  border-color: var(--c, #fffaf0);
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
-}
-.notebook .tag-line,
-.notebook .under-bracket {
-  color: var(--c, #fffaf0);
+  box-shadow: 0 5px 0 rgba(27, 58, 68, 0.18);
 }
 .notebook .mini-pic,
 .notebook .mini-crown,
 .notebook .mini-balance {
-  filter: drop-shadow(0 0 18px rgba(255, 216, 77, 0.45));
+  filter: drop-shadow(0 4px 6px rgba(27, 58, 68, 0.25));
 }
 .nb-zippy {
   position: absolute;
@@ -2137,20 +2114,20 @@ button:focus-visible,
   padding: 6px 10px 2px;
 }
 .bin {
-  position: absolute;
+  position: absolute; /* an open drop zone: a coloured dashed edge and its name, no panel */
   top: 34px;
   width: 700px;
   height: 470px;
   padding: 0;
   border-radius: 32px;
-  border: 7px solid;
-  background: #fff;
+  border: 7px dashed;
+  background: rgba(255, 255, 255, 0.28);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   cursor: pointer;
   pointer-events: auto;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
 }
 .bin.lhs {
   left: 90px;
@@ -2161,15 +2138,15 @@ button:focus-visible,
   border-color: #e0a21b;
 }
 .bin-head {
-  padding: 18px 10px 10px;
-  font: 800 50px/1 var(--font);
-  color: #fff;
+  padding: 22px 10px 6px;
+  font: 800 54px/1 var(--font);
+  text-shadow: var(--halo);
 }
 .bin.lhs .bin-head {
-  background: var(--lhs);
+  color: var(--lhs);
 }
 .bin.rhs .bin-head {
-  background: #e0a21b;
+  color: #b57d0e;
 }
 .bin-list {
   flex: 1;
@@ -2182,6 +2159,7 @@ button:focus-visible,
 }
 .bin.hover {
   transform: scale(1.02);
+  background: rgba(255, 246, 200, 0.55);
   box-shadow: 0 0 0 10px rgba(255, 216, 77, 0.7);
 }
 .bin.glow {
@@ -2295,14 +2273,11 @@ button:focus-visible,
   gap: 20px;
 }
 .rc-panel {
-  position: relative;
+  position: relative; /* one of the four parts: no box round it, just the number, the equation and the words */
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 14px 22px 16px;
-  border: 4px solid rgba(201, 150, 70, 0.55);
-  border-radius: 26px;
-  background: rgba(255, 252, 240, 0.7);
   opacity: 0;
 }
 .rc-panel.on {
@@ -2473,8 +2448,6 @@ button:focus-visible,
   grid-auto-rows: 100px;
   gap: 14px;
   padding: 22px;
-  background: rgba(27, 58, 68, 0.08);
-  border-radius: 28px;
 }
 .key {
   border: none;
@@ -2946,33 +2919,20 @@ button:focus-visible,
    One stretchable panel for the caption, check panel, equation boards, menus, boards and cards:
    the wooden frame keeps its thickness, the parchment stretches. */
 .caption,
-.check-panel,
-.eq-board,
-.eq-strip,
-.eq-sign,
-.panel,
-.board,
-.idea-card {
+.panel {
   border-style: solid;
   border-width: 22px 24px 25px 22px;
   border-image: url(assets/elements/panel.png) 30 35 34 30 fill / 22px 24px 25px 22px stretch;
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.3));
 }
-.eq-sign {
-  border-width: 16px 18px 18px 16px;
-  border-image-width: 16px 18px 18px 16px;
-  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.3));
-}
 .panel {
   border-width: 30px 34px 34px 30px;
   border-image-width: 30px 34px 34px 30px;
 }
-/* The activity boards keep their 8px inner layout (the chips and cards sit at fixed stage
-   positions), so the wooden frame grows outwards instead. */
+/* The activity boards have no panel: their content sits straight on the blurred scene's light veil
+   (the 8px border keeps the chips and cards at their stage positions). */
 .board {
-  border-width: 8px;
-  border-image-width: 26px 30px 29px 26px;
-  border-image-outset: 18px 22px 21px 18px;
+  border: 8px solid transparent;
 }
 
 /* js/ui.js repaints each stretched piece into one canvas behind its element (no seams) */

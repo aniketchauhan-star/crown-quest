@@ -26,11 +26,13 @@ The chapter names you can use after `#`: `intro`, `L1`, `L2`, `L3`, `L4a` (myste
 
 ## What the child does
 
+The story follows the PPT `Zippy_Crown_Quest.pptx.pdf` screen by screen: each slide's line, in the slide's order, with the game's own art. The game only adds what it needs to be played, such as how to drag a bar or tap SWAP, hints after a wrong answer, and the celebrations.
+
 | Chapter | Learning |
 |---|---|
-| Intro | Meet Zippy, then Grumble. If the balance tips, the alarm wakes Grumble: a cloud over sleeping Grumble shows it while the rest of the screen fades. Each coin is 1 unit. |
+| Intro | Meet Zippy, then Grumble (each stays sharp while the rest of the scene blurs). If the balance tips, the alarm wakes Grumble: a cloud over sleeping Grumble shows it while the rest of the screen blurs. Each coin is 1 unit. |
 | Levels 1–3: The Swap | Drag a gold bar to Zippy, tap SWAP. The right bar keeps the balance level. |
-| Level 4: The Mystery Crown | The crown becomes **x**, so the scene turns into **x + 2 = 7**. Words (on the formula screen): variable, constant, algebraic expression, equation, LHS, RHS, linear equation in one variable. Activities: label the parts of 4x + 3 = 19; sort linear and nonlinear equations; a quick recap. Try & Check finds the **solution**. |
+| Level 4: The Mystery Crown | The crown becomes **x**, so the scene turns into **x + 2 = 7**. Words (on the formula screen): variable, constant, algebraic expression, equation, LHS, RHS, linear equation in one variable. Activities: label the parts of 4x + 3 = 19; sort linear and nonlinear equations; a quick recap. Then, on the formula screen, trying 4 (LHS: 4 + 2 = 6, RHS: 7, 6 ≠ 7) and 5 (7 = 7) finds the **solution**, and the child gives Zippy the 5 bar for the swap. |
 | Levels 5–7: Check It | Check before you swap: replace x, find each side, compare. Level 5 is guided; in 6 and 7 the child chooses. |
 | Level 8: The Smart Way | x + 8 = 23: split 23 into 8 + 15, take 8 off **both** sides (one drag moves both), so x = 15, then check. |
 | Level 9: Two Crowns | 2x + 4 = 18: remove 4 from both sides, divide both sides by 2, so x = 7. Check 2 × 7 + 4 = 18, then swap each crown for a 7 bar. |
@@ -57,17 +59,23 @@ Winning a level is a little story too:
 
 (The first of Level 9's two crowns flies up out of the picture instead, because he still needs his hands for the second swap.)
 
-At key teaching moments the rest of the screen fades back and the thing being explained stays bright, inside a soft gold ring:
+**No panels in front of the scene.** When something needs looking at, the rest of the scene goes soft: it blurs a little, and nothing is covered or darkened. Text sits straight on the scene as clear, dark letters with a soft white glow. Around the balance:
+- **above the balance**, under the caption: the numbers, that is, the level's equation (x + 3 = 9) and later the answer (x = 6);
+- **the balance** in the middle stays sharp;
+- **below the balance**: the working-out. That means x + 2 = 7 being built in Level 4, the check (LHS: 4 + 3 = 7, RHS: 9, then 7 ≠ 9 and "4 doesn't work"), and the steps of Levels 8 and 9 (x + 8 = 8 + 15, then x = 15).
+
+At key teaching moments the thing being explained stays sharp inside a soft gold ring while the rest of the scene blurs:
 - the coin's "1 unit";
 - the bars, and SWAP, the first time;
 - the coins being counted after a second miss;
 - each step of Level 4 (the crown, the coins, x, x + 2, 7, then the equation);
-- every verdict on the Check panel;
 - the key steps of Levels 8 and 9.
 
-The ring glides from one thing to the next. Taps still work while it is on. (`CQ.focus` in `js/ui.js`; the moments are the `look(…)` calls in `js/flow.js`.)
+The ring glides from one thing to the next. Taps still work while it is on. During a check, only the balance, Zippy and the check stay sharp, with no ring. (`CQ.focus` and `CQ.soft` in `js/ui.js`; the moments are the `look(…)` calls in `js/flow.js`.)
 
-The Level 4 words are explained on **Zippy's formula screen**. The game fades to a calm dark and x + 2 = 7 stands big and bright in the middle. Each line adds one colour-coded label, box or highlight, and only the new piece pops in, so the child's eye goes straight to it.
+The Level 4 words are explained on **Zippy's formula screen**. The scene blurs behind a light veil, and x + 2 = 7 stands big and clear in the upper part of the screen. Each line adds one colour-coded label, box or highlight, and only the new piece pops in, so the child's eye goes straight to it. Worked-out lines (LHS: 4 + 2 = 6, RHS: 7) appear under the equation.
+
+**Step by step.** Things come one at a time: a level's crown, coins and bars; the check's left side, then its right side; each piece of the formula screen; the activities' equation, boxes and cards; and each line of a practice step.
 
 The gold bars sit still on their stands. When it's time to choose, a faded copy of one bar lifts off and floats toward Zippy, to show it can be picked up and given to him. It is a different bar each time, left to right, so the hint never points at the answer. It repeats every 6 seconds until a bar is in Zippy's hands. While a bar is being dragged, a faded copy stays on its stand. If nothing happens for 8 seconds, a hand (pointing up, from below) carries a faded bar to Zippy to show what to do.
 
@@ -114,7 +122,7 @@ If the sheet is replaced, re-measure `BALANCE_PARTS` and `ART`.
 **The interface pieces** come from `elements.png`, a sheet of 34 pieces made with the prompt in `ChatGPT-Asset-Sheet-Prompt.md`. `tools/prepare_assets.py` cuts the sheet into `assets/elements/`, one PNG for each of the 20 pieces the game uses (`UNUSED_ELEMENTS` in the tool lists the 14 it leaves out, the old gold balance among them). It also measures the points the game needs and writes them as `GEOM` in `assets/sprites.js`: the hand's fingertip, the thought cloud, the speech bubble and the panel's border, plus where each balance part was on its sheet. To change a piece, make a new sheet with the same rows in the same order (`ELEMENT_ROWS` in the tool) and run the tool. If a row has the wrong number of pieces, it stops and says which row.
 
 - **Balance.** `BAL.S` is its overall size, and `ART_K` matches the parts to the size of the things on the plates. The beam's middle stretches a little so the ropes hang where they do in the picture.
-- **Stretched pieces.** The caption bar, panels and boards, speech bubbles and the wooden buttons all stretch without bending their corners. Each rule in `styles.css` names its piece and where to cut it (`border-image`). `CQ.patch` in `js/ui.js` then paints each piece in one go, so no seams show. If new art has a thicker or thinner frame, change the cut numbers in those rules:
+- **Stretched pieces.** The caption bar, the menu panels, speech bubbles and the wooden buttons all stretch without bending their corners. Each rule in `styles.css` names its piece and where to cut it (`border-image`). `CQ.patch` in `js/ui.js` then paints each piece in one go, so no seams show. If new art has a thicker or thinner frame, change the cut numbers in those rules:
   - panel: `30 35 34 30`
   - speech bubble: `82 132 94 130` (cut through the middle of the oval)
   - wooden button: `0 51 0 51`
@@ -128,7 +136,7 @@ If the sheet is replaced, re-measure `BALANCE_PARTS` and `ART`.
 - **Zippy's swap:** `zippy swap.png` (made with `ChatGPT-Zippy-Swap-Prompt.md`) has empty hands. His open hands are ready to catch a bar, and in the swap he lets go of the bar as the crown jumps up into his hands. Nothing is drawn in his hands on this sheet. `SWAP` in `js/world.js` has where his hands are in each frame; re-measure it if you replace the sheet. The tool also cuts Zippy's face for the question bar from it (`FACE`). It still makes `assets/zippy/swap-hands.png` (his fists, from `SWAP_FISTS`), but the game no longer uses it.
 - **Scared Zippy holding the crown:** `zippy scared crown.png` (made with `ChatGPT-Zippy-Scared-Crown-Prompt.md`) is used after a wrong swap, until he gives the crown back. `SCARED_CROWN` in `js/world.js` is where the crown is in each frame (and how wide). The crown he grabs flies into his hands in frame 1, and jumps back to the pan from his hands. Re-measure it if the sheet is replaced.
 - **Zippy wears the crown:** `zippy crown.png` (made with `ChatGPT-Zippy-Crown-Prompt.md`; the tool also finds it as `zippy crown..png`) has him lifting the crown, putting it on, then wow, proud, thumbs up, wave, laugh and straightening it. After a right swap he holds the crown like frame 1, lifted up in both hands, until he puts it on. `CROWN_LIFT` in `js/world.js` is where the crown is in that frame (centre, width and tilt), so the crown he grabs from the pan lands exactly there. While he wears it, his everyday poses use this sheet (`crownPose`). `CROWN_HEAD` is where the crown sits on his head, for its sparkle.
-- **Still drawn in code:** the character name titles (text only), Grumble's shadow, comic sound words, confetti, drop rings, the menu toggles, word cards, label chips, equation cards, the number picker box, the recap panels and the practice board's labels. The keypad keys use the number tile, Check uses the green pill, and the chest sits in the Word Treasure title.
+- **Still drawn in code:** the character name titles (text only), Grumble's shadow, comic sound words, confetti, drop rings, the menu toggles, word cards, label chips, equation cards, the sort activity's two drop zones, the number picker box and the practice board's labels. The keypad keys use the number tile, Check uses the green pill, and the chest sits in the Word Treasure title.
 
 **Sizes and positions** are set in one place, `CQ.L` near the top of `js/engine.js`:
 - `ZIPPY.scale`: Zippy's size.
@@ -156,7 +164,7 @@ styles.css          all styling
 js/content.js       ← all words and numbers (edit this)
 js/engine.js        stage scaling, tweens, camera, dragging, pause, save
 js/world.js         the background layers, Grumble, Zippy, the balance, gold bars
-js/ui.js            captions (with Zippy's face), SWAP, bubbles, name titles, focus, hints, Word Treasure, menu, Check panel
+js/ui.js            captions (with Zippy's face), SWAP, bubbles, name titles, focus + scene blur, hints, Word Treasure, menu, the check
 js/activities.js    Zippy's formula screen, label + sort activities, quick recap, practice board + keypad, finale
 js/flow.js          the story: intro, levels 1–9, practice, finale
 js/audio.js         generated sound effects and music; plays the voice lines

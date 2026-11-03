@@ -71,17 +71,13 @@ window.CONTENT = {
     "l4-23": "Now let's find the crown's mass.",
     "l4-24": "We need a value of x that makes both sides equal.",
     "l4-25": "Let's check 4. Replace x with 4 and find the value of each side.",
-    "l4-25-tap": "Tap the 4 bar.",
     "l4-26": "The left side equals 6, and the right side equals 7. They're different, so 4 is not a solution.",
     "l4-27": "Now, let's check 5. Replace x with 5 and find the value of each side.",
-    "l4-27-tap": "Tap the 5 bar.",
     "l4-28": "Both sides equal 7.",
     "l4-29": "A value that makes an equation true is called its solution. So, 5 is the solution.",
     "l4-30": "The crown's mass is 5 units. Zippy can use the 5-unit bar!",
 
     // Levels 5–9: check before you swap.  {v} = value tried, {s} = the left side's value, {b} = the right side
-    "l5-0": "Another crown, with 3 coins beside it. So, x + 3 = 9.",
-    "check-intro": "Smart treasure hunters check before they swap!",
     "l5-give": "Give the {v} bar to Zippy.",
     "check-replace": "Replace x with {v}.",
     "check-find": "Find the value of each side.",
@@ -93,7 +89,6 @@ window.CONTENT = {
     "check-next": "Now, let's check {v}.",
     "check-not": "The left side equals {s}, and the right side equals {b}. They're different, so {v} is not a solution.",
     "check-try-another": "Try another value.",
-    "l6-0": "Another crown, with 4 coins beside it. So, x + 4 = 11.",
     "l6-prompt": "Choose a value for x. Check whether both sides are equal.",
     "l6-right": "Both sides equal {b}. So, {v} is the solution.",
     "l6-find": "Replace x with {v} and find the value of each side.",
@@ -125,7 +120,6 @@ window.CONTENT = {
     "l8-15": "That works! Zippy collects the crown, and Grumble stays asleep.",
 
     // Level 9: two matching crowns
-    "l9-0": "Zippy spots two matching crowns!",
     "l9-1": "Each crown has the same mass, x.",
     "l9-2": "Two lots of x make 2x.",
     "l9-3": "First, let's remove these 4 units.",
@@ -222,14 +216,13 @@ window.CONTENT = {
     L4: { n: 4, kind: "mystery", crown: 5, left: 2, right: [4, 3], bars: [4, 5, 7] },
     L5: {
       n: 5, kind: "guided", crown: 6, left: 3, right: [3, 3, 3], bars: [4, 6, 7], tries: [4, 6],
-      intro: ["l5-0", "check-intro"],
       chips: { 4: { lhs: [6, 7, 9], rhs: [3, 7, 9] }, 6: { lhs: [8, 9, 10], rhs: [3, 6, 9] } },
       verdictNot: "{v} doesn't work. Try another value.",
     },
     // Levels 6–7: the child chooses. say = the narrator's line for each moment of the check.
     L6: {
       n: 6, kind: "independent", crown: 7, left: 4, right: [4, 4, 3], bars: [5, 8, 7],
-      intro: ["l6-0"],
+      intro: [],
       say: { prompt: "l6-prompt", firstRight: "l6-right", firstTry: "check-lets", find: "l6-find", nextTry: "check-next", success: "l6-success" },
       verdictNot: "{v} isn't a solution.",
       chips: {
