@@ -1,0 +1,12 @@
+{
+  "name": "Zippy's Crown Quest",
+  "short_name": "Crown Quest",
+  "description": "A story-led learning game about linear equations in one variable (Class 8).",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#04161c",
+  "theme_color": "#0b2f39",
+  "icons": [{ "src": "assets/ui/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" }]
+}

@@ -470,6 +470,55 @@
     },
   };
 
+  // ------------------------------------------------------------------ the screen: fullscreen and a light mode
+  CQ.screen = {
+    // Phones and tablets: Play makes the game fill the whole screen, held sideways (where the browser
+    // allows it: Android, iPad; an iPhone keeps its browser bar, unless the game is added to the home screen).
+    fullscreen() {
+      try {
+        if (!(window.matchMedia && matchMedia("(pointer: coarse)").matches)) return;
+        const d = document.documentElement;
+        if (document.fullscreenElement || document.webkitFullscreenElement) return;
+        const req = d.requestFullscreen || d.webkitRequestFullscreen;
+        if (!req) return;
+        const p = req.call(d, { navigationUI: "hide" });
+        const lock = () => screen.orientation && screen.orientation.lock && screen.orientation.lock("landscape").catch(() => {});
+        if (p && p.then) p.then(lock, () => {});
+        else lock();
+      } catch (e) {
+        /* a browser without it keeps its page as it is */
+      }
+    },
+    // A light mode for slow devices: no blur behind a "look here" or a formula screen (the dark fade
+    // stays), and no idle motion in the background. Chosen at once on a device with little memory or
+    // few cores, or later if the game keeps running below about 40 frames a second.
+    lite(on) {
+      document.documentElement.classList.toggle("lite", on !== false);
+    },
+  };
+  try {
+    if ((navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2)) CQ.screen.lite(true);
+  } catch (e) {
+    /* unknown: assume a capable device */
+  }
+  // the frame-rate watch: two slow 4-second spells in a row (while the game is on screen) mean lite
+  (function () {
+    let t = 0;
+    let frames = 0;
+    let slow = 0;
+    CQ.ticker.add((dt) => {
+      if (document.hidden || document.documentElement.classList.contains("lite")) return;
+      t += dt;
+      frames++;
+      if (t < 4) return;
+      const fps = frames / t;
+      t = 0;
+      frames = 0;
+      slow = fps < 40 ? slow + 1 : 0;
+      if (slow >= 2) CQ.screen.lite(true);
+    });
+  })();
+
   // ------------------------------------------------------------------ camera (moves the World layer)
   CQ.camera = {
     x: 0,

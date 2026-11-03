@@ -142,7 +142,9 @@
       this.squash = CQ.el("div", "grumble-squash", this.rig);
       this.sprite = new CQ.Sprite(this.squash, "grumble-sprite", this.k);
       this.sprite.show("grumble_sleep", 1);
-      this.snoreVol = 1;
+      this.loud = 0; // snores still to be heard out loud (see snore)
+      this.loudVol = 1;
+      this.heardAt = -1e9; // when the last one was heard
       this.state = "sleep";
       this.lastTap = 0;
       this.sprite.el.addEventListener("pointerdown", (e) => {
@@ -162,21 +164,43 @@
       const f = this.k / 1.15; // offsets were tuned at scale 1.15
       return this.state === "awake" ? { x: this.x + 10 * f, y: this.y - 430 * f } : { x: this.x + 95 * f, y: this.y - 215 * f };
     }
+    // He sleeps quietly: his breathing and his Zzz show he is asleep. He snores out loud only when
+    // asked, twice: when a level begins, and when the story talks about him (snore).
     sleep() {
       this.state = "sleep";
       this.rig.classList.remove("standing");
       this.squash.style.transform = "";
+      let aloud = false;
       this.sprite.play("grumble_sleep", [1, 2, 3, 4, 5, 6, 7, 8], [700, 600, 800, 900], {
         loop: true,
         onFrame: (f) => {
           if (f === 2 || f === 6) {
-            CQ.audio.play("grumble.snoreIn", { volume: this.snoreVol });
+            aloud = this.loud > 0;
+            if (aloud) CQ.audio.play("grumble.snoreIn", { volume: this.loudVol });
             const h = this.head();
-            CQ.fx.zzz(CQ.world.fx, h.x, h.y, this.snoreVol > 1.3);
+            CQ.fx.zzz(CQ.world.fx, h.x, h.y, aloud && this.loudVol > 1.3);
           }
-          if (f === 4 || f === 8) CQ.audio.play("grumble.snoreOut", { volume: this.snoreVol * 0.85 });
+          if ((f === 4 || f === 8) && aloud) {
+            CQ.audio.play("grumble.snoreOut", { volume: this.loudVol * 0.85 });
+            aloud = false;
+            this.loud--;
+            this.heardAt = performance.now();
+          }
         },
       });
+    }
+    // n snores out loud from his next breath (2 by default). Ignored while he is snoring already, or
+    // if he snored only a moment ago, so a level's start and a line about him never add up; force:
+    // a moment that is all about him (his introduction) snores anyway.
+    snore(n, vol, force) {
+      if (this.loud > 0 || (!force && performance.now() - this.heardAt < 9000)) return;
+      this.loud = n || 2;
+      this.loudVol = vol || 1;
+    }
+    // Quiet again at once (a new chapter, a restart).
+    hush() {
+      this.loud = 0;
+      this.heardAt = -1e9;
     }
     // A near miss: one eye opens, he mumbles, and goes back to sleep.
     async stir() {
@@ -1658,6 +1682,7 @@
       const z = CQ.zippy;
       const old = this.heldBar;
       if (old && old !== bar && z.held && z.held.type === "bar") {
+        CQ.swapBtn.hide(); // a new bar is on its way: SWAP comes back when it is in his hands
         z.setHeld(null);
         this.tossBack(old);
       }

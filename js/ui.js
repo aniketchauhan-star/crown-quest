@@ -196,7 +196,8 @@
       CQ.checkPanel.hide(true);
       CQ.eqBoard.hide(true);
       CQ.idle.disarm();
-      this.layer.querySelectorAll(".comic, .nameburst, .thought, .flyer").forEach((e) => e.remove());
+      // and anything a step left behind when a chapter jump cut it short (Level 4's x + 2 = 7 strip)
+      this.layer.querySelectorAll(".comic, .nameburst, .thought, .flyer, .eq-strip").forEach((e) => e.remove());
       this.overlay.querySelectorAll(".thought, .flyer").forEach((e) => e.remove());
       this.skip.classList.add("hidden");
     },
@@ -531,10 +532,15 @@
       this.off = null;
       this.owner = 0;
     },
+    // To Zippy's right, below the question bar, and well left of the equation over the balance (its
+    // pop-in grows it a little, so it keeps a margin).
     place(el, wp) {
       const p = CQ.camera.toScreen(wp);
-      const x = CQ.clamp(p.x + 90, 20, CQ.W - 560);
-      const y = CQ.clamp(p.y - 250, 160, CQ.H - 200);
+      const w = el.offsetWidth || 440;
+      const sign = CQ.balance && CQ.balance.sign;
+      const right = sign && !sign.classList.contains("hidden") ? Math.min(930, CQ.L.BX - sign.offsetWidth / 2 - 30) : 930;
+      const x = CQ.clamp(p.x + 90, 20, Math.max(20, right - w));
+      const y = CQ.clamp(p.y - 250, 196, CQ.H - 200);
       CQ.pos(el, x, y);
     },
     // Returns an owner id: hide(false, id) only hides the bubble if nobody has replaced it since.
@@ -581,9 +587,9 @@
       s.style.setProperty("--r", CQ.rand(-12, 12).toFixed(1) + "deg");
       s.style.animationDelay = i * 40 + "ms";
     });
-    // keep the whole word on screen
-    const half = e.offsetWidth / 2 + 20;
-    CQ.pos(e, CQ.clamp(p.x, half, CQ.W - half), CQ.clamp(p.y, 180, CQ.H - 80));
+    // keep the whole word on screen, even at its pop-in's biggest (1.15 times its size)
+    const half = (e.offsetWidth * 1.15) / 2 + 16;
+    CQ.pos(e, CQ.clamp(p.x, half, CQ.W - half), CQ.clamp(p.y, 200, CQ.H - 80));
     const dur = opts.dur || 1100;
     CQ.anim(
       e,
@@ -632,8 +638,8 @@
   };
 
   // ------------------------------------------------------------------ spotlight
-  // A character is introduced: the rest of the scene blurs (CQ.soft) while the character's own layer
-  // stays sharp, and a light veil gathers round them. layer: the world layer of the character.
+  // A character is introduced: the rest of the scene fades to dark and blurs (CQ.soft) while the
+  // character stays bright and sharp in a circle of light. layer: the world layer of the character.
   CQ.spot = {
     build(overlay) {
       this.el = CQ.el("div", "spotlight hidden", overlay);
@@ -643,7 +649,7 @@
     },
     apply() {
       const p = CQ.camera.toScreen(this.get());
-      this.el.style.background = `radial-gradient(circle at ${p.x}px ${p.y}px, rgba(252,249,241,0) ${this.r}px, rgba(252,249,241,.32) ${this.r + 140}px)`;
+      this.el.style.background = `radial-gradient(circle at ${p.x}px ${p.y}px, rgba(0,0,0,0) ${this.r}px, rgba(3,12,20,.76) ${this.r + 80}px)`;
     },
     on(target, r, layer) {
       this.get = typeof target === "function" ? target : () => target;
@@ -697,18 +703,19 @@
   };
 
   // ------------------------------------------------------------------ focus: "look here!"
-  // At a key teaching moment the rest of the screen goes soft (blurred, not dark) and one thing stays
-  // sharp, in a window with a gold ring. target: an element, a list of elements, a stage rect { x0, y0, x1, y1 },
+  // At a key teaching moment the rest of the screen fades back to dark (and blurs) and one thing stays
+  // bright, in a soft window with a gold ring. target: an element, a list of elements, a stage rect { x0, y0, x1, y1 },
   // or a function returning one of those (it is asked again every frame, so the window follows the
   // balance tipping or a new pan item). A new target while it is on: the window glides over to it.
   // Taps go through, so the child can still act. opts: { pad, radius, still (measure once), quiet,
-  // ring: false (no gold ring) }. dimAll() blurs everything, with no window.
-  // The blur is the scene's own layers going soft (CQ.soft): the balance, the labels on it and the
+  // ring: false (no gold ring) }. dimAll() fades everything back, with no window.
+  // Under the dark fade the scene's own layers blur (CQ.soft): the balance, the labels on it and the
   // layer of whatever is looked at stay sharp; the background, Grumble and Zippy blur (unless looked at).
-  // UI pieces (caption, text, buttons) sit above it and stay sharp.
+  // UI pieces (caption, panels, buttons) sit above it and stay bright.
   CQ.focus = {
     build(overlay) {
       this.el = CQ.el("div", "focus hidden", overlay);
+      this.hole = CQ.el("div", "focus-hole", this.el);
       this.ring = CQ.el("div", "focus-ring", this.el);
       this.tok = 0;
       this.get = null;
@@ -742,8 +749,11 @@
         if (k >= 1) this.from = null;
       }
       this.shown = box;
-      CQ.box(this.ring, box.x, box.y, box.w, box.h);
-      this.ring.style.borderRadius = Math.min(this.radius, box.w / 2, box.h / 2) + "px";
+      const rad = Math.min(this.radius, box.w / 2, box.h / 2) + "px";
+      [this.hole, this.ring].forEach((e) => {
+        CQ.box(e, box.x, box.y, box.w, box.h);
+        e.style.borderRadius = rad;
+      });
     },
     // The world layers that stay sharp: the balance, the labels and flights over it, sparkles, and the
     // layer of each thing looked at (Grumble, Zippy, the gold bars…).
