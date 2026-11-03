@@ -6,7 +6,10 @@ A 16:9 browser game that teaches **linear equations in one variable** (Class 8, 
 
 - **Easiest:** double-click `index.html`. It runs straight from the folder, with no internet and no install.
 - **On a classroom network or website:** upload the whole folder as it is, then open `index.html`.
-- Works on laptops, Chromebooks, iPads and Android tablets, with touch, mouse or keyboard. It was tested in Chrome and Safari's engine; Edge uses Chrome's engine. Phones and tablets need to be held sideways.
+- Works on laptops, Chromebooks, iPads, Android tablets and phones, with touch, mouse or keyboard. It was tested in Chrome and Safari's engine; Edge uses Chrome's engine. Phones and tablets need to be held sideways.
+- **Any screen:** the game keeps its 16:9 picture and fits it to the screen. On a screen of another shape, the jungle carries on, blurred and dimmed, in the bands at the sides or the top and bottom. On a phone or tablet, Play makes the game fill the whole screen and holds it sideways (Android, iPad). On an iPhone, add the game to the home screen (Share → Add to Home Screen): it then opens full screen (`manifest.webmanifest`).
+- **Quick to load:** the pictures are WebP (4.2 MB in all), and the title screen appears as soon as its own two pictures are in. The rest load behind it, shown by a slim golden bar at its foot; if Play is tapped sooner, it waits for them. The voice clips load quietly during play.
+- **Smooth on slow devices:** on a device with little memory or few cores, or if the game runs below about 40 frames a second, it switches to a light mode. There is no blur behind "look here" moments (the dark fade stays) and no idle motion in the background.
 
 The title screen shows only the artwork and the play button. The play button always starts a new game from the intro. It forgets the saved progress and shows the first-time hints again, but keeps the sound settings.
 
@@ -30,7 +33,7 @@ The story follows the PPT `Zippy_Crown_Quest.pptx.pdf` screen by screen: each sl
 
 | Chapter | Learning |
 |---|---|
-| Intro | Meet Zippy, then Grumble (each stays sharp while the rest of the scene blurs). If the balance tips, the alarm wakes Grumble: a cloud over sleeping Grumble shows it while the rest of the screen blurs. Each coin is 1 unit. |
+| Intro | Meet Zippy, then Grumble (each stays bright in a circle of light while the rest of the scene darkens and blurs). If the balance tips, the alarm wakes Grumble: a cloud over sleeping Grumble shows it while the rest of the screen darkens. Each coin is 1 unit. |
 | Levels 1–3: The Swap | Drag a gold bar to Zippy, tap SWAP. The right bar keeps the balance level. |
 | Level 4: The Mystery Crown | The crown becomes **x**, so the scene turns into **x + 2 = 7**. Words (on the formula screen): variable, constant, algebraic expression, equation, LHS, RHS, linear equation in one variable. Activities: label the parts of 4x + 3 = 19; sort linear and nonlinear equations; a quick recap. Then, on the formula screen, trying 4 (LHS: 4 + 2 = 6, RHS: 7, 6 ≠ 7) and 5 (7 = 7) finds the **solution**, and the child gives Zippy the 5 bar for the swap. |
 | Levels 5–7: Check It | Check before you swap: replace x, find each side, compare. Level 5 is guided; in 6 and 7 the child chooses. |
@@ -59,21 +62,21 @@ Winning a level is a little story too:
 
 (The first of Level 9's two crowns flies up out of the picture instead, because he still needs his hands for the second swap.)
 
-**No panels in front of the scene.** When something needs looking at, the rest of the scene goes soft: it blurs a little, and nothing is covered or darkened. Text sits straight on the scene as clear, dark letters with a soft white glow. Around the balance:
+**No panels in front of the scene.** When something needs looking at, the rest of the scene fades back to dark and blurs, and the thing being explained stays bright. Text sits straight on the scene as clear, dark letters with a soft white glow, or as bright letters on the dark fade. Around the balance:
 - **above the balance**, under the caption: the numbers, that is, the level's equation (x + 3 = 9) and later the answer (x = 6);
 - **the balance** in the middle stays sharp;
 - **below the balance**: the working-out. That means x + 2 = 7 being built in Level 4, the check (LHS: 4 + 3 = 7, RHS: 9, then 7 ≠ 9 and "4 doesn't work"), and the steps of Levels 8 and 9 (x + 8 = 8 + 15, then x = 15).
 
-At key teaching moments the thing being explained stays sharp inside a soft gold ring while the rest of the scene blurs:
+At key teaching moments the thing being explained stays bright inside a soft gold ring while the rest of the scene darkens and blurs:
 - the coin's "1 unit";
 - the bars, and SWAP, the first time;
 - the coins being counted after a second miss;
 - each step of Level 4 (the crown, the coins, x, x + 2, 7, then the equation);
 - the key steps of Levels 8 and 9.
 
-The ring glides from one thing to the next. Taps still work while it is on. During a check, only the balance, Zippy and the check stay sharp, with no ring. (`CQ.focus` and `CQ.soft` in `js/ui.js`; the moments are the `look(…)` calls in `js/flow.js`.)
+The ring glides from one thing to the next. Taps still work while it is on. A check's verdict gets the bright window too, with no ring. (`CQ.focus` and `CQ.soft` in `js/ui.js`; the moments are the `look(…)` calls in `js/flow.js`.)
 
-The Level 4 words are explained on **Zippy's formula screen**. The scene blurs behind a light veil, and x + 2 = 7 stands big and clear in the upper part of the screen. Each line adds one colour-coded label, box or highlight, and only the new piece pops in, so the child's eye goes straight to it. Worked-out lines (LHS: 4 + 2 = 6, RHS: 7) appear under the equation.
+The Level 4 words are explained on **Zippy's formula screen**. The game fades to a calm dark (the scene blurred behind it), and x + 2 = 7 stands big and bright in the upper part of the screen. Each line adds one colour-coded label, box or highlight, and only the new piece pops in, so the child's eye goes straight to it. Worked-out lines (LHS: 4 + 2 = 6, RHS: 7) appear under the equation.
 
 **Step by step.** Things come one at a time: a level's crown, coins and bars; the check's left side, then its right side; each piece of the formula screen; the activities' equation, boxes and cards; and each line of a practice step.
 
@@ -102,6 +105,8 @@ All text, voice lines, level numbers, answer choices and feedback live in **`js/
 
 If you change the words of a line in `js/content.js`, its recording no longer matches, so the device voice reads it until you make a new one (docs/VOICEOVER.md, "Remaking a line").
 
+**Grumble's snoring:** he sleeps quietly, and his breathing and Zzz show he is asleep. He snores out loud only twice at a time: when a level begins (as Zippy peeks at him), and when the story talks about him ("Grumble guards the treasure", "Grumble is still asleep!", "Sleep tight, Grumble!"). Two requests close together never add up (`snore()` in `js/world.js`).
+
 **Sound effects:** every sound effect, the music and the snoring are generated in code, with no audio files. To use a recording for one, add a mapping in `overrides` (the `audio` section at the bottom of `js/content.js`), e.g. `"zippy.laugh": "assets/audio/zippy-laugh.mp3"`. Every cue name is listed in `js/audio.js` (`grumble.snoreIn`, `zippy.laugh`, `balance.clang`, …).
 
 ## Replace the artwork
@@ -110,7 +115,7 @@ If you change the words of a line in `js/content.js`, its recording no longer ma
 1. Edit `LAYOUT` in `jungle-background/tools/make_background.py` and run it. This tool needs numpy, Pillow and scipy.
 2. Run `python3 tools/prepare_assets.py`, which copies the layers into `assets/bg/jungle/`.
 
-**The wooden stool** under each gold bar (and the Level 8–9 "Taken off" stools) is `break stand .png`. The tool copies it to `assets/props/brick-stand.png`. `STAND_REST` in `js/engine.js` says where a bar rests on its top.
+**The wooden stool** under each gold bar (and the Level 8–9 "Taken off" stools) is `break stand .png`. The tool copies it to `assets/props/brick-stand.webp`. `STAND_REST` in `js/engine.js` says where a bar rests on its top.
 
 **The balance** is the wooden one in `new balance .png`, a sheet of separate parts: beam, hub, post, base, plate, rope hanger and leaves. `tools/prepare_assets.py` cuts each part out by its box (`BALANCE_PARTS`) into `assets/balance/`. The game puts the parts together like the picture of the finished balance (`ART` in the balance section of `js/world.js`):
 - The beam tips behind the hub, which stays upright.
@@ -133,7 +138,7 @@ If the sheet is replaced, re-measure `BALANCE_PARTS` and `ART`.
   - hand a wrong bar back (8).
 
   `tools/prepare_assets.py` finds the bar in each frame by its gold colour. It measures where the bar is, the middle of its front face and its tilt (`GEOM.zippyBar`), so the number lands on the face and bars flying to or from his hands match his. A new sheet needs no re-measuring, as long as the bar stays gold with its front face clear.
-- **Zippy's swap:** `zippy swap.png` (made with `ChatGPT-Zippy-Swap-Prompt.md`) has empty hands. His open hands are ready to catch a bar, and in the swap he lets go of the bar as the crown jumps up into his hands. Nothing is drawn in his hands on this sheet. `SWAP` in `js/world.js` has where his hands are in each frame; re-measure it if you replace the sheet. The tool also cuts Zippy's face for the question bar from it (`FACE`). It still makes `assets/zippy/swap-hands.png` (his fists, from `SWAP_FISTS`), but the game no longer uses it.
+- **Zippy's swap:** `zippy swap.png` (made with `ChatGPT-Zippy-Swap-Prompt.md`) has empty hands. His open hands are ready to catch a bar, and in the swap he lets go of the bar as the crown jumps up into his hands. Nothing is drawn in his hands on this sheet. `SWAP` in `js/world.js` has where his hands are in each frame; re-measure it if you replace the sheet. The tool also cuts Zippy's face for the question bar from it (`FACE`).
 - **Scared Zippy holding the crown:** `zippy scared crown.png` (made with `ChatGPT-Zippy-Scared-Crown-Prompt.md`) is used after a wrong swap, until he gives the crown back. `SCARED_CROWN` in `js/world.js` is where the crown is in each frame (and how wide). The crown he grabs flies into his hands in frame 1, and jumps back to the pan from his hands. Re-measure it if the sheet is replaced.
 - **Zippy wears the crown:** `zippy crown.png` (made with `ChatGPT-Zippy-Crown-Prompt.md`; the tool also finds it as `zippy crown..png`) has him lifting the crown, putting it on, then wow, proud, thumbs up, wave, laugh and straightening it. After a right swap he holds the crown like frame 1, lifted up in both hands, until he puts it on. `CROWN_LIFT` in `js/world.js` is where the crown is in that frame (centre, width and tilt), so the crown he grabs from the pan lands exactly there. While he wears it, his everyday poses use this sheet (`crownPose`). `CROWN_HEAD` is where the crown sits on his head, for its sparkle.
 - **Still drawn in code:** the character name titles (text only), Grumble's shadow, comic sound words, confetti, drop rings, the menu toggles, word cards, label chips, equation cards, the sort activity's two drop zones, the number picker box and the practice board's labels. The keypad keys use the number tile, Check uses the green pill, and the chest sits in the Word Treasure title.
@@ -156,6 +161,8 @@ python3 tools/prepare_assets.py
 
 It needs only Python 3, with no extra packages. It cuts every character frame out by its own pixels, so hands and Zzz letters that cross the grid lines are kept. It lines all frames up (Zippy by the tip of his tail, Grumble by his feet), shrinks the props, cuts `elements.png`, copies the background layers and rewrites `assets/`. It takes about a minute.
 
+At its end it runs `tools/compress_assets.py`, which saves every picture as WebP: quality 88 with transparency, or 85 for opaque pictures. That looks the same as the PNG at about a fifth of the size (21.3 MB → 4.2 MB), and the game and `styles.css` are pointed at the WebP files. It needs `cwebp` (`brew install webp`); without it the pictures stay PNG. The compression takes several minutes. If `start screen.png` isn't in the folder, the tool keeps the title picture already in `assets/`.
+
 ## Files
 
 ```
@@ -177,6 +184,8 @@ jungle-background/  the background: pieces, layers, the tools that make them, an
 assets/elements/    the pieces cut from elements.png (generated)
 elements.png        the interface sheet; ChatGPT-Asset-Sheet-Prompt.md is the prompt that made it
 tools/prepare_assets.py   rebuilds assets/ from the original PNGs
+tools/compress_assets.py  saves the game's pictures as WebP (run by prepare_assets.py)
+manifest.webmanifest      lets a phone or tablet open the game full screen from its home screen
 tools/vo_script.json      every voice line: as shown, as spoken, and the Devanagari the voice read
 tools/vo_build.py         turns the TTS studio's zips into assets/vo/ and js/vo_lines.js
 docs/VOICEOVER.md         how the voice-over was made, how the game plays it, how to remake a line

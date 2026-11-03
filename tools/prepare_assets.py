@@ -16,12 +16,14 @@ What it does
 - The background: copies the layers made by jungle-background/tools/make_background.py into
   assets/bg/jungle/ (see jungle-background/README.md; that tool needs numpy, Pillow and scipy).
 - Writes assets/sprites.js with the sizes and anchors the game needs.
+- Then saves every picture as WebP (tools/compress_assets.py, needs cwebp), so the game loads quickly.
 
 Re-run it whenever you replace any of the original PNGs (keep the same file names and the 4 x 2 layout).
 """
 import json
 import math
 import os
+import re
 import shutil
 import struct
 import subprocess
@@ -304,23 +306,6 @@ FULLSCREEN = [
     ("startScreen", "start screen.png", "ui/start-screen"),
 ]
 
-# zippy swap.png has empty hands; the game puts the crown he holds at his grip. In frames 4-8 his
-# fists are drawn again over it (zippy/swap-hands.png), so his fingers wrap around it. (A bar is held
-# with zippy bar.png, which draws it in his hands.)
-# For each frame: a box (x0, y0, x1, y1) around his fists and a seed point on each piece of skin that
-# belongs to them (creases split some fists into pieces), in the cut frame's own pixels. The fists are
-# redrawn cleanly: their skin and creases from the art, inside one smooth dark outline all the way
-# round, so their edge over the bar or crown is crisp (no fur, tummy or stray specks).
-# Re-measure if the sheet is replaced (and SWAP in js/world.js).
-SWAP_FISTS = {
-    4: ((244, 356, 316, 430), [(290, 405)]),
-    5: ((132, 302, 200, 378), [(163, 342)]),
-    6: ((146, 316, 246, 386), [(176, 351), (219, 351)]),
-    7: ((250, 292, 328, 376), [(297, 335), (272, 322), (269, 348)]),
-    8: ((128, 300, 206, 382), [(165, 340)]),
-}
-FIST_LINE = (58, 17, 4)  # the art's outline colour (measured around the fists)
-FIST_LINE_W = 4.5        # ...and its thickness, in the sheet's pixels
 # zippy bar.png: Zippy holds a blank gold bar by its ends, and the game prints the bar's number on its
 # front face. bar_in_hands() finds the bar in each cut frame by its gold colour and measures, in the cut
 # frame's own pixels: its middle and width (bars flying to and from his hands match it), and the middle of
@@ -372,86 +357,6 @@ def bar_in_hands(sw, sh, strip, cell_w, count):
 FACE = ("zippy_swap", 4, (205, 255, 116))
 
 
-def fist_overlay(sw, sh, strip, cell_w):
-    """Only the fists of each frame, redrawn cleanly: the art's skin and creases inside one smooth outline."""
-    out = bytearray(sw * sh * 4)
-    side = ((1, 0), (-1, 0), (0, 1), (0, -1))
-    disk2 = [(dx, dy) for dx in range(-2, 3) for dy in range(-2, 3) if dx * dx + dy * dy <= 4.5]
-    reach = 7
-    ring = sorted(((dx, dy) for dx in range(-reach, reach + 1) for dy in range(-reach, reach + 1) if dx or dy),
-                  key=lambda d: d[0] * d[0] + d[1] * d[1])
-    sigma = 1.6
-    kern = [math.exp(-(i * i) / (2 * sigma * sigma)) for i in range(-4, 5)]
-    kern = [k / sum(kern) for k in kern]
-    for frame, ((bx0, by0, bx1, by1), seeds) in SWAP_FISTS.items():
-        ox = (frame - 1) * cell_w
-        m = 8  # room around the box for the outline
-        X0, Y0 = bx0 - m, by0 - m
-        W, H = bx1 - bx0 + 2 * m, by1 - by0 + 2 * m
-
-        def at(x, y):
-            return ((Y0 + y) * sw + ox + X0 + x) * 4
-
-        def inside(x, y):
-            return 0 <= x < W and 0 <= y < H
-
-        skin = [[False] * W for _ in range(H)]
-        for y in range(H):
-            for x in range(W):
-                i = at(x, y)
-                r, g, b, a = strip[i], strip[i + 1], strip[i + 2], strip[i + 3]
-                skin[y][x] = a > 40 and r > 200 and g > 150 and b > 95
-        # 1. the pieces of skin under the seeds (only inside the box: never his tummy or face)
-        core = [[False] * W for _ in range(H)]
-        todo = []
-        for sx, sy in seeds:
-            assert skin[sy - Y0][sx - X0], f"fist seed {(sx, sy)} of frame {frame} is not on his skin"
-            todo.append((sx - X0, sy - Y0))
-        while todo:
-            x, y = todo.pop()
-            if m <= x < W - m and m <= y < H - m and skin[y][x] and not core[y][x]:
-                core[y][x] = True
-                todo += [(x + dx, y + dy) for dx, dy in side]
-
-        # 2. one smooth shape: close the creases between the pieces, fill holes, round off small bumps
-        def grow(mask, offs, keep):
-            res = [[False] * W for _ in range(H)]
-            for y in range(H):
-                for x in range(W):
-                    hits = [inside(x + dx, y + dy) and mask[y + dy][x + dx] for dx, dy in offs]
-                    res[y][x] = any(hits) if keep else all(hits)
-            return res
-
-        def fill_holes(mask):
-            outside = [[False] * W for _ in range(H)]
-            todo = [(x, y) for x in range(W) for y in (0, H - 1)] + [(x, y) for y in range(H) for x in (0, W - 1)]
-            while todo:
-                x, y = todo.pop()
-                if inside(x, y) and not mask[y][x] and not outside[y][x]:
-                    outside[y][x] = True
-                    todo += [(x + dx, y + dy) for dx, dy in side]
-            return [[not outside[y][x] for x in range(W)] for y in range(H)]
-
-        core = fill_holes(grow(grow(core, disk2, True), disk2, False))
-        rows = [[sum(kern[k + 4] * (1.0 if 0 <= x + k < W and core[y][x + k] else 0.0) for k in range(-4, 5))
-                 for x in range(W)] for y in range(H)]
-        core = fill_holes([[sum(kern[k + 4] * (rows[y + k][x] if 0 <= y + k < H else 0.0) for k in range(-4, 5)) > 0.5
-                            for x in range(W)] for y in range(H)])
-        # 3. paint: the art inside the shape (any fur at its edge becomes outline), the outline around it
-        for y in range(H):
-            for x in range(W):
-                i = at(x, y)
-                if core[y][x]:
-                    r, g, b = strip[i], strip[i + 1], strip[i + 2]
-                    furry = r > 110 and r - g > 45 and b < 90 and r + g + b > 240
-                    out[i:i + 4] = bytes(FIST_LINE + (255,)) if furry else bytes((r, g, b, 255))
-                    continue
-                d = next((math.sqrt(dx * dx + dy * dy) for dx, dy in ring if inside(x + dx, y + dy) and core[y + dy][x + dx]), None)
-                if d is not None and d < FIST_LINE_W + 0.5:
-                    out[i:i + 4] = bytes(FIST_LINE + (round(255 * min(1.0, FIST_LINE_W + 0.5 - d)),))
-    return out
-
-
 # --------------------------------------------------------------------------- the balance
 # "new balance .png" is a sheet of separate balance parts. Each part is cut out by its box: inside a box
 # only its biggest piece is kept (with its soft edge), so the edge of a neighbour that pokes in is left
@@ -467,8 +372,7 @@ BALANCE_PARTS = [
     ("balPlate", (33, 434, 475, 593)),
     ("balHanger", (470, 254, 848, 683)),  # the rope that hangs a plate from the beam
     ("balLeaves", (56, 723, 345, 923)),  # three leaves: two of them show at each side of the post's foot
-    ("balLeafL", (408, 765, 521, 919)),  # the pair of leaves cut in two: one each side of the hub
-    ("balLeafR", (521, 765, 626, 919)),
+    # (the sheet's pair of leaves beside the hub, at (408, 765, 626, 919), is not used)
 ]
 
 
@@ -714,6 +618,19 @@ def measure_elements(items):
     return g
 
 
+def previous_image(key):
+    """An image's entry in the assets/sprites.js written last time, if its file is still there (for a
+    full-screen picture whose source is no longer in the folder)."""
+    try:
+        text = open(os.path.join(OUT, "sprites.js"), encoding="utf-8").read()
+    except OSError:
+        return None
+    m = re.search(r'^  %s: \{ src: "([^"]+)", w: (\d+), h: (\d+) \},$' % re.escape(key), text, re.M)
+    if not m or not os.path.exists(os.path.join(ROOT, m.group(1))):
+        return None
+    return {"src": m.group(1), "w": int(m.group(2)), "h": int(m.group(3))}
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     sprites, images = {}, {}
@@ -733,6 +650,13 @@ def main():
 
     for key, src, dst in FULLSCREEN:
         path = os.path.join(ROOT, src)
+        if not os.path.exists(path):
+            kept = previous_image(key)
+            if not kept:
+                sys.exit(f"Missing {src} (and no earlier {key} in assets/).")
+            images[key] = kept
+            print(f"screen {key:12s} -> {kept['src']} (kept: {src} is not in the folder)")
+            continue
         w, h, px = read_png(path)
         opaque = min(px[3::4]) == 255
         out_path = os.path.join(OUT, dst + (".jpg" if opaque else ".png"))
@@ -760,10 +684,6 @@ def main():
         if key == "zippy_bar":
             bar_frames = bar_in_hands(sw, sh, strip, meta["w"], meta["count"])
             print("sheet  zippy_bar: the bar measured in " + ", ".join(f"{i + 1}: {b['fx']:.0f},{b['fy']:.0f} {b['tilt']:+.0f}°" for i, b in enumerate(bar_frames)))
-        if key == "zippy_swap":
-            write_png(os.path.join(OUT, "zippy/swap-hands.png"), sw, sh, fist_overlay(sw, sh, strip, meta["w"]))
-            sprites["zippy_swap_hands"] = dict(meta, src="assets/zippy/swap-hands.png")
-            print("sheet  zippy_swap_hands -> assets/zippy/swap-hands.png (his fists, over what he holds)")
         if key == FACE[0]:
             frame, (cx, cy, r) = FACE[1], FACE[2]
             x0 = (frame - 1) * meta["w"] + cx - r
@@ -831,6 +751,8 @@ def main():
             f.write("\n// Joints and borders measured on the elements.png pieces (in each piece's own pixels).\n")
             f.write("window.GEOM = " + json.dumps(geom, indent=2) + ";\n")
     print("wrote assets/sprites.js")
+    # the pictures, small: WebP (tools/compress_assets.py)
+    subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "compress_assets.py")])
 
 
 if __name__ == "__main__":

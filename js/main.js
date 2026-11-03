@@ -33,6 +33,13 @@
       );
       this.sparkle = setInterval(() => CQ.fx.sparkle(root, 1648, 640, 3, 100), 1300); // the crown glints
     },
+    // While the rest of the pictures load behind the title, a slim golden bar at its foot fills up.
+    progress(p) {
+      if (!this.root) return;
+      if (!this.bar) this.bar = CQ.el("div", "title-load", this.root, '<div class="tl-fill"></div>');
+      this.bar.firstChild.style.width = Math.round(p * 100) + "%";
+      this.bar.classList.toggle("done", p >= 1);
+    },
     // opts.reset: forget saved progress and which hints have been seen (a brand new game)
     async go(cp, opts) {
       if (this.going) return;
@@ -40,7 +47,14 @@
       if (opts && opts.reset) ["progress", "practiceAt", "swapDemoSeen", "blankDemoSeen"].forEach((k) => CQ.store.remove(k));
       CQ.audio.init();
       CQ.settings.apply();
+      CQ.screen.fullscreen(); // phones and tablets: the whole screen, held sideways
       CQ.audio.play("name.burst");
+      if (CQ.ready) {
+        // the rest of the pictures are still on their way: the play button waits, gently, until they are in
+        this.startBtn.classList.add("waiting");
+        await CQ.ready;
+        this.startBtn.classList.remove("waiting");
+      }
       CQ.anim(this.startBtn, [{ transform: "translate(-50%,-50%) scale(1)" }, { transform: "translate(-50%,-50%) scale(.85, 1.1)" }, { transform: "translate(-50%,-50%) scale(1.1, .9)" }], {
         duration: 260,
         essential: true,
@@ -69,11 +83,14 @@
     loading.querySelector(".lb-text").textContent = C().title.loading;
     document.querySelector("#rotate .rot-text").textContent = C().title.rotate;
     const fill = loading.querySelector(".lb-fill");
-    const urls = [].concat(
+    // First only what the title screen shows, so it appears quickly even on a slow connection; the
+    // rest of the pictures load behind the title (CQ.ready), and Play waits for them if it has to.
+    const first = [IMAGES.startScreen.src, IMAGES.startButton.src, IMAGES.coin.src];
+    const rest = [].concat(
       Object.values(window.IMAGES).map((i) => i.src),
       Object.values(window.SPRITES).map((s) => s.src)
-    );
-    await CQ.preload(urls, (p) => (fill.style.width = Math.round(p * 100) + "%"));
+    ).filter((u, i, all) => !first.includes(u) && all.indexOf(u) === i);
+    await CQ.preload(first, (p) => (fill.style.width = Math.round(p * 100) + "%"));
     try {
       if (document.fonts && document.fonts.load)
         await Promise.race([
@@ -98,6 +115,7 @@
     });
     loading.classList.add("done");
     setTimeout(() => loading.remove(), 600);
+    CQ.ready = CQ.preload(rest, (p) => CQ.title.progress(p)).then(() => (CQ.ready = null));
     if (params.get("autostart")) CQ.title.go(linkCp() || "intro"); // for automated tests (no sound until a tap)
   }
 

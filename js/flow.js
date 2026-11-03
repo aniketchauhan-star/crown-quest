@@ -22,6 +22,9 @@
   const BARS_HIDDEN = ["L4a", "L4c", "L4e", "L4g", "L8", "L9", "P", "finale"];
   // Levels that open with a new crown appearing on the balance (poof)
   const POOF_AT = ["L2", "L3", "L4a", "L5", "L6", "L7", "L8", "L9"];
+  // Where a level begins when a chapter is opened straight away (Grumble snores twice there; a level
+  // reached in the story gets its two snores as Zippy peeks at him, see sneakBack)
+  const SNORE_AT = ["L1", "L2", "L3", "L4a", "L5", "L6", "L7", "L8", "L9"];
 
   CQ.gen = 0;
 
@@ -50,6 +53,7 @@
           CQ.next.showNext(id !== "finale");
           CQ.store.set("progress", { cp: id });
           resetScene(id, { animate: change });
+          if (i === start && SNORE_AT.includes(id)) CQ.grumble.snore(2); // a level begins: he snores twice
           if (veil && i === start) CQ.veil.reveal();
           if (change) await arrive();
           const res = await STEPS[id]();
@@ -106,7 +110,7 @@
     CQ.dropRing.hide();
     CQ.peek.hide();
     CQ.zippy.reset();
-    CQ.grumble.snoreVol = 1;
+    CQ.grumble.hush();
     CQ.grumble.squash.style.transform = "";
     CQ.grumble.sleep();
     CQ.hud.setCrowns(CROWNS_AT[cp] || 0);
@@ -189,6 +193,7 @@
   async function sneakBack(opts) {
     opts = opts || {};
     const z = CQ.zippy;
+    CQ.grumble.snore(2); // is he still asleep? Two snores say yes
     await R.when(CQ.peek.out(700));
     CQ.audio.play("zippy.hmm");
     if (opts.comic) {
@@ -300,10 +305,12 @@
       new Promise((res) => {
         CQ.Give.enable(values, () => {
           CQ.swapBtn.show(() => {
+            const held = CQ.zippy.held;
+            if (!held || held.type !== "bar" || CQ.Give.busy) return; // a new bar is still on its way: SWAP comes back when it lands
             CQ.focus.off();
             CQ.Give.disable();
             CQ.idle.disarm();
-            res(CQ.zippy.held.value);
+            res(held.value);
           });
           if (firstSwap) {
             firstSwap = false;
@@ -445,8 +452,7 @@
     const z = CQ.zippy;
     const g = CQ.grumble;
     await collectCrown({ wear: true }); // he puts the crown on, and keeps it on until he swings away
-    g.snoreVol = 1.8;
-    setTimeout(() => (g.snoreVol = 1), 4500);
+    g.snore(2, 1.8); // "Sleep tight, Grumble!"
     z.pose("laugh");
     CQ.audio.play("zippy.laugh");
     CQ.fx.confetti(CQ.world.fx, 700, 420, 44);
@@ -537,7 +543,7 @@
     z.setVisible(false);
     CQ.world.dark.style.opacity = 0.92;
     CQ.camera.set(600, 400, 1.3); // the corner Zippy drops into
-    g.snoreVol = 1.2; // Grumble's snoring is heard in the dark, then the jungle fades in
+    g.snore(2, 1.2); // Grumble's snoring is heard in the dark, then the jungle fades in
     await R.wait(1300);
     CQ.world.darkness(0, 1400);
     await R.wait(800);
@@ -565,7 +571,8 @@
     await meet;
     // Grumble guards the treasure. Luckily, he's asleep!
     await R.when(CQ.camera.to(300, 760, 1.65, 1300));
-    g.snoreVol = 2.2;
+    g.hush();
+    g.snore(2, 2.2, true); // Grumble guards the treasure. Luckily, he's asleep!
     CQ.spot.on(() => g.center(), 430, CQ.world.grumbleLayer); // the same spotlight as Zippy's
     await R.wait(450);
     const gb = CQ.nameBurst(C().names.grumble, C().names.grumbleTag, 1250, 400, "purple");
@@ -573,14 +580,13 @@
     await say("intro-3", { advance: "auto", pause: 700 });
     await CQ.hideBurst(gb);
     CQ.spot.off();
-    g.snoreVol = 1;
     await R.when(CQ.camera.to(960, 540, 1, 1300));
     // If the balance tips, the alarm will wake Grumble: a cloud above sleeping Grumble's head, its trail
     // pointing at him, shows it (the balance tips, RING! RING!, and he wakes up roaring). Everything else
     // fades back, so the cloud is all there is to look at.
     CQ.audio.play("zippy.gulp");
     const gh = g.headTop();
-    const th = CQ.thought({ x: gh.x + 380, y: gh.y - 250 }, miniTipScene(), { w: 760, h: 500, cls: "over-grumble" }); // its trail ends at his head
+    const th = CQ.thought({ x: gh.x + 380, y: gh.y - 212 }, miniTipScene(), { w: 760, h: 500, cls: "over-grumble" }); // its trail ends at his head, its top clear of the question bar
     th.querySelector(".mini-scene").prepend(CQ.miniBalance({ width: 290, left: "bar", right: "coins3" }));
     const miniG = new CQ.Sprite(th.querySelector(".ms-grumble"), "", 0.4);
     miniG.show("grumble_roar", 7);
@@ -638,6 +644,7 @@
     if (key !== "L1") poof();
     b.counting = true;
     if (key === "L1") look(barEls, { pad: 20 }); // which bar? these!
+    if (key === "L3") CQ.grumble.snore(2); // One more crown. Grumble is still asleep!
     for (let i = 0; i < L.intro.length; i++) await say(L.intro[i], { advance: i < L.intro.length - 1 ? "auto" : "none" });
     if (key === "L1") {
       CQ.focus.offAfter(2400); // before the hand shows how
@@ -796,7 +803,7 @@
     CQ.balance.counting = false;
     CQ.balance.clearCounts();
     CQ.bars.setVisible(false);
-    look([cp.el, z.body], { ring: false, quiet: true }); // the scene goes soft: the balance, Zippy and the check under it stay sharp
+    await R.wait(480); // the gold bars fade away first, then the check comes in under the balance
     await R.when(cp.show({ k, a, b: bb, rhsGiven: o.rhsGiven }));
     // The line is spoken while the number flies into x; both finish before the next instruction.
     const line = o.line ? say(o.line, { vars, advance: "auto", pause: 0 }) : null;
@@ -1072,7 +1079,7 @@
     for (let i = 0; i < rows.length; i++) {
       const [x, s] = rows[i];
       const t = CQ.thought(
-        { x: 620 + i * 330, y: 230 + (i % 2) * 40 },
+        { x: 700 + i * 330, y: 440 + (i % 2) * 34 }, // under the equation over the balance, as in the PPT
         `<div class="trial">${CQ.rich("x = " + x)}<br>${CQ.rich(x + " + 8 = " + s)} <span class="xmark">✗</span></div>`,
         { w: 330, h: 200 }
       );
@@ -1080,7 +1087,7 @@
       await R.wait(700);
       CQ.audio.play("tryagain");
     }
-    const dots = CQ.thought({ x: 1600, y: 250 }, '<div class="trial dots">…</div>', { w: 150, h: 120 });
+    const dots = CQ.thought({ x: 1660, y: 440 }, '<div class="trial dots">…</div>', { w: 150, h: 120 });
     out.push(dots);
     return out;
   }

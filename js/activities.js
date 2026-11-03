@@ -48,8 +48,8 @@
   ];
   const LHS = ["x", "plus", "two"];
 
-  // Zippy's formula screen: the scene goes soft behind a light veil (blurred, not dark), and the
-  // equation stands big and clear on it. Each beat adds tags, boxes and highlights; what stays the
+  // Zippy's formula screen: the game fades to a calm dark (the scene blurred behind it), and the
+  // equation stands big and bright in the upper part of the screen. Each beat adds tags, boxes and highlights; what stays the
   // same from one beat to the next stays still, and only what is new pops in. Zippy hangs at the left
   // and points. The caption bar above it says the line.
   CQ.notebook = {
@@ -166,10 +166,11 @@
         CQ.pos(m, r.cx, r.y - 34);
       }
       if (s.miniBalance) {
+        // under the equals sign (above it, it would reach the question bar)
         const r = groupRect(eqn, ["eq"]);
-        const m = add(CQ.el("div", "mini-balance", d), "miniBalance");
-        m.appendChild(CQ.miniBalance({ width: 220 }));
-        CQ.pos(m, r.cx, r.y - 40);
+        const m = add(CQ.el("div", "mini-balance below", d), "miniBalance");
+        m.appendChild(CQ.miniBalance({ width: 240 }));
+        CQ.pos(m, r.cx, r.y + r.h + 36);
       }
       if (s.rows) {
         const rows = CQ.el("div", "nb-rows", c);
