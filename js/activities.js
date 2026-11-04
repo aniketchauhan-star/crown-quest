@@ -1,6 +1,6 @@
 /*
  * Zippy's Crown Quest: activities.
- * Zippy's formula screen (concept explanations with Back), "Label the parts", "Sort it",
+ * The formula screen (concept explanations with Back), "Label the parts", "Sort it",
  * the Word Treasure recap chest, and the finale.
  */
 (function () {
@@ -38,7 +38,7 @@
   }
   CQ.groupRect = groupRect;
 
-  // ------------------------------------------------------------------ Zippy's formula screen
+  // ------------------------------------------------------------------ the formula screen
   const EQ_X2 = [
     { t: "x", id: "x", k: "var" },
     { t: "+", id: "plus", k: "op" },
@@ -48,71 +48,72 @@
   ];
   const LHS = ["x", "plus", "two"];
 
-  // Zippy's formula screen: the game fades to a calm dark (the scene blurred behind it), and the
-  // equation stands big and bright in the upper part of the screen. Each beat adds tags, boxes and highlights; what stays the
-  // same from one beat to the next stays still, and only what is new pops in. Zippy hangs at the left
-  // and points. The caption bar above it says the line.
+  // The formula screen: the scene fades to a calm dark, and the balance steps aside to the right, a
+  // little smaller, bright and sharp in front of the dark (CQ.balance.present). The equation and its
+  // working stand in the space it leaves, at the left. The part of the balance a beat talks about
+  // lights up: the crown for x, a pan for a side, both pans when the sides are equal. Each beat adds
+  // tags, boxes and highlights: what stays the same from one beat to the next stays still, and what is
+  // new fades in where it stays, one piece at a time. The question bar above says the line. Zippy
+  // isn't on this screen: the balance and the maths have it to themselves.
   CQ.notebook = {
     build(overlay) {
       this.el = CQ.el("div", "notebook hidden", overlay);
-      this.dim = CQ.el("div", "nb-dim", this.el);
       this.stage = CQ.el("div", "nb-stage", this.el);
       this.content = CQ.el("div", "nb-content", this.stage);
-      this.zWrap = CQ.el("div", "nb-zippy", this.el);
-      const end = CQ.vineEndFor(200, 240, 0.72); // the rig below sits at (200, 240)
-      this.zVine = CQ.hangVine(this.zWrap, end.x, end.y);
-      this.zRig = CQ.el("div", "nb-zippy-rig", this.zWrap);
-      this.z = new CQ.Sprite(this.zRig, "", 0.72);
       this.isOpen = false;
-      this.shown = null; // the beat on screen: { state, keys, toks }
+      this.opens = 0; // counts opens and closes, so a late step of an old one does nothing
+      this.shown = null; // the beat on screen: { sig, keys, toks, bal }
     },
     async open() {
       if (this.isOpen) return;
       this.isOpen = true;
+      const n = ++this.opens;
       this.el.classList.remove("hidden");
-      CQ.soft.set("notebook", []); // the whole scene blurs behind it
       this.content.innerHTML = "";
       this.shown = null;
-      this.pose("point");
-      CQ.zippy.setVisible(false); // the presenter Zippy takes over while the formula screen is up
+      CQ.soft.set("notebook", [CQ.world.balanceLayer], 2); // all but the balance goes soft
+      CQ.balance.present(true);
       CQ.audio.play("focus.in");
-      CQ.anim(this.zWrap, [{ transform: "translateY(-700px)" }, { transform: "translateY(0)" }], { duration: 800, easing: CQ.EASE.back, essential: true });
-      CQ.anim(this.stage, [{ opacity: 0, transform: "scale(.9)" }, { opacity: 1, transform: "scale(1)" }], { duration: 750, delay: 300, easing: CQ.EASE.out, essential: true });
-      await CQ.anim(this.dim, [{ opacity: 0 }, { opacity: 1 }], { duration: 600, essential: true });
+      CQ.anim(this.stage, [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "translateY(0)" }], {
+        duration: 700,
+        delay: 450,
+        easing: CQ.EASE.out,
+        essential: true,
+      });
+      await CQ.sleep(1000); // the dark is in and the balance has stepped aside
+      if (n === this.opens) CQ.zippy.setVisible(false); // already unseen under the dark
     },
     async close() {
       if (!this.isOpen) return;
       this.isOpen = false;
-      CQ.soft.set("notebook", false); // the scene sharpens as the screen fades
+      const n = ++this.opens;
       CQ.audio.play("ui.swoosh");
-      CQ.anim(this.zWrap, [{ transform: "translateY(0)" }, { transform: "translateY(-700px)" }], { duration: 700, easing: CQ.EASE.in, essential: true });
-      CQ.anim(this.stage, [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(.94)" }], { duration: 450, easing: CQ.EASE.in, essential: true });
-      await CQ.anim(this.dim, [{ opacity: 1 }, { opacity: 0 }], { duration: 700, delay: 250, essential: true });
+      CQ.balance.clearGlow();
+      await CQ.anim(this.stage, [{ opacity: 1 }, { opacity: 0 }], { duration: 400, easing: CQ.EASE.in, essential: true });
+      if (n !== this.opens) return;
       this.el.classList.add("hidden");
-      this.z.stop();
-      CQ.zippy.setVisible(true);
+      this.content.innerHTML = "";
+      this.shown = null;
+      CQ.zippy.setVisible(true); // still under the dark: he is simply there as it lifts
+      CQ.balance.present(false);
+      CQ.soft.set("notebook", false);
+      await CQ.sleep(900); // the balance is back in its place
     },
     hideNow() {
       this.isOpen = false;
-      CQ.soft.set("notebook", false);
+      this.opens++;
       this.shown = null;
+      this.content.innerHTML = "";
       this.el.classList.add("hidden");
-      this.z.stop();
+      CQ.soft.set("notebook", false);
+      CQ.balance.present(false, true);
     },
-    pose(p) {
-      if (p === "point") this.z.play("zippy_reach", [2, 2, 2, 4, 2, 2, 3], [700, 700, 700, 260, 700, 700, 300], { loop: true });
-      else if (p === "cheer") this.z.play("zippy_laugh", [6, 2, 6, 4], 160, { loop: true });
-      else this.z.play("zippy_hold", [8, 7], 180, { loop: true });
-    },
-    cheer() {
-      this.pose("cheer");
-      setTimeout(() => this.isOpen && this.pose("point"), 1300);
-    },
-    // Draw one explanation state. s = { hl, crown, tags, box, boxColor, mini, label, pulse, miniBalance,
-    // outline, outlineLabel, lhs, rhs, ghost, title, rows, eq }. rows are lines worked out under the
-    // equation ({ t, cls }: cls "big", "no" red, "ok" green); eq: false leaves the equation out. Each
-    // piece gets a key; pieces that were already on screen in the last beat appear without a pop, so only
-    // the new ones catch the eye.
+    // Draw one beat. s = { hl, crown, tags, box, boxColor, label, pulse, outline, outlineLabel, lhs,
+    // rhs, ghost, title, rows, bal }. rows are lines worked out under the equation ({ t, cls }: cls
+    // "big", "no" red, "ok" green). bal is the part of the balance that lights up: "crown", "left",
+    // "right", "both", or "level" (both, and its centre flashes: the sides are equal). Each piece gets
+    // a key; pieces that were already on screen in the last beat stay as they were, so only the new
+    // ones catch the eye.
     render(s) {
       const sig = JSON.stringify(s);
       if (this.shown && this.shown.sig === sig) return this.content.querySelector(".eqn");
@@ -124,7 +125,7 @@
         keys.add(key);
         return el;
       };
-      const eqn = CQ.eqTokens(c, EQ_X2, s.eq === false ? "big gone" : "big");
+      const eqn = CQ.eqTokens(c, EQ_X2, "big");
       if (s.title) add(CQ.el("div", "nb-title", c, s.title), "title:" + s.title);
       const tok = (id) => eqn.querySelector(`.tok[data-id="${id}"]`);
       (s.hl || []).forEach((id) => tok(id).classList.add("hl"));
@@ -157,21 +158,6 @@
         const i = add(CQ.img("crown", "mini-crown", d), "crown");
         CQ.pos(i, r.cx, r.y - 30);
       }
-      if (s.mini) {
-        const r = groupRect(eqn, LHS);
-        const m = add(CQ.el("div", "mini-pic", d), "mini");
-        CQ.img("crown", "mp-crown", m);
-        CQ.img("coin", "mp-coin", m);
-        CQ.img("coin", "mp-coin", m);
-        CQ.pos(m, r.cx, r.y - 34);
-      }
-      if (s.miniBalance) {
-        // under the equals sign (above it, it would reach the question bar)
-        const r = groupRect(eqn, ["eq"]);
-        const m = add(CQ.el("div", "mini-balance below", d), "miniBalance");
-        m.appendChild(CQ.miniBalance({ width: 240 }));
-        CQ.pos(m, r.cx, r.y + r.h + 36);
-      }
       if (s.rows) {
         const rows = CQ.el("div", "nb-rows", c);
         s.rows.forEach((r) => add(CQ.el("div", "nb-row " + (r.cls || ""), rows, CQ.rich(r.t)), "row:" + r.t));
@@ -180,7 +166,7 @@
         const ids = Array.isArray(t.ids) ? t.ids : [t.ids];
         const r = groupRect(eqn, ids);
         const row = t.row || 0;
-        const y = r.y + r.h + 14 + row * 70;
+        const y = r.y + r.h + 14 + row * 66;
         const key = "tag:" + t.text;
         const line = add(CQ.el("div", "tag-line " + (t.color || ""), d), key);
         CQ.box(line, r.cx - 2, r.y + r.h - 6, 4, y - (r.y + r.h - 6));
@@ -191,25 +177,28 @@
           CQ.box(br, r.x - 6, r.y + r.h - 2, r.w + 12, 18);
         }
       });
-      // what is new in this beat pops in; the rest was already there
+      // a part of the equation that changes (a highlight, a colour) eases from how it was to how it is
       const before = this.shown || { keys: new Set(), toks: {} };
       const toks = {};
       eqn.querySelectorAll(".tok").forEach((t) => {
-        toks[t.dataset.id] = t.className;
-        if (this.shown && before.toks[t.dataset.id] !== t.className) CQ.anim(t, [{ transform: "scale(.82)" }, { transform: "scale(1.08)" }, { transform: "scale(1)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
+        const now = t.className;
+        const was = before.toks[t.dataset.id];
+        toks[t.dataset.id] = now;
+        if (was == null || was === now) return;
+        t.className = was;
+        void t.offsetWidth; // the old look is drawn first, so the change runs as a CSS transition
+        t.className = now;
       });
-      // one new piece at a time (a tag comes with its line and bracket), so each can be followed
+      // what is new fades in where it stays, one piece at a time (a tag with its line and bracket)
       const fresh = [];
       c.querySelectorAll("[data-key]").forEach((el) => {
         const key = el.dataset.key;
         if (before.keys.has(key)) return;
         let n = fresh.indexOf(key);
         if (n < 0) n = fresh.push(key) - 1;
-        const tf = getComputedStyle(el).transform;
-        const base = tf && tf !== "none" ? tf : "";
-        CQ.anim(el, [{ opacity: 0, transform: `${base} translateY(12px) scale(.9)` }, { opacity: 1, transform: `${base} translateY(0) scale(1)` }], {
-          duration: 520,
-          delay: 120 + n * 450,
+        CQ.anim(el, [{ opacity: 0, translate: "0 10px" }, { opacity: 1, translate: "0 0" }], {
+          duration: 600,
+          delay: 150 + n * 500,
           easing: CQ.EASE.out,
           keep: false,
         });
@@ -217,11 +206,21 @@
       if (this.shown)
         fresh.forEach((key, n) =>
           setTimeout(() => {
-            if (this.shown && this.shown.sig === sig) CQ.audio.play("ui.pop", { volume: 0.5 });
-          }, 120 + n * 450)
+            if (this.shown && this.shown.sig === sig) CQ.audio.play("ui.pop", { volume: 0.4 });
+          }, 150 + n * 500)
         );
-      this.shown = { sig, keys, toks };
+      this.light(s.bal, before.bal);
+      this.shown = { sig, keys, toks, bal: s.bal };
       return eqn;
+    },
+    // the part of the balance this beat is about lights up
+    light(bal, was) {
+      const b = CQ.balance;
+      b.clearGlow();
+      if (bal === "crown") b.glowItems("left", (it) => it.type === "crown");
+      if (bal === "left" || bal === "both" || bal === "level") b.glowItems("left");
+      if (bal === "right" || bal === "both" || bal === "level") b.glowItems("right");
+      if (bal === "level" && was !== "level") b.flashEmblem();
     },
     // Run a list of beats with Next / Back.
     async run(beats) {
@@ -229,10 +228,7 @@
       while (i < beats.length) {
         const b = beats[i];
         this.render(b.s);
-        if (b.gem && !CQ.gems.have.has(b.gem)) {
-          this.cheer();
-          CQ.gems.collect(b.gem);
-        }
+        if (b.gem && !CQ.gems.have.has(b.gem)) CQ.gems.collect(b.gem);
         const r = await CQ.say(b.id, { back: i > 0 });
         i += r === "back" ? -1 : 1;
         if (i < 0) i = 0;
@@ -242,13 +238,14 @@
 
   CQ.NB_WORDS = [
     { id: "l4-9", s: {} },
-    { id: "l4-10", s: { hl: ["x"], crown: true, tags: [{ ids: "x", text: "Variable", color: "var" }] } },
-    { id: "l4-11", s: { hl: ["x"], crown: true, tags: [{ ids: "x", text: "Variable", color: "var" }] }, gem: "variable" },
-    { id: "l4-12", s: { box: LHS, mini: true } },
+    { id: "l4-10", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "Variable", color: "var" }] } },
+    { id: "l4-11", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "Variable", color: "var" }] }, gem: "variable" },
+    { id: "l4-12", s: { box: LHS, bal: "left" } },
     {
       id: "l4-13",
       s: {
         box: LHS,
+        bal: "left",
         tags: [
           { ids: "x", text: "variable", color: "var" },
           { ids: "plus", text: "addition", color: "op", row: 1 },
@@ -257,15 +254,16 @@
       },
       gem: "constant",
     },
-    { id: "l4-14", s: { box: LHS, boxColor: "expr", label: { ids: LHS, text: "Algebraic expression", color: "expr" } }, gem: "expression" },
-    { id: "l4-15", s: { pulse: ["eq"], miniBalance: true } },
-    { id: "l4-16", s: { outline: true, outlineLabel: "Equation" }, gem: "equation" },
-    { id: "l4-17", s: { lhs: true, tags: [{ ids: LHS, text: "Left-hand side (LHS)", color: "lhs", bracket: true }] }, gem: "lhs" },
+    { id: "l4-14", s: { box: LHS, boxColor: "expr", bal: "left", label: { ids: LHS, text: "Algebraic expression", color: "expr" } }, gem: "expression" },
+    { id: "l4-15", s: { pulse: ["eq"], bal: "level" } },
+    { id: "l4-16", s: { outline: true, outlineLabel: "Equation", bal: "level" }, gem: "equation" },
+    { id: "l4-17", s: { lhs: true, bal: "left", tags: [{ ids: LHS, text: "Left-hand side (LHS)", color: "lhs", bracket: true }] }, gem: "lhs" },
     {
       id: "l4-18",
       s: {
         lhs: true,
         rhs: true,
+        bal: "right",
         tags: [
           { ids: LHS, text: "Left-hand side (LHS)", color: "lhs", bracket: true },
           { ids: "seven", text: "Right-hand side (RHS)", color: "rhs", bracket: true, row: 1 },
@@ -275,21 +273,22 @@
     },
   ];
   // Trying values for x, like the PPT's slides 24–26: each side worked out for 4 (they differ, so 4 is
-  // not a solution) and for 5 (both sides equal 7, so 5 is the solution).
+  // not a solution) and for 5 (both sides equal 7, so 5 is the solution). The equation stays at the top
+  // all along, like on a board; the working goes under it.
   CQ.NB_TRY = [
-    { id: "l4-23", s: {} },
-    { id: "l4-24", s: {} },
-    { id: "l4-25", s: { rows: [{ t: "LHS: 4 + 2 = 6" }, { t: "RHS: 7" }] } },
-    { id: "l4-26", s: { eq: false, rows: [{ t: "6 ≠ 7", cls: "big no" }, { t: "4 is not a solution", cls: "no" }] } },
-    { id: "l4-27", s: { rows: [{ t: "LHS: 5 + 2 = 7" }, { t: "RHS: 7" }] } },
-    { id: "l4-28", s: { eq: false, rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] } },
-    { id: "l4-29", s: { eq: false, rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] }, gem: "solution" },
+    { id: "l4-23", s: { bal: "crown" } },
+    { id: "l4-24", s: { bal: "both" } },
+    { id: "l4-25", s: { bal: "both", rows: [{ t: "LHS: 4 + 2 = 6" }, { t: "RHS: 7" }] } },
+    { id: "l4-26", s: { rows: [{ t: "6 ≠ 7", cls: "big no" }, { t: "4 is not a solution", cls: "no" }] } },
+    { id: "l4-27", s: { bal: "both", rows: [{ t: "LHS: 5 + 2 = 7" }, { t: "RHS: 7" }] } },
+    { id: "l4-28", s: { bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] } },
+    { id: "l4-29", s: { bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] }, gem: "solution" },
   ];
 
   CQ.NB_LINEAR = [
-    { id: "l4-19", s: { hl: ["x"], tags: [{ ids: "x", text: "One variable: x", color: "var" }] } },
-    { id: "l4-20", s: { hl: ["x"], ghost: true, tags: [{ ids: "x", text: "x means x¹", color: "var" }] } },
-    { id: "l4-21", s: { hl: ["x"], ghost: true, tags: [{ ids: "x", text: "One variable · highest power 1", color: "var" }] } },
+    { id: "l4-19", s: { hl: ["x"], bal: "crown", tags: [{ ids: "x", text: "One variable: x", color: "var" }] } },
+    { id: "l4-20", s: { hl: ["x"], ghost: true, bal: "crown", tags: [{ ids: "x", text: "x means x¹", color: "var" }] } },
+    { id: "l4-21", s: { hl: ["x"], ghost: true, bal: "crown", tags: [{ ids: "x", text: "One variable · highest power 1", color: "var" }] } },
     { id: "l4-22", s: { title: "Linear equation in one variable", outline: true }, gem: "linear" },
   ];
 
@@ -319,11 +318,14 @@
     CQ.anim(wrap, [{ opacity: 0 }, { opacity: 1 }], { duration: 420, essential: true });
     CQ.anim(b, [{ transform: "scale(.9)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 600, easing: CQ.EASE.out, essential: true });
     CQ.audio.play("scroll.open");
+    // no Zippy on an activity screen (like the formula screen): he rests once the dark is in
+    setTimeout(() => wrap.isConnected && CQ.zippy.setVisible(false), 500);
     wrap.board = b;
     return wrap;
   }
   function closeBoard(wrap) {
     CQ.soft.set("activity", false);
+    CQ.zippy.setVisible(true); // still under the dark: he is simply there as it lifts
     return CQ.anim(wrap, [{ opacity: 1 }, { opacity: 0 }], { duration: 480, essential: true }).then(() => wrap.remove());
   }
   // Drag + tap-to-place helper for chips/cards onto targets.
@@ -743,22 +745,12 @@
     const wrap = CQ.el("div", "activity practice-act", CQ.ui.overlay);
     CQ.el("div", "nb-dim", wrap);
     CQ.soft.set("activity", []);
-    // Zippy hangs beside the board and cheers the child on.
-    const zw = CQ.el("div", "pr-zippy", wrap);
-    const end = CQ.vineEndFor(200, 240, 0.72);
-    CQ.hangVine(zw, end.x, end.y);
-    const zs = new CQ.Sprite(CQ.el("div", "nb-zippy-rig", zw), "", 0.72);
-    const zpose = (p) => {
-      if (p === "cheer") zs.play("zippy_laugh", [6, 2, 6, 4], 160, { loop: true });
-      else if (p === "oops") zs.show("zippy_scared", 5);
-      else if (p === "think") zs.show("zippy_hold", 3);
-      else zs.play("zippy_reach", [2, 2, 2, 4, 2, 2, 3], [700, 700, 700, 260, 700, 700, 300], { loop: true });
-    };
-    zpose("point");
-    CQ.zippy.setVisible(false); // the presenter Zippy takes over while the board is up
-    CQ.anim(zw, [{ transform: "translateY(-700px)" }, { transform: "translateY(0)" }], { duration: 700, easing: CQ.EASE.back, essential: true });
+    // No Zippy on this screen (like the formula screen): the problems have it to themselves. The
+    // scene's Zippy rests meanwhile, unseen under the dark.
+    setTimeout(() => wrap.isConnected && CQ.zippy.setVisible(false), 700);
     const b = CQ.el("div", "board pr-board", wrap);
-    CQ.anim(b, [{ transform: "scale(.85)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 420, easing: CQ.EASE.back, essential: true });
+    CQ.anim(wrap, [{ opacity: 0 }, { opacity: 1 }], { duration: 420, essential: true }); // the dark comes in softly, like the other boards'
+    CQ.anim(b, [{ transform: "scale(.9)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 600, easing: CQ.EASE.out, essential: true });
     CQ.audio.play("scroll.open");
     const head = CQ.el("div", "pr-head", b);
     const stepEl = CQ.el("div", "pr-step", head);
@@ -842,12 +834,8 @@
       const el = main.querySelector(".pr-input");
       if (el) el.classList.add(ok ? "ok" : "no");
     };
-    const cheer = () => {
-      zpose("cheer");
-      setTimeout(() => wrap.isConnected && zpose("point"), 1400);
-    };
     const sparkleAt = (sel) => {
-      const c = CQ.centerOf(main.querySelector(sel)) || { x: 1100, y: 600 };
+      const c = CQ.centerOf(main.querySelector(sel)) || { x: 960, y: 600 };
       CQ.fx.sparkle(CQ.ui.layer, c.x, c.y, 10, 90);
     };
 
@@ -859,13 +847,11 @@
           markInput(true);
           CQ.audio.play("correct");
           sparkleAt(".pr-input");
-          cheer();
           return;
         }
         markInput(false);
         CQ.audio.play("tryagain");
         CQ.track("answer", { activity: "practice", expr, choice: v, correct: false, attempt: miss + 1 });
-        zpose("think");
         await CQ.run.wait(500);
         CQ.say("", { text: T(miss === 0 ? P.lines.typeAgain : P.lines.typeHint, { expr, ans: CQ.num(answer) }), advance: "none" });
         const el = main.querySelector(".pr-input");
@@ -885,7 +871,6 @@
         `<div class="pr-find">${R(P.find)}</div>` + (p.hint ? `<div class="pr-hint">${R(p.hint)}</div>` : "") + `<div class="pr-eq">${R(p.eq)}</div>` + typeRow("x ="),
         true
       );
-      zpose("point");
       // The keypad works at once; the instructions are read meanwhile, and stop if the child answers first.
       let answered = false;
       const first = i === (startAt || 0);
@@ -907,7 +892,6 @@
         const w = workLHS(p.lhs, p.x);
         markInput(true);
         CQ.audio.play("correct");
-        cheer();
         await CQ.run.wait(500);
         setStep(T(P.stepTitles.right, { x: CQ.num(p.x) }));
         render(
@@ -924,7 +908,6 @@
       const w = workLHS(p.lhs, a);
       markInput(false);
       CQ.audio.play("tryagain");
-      zpose("oops");
       await CQ.run.wait(500);
       setStep(P.stepTitles.wrong);
       render(
@@ -934,7 +917,6 @@
           `<div class="pr-note">${R(W.stepByStep)}</div>`
       );
       await CQ.say("", { text: T(P.lines.wrong, { l: CQ.num(w.value), r: CQ.num(p.rhs), a: CQ.num(a) }) });
-      zpose("point");
       // 4–5) undo each operation on both sides
       for (const st of p.steps) {
         setStep(st.title);
@@ -954,7 +936,6 @@
                     btn.classList.add("ok");
                     CQ.audio.play("correct");
                     box.querySelectorAll("button").forEach((x) => (x.disabled = true));
-                    cheer();
                     res();
                   } else {
                     CQ.audio.play("tryagain");
@@ -984,7 +965,6 @@
           btn.disabled = true;
           btn.classList.remove("glow");
           CQ.audio.play("correct");
-          cheer();
           await CQ.run.wait(500);
           continue;
         }
@@ -1013,7 +993,6 @@
       banner.classList.remove("hidden");
       CQ.anim(banner, [{ transform: "scale(.6)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 380, easing: CQ.EASE.back, essential: true });
       CQ.audio.play("balance.level");
-      cheer();
       await CQ.say("", { text: P.lines.checkRight });
     }
 
@@ -1030,8 +1009,7 @@
       // a gem for every equation solved
       const colors = ["#F2C230", "#2BB673", "#9B5DE5", "#1FA3A3", "#E5484D", "#3D8BFD"];
       render(`<div class="pr-done">${R(CQ.fmt(W.allDone, { n: P.problems.length }))}</div><div class="pr-gems">${P.problems.map((q, k) => CQ.gem(colors[k % colors.length], 96)).join("")}</div>`);
-      zpose("cheer");
-      CQ.fx.confetti(CQ.ui.layer, 1100, 420, 44);
+      CQ.fx.confetti(CQ.ui.layer, 960, 420, 44);
       CQ.audio.play("fanfare");
       await CQ.say("p-done");
       await closeBoard(wrap);
@@ -1046,7 +1024,7 @@
     const c = C().finale;
     const wrap = CQ.el("div", "activity finale-act", CQ.ui.overlay);
     CQ.el("div", "nb-dim light", wrap);
-    CQ.soft.set("activity", []);
+    CQ.soft.set("activity", [], 1); // the finale's fade is lighter
     const title = CQ.el("div", "finale-title", wrap, c.title);
     title.setAttribute("data-t", c.title);
     const z = CQ.el("div", "finale-zippy", wrap);

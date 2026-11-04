@@ -24,6 +24,7 @@
       root.innerHTML = "";
       root.setAttribute("aria-label", C().title.name);
       CQ.img("startScreen", "title-bg", root);
+      document.documentElement.classList.add("on-title"); // the bands round the stage show the title art
       this.startBtn = CQ.button(
         "start-btn",
         `<img src="${IMAGES.startButton.src}" alt="" draggable="false">`,
@@ -70,6 +71,7 @@
         essential: true,
       });
       this.root.classList.add("hidden");
+      document.documentElement.classList.remove("on-title"); // ...and from now on the game's jungle
       clearInterval(this.sparkle);
       CQ.flow.chapter(cp, { noVeil: true });
     },

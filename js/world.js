@@ -24,6 +24,7 @@
       this.zippyLayer = CQ.el("div", "layer zippy-layer", root);
       this.fx = CQ.el("div", "layer fx-layer", root);
       this.drag = CQ.el("div", "layer drag-layer", root);
+      this.shade = CQ.el("div", "world-shade", root); // the formula screen's dark, under the balance (Balance.present)
       this.dark = CQ.el("div", "world-dark", root); // the intro fades in from dark
       CQ.balance = new Balance(this.balanceLayer);
       CQ.grumble = new Grumble(this.grumbleLayer);
@@ -32,6 +33,7 @@
       CQ.dropRing.build(this.drag);
     },
     darkness(level, dur) {
+      CQ.screen.shade("dark", level > 0.5 ? 2 : false);
       return CQ.anim(this.dark, [{ opacity: getComputedStyle(this.dark).opacity }, { opacity: level }], {
         duration: dur || 600,
         easing: "ease-out",
@@ -1340,7 +1342,20 @@
         keep: false,
         essential: true,
       });
-      CQ.fx.ring(CQ.world.fx, L.BX, L.PIVOT_Y, this.level ? "#2BB673" : "#C8473B");
+      CQ.fx.ring(this.layer, L.BX, L.PIVOT_Y, this.level ? "#2BB673" : "#C8473B"); // with the balance, wherever it stands
+    }
+    // The formula screen: the balance steps aside to the right, a little smaller, and stays bright and
+    // sharp in front of the dark over the rest of the scene (styles.css, #world.presenting); false
+    // brings it back. instant: at once (a chapter jump).
+    present(on, instant) {
+      const root = CQ.world.root;
+      if (instant) root.classList.add("snap");
+      if (on) root.dataset.light = "aside"; // the dark's soft light follows it (kept while the dark fades out)
+      root.classList.toggle("presenting", !!on);
+      if (instant) {
+        void root.offsetWidth;
+        root.classList.remove("snap");
+      }
     }
     setSign(text) {
       if (!text) {
