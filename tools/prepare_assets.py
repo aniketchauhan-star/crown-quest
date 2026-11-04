@@ -422,6 +422,14 @@ def copy_background(images):
         images[key] = {"src": f"assets/bg/jungle/{name}", "w": ly["w"], "h": ly["h"]}
         layers.append({"key": key, "x": ly["x"], "y": ly["y"], "w": ly["w"], "h": ly["h"], "anim": ly["anim"]})
     print(f"background: {len(layers)} layers -> assets/bg/jungle/")
+    # a small copy of the whole scene for the bands round the stage on a screen that isn't 16:9: they
+    # show the same jungle, blurred (styles.css, #viewport::before)
+    full = os.path.join(ROOT, BACKGROUND_DIR, "background.png")
+    if os.path.exists(full):
+        w, h, px = read_png(full)
+        bw, bh, small = downscale(w, h, px, 4)
+        write_png(os.path.join(OUT, "bg", "band.png"), bw, bh, small)
+        images["bgBand"] = {"src": "assets/bg/band.png", "w": bw, "h": bh}
     return layers
 
 # --------------------------------------------------------------------------- UI elements sheet

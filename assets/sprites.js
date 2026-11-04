@@ -35,6 +35,7 @@ window.IMAGES = {
   bgBranch: { src: "assets/bg/jungle/10-branch.webp", w: 762, h: 338 },
   bgTree: { src: "assets/bg/jungle/11-tree.webp", w: 1040, h: 1096 },
   bgBushFrontRight: { src: "assets/bg/jungle/12-bush-front-right.webp", w: 468, h: 358 },
+  bgBand: { src: "assets/bg/band.webp", w: 480, h: 270 },
   zippyFace: { src: "assets/ui/zippy-face.webp", w: 232, h: 232 },
   balBeam: { src: "assets/balance/beam.webp", w: 924, h: 152 },
   balHub: { src: "assets/balance/hub.webp", w: 280, h: 285 },

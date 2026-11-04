@@ -211,9 +211,11 @@
     cover(ms) {
       const from = this.el.classList.contains("hidden") ? 0 : parseFloat(getComputedStyle(this.el).opacity) || 0;
       this.el.classList.remove("hidden");
+      CQ.screen.shade("veil", 3);
       return CQ.anim(this.el, [{ opacity: from }, { opacity: 1 }], { duration: ms || 420, easing: "ease-in", essential: true });
     },
     reveal(ms) {
+      CQ.screen.shade("veil", false);
       return CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: ms || 700, easing: "ease-out", essential: true }).then(() => {
         if (getComputedStyle(this.el).opacity === "0") this.el.classList.add("hidden");
       });
@@ -679,12 +681,16 @@
   // the layers it keeps sharp ([] = none); a layer is soft while any owner wants it soft.
   CQ.soft = {
     owners: new Map(),
-    set(owner, keep) {
+    // shade: how dark the screen is meanwhile (see CQ.screen.shade); by default nearly black when the
+    // whole scene is blurred (behind a formula screen or an activity), a fade otherwise.
+    set(owner, keep, shade) {
       if (keep === false) this.owners.delete(owner);
       else this.owners.set(owner, keep);
+      CQ.screen.shade("soft:" + owner, keep === false ? false : shade != null ? shade : keep.length ? 1 : 2);
       this.apply();
     },
     clear() {
+      this.owners.forEach((keep, owner) => CQ.screen.shade("soft:" + owner, false));
       this.owners.clear();
       this.apply();
     },
@@ -777,11 +783,19 @@
       } else this.get = () => this.rect(target);
       this.pad = opts.pad != null ? opts.pad : 24;
       this.radius = opts.radius != null ? opts.radius : 44;
-      this.ring.style.display = opts.ring === false ? "none" : "";
+      // opts.text: a look at words and numbers under the balance (the check, the equation board): the
+      // whole scene goes dark but for the balance, which stays bright and sharp in its place, and the
+      // words turn bright and flat (styles.css, .lit). No window here: on the dark, a window round the
+      // words would show the floor behind them, like a pale panel.
+      const lit = !!opts.text;
+      this.lit(lit);
+      this.hole.style.visibility = lit ? "hidden" : "";
+      this.ring.style.display = opts.ring === false || lit ? "none" : "";
       this.from = wasOn ? this.shown : null; // glide from where the window is now
       this.t0 = performance.now();
       this.el.classList.remove("hidden");
-      CQ.soft.set("focus", opts.blurAll ? [] : this.sharpLayers(target));
+      if (lit) CQ.soft.set("focus", [CQ.world.balanceLayer], 2);
+      else CQ.soft.set("focus", opts.blurAll ? [] : this.sharpLayers(target));
       this.apply();
       if (!this.tick) this.tick = CQ.ticker.add(() => this.apply());
       if (!wasOn) {
@@ -791,6 +805,11 @@
       const from = parseFloat(getComputedStyle(this.el).opacity) || 0;
       CQ.anim(this.el, [{ opacity: wasOn ? from : 0 }, { opacity: 1 }], { duration: 550, essential: true });
       return t;
+    },
+    lit(on) {
+      if (on) CQ.world.root.dataset.light = "home"; // the dark's soft light on the balance, in its place (kept while the dark fades out)
+      CQ.world.root.classList.toggle("lit", on);
+      document.body.classList.toggle("lit", on);
     },
     dimAll(opts) {
       return this.on({ x0: -99, y0: -99, x1: -98, y1: -98 }, Object.assign({ pad: 0, ring: false, blurAll: true }, opts));
@@ -803,6 +822,7 @@
     off(now) {
       const t = ++this.tok;
       CQ.soft.set("focus", false); // the scene sharpens as the ring fades
+      this.lit(false);
       const done = () => {
         if (t !== this.tok) return;
         this.el.classList.add("hidden");

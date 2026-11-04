@@ -447,19 +447,29 @@
     el: null,
     init(el) {
       this.el = el;
-      // #viewport is fixed to the window; its padding keeps the stage clear of notches + a side margin.
+      // #viewport is fixed to the window; its padding keeps the stage clear of notches.
       const vp = el.parentElement;
+      // where the stage meets a band, its edge melts into the band: no hard line (styles.css)
+      CQ.el("div", "stage-edge", el);
       const fit = () => {
         const cs = getComputedStyle(vp);
         const pl = parseFloat(cs.paddingLeft) || 0;
         const pt = parseFloat(cs.paddingTop) || 0;
         const vw = vp.clientWidth - pl - (parseFloat(cs.paddingRight) || 0);
         const vh = vp.clientHeight - pt - (parseFloat(cs.paddingBottom) || 0);
-        const s = Math.max(0.05, Math.min(vw / W, vh / H));
+        // A screen close to 16:9 (most laptops and browser windows) is filled edge to edge: the stage
+        // is drawn a touch bigger and a sliver (1.5% a side at most, where nothing sits) is cut off,
+        // so no thin band frames the game. Any other screen keeps the whole stage, with bands.
+        const fitIn = Math.min(vw / W, vh / H);
+        const fill = Math.max(vw / W, vh / H);
+        const s = Math.max(0.05, fill / fitIn <= 1.03 ? fill : fitIn);
         this.scale = s;
         this.ox = pl + (vw - W * s) / 2;
         this.oy = pt + (vh - H * s) / 2;
         el.style.transform = `translate(${this.ox}px, ${this.oy}px) scale(${s})`;
+        const band = vw - W * s > 2 ? "x" : vh - H * s > 2 ? "y" : "";
+        if (band) document.documentElement.dataset.band = band;
+        else delete document.documentElement.dataset.band;
       };
       window.addEventListener("resize", fit);
       window.addEventListener("orientationchange", () => setTimeout(fit, 250));
@@ -494,6 +504,18 @@
     // few cores, or later if the game keeps running below about 40 frames a second.
     lite(on) {
       document.documentElement.classList.toggle("lite", on !== false);
+    },
+    // The bands round the stage (on a screen that isn't near 16:9) darken with the game, so a dark
+    // screen is dark from edge to edge, with no bright frame round it. Each dark state says how dark it
+    // is (1: a fade like "look here"; 2: nearly black, like a formula screen; 3: the dip between
+    // chapters) or false when it ends.
+    shades: new Map(),
+    shade(owner, level) {
+      if (level) this.shades.set(owner, level);
+      else this.shades.delete(owner);
+      const max = Math.max(0, ...this.shades.values());
+      if (max) document.documentElement.dataset.shade = max;
+      else delete document.documentElement.dataset.shade;
     },
   };
   try {

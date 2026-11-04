@@ -7,7 +7,7 @@ A 16:9 browser game that teaches **linear equations in one variable** (Class 8, 
 - **Easiest:** double-click `index.html`. It runs straight from the folder, with no internet and no install.
 - **On a classroom network or website:** upload the whole folder as it is, then open `index.html`.
 - Works on laptops, Chromebooks, iPads, Android tablets and phones, with touch, mouse or keyboard. It was tested in Chrome and Safari's engine; Edge uses Chrome's engine. Phones and tablets need to be held sideways.
-- **Any screen:** the game keeps its 16:9 picture and fits it to the screen. On a screen of another shape, the jungle carries on, blurred and dimmed, in the bands at the sides or the top and bottom. On a phone or tablet, Play makes the game fill the whole screen and holds it sideways (Android, iPad). On an iPhone, add the game to the home screen (Share → Add to Home Screen): it then opens full screen (`manifest.webmanifest`).
+- **Any screen:** the game keeps its 16:9 picture and fits it to the screen. A screen close to 16:9 (most laptops and browser windows) is filled edge to edge, with no frame round the game: a sliver of at most 1.5% a side, where nothing sits, is cut off. On a screen of another shape, the game's jungle carries on, blurred, in the bands at the sides or the top and bottom (`assets/bg/band.webp`). When the game fades to dark, the bands go dark with it, in the same colour, and the game's edge melts into them, so there is no line between them. On a phone or tablet, Play makes the game fill the whole screen and holds it sideways (Android, iPad). On an iPhone, add the game to the home screen (Share → Add to Home Screen): it then opens full screen (`manifest.webmanifest`).
 - **Quick to load:** the pictures are WebP (4.2 MB in all), and the title screen appears as soon as its own two pictures are in. The rest load behind it, shown by a slim golden bar at its foot; if Play is tapped sooner, it waits for them. The voice clips load quietly during play.
 - **Smooth on slow devices:** on a device with little memory or few cores, or if the game runs below about 40 frames a second, it switches to a light mode. There is no blur behind "look here" moments (the dark fade stays) and no idle motion in the background.
 
@@ -74,9 +74,11 @@ At key teaching moments the thing being explained stays bright inside a soft gol
 - each step of Level 4 (the crown, the coins, x, x + 2, 7, then the equation);
 - the key steps of Levels 8 and 9.
 
-The ring glides from one thing to the next. Taps still work while it is on. A check's verdict gets the bright window too, with no ring. (`CQ.focus` and `CQ.soft` in `js/ui.js`; the moments are the `look(…)` calls in `js/flow.js`.)
+The ring glides from one thing to the next. Taps still work while it is on. (`CQ.focus` and `CQ.soft` in `js/ui.js`; the moments are the `look(…)` calls in `js/flow.js`.)
 
-The Level 4 words are explained on **Zippy's formula screen**. The game fades to a calm dark (the scene blurred behind it), and x + 2 = 7 stands big and bright in the upper part of the screen. Each line adds one colour-coded label, box or highlight, and only the new piece pops in, so the child's eye goes straight to it. Worked-out lines (LHS: 4 + 2 = 6, RHS: 7) appear under the equation.
+When the words and numbers under the balance are the thing to look at (x + 2 = 7 being built, a check's verdict, x = 15 in Level 8, x = 7 in Level 9), there is no window: the whole scene goes dark, the balance stays bright and sharp in its place, and the words turn bright, with no shadow (`look(…, { text: true })`).
+
+The Level 4 words are explained on the **formula screen**. The scene fades to a calm dark, and the balance glides aside to the right, a little smaller, bright and sharp. x + 2 = 7 stands big and bright at the left, in plain letters with no shadow. Zippy is not on this screen. Each line adds one colour-coded label, box or highlight, and the part of the balance it talks about lights up: the crown for x, the left pan for the LHS, the right pan for the RHS, and both pans, with a flash at the balance's centre, when the sides are equal. Only the new piece fades in, gently, where it stays, so the child's eye goes straight to it. Worked-out lines (LHS: 4 + 2 = 6, RHS: 7, then 6 ≠ 7) appear under the equation, which stays at the top all along. When the screen closes, the balance glides back into its place.
 
 **Step by step.** Things come one at a time: a level's crown, coins and bars; the check's left side, then its right side; each piece of the formula screen; the activities' equation, boxes and cards; and each line of a practice step.
 
@@ -113,7 +115,7 @@ If you change the words of a line in `js/content.js`, its recording no longer ma
 
 **The background** is the jungle lake in `jungle-background/`, built from the pieces in `background sheet.png` (see `jungle-background/README.md`). The game draws it as 12 separate layers, so the clouds drift and the branch and the big plant sway gently (off with Menu → Reduced motion). To change it:
 1. Edit `LAYOUT` in `jungle-background/tools/make_background.py` and run it. This tool needs numpy, Pillow and scipy.
-2. Run `python3 tools/prepare_assets.py`, which copies the layers into `assets/bg/jungle/`.
+2. Run `python3 tools/prepare_assets.py`, which copies the layers into `assets/bg/jungle/`. It also makes `assets/bg/band.webp` from `jungle-background/background.png`: a small copy of the whole scene for the bands round the game on a screen that isn't 16:9.
 
 **The wooden stool** under each gold bar (and the Level 8–9 "Taken off" stools) is `break stand .png`. The tool copies it to `assets/props/brick-stand.webp`. `STAND_REST` in `js/engine.js` says where a bar rests on its top.
 
@@ -172,7 +174,7 @@ js/content.js       ← all words and numbers (edit this)
 js/engine.js        stage scaling, tweens, camera, dragging, pause, save
 js/world.js         the background layers, Grumble, Zippy, the balance, gold bars
 js/ui.js            captions (with Zippy's face), SWAP, bubbles, name titles, focus + scene blur, hints, Word Treasure, menu, the check
-js/activities.js    Zippy's formula screen, label + sort activities, quick recap, practice board + keypad, finale
+js/activities.js    the formula screen, label + sort activities, quick recap, practice board + keypad, finale
 js/flow.js          the story: intro, levels 1–9, practice, finale
 js/audio.js         generated sound effects and music; plays the voice lines
 js/voice.js         finds and loads the recorded voice lines

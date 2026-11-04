@@ -104,6 +104,7 @@
     CQ.world.drag.querySelectorAll(".wlabel, .ledge, .ledge-bar, .flyer").forEach((e) => e.remove());
     CQ.camera.set(960, 540, 1);
     CQ.world.dark.style.opacity = 0;
+    CQ.screen.shade("dark", false);
     CQ.Give.disable();
     CQ.Give.busy = false;
     CQ.Give.heldBar = null;
@@ -542,6 +543,7 @@
     CQ.ui.skip.classList.remove("hidden");
     z.setVisible(false);
     CQ.world.dark.style.opacity = 0.92;
+    CQ.screen.shade("dark", 2);
     CQ.camera.set(600, 400, 1.3); // the corner Zippy drops into
     g.snore(2, 1.2); // Grumble's snoring is heard in the dark, then the jungle fades in
     await R.wait(1300);
@@ -724,7 +726,7 @@
     // key moment: the scene turns into the equation
     const strip = CQ.el("div", "eq-strip", CQ.ui.layer, `<span class="es a">${CQ.rich("x + 2")}</span><span class="es b">=</span><span class="es c">7</span>`);
     await R.wait(30);
-    look(strip, { pad: 18, ring: false });
+    look(strip, { text: true });
     const slots = ["a", "b", "c"].map((k) => strip.querySelector(".es." + k));
     const targets = slots.map((s) => CQ.centerOf(s));
     const srcs = [CQ.centerOf(lx), CQ.camera.toScreen({ x: CQ.L.BX, y: CQ.L.PIVOT_Y }), CQ.centerOf(r7)];
@@ -836,7 +838,7 @@
       CQ.grumble.stir();
       if (z.held && z.held.type === "bar") z.pose("hold");
       await R.when(z.say(C().zippy.checked));
-      look(cp.el, { pad: 16, ring: false });
+      look(cp.el, { text: true });
       for (const id of o.notLines || ["check-not"]) await say(id, { vars });
       look(null);
       await R.when(cp.hide());
@@ -844,7 +846,7 @@
       await tossTried(v);
       return false;
     }
-    if (o.yesLines && o.yesLines.length) look(cp.el, { pad: 16, ring: false });
+    if (o.yesLines && o.yesLines.length) look(cp.el, { text: true });
     if (z.held && z.held.type === "bar") z.pose("barShow"); // it works: he shows the bar off
     for (const id of o.yesLines || []) await say(id, { vars });
     look(null);
@@ -1148,7 +1150,7 @@
     // Now the crown balances 15 units. So, x = 15.
     eb.set("x = 15", { final: true });
     CQ.audio.play("correct");
-    look(eb.el, { pad: 16, ring: false });
+    look(eb.el, { text: true });
     await say("l8-9", { hold: 2600 }); // key moment: x = 15
     look(null);
     await R.when(eb.hide());
@@ -1249,7 +1251,7 @@
     CQ.audio.play("correct");
     glowCrown(true);
     b.glowItems("right", (it) => !it.ghost);
-    look(eb.el, { pad: 16, ring: false });
+    look(eb.el, { text: true });
     await say("l9-8", { hold: 2600 }); // key moment: x = 7
     look(null);
     b.clearGlow();
