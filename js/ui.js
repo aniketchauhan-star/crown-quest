@@ -677,9 +677,7 @@
     place(el, wp) {
       const p = CQ.camera.toScreen(wp);
       const w = el.offsetWidth || 440;
-      const sign = CQ.balance && CQ.balance.sign;
-      const right = sign && !sign.classList.contains("hidden") ? Math.min(930, CQ.L.BX - sign.offsetWidth / 2 - 30) : 930;
-      const x = CQ.clamp(p.x + 90, 20, Math.max(20, right - w));
+      const x = CQ.clamp(p.x + 90, 20, Math.max(20, 930 - w));
       const y = CQ.clamp(p.y - 250, 196, CQ.H - 200);
       CQ.pos(el, x, y);
     },
@@ -835,7 +833,6 @@
     apply() {
       const root = CQ.world && CQ.world.root;
       if (!root) return;
-      document.body.classList.toggle("soft-all", [...this.owners.values()].some((keep) => !keep.length));
       root.querySelectorAll(":scope > .layer").forEach((l) => {
         let soft = false;
         this.owners.forEach((keep) => {

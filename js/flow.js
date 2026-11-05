@@ -716,7 +716,7 @@
     strip.remove();
     const opening = CQ.notebook.open();
     look(null); // the look's dark hands over to the formula screen's
-    b.setSign("x + 2 = 7"); // it rests while the formula screen is up, then stays on the balance
+    b.setSign("x + 2 = 7"); // (for screen readers: nothing is shown over the balance)
     await R.when(opening);
     await CQ.notebook.run(CQ.NB_WORDS);
     await R.when(CQ.notebook.close());
