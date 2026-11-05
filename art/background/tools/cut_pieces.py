@@ -1,10 +1,10 @@
-"""Cuts the 8 pieces the background uses out of "background sheet.png" (in the project folder) into ../pieces/.
+"""Cuts the 8 pieces the background uses out of "background sheet.png" (in this folder, art/background/) into ../pieces/.
 
 Each piece is trimmed to its own size and keeps its transparency. The mountains and the forest touch
 on the sheet, so they are separated by colour, the small gap left in the mountains is filled, and
 the mountain strip's two cut ends fade out.
 
-Needs Python 3 with numpy, Pillow and scipy.  Run:  python3 jungle-background/tools/cut_pieces.py
+Needs Python 3 with numpy, Pillow and scipy.  Run:  python3 art/background/tools/cut_pieces.py
 """
 import json
 import os
@@ -17,7 +17,7 @@ from imaging import push_pull_fill
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-SHEET = os.path.join(os.path.dirname(ROOT), "background sheet.png")
+SHEET = os.path.join(ROOT, "background sheet.png")
 OUT = os.path.join(ROOT, "pieces")
 
 # Where each piece is on the sheet (x0, y0, x1, y1). The sheet's small details (rocks, grass tufts,

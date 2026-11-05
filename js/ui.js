@@ -807,7 +807,6 @@
       return t;
     },
     lit(on) {
-      if (on) CQ.world.root.dataset.light = "home"; // the dark's soft light on the balance, in its place (kept while the dark fades out)
       CQ.world.root.classList.toggle("lit", on);
       document.body.classList.toggle("lit", on);
     },

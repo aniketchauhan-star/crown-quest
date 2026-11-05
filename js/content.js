@@ -256,7 +256,6 @@ window.CONTENT = {
   label: {
     title: "Label the parts of the equation.",
     sub: "Drop each label into its box.",
-    note: "4x means 4 times x.",
     chips: ["RHS", "Variable", "Equation", "LHS"],
     correct: {
       Variable: "Yes! x is the variable.",

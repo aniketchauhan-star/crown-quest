@@ -10,7 +10,7 @@ forest are colour-matched to the reference (it shows them hazier, so they look f
 To move, resize or flip a piece, change LAYOUT at the bottom (x, y are in reference.png pixels) and
 run it again.
 
-Needs Python 3 with numpy, Pillow and scipy.  Run:  python3 jungle-background/tools/make_background.py
+Needs Python 3 with numpy, Pillow and scipy.  Run:  python3 art/background/tools/make_background.py
 """
 import json
 import os

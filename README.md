@@ -78,7 +78,9 @@ The ring glides from one thing to the next. Taps still work while it is on. (`CQ
 
 When the words and numbers under the balance are the thing to look at (x + 2 = 7 being built, a check's verdict, x = 15 in Level 8, x = 7 in Level 9), there is no window: the whole scene goes dark, the balance stays bright and sharp in its place, and the words turn bright, with no shadow (`look(…, { text: true })`).
 
-The Level 4 words are explained on the **formula screen**. The scene fades to a calm dark, and the balance glides aside to the right, a little smaller, bright and sharp. x + 2 = 7 stands big and bright at the left, in plain letters with no shadow. Zippy is not on this screen. Each line adds one colour-coded label, box or highlight, and the part of the balance it talks about lights up: the crown for x, the left pan for the LHS, the right pan for the RHS, and both pans, with a flash at the balance's centre, when the sides are equal. Only the new piece fades in, gently, where it stays, so the child's eye goes straight to it. Worked-out lines (LHS: 4 + 2 = 6, RHS: 7, then 6 ≠ 7) appear under the equation, which stays at the top all along. When the screen closes, the balance glides back into its place.
+The Level 4 words are explained on the **formula screen**. The view glides: it zooms in and pans until the balance stands at the right of the screen, on its own ground, bright and sharp, while the rest of the scene goes soft and dark, darkest at the left. Then x + 2 = 7 is written in at the left, one sign at a time, in plain bright letters with no shadow. Zippy is not on this screen. Each line adds one colour-coded label, box or highlight, and the part of the balance it talks about lights up: the crown for x, the left pan for the LHS, the right pan for the RHS, and both pans, with a flash at the balance's centre, when the sides are equal. Only the new piece fades in, gently, where it stays, so the child's eye goes straight to it. Worked-out lines (LHS: 4 + 2 = 6, RHS: 7, then 6 ≠ 7) appear under the equation, which stays at the top all along. When the screen closes, the maths fades and the view glides back to the whole scene. Coming from x + 2 = 7 being built (Level 4a) or from the label activity (4c), the dark never lifts in between: the view glides straight on into the formula screen (`ASIDE` in js/activities.js is the view).
+
+**Labels joined to the numbers.** Wherever a word names a part of an equation (the label activity, the quick recap, the formula screen's tags), it sits right over or under that part, joined to it by one straight line that ends in a dot on the part. Each word has its own colour, and its box, line, dot, bracket and part all share it: gold for variable, green for equation, teal for LHS, orange for RHS. In the label activity the lines are faint until the right label goes in; then the colour runs down the line and the part lights up. Where the line to x crosses the equation's bracket, the bracket gives way round it, so the line plainly goes on to x. The sort activity's sorted cards have no "power 1" / "power 2" badges; a nonlinear card's ² turns orange.
 
 **Step by step.** Things come one at a time: a level's crown, coins and bars; the check's left side, then its right side; each piece of the formula screen; the activities' equation, boxes and cards; and each line of a practice step.
 
@@ -113,36 +115,50 @@ If you change the words of a line in `js/content.js`, its recording no longer ma
 
 ## Replace the artwork
 
-**The background** is the jungle lake in `jungle-background/`, built from the pieces in `background sheet.png` (see `jungle-background/README.md`). The game draws it as 12 separate layers, so the clouds drift and the branch and the big plant sway gently (off with Menu → Reduced motion). To change it:
-1. Edit `LAYOUT` in `jungle-background/tools/make_background.py` and run it. This tool needs numpy, Pillow and scipy.
-2. Run `python3 tools/prepare_assets.py`, which copies the layers into `assets/bg/jungle/`. It also makes `assets/bg/band.webp` from `jungle-background/background.png`: a small copy of the whole scene for the bands round the game on a screen that isn't 16:9.
+All the original pictures are in **`art/`**, by kind:
 
-**The wooden stool** under each gold bar (and the Level 8–9 "Taken off" stools) is `break stand .png`. The tool copies it to `assets/props/brick-stand.webp`. `STAND_REST` in `js/engine.js` says where a bar rests on its top.
+```
+art/zippy/        Zippy's sheets: hold crown, hold crown and up, winning monkey, fail monkey,
+                  zippy swap, zippy crown., zippy scared crown, zippy bar
+art/grumble/      Grumble's sheets: monster slepping, slightly open his eyes, when fail then monster roar
+art/props/        crown, number coin, number bricks (the gold bar), break stand (the stool),
+                  new balance (the balance parts), tree bails (Zippy's vine)
+art/ui/           elements (the interface sheet), start button
+art/background/   the jungle lake: background sheet, its pieces and layers, the tools that make them
+```
 
-**The balance** is the wooden one in `new balance .png`, a sheet of separate parts: beam, hub, post, base, plate, rope hanger and leaves. `tools/prepare_assets.py` cuts each part out by its box (`BALANCE_PARTS`) into `assets/balance/`. The game puts the parts together like the picture of the finished balance (`ART` in the balance section of `js/world.js`):
+To change a picture, save the new one over the old one in its folder, with the same name, and run the tool (below).
+
+**The background** is the jungle lake in `art/background/`, built from the pieces in `art/background/background sheet.png` (see `art/background/README.md`). The game draws it as 12 separate layers, so the clouds drift and the branch and the big plant sway gently (off with Menu → Reduced motion). To change it:
+1. Edit `LAYOUT` in `art/background/tools/make_background.py` and run it. This tool needs numpy, Pillow and scipy.
+2. Run `python3 tools/prepare_assets.py`, which copies the layers into `assets/bg/jungle/`. It also makes `assets/bg/band.webp` from `art/background/background.png`: a small copy of the whole scene for the bands round the game on a screen that isn't 16:9.
+
+**The wooden stool** under each gold bar (and the Level 8–9 "Taken off" stools) is `art/props/break stand .png`. The tool copies it to `assets/props/brick-stand.webp`. `STAND_REST` in `js/engine.js` says where a bar rests on its top.
+
+**The balance** is the wooden one in `art/props/new balance .png`, a sheet of separate parts: beam, hub, post, base, plate, rope hanger and leaves. `tools/prepare_assets.py` cuts each part out by its box (`BALANCE_PARTS`) into `assets/balance/`. The game puts the parts together like the picture of the finished balance (`ART` in the balance section of `js/world.js`):
 - The beam tips behind the hub, which stays upright.
 - Each plate hangs from its rope under the beam and stays level.
 - Things stand on the plates.
 
 If the sheet is replaced, re-measure `BALANCE_PARTS` and `ART`.
 
-**The interface pieces** come from `elements.png`, a sheet of 34 pieces made with the prompt in `ChatGPT-Asset-Sheet-Prompt.md`. `tools/prepare_assets.py` cuts the sheet into `assets/elements/`, one PNG for each of the 20 pieces the game uses (`UNUSED_ELEMENTS` in the tool lists the 14 it leaves out, the old gold balance among them). It also measures the points the game needs and writes them as `GEOM` in `assets/sprites.js`: the hand's fingertip, the thought cloud, the speech bubble and the panel's border, plus where each balance part was on its sheet. To change a piece, make a new sheet with the same rows in the same order (`ELEMENT_ROWS` in the tool) and run the tool. If a row has the wrong number of pieces, it stops and says which row.
+**The interface pieces** come from `art/ui/elements.png`, a sheet of 34 pieces made with the prompt in `docs/prompts/ChatGPT-Asset-Sheet-Prompt.md`. `tools/prepare_assets.py` cuts the sheet into `assets/elements/`, one PNG for each of the 20 pieces the game uses (`UNUSED_ELEMENTS` in the tool lists the 14 it leaves out, the old gold balance among them). It also measures the points the game needs and writes them as `GEOM` in `assets/sprites.js`: the hand's fingertip, the thought cloud, the speech bubble and the panel's border, plus where each balance part was on its sheet. To change a piece, make a new sheet with the same rows in the same order (`ELEMENT_ROWS` in the tool) and run the tool. If a row has the wrong number of pieces, it stops and says which row.
 
 - **Balance.** `BAL.S` is its overall size, and `ART_K` matches the parts to the size of the things on the plates. The beam's middle stretches a little so the ropes hang where they do in the picture.
 - **Stretched pieces.** The caption bar, the menu panels, speech bubbles and the wooden buttons all stretch without bending their corners. Each rule in `styles.css` names its piece and where to cut it (`border-image`). `CQ.patch` in `js/ui.js` then paints each piece in one go, so no seams show. If new art has a thicker or thinner frame, change the cut numbers in those rules:
   - panel: `30 35 34 30`
   - speech bubble: `82 132 94 130` (cut through the middle of the oval)
   - wooden button: `0 51 0 51`
-- **Zippy holding a gold bar:** `zippy bar.png` (made with `ChatGPT-Zippy-Bar-Prompt.md`) has his fingers really round a blank bar. The game prints the bar's number on its front face, and the frames match what he does:
+- **Zippy holding a gold bar:** `art/zippy/zippy bar.png` (made with `docs/prompts/ChatGPT-Zippy-Bar-Prompt.md`) has his fingers really round a blank bar. The game prints the bar's number on its front face, and the frames match what he does:
   - catch it (1), hold it (2), talk (3);
   - look at it while the child checks it (4), and show it off when it works (5);
   - reach down to the plate (6) and put it down (7);
   - hand a wrong bar back (8).
 
   `tools/prepare_assets.py` finds the bar in each frame by its gold colour. It measures where the bar is, the middle of its front face and its tilt (`GEOM.zippyBar`), so the number lands on the face and bars flying to or from his hands match his. A new sheet needs no re-measuring, as long as the bar stays gold with its front face clear.
-- **Zippy's swap:** `zippy swap.png` (made with `ChatGPT-Zippy-Swap-Prompt.md`) has empty hands. His open hands are ready to catch a bar, and in the swap he lets go of the bar as the crown jumps up into his hands. Nothing is drawn in his hands on this sheet. `SWAP` in `js/world.js` has where his hands are in each frame; re-measure it if you replace the sheet. The tool also cuts Zippy's face for the question bar from it (`FACE`).
-- **Scared Zippy holding the crown:** `zippy scared crown.png` (made with `ChatGPT-Zippy-Scared-Crown-Prompt.md`) is used after a wrong swap, until he gives the crown back. `SCARED_CROWN` in `js/world.js` is where the crown is in each frame (and how wide). The crown he grabs flies into his hands in frame 1, and jumps back to the pan from his hands. Re-measure it if the sheet is replaced.
-- **Zippy wears the crown:** `zippy crown.png` (made with `ChatGPT-Zippy-Crown-Prompt.md`; the tool also finds it as `zippy crown..png`) has him lifting the crown, putting it on, then wow, proud, thumbs up, wave, laugh and straightening it. After a right swap he holds the crown like frame 1, lifted up in both hands, until he puts it on. `CROWN_LIFT` in `js/world.js` is where the crown is in that frame (centre, width and tilt), so the crown he grabs from the pan lands exactly there. While he wears it, his everyday poses use this sheet (`crownPose`). `CROWN_HEAD` is where the crown sits on his head, for its sparkle.
+- **Zippy's swap:** `art/zippy/zippy swap.png` (made with `docs/prompts/ChatGPT-Zippy-Swap-Prompt.md`) has empty hands. His open hands are ready to catch a bar, and in the swap he lets go of the bar as the crown jumps up into his hands. Nothing is drawn in his hands on this sheet. `SWAP` in `js/world.js` has where his hands are in each frame; re-measure it if you replace the sheet. The tool also cuts Zippy's face for the question bar from it (`FACE`).
+- **Scared Zippy holding the crown:** `art/zippy/zippy scared crown.png` (made with `docs/prompts/ChatGPT-Zippy-Scared-Crown-Prompt.md`) is used after a wrong swap, until he gives the crown back. `SCARED_CROWN` in `js/world.js` is where the crown is in each frame (and how wide). The crown he grabs flies into his hands in frame 1, and jumps back to the pan from his hands. Re-measure it if the sheet is replaced.
+- **Zippy wears the crown:** `art/zippy/zippy crown..png` (made with `docs/prompts/ChatGPT-Zippy-Crown-Prompt.md`; the tool also finds it as `zippy crown.png`) has him lifting the crown, putting it on, then wow, proud, thumbs up, wave, laugh and straightening it. After a right swap he holds the crown like frame 1, lifted up in both hands, until he puts it on. `CROWN_LIFT` in `js/world.js` is where the crown is in that frame (centre, width and tilt), so the crown he grabs from the pan lands exactly there. While he wears it, his everyday poses use this sheet (`crownPose`). `CROWN_HEAD` is where the crown sits on his head, for its sparkle.
 - **Still drawn in code:** the character name titles (text only), Grumble's shadow, comic sound words, confetti, drop rings, the menu toggles, word cards, label chips, equation cards, the sort activity's two drop zones, the number picker box and the practice board's labels. The keypad keys use the number tile, Check uses the green pill, and the chest sits in the Word Treasure title.
 
 **Sizes and positions** are set in one place, `CQ.L` near the top of `js/engine.js`:
@@ -153,19 +169,21 @@ If the sheet is replaced, re-measure `BALANCE_PARTS` and `ART`.
 - `BAR_BASE`, `BAR_W` and `STAND_W`: where the gold bars rest, and the bars' and stands' sizes. `STAND_REST` is where a bar sits on the stand's top face.
 - `CROWN_W`, `COIN_W` and `PAN_BAR_W`: the sizes of things on the plates (they stand on the plate's top). Keep coin faces fully visible: children tap them to count. `CROWN_W` is a crown of 5 units: a heavier crown is drawn bigger (its width goes with the cube root of its mass, `crownW()` in js/world.js), so Level 8's 15-unit crown and its 8 bar just fill the plate.
 
-Zippy hangs by his tail from the longest vine in `tree bails.png` (`vineE`; see `CQ.makeVine` in `js/world.js`). The vine comes down from the tree's branch, and its tip sits in the curl of his tail.
+Zippy hangs by his tail from the longest vine in `art/props/tree bails.png` (`vineE`; see `CQ.makeVine` in `js/world.js`). The vine comes down from the tree's branch, and its tip sits in the curl of his tail.
 
-The original PNGs stay in this folder. If you change any of them (keep the same file names, and the 4 × 2 frame layout for character sheets), run:
+The original PNGs stay in `art/`. If you change any of them (keep the same file names, and the 4 × 2 frame layout for character sheets), run:
 
 ```
 python3 tools/prepare_assets.py
 ```
 
-It needs only Python 3, with no extra packages. It cuts every character frame out by its own pixels, so hands and Zzz letters that cross the grid lines are kept. It lines all frames up (Zippy by the tip of his tail, Grumble by his feet), shrinks the props, cuts `elements.png`, copies the background layers and rewrites `assets/`. It takes about a minute.
+It needs only Python 3, with no extra packages. It cuts every character frame out by its own pixels, so hands and Zzz letters that cross the grid lines are kept. It lines all frames up (Zippy by the tip of his tail, Grumble by his feet), shrinks the props, cuts `art/ui/elements.png`, copies the background layers and rewrites `assets/`. It takes about a minute.
 
-At its end it runs `tools/compress_assets.py`, which saves every picture as WebP: quality 88 with transparency, or 85 for opaque pictures. That looks the same as the PNG at about a fifth of the size (21.3 MB → 4.2 MB), and the game and `styles.css` are pointed at the WebP files. It needs `cwebp` (`brew install webp`); without it the pictures stay PNG. The compression takes several minutes. If `start screen.png` isn't in the folder, the tool keeps the title picture already in `assets/`.
+At its end it runs `tools/compress_assets.py`, which saves every picture as WebP: quality 88 with transparency, or 85 for opaque pictures. That looks the same as the PNG at about a fifth of the size (21.3 MB → 4.2 MB), and the game and `styles.css` are pointed at the WebP files. It needs `cwebp` (`brew install webp`); without it the pictures stay PNG. The compression takes several minutes. If `art/ui/start screen.png` isn't there, the tool keeps the title picture already in `assets/`.
 
 ## Files
+
+The game itself is the top of the folder (`index.html`, `styles.css`, `manifest.webmanifest`, `js/`, `assets/`): open `index.html` to play. The rest is what it is made from.
 
 ```
 index.html          the page
@@ -182,15 +200,16 @@ js/vo_lines.js      every line as shown → its clip and length (generated by to
 js/main.js          loading + title screen
 assets/             game-ready images and sprites.js (generated; the fonts are embedded in styles.css)
 assets/vo/          the voice-over: one Ogg Opus clip per line (see docs/VOICEOVER.md)
-jungle-background/  the background: pieces, layers, the tools that make them, and a preview page
-assets/elements/    the pieces cut from elements.png (generated)
-elements.png        the interface sheet; ChatGPT-Asset-Sheet-Prompt.md is the prompt that made it
-tools/prepare_assets.py   rebuilds assets/ from the original PNGs
-tools/compress_assets.py  saves the game's pictures as WebP (run by prepare_assets.py)
+assets/elements/    the pieces cut from art/ui/elements.png (generated)
 manifest.webmanifest      lets a phone or tablet open the game full screen from its home screen
+art/                the original pictures (see "Replace the artwork")
+art/background/     the background: the sheet, pieces, layers, the tools that make them, and a preview page
+docs/VOICEOVER.md         how the voice-over was made, how the game plays it, how to remake a line
+docs/prompts/             the prompts that made the art sheets (ChatGPT-*.md) and the game's first build prompt
+tools/prepare_assets.py   rebuilds assets/ from the original PNGs in art/
+tools/compress_assets.py  saves the game's pictures as WebP (run by prepare_assets.py)
 tools/vo_script.json      every voice line: as shown, as spoken, and the Devanagari the voice read
 tools/vo_build.py         turns the TTS studio's zips into assets/vo/ and js/vo_lines.js
-docs/VOICEOVER.md         how the voice-over was made, how the game plays it, how to remake a line
 ```
 
 For analytics, `CQ.track(event, data)` in `js/engine.js` logs `step_start`, `answer`, `hint_shown`, `level_complete` and `game_complete` to the console. Point it at your platform's analytics call.

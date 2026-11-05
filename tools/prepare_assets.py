@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Prepare game assets from the designer's original PNGs (pure Python, no dependencies).
+Prepare game assets from the designer's original PNGs in art/ (pure Python, no dependencies).
 
 Run from anywhere:   python3 tools/prepare_assets.py
 
@@ -13,8 +13,8 @@ What it does
     Grumble -> bottom-centre (he sits on the floor)
 - Props: crops away empty margins and downsizes oversized images.
 - Full-screen art: re-saved as JPEG when fully opaque (much smaller), otherwise copied.
-- The background: copies the layers made by jungle-background/tools/make_background.py into
-  assets/bg/jungle/ (see jungle-background/README.md; that tool needs numpy, Pillow and scipy).
+- The background: copies the layers made by art/background/tools/make_background.py into
+  assets/bg/jungle/ (see art/background/README.md; that tool needs numpy, Pillow and scipy).
 - Writes assets/sprites.js with the sizes and anchors the game needs.
 - Then saves every picture as WebP (tools/compress_assets.py, needs cwebp), so the game loads quickly.
 
@@ -32,6 +32,7 @@ import zlib
 from collections import deque
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ART = os.path.join(ROOT, "art")  # the original pictures: art/zippy, art/grumble, art/props, art/ui, art/background
 OUT = os.path.join(ROOT, "assets")
 ALPHA_SOLID = 40      # alpha above this counts as "solid" for finding shapes
 EDGE_RADIUS = 2       # soft edge pixels within this distance join the nearest frame
@@ -269,41 +270,41 @@ def split_sheet(path, anchor_mode, cols=4, rows=2):
 
 # --------------------------------------------------------------------------- main
 def first_existing(*names):
-    """The first of these source files that is in the folder (a file may be saved under a slightly different name)."""
-    return next((n for n in names if os.path.exists(os.path.join(ROOT, n))), names[0])
+    """The first of these source files that is in art/ (a file may be saved under a slightly different name)."""
+    return next((n for n in names if os.path.exists(os.path.join(ART, n))), names[0])
 
 
 SHEETS = [
-    ("grumble_sleep", "monster slepping.png", "grumble/sleep.png", "bottom"),
-    ("grumble_wake", "slightly open his eyes.png", "grumble/wake.png", "bottom"),
-    ("grumble_roar", "when fail then monster roar .png", "grumble/roar.png", "bottom"),
-    ("zippy_hold", "hold crown and up.png", "zippy/hold.png", "top"),
-    ("zippy_reach", "hold crown.png", "zippy/reach.png", "top"),
-    ("zippy_laugh", "winning monkey.png", "zippy/laugh.png", "top"),
-    ("zippy_scared", "fail monkey.png", "zippy/scared.png", "top"),
-    # empty-handed: the game puts the real gold bar and crown in his hands (ChatGPT-Zippy-Swap-Prompt.md)
-    ("zippy_swap", "zippy swap.png", "zippy/swap.png", "top"),
-    # he puts the crown on his own head and celebrates wearing it (ChatGPT-Zippy-Crown-Prompt.md)
-    ("zippy_crown", first_existing("zippy crown.png", "zippy crown..png"), "zippy/crown.png", "top"),
-    # scared after a wrong swap, the crown in his hands (ChatGPT-Zippy-Scared-Crown-Prompt.md)
-    ("zippy_scared_crown", "zippy scared crown.png", "zippy/scared-crown.png", "top"),
-    # holding a blank gold bar by its ends; the game prints its number on it (ChatGPT-Zippy-Bar-Prompt.md)
-    ("zippy_bar", "zippy bar.png", "zippy/bar.png", "top"),
+    ("grumble_sleep", "grumble/monster slepping.png", "grumble/sleep.png", "bottom"),
+    ("grumble_wake", "grumble/slightly open his eyes.png", "grumble/wake.png", "bottom"),
+    ("grumble_roar", "grumble/when fail then monster roar .png", "grumble/roar.png", "bottom"),
+    ("zippy_hold", "zippy/hold crown and up.png", "zippy/hold.png", "top"),
+    ("zippy_reach", "zippy/hold crown.png", "zippy/reach.png", "top"),
+    ("zippy_laugh", "zippy/winning monkey.png", "zippy/laugh.png", "top"),
+    ("zippy_scared", "zippy/fail monkey.png", "zippy/scared.png", "top"),
+    # empty-handed: the game puts the real gold bar and crown in his hands (docs/prompts/ChatGPT-Zippy-Swap-Prompt.md)
+    ("zippy_swap", "zippy/zippy swap.png", "zippy/swap.png", "top"),
+    # he puts the crown on his own head and celebrates wearing it (docs/prompts/ChatGPT-Zippy-Crown-Prompt.md)
+    ("zippy_crown", first_existing("zippy/zippy crown.png", "zippy/zippy crown..png"), "zippy/crown.png", "top"),
+    # scared after a wrong swap, the crown in his hands (docs/prompts/ChatGPT-Zippy-Scared-Crown-Prompt.md)
+    ("zippy_scared_crown", "zippy/zippy scared crown.png", "zippy/scared-crown.png", "top"),
+    # holding a blank gold bar by its ends; the game prints its number on it (docs/prompts/ChatGPT-Zippy-Bar-Prompt.md)
+    ("zippy_bar", "zippy/zippy bar.png", "zippy/bar.png", "top"),
 ]
 
 # (key, source file, output, crop box or None for auto, downscale factor)
 PROPS = [
     # (The balance is built from the elements.png pieces: see the balance section of js/world.js.)
-    ("vineE", "tree bails.png", "bg/vine-e.png", (1260, 136, 176, 814), 1),  # the vine Zippy hangs from
-    ("bar", "number bricks.png", "props/bar.png", None, 2),
-    ("coin", "number coin.png", "props/coin.png", None, 4),
-    ("crown", "crown.png", "props/crown.png", None, 3),
-    ("brickStand", "break stand .png", "props/brick-stand.png", None, 2),  # the wooden stool under each gold bar
-    ("startButton", "start button.png", "ui/start-button.png", None, 2),
+    ("vineE", "props/tree bails.png", "bg/vine-e.png", (1260, 136, 176, 814), 1),  # the vine Zippy hangs from
+    ("bar", "props/number bricks.png", "props/bar.png", None, 2),
+    ("coin", "props/number coin.png", "props/coin.png", None, 4),
+    ("crown", "props/crown.png", "props/crown.png", None, 3),
+    ("brickStand", "props/break stand .png", "props/brick-stand.png", None, 2),  # the wooden stool under each gold bar
+    ("startButton", "ui/start button.png", "ui/start-button.png", None, 2),
 ]
 
 FULLSCREEN = [
-    ("startScreen", "start screen.png", "ui/start-screen"),
+    ("startScreen", "ui/start screen.png", "ui/start-screen"),
 ]
 
 # zippy bar.png: Zippy holds a blank gold bar by its ends, and the game prints the bar's number on its
@@ -363,7 +364,7 @@ FACE = ("zippy_swap", 4, (205, 255, 116))
 # out. js/world.js puts the parts together (ART there), laid out like the user's picture of the finished
 # balance. GEOM.balance keeps where each cut part was on the sheet, so world.js can use points measured
 # on the sheet. Re-measure the boxes and ART if the sheet is replaced.
-BALANCE_FILES = ("new balance .png", "new balance.png")
+BALANCE_FILES = ("props/new balance .png", "props/new balance.png")
 BALANCE_PARTS = [
     ("balBeam", (45, 86, 970, 238)),
     ("balHub", (985, 30, 1265, 315)),
@@ -400,15 +401,15 @@ def cut_part(w, h, px, box):
     return x0 + cx0, y0 + cy0, cx1 - cx0, cy1 - cy0, crop(W, H, out, cx0, cy0, cx1 - cx0, cy1 - cy0)
 
 
-# The game's background: the layers of jungle-background/ (built from "background sheet.png").
-BACKGROUND_DIR = "jungle-background"
+# The game's background: the layers of art/background/ (built from "background sheet.png" there).
+BACKGROUND_DIR = os.path.join("art", "background")
 
 
 def copy_background(images):
     """Copies the background layers into assets/bg/jungle/ and returns their placements."""
     layout_path = os.path.join(ROOT, BACKGROUND_DIR, "layout.json")
     if not os.path.exists(layout_path):
-        sys.exit(f"Missing {BACKGROUND_DIR}/layout.json: run jungle-background/tools/make_background.py first.")
+        sys.exit(f"Missing {BACKGROUND_DIR}/layout.json: run art/background/tools/make_background.py first.")
     layout = json.load(open(layout_path))
     out_dir = os.path.join(OUT, "bg", "jungle")
     if os.path.isdir(out_dir):
@@ -433,10 +434,10 @@ def copy_background(images):
     return layers
 
 # --------------------------------------------------------------------------- UI elements sheet
-# elements.png holds the UI and prop pieces made in ChatGPT (see ChatGPT-Asset-Sheet-Prompt.md), in six
+# elements.png holds the UI and prop pieces made in ChatGPT (see docs/prompts/ChatGPT-Asset-Sheet-Prompt.md), in six
 # rows. Each piece is found by its own pixels (tiny satellites, like the thought bubble's circles, join
 # the piece next to them), put in reading order, and named in this order:
-ELEMENTS_FILE = "elements.png"
+ELEMENTS_FILE = "ui/elements.png"
 ELEMENT_ROWS = [
     ["beam"],
     ["stand", "pan", "chestClosed", "chestOpen", "pedestal"],
@@ -644,7 +645,7 @@ def main():
     sprites, images = {}, {}
 
     for key, src, dst, box, k in PROPS:
-        w, h, px = read_png(os.path.join(ROOT, src))
+        w, h, px = read_png(os.path.join(ART, src))
         if box is None:
             x0, y0, x1, y1 = content_box(w, h, px)
             box = (max(0, x0 - 4), max(0, y0 - 4), min(w, x1 + 4) - max(0, x0 - 4), min(h, y1 + 4) - max(0, y0 - 4))
@@ -657,13 +658,13 @@ def main():
         print(f"prop   {key:12s} -> assets/{dst} ({cw}x{chh})")
 
     for key, src, dst in FULLSCREEN:
-        path = os.path.join(ROOT, src)
+        path = os.path.join(ART, src)
         if not os.path.exists(path):
             kept = previous_image(key)
             if not kept:
-                sys.exit(f"Missing {src} (and no earlier {key} in assets/).")
+                sys.exit(f"Missing art/{src} (and no earlier {key} in assets/).")
             images[key] = kept
-            print(f"screen {key:12s} -> {kept['src']} (kept: {src} is not in the folder)")
+            print(f"screen {key:12s} -> {kept['src']} (kept: art/{src} is not there)")
             continue
         w, h, px = read_png(path)
         opaque = min(px[3::4]) == 255
@@ -685,7 +686,7 @@ def main():
 
     bar_frames = None
     for key, src, dst, mode in SHEETS:
-        sw, sh, strip, meta = split_sheet(os.path.join(ROOT, src), mode)
+        sw, sh, strip, meta = split_sheet(os.path.join(ART, src), mode)
         write_png(os.path.join(OUT, dst), sw, sh, strip)
         meta["src"] = "assets/" + dst
         sprites[key] = meta
@@ -710,8 +711,8 @@ def main():
 
     bal_geom = {}
     bal_src = first_existing(*BALANCE_FILES)
-    if os.path.exists(os.path.join(ROOT, bal_src)):
-        w, h, px = read_png(os.path.join(ROOT, bal_src))
+    if os.path.exists(os.path.join(ART, bal_src)):
+        w, h, px = read_png(os.path.join(ART, bal_src))
         bal_dir = os.path.join(OUT, "balance")
         if os.path.isdir(bal_dir):
             shutil.rmtree(bal_dir)
@@ -724,8 +725,8 @@ def main():
         print(f"balance: {len(BALANCE_PARTS)} parts -> assets/balance/")
 
     geom = {}
-    if os.path.exists(os.path.join(ROOT, ELEMENTS_FILE)):
-        items = cut_elements(os.path.join(ROOT, ELEMENTS_FILE))
+    if os.path.exists(os.path.join(ART, ELEMENTS_FILE)):
+        items = cut_elements(os.path.join(ART, ELEMENTS_FILE))
         el_dir = os.path.join(OUT, "elements")
         if os.path.isdir(el_dir):
             shutil.rmtree(el_dir)  # pieces that are no longer used go too

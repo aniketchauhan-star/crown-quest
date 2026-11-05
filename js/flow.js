@@ -745,11 +745,14 @@
     CQ.fx.sparkle(CQ.ui.layer, targets[1].x, targets[1].y, 12, 200);
     CQ.audio.play("correct");
     await say("l4-8", { hold: 2600 }); // key moment: the scene became an equation
-    look(null);
-    await R.when(CQ.anim(strip, [{ opacity: 1 }, { opacity: 0, transform: "translate(-50%,-50%) scale(.4) translateY(-500px)" }], { duration: 600, essential: true }));
+    // straight on into the formula screen, in the same dark (it never lifts in between): the strip
+    // fades, the view glides to the balance at the right, and x + 2 = 7 is written in at the left
+    await R.when(CQ.anim(strip, [{ opacity: 1 }, { opacity: 0 }], { duration: 450, essential: true }));
     strip.remove();
-    b.setSign("x + 2 = 7");
-    await R.when(CQ.notebook.open());
+    const opening = CQ.notebook.open();
+    look(null); // the look's dark hands over to the formula screen's
+    b.setSign("x + 2 = 7"); // it rests while the formula screen is up, then stays on the balance
+    await R.when(opening);
     await CQ.notebook.run(CQ.NB_WORDS);
     await R.when(CQ.notebook.close());
   }
