@@ -48,13 +48,15 @@
   ];
   const LHS = ["x", "plus", "two"];
 
-  // The formula screen: the scene fades to a calm dark, and the balance steps aside to the right, a
-  // little smaller, bright and sharp in front of the dark (CQ.balance.present). The equation and its
-  // working stand in the space it leaves, at the left. The part of the balance a beat talks about
-  // lights up: the crown for x, a pan for a side, both pans when the sides are equal. Each beat adds
-  // tags, boxes and highlights: what stays the same from one beat to the next stays still, and what is
-  // new fades in where it stays, one piece at a time. The question bar above says the line. Zippy
-  // isn't on this screen: the balance and the maths have it to themselves.
+  // The formula screen. The view glides (zooms in and pans) until the balance stands at the right of
+  // the screen, on its own ground, bright and sharp, while the rest of the scene goes soft and dark
+  // (CQ.balance.present). Then the equation is written in at the left, one sign at a time. The part of
+  // the balance a beat talks about lights up: the crown for x, a pan for a side, both pans when the
+  // sides are equal. Each beat adds tags, boxes and highlights: what stays the same from one beat to
+  // the next stays still, and what is new fades in where it stays, one piece at a time. The question
+  // bar above says the line. Zippy isn't on this screen: the balance and the maths have it to
+  // themselves. On closing, the maths fades and the view glides back to the whole scene.
+  const ASIDE = { x: 760, y: 472, z: 1.25 }; // the view: the balance at the right (x 910–1800 on screen), room at the left
   CQ.notebook = {
     build(overlay) {
       this.el = CQ.el("div", "notebook hidden", overlay);
@@ -70,17 +72,12 @@
       const n = ++this.opens;
       this.el.classList.remove("hidden");
       this.content.innerHTML = "";
+      this.stage.style.opacity = ""; // (a close leaves it faded out)
       this.shown = null;
       CQ.soft.set("notebook", [CQ.world.balanceLayer], 2); // all but the balance goes soft
       CQ.balance.present(true);
       CQ.audio.play("focus.in");
-      CQ.anim(this.stage, [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "translateY(0)" }], {
-        duration: 700,
-        delay: 450,
-        easing: CQ.EASE.out,
-        essential: true,
-      });
-      await CQ.sleep(1000); // the dark is in and the balance has stepped aside
+      await CQ.camera.to(ASIDE.x, ASIDE.y, ASIDE.z, 1400); // then the first beat writes the equation in
       if (n === this.opens) CQ.zippy.setVisible(false); // already unseen under the dark
     },
     async close() {
@@ -97,7 +94,7 @@
       CQ.zippy.setVisible(true); // still under the dark: he is simply there as it lifts
       CQ.balance.present(false);
       CQ.soft.set("notebook", false);
-      await CQ.sleep(900); // the balance is back in its place
+      await CQ.camera.to(960, 540, 1, 1300); // back to the whole scene
     },
     hideNow() {
       this.isOpen = false;
@@ -162,21 +159,38 @@
         const rows = CQ.el("div", "nb-rows", c);
         s.rows.forEach((r) => add(CQ.el("div", "nb-row " + (r.cls || ""), rows, CQ.rich(r.t)), "row:" + r.t));
       }
+      // a tag hangs under its part on a straight line that starts with a dot on the part (or on the
+      // middle of the part's bracket), like the labels of the activities
       (s.tags || []).forEach((t) => {
         const ids = Array.isArray(t.ids) ? t.ids : [t.ids];
         const r = groupRect(eqn, ids);
         const row = t.row || 0;
-        const y = r.y + r.h + 14 + row * 66;
+        const y = r.y + r.h + (t.bracket ? 34 : 14) + row * 66;
         const key = "tag:" + t.text;
-        const line = add(CQ.el("div", "tag-line " + (t.color || ""), d), key);
-        CQ.box(line, r.cx - 2, r.y + r.h - 6, 4, y - (r.y + r.h - 6));
-        const tag = add(CQ.el("div", "tag " + (t.color || ""), d, CQ.rich(t.text)), key);
-        CQ.pos(tag, r.cx, y);
         if (t.bracket) {
           const br = add(CQ.el("div", "under-bracket " + (t.color || ""), d), key);
           CQ.box(br, r.x - 6, r.y + r.h - 2, r.w + 12, 18);
         }
+        const top = t.bracket ? r.y + r.h + 13 : r.y + r.h - 6;
+        const line = add(CQ.el("div", "tag-line " + (t.color || ""), d), key);
+        CQ.box(line, r.cx - 2, top, 4, y - top);
+        CQ.el("div", "tag-dot", line);
+        const tag = add(CQ.el("div", "tag " + (t.color || ""), d, CQ.rich(t.text)), key);
+        // a wide tag slides along to stay on the screen and clear of the balance; its line still lands on it
+        const half = tag.offsetWidth / 2;
+        const lo = -eqn.offsetLeft - this.stage.offsetLeft + 24 + half;
+        const hi = this.stage.offsetWidth - eqn.offsetLeft + 30 - half;
+        CQ.pos(tag, Math.max(lo, Math.min(hi, r.cx)), y);
       });
+      // the first beat: the equation is written in, one sign at a time; the beat's other pieces follow
+      let start = 150;
+      if (!this.shown) {
+        const signs = eqn.querySelectorAll(".tok");
+        signs.forEach((t, i) =>
+          CQ.anim(t, [{ opacity: 0, translate: "0 14px" }, { opacity: 1, translate: "0 0" }], { duration: 480, delay: 120 + i * 190, easing: CQ.EASE.out, keep: false })
+        );
+        start = 120 + signs.length * 190 + 300;
+      }
       // a part of the equation that changes (a highlight, a colour) eases from how it was to how it is
       const before = this.shown || { keys: new Set(), toks: {} };
       const toks = {};
@@ -198,7 +212,7 @@
         if (n < 0) n = fresh.push(key) - 1;
         CQ.anim(el, [{ opacity: 0, translate: "0 10px" }, { opacity: 1, translate: "0 0" }], {
           duration: 600,
-          delay: 150 + n * 500,
+          delay: start + n * 500,
           easing: CQ.EASE.out,
           keep: false,
         });
@@ -309,6 +323,19 @@
   }
   CQ.oneByOne = oneByOne;
 
+  // A straight line from a label (at y0) to the part of an equation it names (at y1), ending in a dot
+  // on that part, in equation coordinates. cls gives its colour (c-var, c-eq, c-lhs, c-rhs); "hop"
+  // leaves a little gap where it crosses a bracket, so it plainly goes on to its own part. It is drawn
+  // faint; .on runs the colour down it from the label to the part (styles.css, "Labels joined to an
+  // equation").
+  function leadLine(d, x, y0, y1, cls) {
+    const e = CQ.el("div", "lead " + (y1 > y0 ? "down " : "up ") + (cls || ""), d);
+    CQ.box(e, x - 2, Math.min(y0, y1), 4, Math.abs(y1 - y0));
+    CQ.el("div", "lead-fill", e);
+    CQ.el("div", "lead-dot", e);
+    return e;
+  }
+
   // ------------------------------------------------------------------ shared board for activities
   function board(cls) {
     const wrap = CQ.el("div", "activity " + cls, CQ.ui.overlay);
@@ -323,10 +350,12 @@
     wrap.board = b;
     return wrap;
   }
-  function closeBoard(wrap) {
+  // ms, delay: how long it fades, and after how long (later and slower when the formula screen's dark
+  // comes in under it meanwhile, so the scene never shows through in between)
+  function closeBoard(wrap, ms, delay) {
     CQ.soft.set("activity", false);
     CQ.zippy.setVisible(true); // still under the dark: he is simply there as it lifts
-    return CQ.anim(wrap, [{ opacity: 1 }, { opacity: 0 }], { duration: 480, essential: true }).then(() => wrap.remove());
+    return CQ.anim(wrap, [{ opacity: 1 }, { opacity: 0 }], { duration: ms || 480, delay: delay || 0, essential: true }).then(() => wrap.remove());
   }
   // Drag + tap-to-place helper for chips/cards onto targets.
   function makeChip(el, home, ctl) {
@@ -401,7 +430,6 @@
       ],
       "label-eq"
     );
-    CQ.el("div", "board-note", b, CQ.rich(c.note));
     await CQ.run.wait(80);
     const d = eqn.deco;
     const all = ["four", "x", "plus", "three", "eq", "r"];
@@ -410,20 +438,20 @@
     const rx = R(["x"]);
     const rl = R(["four", "x", "plus", "three"]);
     const rr = R(["r"]);
-    // braces + lines (in equation coordinates)
+    // Each box sits right over or under the part it names, joined to it by one straight line that
+    // ends in a dot on the part: Variable over x, Equation over the bracket round the whole equation,
+    // LHS under the bracket under 4x + 3, RHS under the bracket under 19. (Equation coordinates.)
     const brace = (r, up, cls) => {
-      const e = CQ.el("div", "brace " + (up ? "up" : "down") + " " + (cls || ""), d);
+      const e = CQ.el("div", "brace " + (up ? "up " : "down ") + cls, d);
       CQ.box(e, r.x - 10, up ? r.y - 34 : r.y + r.h + 6, r.w + 20, 30);
       return e;
     };
-    brace(ra, true, "b-eq");
-    brace(rl, false, "b-lhs");
-    brace(rr, false, "b-rhs");
-    const vline = (x, y0, y1) => CQ.box(CQ.el("div", "lead", d), x - 2, Math.min(y0, y1), 4, Math.abs(y1 - y0));
+    const braces = { Equation: brace(ra, true, "c-eq"), LHS: brace(rl, false, "c-lhs"), RHS: brace(rr, false, "c-rhs") };
+    const COLOR = { Variable: "c-var", Equation: "c-eq", LHS: "c-lhs", RHS: "c-rhs" };
     // boxes (targets), positioned in equation coordinates
     const targets = [];
     const mk = (answer, x, y) => {
-      const t = CQ.el("button", "drop-box", d);
+      const t = CQ.el("button", "drop-box " + COLOR[answer], d);
       t.type = "button";
       t.setAttribute("aria-label", "Empty label box");
       CQ.pos(t, x, y);
@@ -435,19 +463,22 @@
     };
     const topY = ra.y - 132;
     const botY = ra.y + ra.h + 96;
-    mk("Variable", rx.cx - 120, topY);
-    vline(rx.cx, topY + 40, rx.y + 10);
-    mk("Equation", ra.cx + 230, topY);
-    vline(ra.cx + 230, topY + 40, ra.y - 34);
-    CQ.box(CQ.el("div", "lead", d), ra.cx, ra.y - 36, 230, 4);
+    const half = 48; // half a box's height, with its border
+    // the Equation box stands over the bracket's right half, clear of the Variable box over x
+    const xEq = Math.min(ra.x + ra.w - 70, Math.max(rx.cx + 330, ra.cx + 140));
+    mk("Variable", rx.cx, topY);
+    mk("Equation", xEq, topY);
     mk("LHS", rl.cx, botY);
-    vline(rl.cx, rl.y + rl.h + 36, botY - 40);
-    mk("RHS", rr.cx + 40, botY);
-    vline(rr.cx, rr.y + rr.h + 36, botY - 40);
-    CQ.box(CQ.el("div", "lead", d), rr.cx, botY - 42, 40, 4);
-    // the parts each box describes (glow when correct)
-    const parts = { Variable: ["x"], LHS: ["four", "x", "plus", "three"], RHS: ["r"], Equation: all };
-    const colors = { Variable: "var", LHS: "lhs", RHS: "rhs", Equation: "eqall" };
+    mk("RHS", rr.cx, botY);
+    const leads = {
+      Variable: leadLine(d, rx.cx, topY + half, rx.y - 8, "c-var hop"), // over the bracket, onto x
+      Equation: leadLine(d, xEq, topY + half, ra.y - 31, "c-eq"),
+      LHS: leadLine(d, rl.cx, botY - half, rl.y + rl.h + 33, "c-lhs"),
+      RHS: leadLine(d, rr.cx, botY - half, rr.y + rr.h + 33, "c-rhs"),
+    };
+    // the numbers each box names light up in its colour (Equation: its bracket round all of them)
+    const parts = { Variable: ["x"], LHS: ["four", "x", "plus", "three"], RHS: ["r"], Equation: [] };
+    const colors = { Variable: "var", LHS: "lhs", RHS: "rhs" };
 
     let filled = 0;
     let selected = null;
@@ -485,12 +516,17 @@
         if (el.label === t.answer) {
           el.placed = true;
           t.done = true;
-          el.classList.add("placed");
+          el.classList.add("placed", COLOR[t.answer]);
           const tc = rectOf(t);
           CQ.pos(el, (tc.x0 + tc.x1) / 2, (tc.y0 + tc.y1) / 2);
           t.classList.add("ok");
           t.setAttribute("aria-label", t.answer);
-          parts[t.answer].forEach((id) => eqn.querySelector(`.tok[data-id="${id}"]`).classList.add("glow-" + colors[t.answer]));
+          // the label's colour runs down its line, then its part lights up in it
+          leads[t.answer].classList.add("on");
+          setTimeout(() => {
+            if (braces[t.answer]) braces[t.answer].classList.add("on");
+            parts[t.answer].forEach((id) => eqn.querySelector(`.tok[data-id="${id}"]`).classList.add("glow-" + colors[t.answer]));
+          }, 420);
           CQ.audio.play("correct");
           CQ.audio.play("zippy.giggle", { volume: 0.7 });
           CQ.fx.sparkle(CQ.ui.layer, (tc.x0 + tc.x1) / 2, (tc.y0 + tc.y1) / 2, 8, 70);
@@ -524,8 +560,8 @@
       makeChip(el, { x: 600 + i * 240, y: rowY }, ctl);
       chips.push(el);
     });
-    // one at a time: the equation, its braces and lines, each empty box, the note, then each label
-    oneByOne([eqn, ...d.querySelectorAll(".brace"), ...d.querySelectorAll(".lead"), ...targets, b.querySelector(".board-note"), ...chips], 160, 300);
+    // one at a time: the equation, its braces and lines, each empty box, then each label
+    oneByOne([eqn, ...d.querySelectorAll(".brace"), ...d.querySelectorAll(".lead"), ...targets, ...chips], 160, 300);
     await CQ.say("", { text: c.title, advance: "auto", pause: 100 });
     const firstChip = chips.find((ch) => ch.label === "Variable");
     CQ.hand.drag(CQ.centerOf(firstChip), CQ.centerOf(targets[0]), 1);
@@ -538,7 +574,7 @@
     CQ.idle.disarm();
     CQ.hand.stop();
     await CQ.say("", { text: c.done });
-    await closeBoard(wrap);
+    closeBoard(wrap, 900, 550); // the formula screen comes in as the board fades (runL4c): the dark never lifts in between
   };
 
   // ------------------------------------------------------------------ Activity: sort linear / nonlinear
@@ -601,7 +637,7 @@
           bin.list.appendChild(el);
           el.style.left = "";
           el.style.top = "";
-          el.classList.add(right === "linear" ? "show-1" : "show-2");
+          if (right === "nonlinear") el.classList.add("show-2"); // its power 2 turns orange
           CQ.audio.play("correct");
           CQ.audio.play("zippy.giggle", { volume: 0.7 });
           const bc = rectOf(bin);
@@ -660,6 +696,9 @@
     { t: "=", id: "eq", k: "eq" },
     { t: "9", id: "nine" },
   ];
+  // A recap panel's labels, like the label activity's: each one right over or under the part it names,
+  // joined to it by a straight line ending in a dot on the part, all in the label's colour. Returns the
+  // lines, which draw themselves when the panel comes in.
   function recapLabels(eqn, show, labels) {
     const d = eqn.deco;
     const all = groupRect(eqn, RECAP_EQ.map((t) => t.id));
@@ -671,24 +710,33 @@
       CQ.pos(e, x, y);
       return e;
     };
-    const brace = (r, up, cls) => CQ.box(CQ.el("div", "brace " + (up ? "up " : "down ") + cls, d), r.x - 8, up ? r.y - 22 : r.y + r.h + 2, r.w + 16, 20);
+    const brace = (r, up, cls) => CQ.box(CQ.el("div", "brace on " + (up ? "up " : "down ") + cls, d), r.x - 8, up ? r.y - 22 : r.y + r.h + 2, r.w + 16, 20);
+    const above = all.y - 48; // the foot of a label over the equation
+    const leads = [];
     if (show.includes("variable")) {
       eqn.querySelector('.tok[data-id="x"]').classList.add("rc-var");
-      tag("var", labels.variable, rx.cx - 90, all.y - 46);
-      CQ.box(CQ.el("div", "rc-arrow", d), rx.cx - 50, all.y - 44, 4, 52).style.transform = "rotate(-38deg)";
+      tag("c-var", labels.variable, rx.cx, above);
+      leads.push(leadLine(d, rx.cx, above, rx.y - 4, "c-var" + (show.includes("equation") ? " hop" : "")));
     }
     if (show.includes("equation")) {
-      brace(all, true, "rc-eqb");
-      tag("eqn", labels.equation, all.cx + 70, all.y - 46);
+      brace(all, true, "c-eq");
+      const xe = show.includes("variable") ? Math.max(all.cx + 70, rx.cx + 170) : all.cx;
+      tag("c-eq", labels.equation, xe, above);
+      leads.push(leadLine(d, xe, above, all.y - 19, "c-eq"));
     }
+    const below = (r) => r.y + r.h + 36; // the top of a label under the equation
+    if (show.includes("lhs") || show.includes("rhs")) eqn.closest(".rc-panel").classList.add("labels-below"); // a little higher, clear of the words
     if (show.includes("lhs")) {
-      brace(rl, false, "rc-lhs");
-      tag("lhs", labels.lhs, rl.cx, rl.y + rl.h + 30, true);
+      brace(rl, false, "c-lhs");
+      tag("c-lhs", labels.lhs, rl.cx, below(rl), true);
+      leads.push(leadLine(d, rl.cx, below(rl), rl.y + rl.h + 19, "c-lhs"));
     }
     if (show.includes("rhs")) {
-      brace(rr, false, "rc-rhs");
-      tag("rhs", labels.rhs, rr.cx + 40, rr.y + rr.h + 30, true);
+      brace(rr, false, "c-rhs");
+      tag("c-rhs", labels.rhs, rr.cx, below(rr), true);
+      leads.push(leadLine(d, rr.cx, below(rr), rr.y + rr.h + 19, "c-rhs"));
     }
+    return leads;
   }
   CQ.activityRecap = async function () {
     const c = C().recap;
@@ -705,12 +753,14 @@
       return card;
     });
     await CQ.run.wait(80); // lay the equations out before measuring them for the labels
-    panels.forEach((card, i) => recapLabels(card.eqn, c.panels[i].show, c.labels));
+    panels.forEach((card, i) => (card.leads = recapLabels(card.eqn, c.panels[i].show, c.labels)));
     await CQ.say("recap-0", { text: c.title + ".", advance: "auto", pause: 200 });
     for (let i = 0; i < panels.length; i++) {
-      panels[i].classList.add("on");
+      const card = panels[i];
+      card.classList.add("on");
       CQ.audio.play("ui.pop");
-      CQ.anim(panels[i], [{ transform: "scale(.85)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 420, easing: CQ.EASE.back, essential: true });
+      CQ.anim(card, [{ opacity: 0, translate: "0 14px" }, { opacity: 1, translate: "0 0" }], { duration: 520, easing: CQ.EASE.out, essential: true });
+      setTimeout(() => card.leads.forEach((l) => l.classList.add("on")), 450); // each label's line draws to its part
       await CQ.say(c.panels[i].id, { text: c.panels[i].text });
     }
     await CQ.run.wait(300);

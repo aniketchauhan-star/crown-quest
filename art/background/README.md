@@ -1,6 +1,6 @@
 # Jungle lake background
 
-The pieces from `background sheet.png`, arranged like `reference.png`. This is the game's background (Zippy's Crown Quest copies the layers into `assets/bg/jungle/`). To keep the game screens calm, it leaves out the small details: the grass tufts, the bushes and fern along the lake, and the leaves and bush where Grumble sleeps.
+The pieces from `background sheet.png` (in this folder), arranged like `reference.png`. This is the game's background (Zippy's Crown Quest copies the layers into `assets/bg/jungle/`). To keep the game screens calm, it leaves out the small details: the grass tufts, the bushes and fern along the lake, and the leaves and bush where Grumble sleeps.
 
 | File | What it is |
 |---|---|
@@ -18,4 +18,4 @@ The sheet has no sky, clouds or grass lawn, so those come from `reference.png`. 
 1. `tools/cut_pieces.py` cuts the sheet into `pieces/`. Run it again if the sheet changes.
 2. `tools/make_background.py` arranges the pieces and writes everything else. To move, resize or flip a piece, edit `LAYOUT` at the bottom of that file (x and y are in `reference.png` pixels), then run it again.
 
-Both need Python 3 with numpy, Pillow and scipy (`pip3 install numpy pillow scipy`). Run them from the project folder, for example `python3 jungle-background/tools/make_background.py`.
+Both need Python 3 with numpy, Pillow and scipy (`pip3 install numpy pillow scipy`). Run them from the project folder, for example `python3 art/background/tools/make_background.py`. Then run `python3 tools/prepare_assets.py` to bring the new layers into the game.

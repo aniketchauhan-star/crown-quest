@@ -1738,9 +1738,10 @@ html[data-shade] .stage-edge::after {
 }
 
 /* ---------------------------------------------------------------- the formula screen */
-/* The scene fades to a calm dark and the balance steps aside to the right, bright and sharp (below:
-   .world-shade, #world.presenting). The equation and its working stand in the space at the left,
-   bright on the dark, with no shadows (js/activities.js). */
+/* The view glides (zooms in and pans) until the balance stands at the right of the screen, on its own
+   ground, bright and sharp; the rest of the scene goes soft and dark, darkest at the left. The equation
+   and its working are written in that space at the left, bright on the dark, with no shadows
+   (js/activities.js; below: .world-shade, #world.presenting). */
 .notebook {
   position: absolute;
   inset: 0;
@@ -1748,9 +1749,9 @@ html[data-shade] .stage-edge::after {
 }
 .nb-stage {
   position: absolute;
-  left: 70px;
+  left: 50px; /* the room at the left of the balance (which stands from about x 910 to 1800) */
   top: 150px;
-  width: 1040px;
+  width: 820px;
   height: 800px;
 }
 .nb-dim {
@@ -1901,6 +1902,16 @@ html[data-shade] .stage-edge::after {
   border-top: none;
   border-radius: 0 0 16px 16px;
 }
+.tag-dot {
+  position: absolute; /* where a tag's line meets its part */
+  left: 50%;
+  top: -6px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: currentColor;
+}
 .mini-crown {
   position: absolute;
   width: 74px;
@@ -1996,35 +2007,40 @@ html[data-shade] .stage-edge::after {
 .notebook .under-bracket {
   color: var(--c, #fffaf0);
 }
-/* The dark of the formula screen: in the world, over the scene and the characters but under the
-   balance, which steps aside to the right, a little smaller, and stays bright and sharp in front of it
-   (Balance.present in js/world.js). A soft light stays round the balance; it is darkest at the left,
-   behind the equation. */
+/* The dark over the scene: in the world, over the scene and the characters but under the balance, which
+   stays bright and sharp in its own place (Balance.present in js/world.js, CQ.focus's text looks). Round
+   the balance it is only a soft dim, so the balance still stands in the jungle; elsewhere it is dark. */
 .world-shade {
   position: absolute;
   inset: 0;
   z-index: 10; /* over every layer of the world (Grumble 4, the bars 5, Zippy 6, sparkles 8, labels 9) */
   pointer-events: none;
-  background: radial-gradient(ellipse 560px 460px at var(--lx, 1460px) var(--ly, 600px), rgba(5, 16, 24, 0.62) 0%, rgba(5, 16, 24, 0.86) 64%, rgba(5, 16, 24, 0.94) 100%);
+  background: radial-gradient(ellipse 560px 460px at 1085px 560px, rgba(5, 16, 24, 0.62) 0%, rgba(5, 16, 24, 0.86) 64%, rgba(5, 16, 24, 0.94) 100%);
   opacity: 0;
   transition: opacity 0.7s ease;
 }
-#world.presenting > .world-shade {
+/* the formula screen (the view zoomed in on the balance at the right): dark at the left, behind the
+   maths, and a light dim round the balance (in world pixels: the screen's x is 1.25 times these) */
+.world-shade.aside {
+  background: linear-gradient(to right, rgba(5, 16, 24, 0.93) 0, rgba(5, 16, 24, 0.9) 540px, rgba(5, 16, 24, 0.42) 720px, rgba(5, 16, 24, 0.36) 100%);
+}
+#world.presenting > .world-shade.aside {
   opacity: 1;
 }
 /* A look at words and numbers under the balance (the check, the equation board, the x + 2 = 7 strip:
    CQ.focus with text: true): the same dark, with the balance bright and sharp in its own place, and
    the words bright and flat on the dark (body.lit, below). */
-#world.lit > .world-shade {
+#world.lit > .world-shade.home {
   opacity: 1;
 }
-#world[data-light="home"] > .world-shade {
-  --lx: 1085px;
-  --ly: 560px;
+/* handing over to the formula screen: its dark comes in first, then the look's goes, so the scene
+   never shows through in between */
+#world.presenting > .world-shade.home {
+  transition-delay: 0.6s;
 }
 #world.lit > .balance-layer {
   z-index: 11;
-  transition: filter 0.5s ease, transform 0.9s cubic-bezier(0.45, 0, 0.2, 1), z-index 0s;
+  transition: filter 0.5s ease, z-index 0s;
 }
 #world.lit .eq-sign {
   color: #fffaf0;
@@ -2082,15 +2098,13 @@ body.lit .hot {
   background: rgba(255, 143, 128, 0.1);
   border-color: rgba(255, 143, 128, 0.65);
 }
-/* the balance glides aside, and back; it stays above the dark until it is home */
+/* the balance stays above the dark until the dark has gone */
 #world > .balance-layer {
-  transform-origin: 1085px 575px;
-  transition: filter 0.5s ease, transform 0.9s cubic-bezier(0.45, 0, 0.2, 1), z-index 0s 0.9s;
+  transition: filter 0.5s ease, z-index 0s 0.9s;
 }
 #world.presenting > .balance-layer {
   z-index: 11;
-  transform: translate(375px, 25px) scale(0.8);
-  transition: filter 0.5s ease, transform 0.9s cubic-bezier(0.45, 0, 0.2, 1), z-index 0s;
+  transition: filter 0.5s ease, z-index 0s;
 }
 #world.presenting .eq-sign {
   opacity: 0 !important; /* the equation is on the screen itself */
@@ -2139,15 +2153,6 @@ body.lit .hot {
   align-items: center;
   gap: 14px;
 }
-.board-note {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 118px;
-  text-align: center;
-  font: 700 32px/1 var(--font);
-  color: #5e6b70;
-}
 .label-eq {
   position: absolute;
   left: 50%;
@@ -2175,9 +2180,6 @@ body.lit .hot {
 }
 .tok.glow-rhs {
   color: var(--rhs);
-}
-.tok.glow-eqall {
-  text-shadow: 0 0 18px rgba(30, 122, 85, 0.6);
 }
 .brace {
   position: absolute;
@@ -2285,31 +2287,9 @@ body.lit .hot {
   cursor: default;
   box-shadow: none;
 }
-.eq-card.show-1::after {
-  content: "power 1";
-  position: absolute;
-  right: -10px;
-  top: -18px;
-  font: 800 22px/1 var(--font);
-  color: #fff;
-  background: var(--lhs);
-  border-radius: 10px;
-  padding: 6px 10px 2px;
-}
+/* a sorted nonlinear card shows its power 2 in orange (no "power 1" / "power 2" badges: asked 2026-11-05) */
 .eq-card.show-2 sup {
   color: var(--rhs);
-  text-shadow: 0 0 10px rgba(224, 162, 27, 0.8);
-}
-.eq-card.show-2::after {
-  content: "power 2";
-  position: absolute;
-  right: -10px;
-  top: -18px;
-  font: 800 22px/1 var(--font);
-  color: #fff;
-  background: #e0a21b;
-  border-radius: 10px;
-  padding: 6px 10px 2px;
 }
 .bin {
   position: absolute; /* an open drop zone: a coloured dashed edge and its name, no panel */
@@ -2499,15 +2479,18 @@ body.lit .hot {
   display: grid;
   place-items: center;
 }
+.rc-panel.labels-below .rc-eq-wrap {
+  padding-bottom: 22px; /* the equation sits a little higher, so the labels under it stay clear of the words */
+}
 .rc-eq {
-  font: 800 92px/1.1 var(--font);
+  font: 800 84px/1.1 var(--font);
   color: var(--ink);
 }
 .tok.rc-var {
   color: #c99500;
 }
 .rc-eq .tok.eq {
-  padding: 0 0.42em; /* room for the LHS and RHS labels side by side */
+  padding: 0 0.72em; /* room for the LHS and RHS labels side by side, each under its own side */
 }
 .rc-text {
   max-width: 660px;
@@ -2519,48 +2502,15 @@ body.lit .hot {
   position: absolute;
   transform: translate(-50%, -100%);
   white-space: nowrap;
-  font: 800 26px/1 var(--font);
+  font: 800 24px/1 var(--font);
   padding: 8px 14px 4px;
   border-radius: 12px;
-  border: 3px solid;
+  border: 3px solid var(--c); /* its label's colours: .c-var, .c-eq, .c-lhs, .c-rhs */
+  color: var(--c-ink);
+  background: var(--c-bg);
 }
 .rc-tag.below {
   transform: translate(-50%, 0);
-}
-.rc-tag.var {
-  color: #8a6a00;
-  border-color: #d6a52a;
-  background: #fff1c2;
-}
-.rc-tag.eqn {
-  color: var(--ok);
-  border-color: var(--ok);
-  background: #e9f7ef;
-}
-.rc-tag.lhs {
-  color: var(--lhs);
-  border-color: var(--lhs);
-  background: #e5f4f4;
-}
-.rc-tag.rhs {
-  color: var(--rhs);
-  border-color: var(--rhs);
-  background: #fbf0dc;
-}
-.rc-arrow {
-  position: absolute;
-  background: #d6a52a;
-  border-radius: 2px;
-  transform-origin: 50% 0;
-}
-.brace.rc-eqb {
-  border-color: var(--ok);
-}
-.brace.rc-lhs {
-  border-color: var(--lhs);
-}
-.brace.rc-rhs {
-  border-color: var(--rhs);
 }
 
 /* ---------------------------------------------------------------- Practice: try a few equations */
@@ -3176,7 +3126,6 @@ body.lit .hot {
   color: #fffaf0;
   text-shadow: none;
 }
-.activity .board-note,
 .activity .rc-text {
   color: #dce6e9;
 }
@@ -3190,27 +3139,95 @@ body.lit .hot {
 .activity .tok.glow-rhs {
   color: #ffc35c;
 }
-.activity .tok.glow-eqall {
-  color: #74f0ac;
-  text-shadow: none;
+.activity .tok.glow-var.glow-lhs {
+  color: #2b2100; /* x is in the LHS too: it stays dark on its gold */
 }
 .activity .tok.rc-var {
   color: #ffd84d;
 }
+
+/* ---- Labels joined to an equation (the label activity, the quick recap). Each label sits right over or
+   under the part it names, joined to it by one straight line that ends in a dot on that part. One
+   colour ties them together: the label's box, its line, the dot, the bracket and the part itself.
+   Before a label is in place its line and bracket are faint; then the colour runs down the line from
+   the label to the part (.on), and the part lights up. */
+.activity .c-var {
+  --c: #ffd84d;
+  --c-ink: #6b5200;
+  --c-bg: #fff6cc;
+}
+.activity .c-eq {
+  --c: #74f0ac;
+  --c-ink: #145c3c;
+  --c-bg: #e3f9ec;
+}
+.activity .c-lhs {
+  --c: #5ee6dc;
+  --c-ink: #0f5f5a;
+  --c-bg: #def8f6;
+}
+.activity .c-rhs {
+  --c: #ffc35c;
+  --c-ink: #7a4d00;
+  --c-bg: #fff1d6;
+}
 .activity .brace {
-  border-color: #ffd84d;
+  border-color: rgba(220, 232, 238, 0.4);
+  transition: border-color 0.45s ease;
 }
-.activity .brace.rc-eqb {
-  border-color: #74f0ac;
-}
-.activity .brace.rc-lhs {
-  border-color: #5ee6dc;
-}
-.activity .brace.rc-rhs {
-  border-color: #ffc35c;
+.activity .brace.on {
+  border-color: var(--c);
 }
 .activity .lead {
-  background: #cfdce2;
+  background: rgba(220, 232, 238, 0.4);
+}
+.lead-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: 2px;
+  background: var(--c);
+  transform: scaleY(0);
+  transition: transform 0.45s ease-out;
+}
+.lead.down .lead-fill {
+  transform-origin: 50% 0; /* the label is at the top: the colour runs down */
+}
+.lead.up .lead-fill {
+  transform-origin: 50% 100%; /* the label is below: the colour runs up */
+}
+.lead.on .lead-fill {
+  transform: scaleY(1);
+}
+.lead-dot {
+  position: absolute;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: rgba(220, 232, 238, 0.55);
+  transition: background-color 0.3s ease 0.35s, transform 0.3s ease 0.35s;
+}
+.lead.down .lead-dot {
+  bottom: -7px;
+}
+.lead.up .lead-dot {
+  top: -7px;
+}
+.lead.on .lead-dot {
+  background: var(--c);
+  transform: scale(1.3);
+}
+/* where a line crosses a bracket on its way to its own part, the bracket gives way round it */
+.lead.hop {
+  box-shadow: 7px 0 0 #0a1820, -7px 0 0 #0a1820;
+}
+.activity .drop-box.ok {
+  border: 6px solid var(--c);
+  background: var(--c-bg);
+}
+.activity .label-chip.placed {
+  color: var(--c-ink);
 }
 .activity .bin {
   background: rgba(255, 255, 255, 0.06);

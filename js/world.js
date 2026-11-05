@@ -14,7 +14,7 @@
   CQ.world = {
     build(root) {
       this.root = root;
-      // the jungle lake, in layers (made from "background sheet.png": see jungle-background/README.md)
+      // the jungle lake, in layers (made from "background sheet.png": see art/background/README.md)
       this.decor = CQ.el("div", "layer bg-scene", root);
       this.bgImgs = buildBackground(this.decor);
       CQ.peek.build(this.decor, this.bgImgs.bgTree); // Zippy's head peeking out from behind the tree trunk
@@ -24,7 +24,10 @@
       this.zippyLayer = CQ.el("div", "layer zippy-layer", root);
       this.fx = CQ.el("div", "layer fx-layer", root);
       this.drag = CQ.el("div", "layer drag-layer", root);
-      this.shade = CQ.el("div", "world-shade", root); // the formula screen's dark, under the balance (Balance.present)
+      // the darks under the bright balance: "home" for a look at the words under it (CQ.focus, text),
+      // "aside" for the formula screen (Balance.present); one fades into the other when they hand over
+      this.shadeHome = CQ.el("div", "world-shade home", root);
+      this.shadeAside = CQ.el("div", "world-shade aside", root);
       this.dark = CQ.el("div", "world-dark", root); // the intro fades in from dark
       CQ.balance = new Balance(this.balanceLayer);
       CQ.grumble = new Grumble(this.grumbleLayer);
@@ -1344,13 +1347,12 @@
       });
       CQ.fx.ring(this.layer, L.BX, L.PIVOT_Y, this.level ? "#2BB673" : "#C8473B"); // with the balance, wherever it stands
     }
-    // The formula screen: the balance steps aside to the right, a little smaller, and stays bright and
-    // sharp in front of the dark over the rest of the scene (styles.css, #world.presenting); false
-    // brings it back. instant: at once (a chapter jump).
+    // The formula screen: the balance stays bright and sharp in its place while the rest of the scene
+    // goes dark, darkest at the left where the maths is written (styles.css, #world.presenting; the view
+    // glides to it in CQ.notebook). false brings the scene back. instant: at once (a chapter jump).
     present(on, instant) {
       const root = CQ.world.root;
       if (instant) root.classList.add("snap");
-      if (on) root.dataset.light = "aside"; // the dark's soft light follows it (kept while the dark fades out)
       root.classList.toggle("presenting", !!on);
       if (instant) {
         void root.offsetWidth;
