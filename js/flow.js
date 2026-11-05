@@ -935,7 +935,9 @@
     const b = CQ.balance;
     const items = {};
     ["left", "right"].forEach((s) => (items[s] = b.items[s].find((x) => x.type === "bar" && x.value === v && !x.ghost)));
-    const ledgePt = (s) => ({ x: ledges[s].rest.x, y: ledges[s].rest.y - (barPx() * IMAGES.bar.h) / IMAGES.bar.w / 2 }); // the bar rests on its top face
+    // A bar taken off sits on its stool at full size, like the gold bars on theirs (asked 2026-11-05):
+    // it grows from its size on the pan as it flies there.
+    const ledgePt = (s) => ({ x: ledges[s].rest.x, y: ledges[s].rest.y - (CQ.L.BAR_W * IMAGES.bar.h) / IMAGES.bar.w / 2 }); // the bar rests on its top face
     ["left", "right"].forEach((s) => {
       items[s].el.classList.add("draggable", "glow");
       ledges[s].classList.add("active");
@@ -953,8 +955,8 @@
         let otherLanded = null;
         const land = (s, from) =>
           new Promise((ok) => {
-            const fl = CQ.barFlyer(v, barPx());
-            CQ.fly(CQ.world.drag, fl, from, ledgePt(s), { duration: 620, arc: -90, remove: false }).then(() => {
+            const fl = CQ.barFlyer(v, CQ.L.BAR_W);
+            CQ.fly(CQ.world.drag, fl, from, ledgePt(s), { duration: 620, arc: -90, remove: false, scaleFrom: barPx() / CQ.L.BAR_W, scaleTo: 1 }).then(() => {
               fl.classList.remove("flyer");
               fl.classList.add("ledge-bar");
               CQ.pos(fl, ledgePt(s).x, ledgePt(s).y);
@@ -1037,7 +1039,8 @@
       const from = { x: parseFloat(l.bar.style.left), y: parseFloat(l.bar.style.top) };
       l.bar.remove();
       const to = b.panCenter(side);
-      return CQ.fly(CQ.world.drag, CQ.barFlyer(v, barPx()), from, { x: to.x + (side === "left" ? 80 : -80), y: to.y }, { duration: 850, arc: -160 });
+      // from full size on the stool back to its size on the pan
+      return CQ.fly(CQ.world.drag, CQ.barFlyer(v, CQ.L.BAR_W), from, { x: to.x + (side === "left" ? 80 : -80), y: to.y }, { duration: 850, arc: -160, scaleFrom: 1, scaleTo: barPx() / CQ.L.BAR_W });
     });
     CQ.audio.play("ui.swoosh");
     await R.when(Promise.all(moves));

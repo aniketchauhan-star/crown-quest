@@ -139,7 +139,7 @@ To change a picture, save the new one over the old one in its folder, with the s
 1. Edit `LAYOUT` in `art/background/tools/make_background.py` and run it. This tool needs numpy, Pillow and scipy.
 2. Run `python3 tools/prepare_assets.py`, which copies the layers into `assets/bg/jungle/`. It also makes `assets/bg/band.webp` from `art/background/background.png`: a small copy of the whole scene for the bands round the game on a screen that isn't 16:9.
 
-**The wooden stool** under each gold bar (and the two stools the bars are taken off onto in Levels 8–9, close together in the middle, with no words on them) is `art/props/break stand .png`. The tool copies it to `assets/props/brick-stand.webp`. `STAND_REST` in `js/engine.js` says where a bar rests on its top.
+**The wooden stool** under each gold bar (and the two stools the bars are taken off onto in Levels 8–9, close together in the middle, with no words on them; a bar on one is full size, like the gold bars on theirs) is `art/props/break stand .png`. The tool copies it to `assets/props/brick-stand.webp`. `STAND_REST` in `js/engine.js` says where a bar rests on its top.
 
 **The balance** is the wooden one in `art/props/new balance .png`, a sheet of separate parts: beam, hub, post, base, plate, rope hanger and leaves. `tools/prepare_assets.py` cuts each part out by its box (`BALANCE_PARTS`) into `assets/balance/`. The game puts the parts together like the picture of the finished balance (`ART` in the balance section of `js/world.js`):
 - The beam tips behind the hub, which stays upright.
