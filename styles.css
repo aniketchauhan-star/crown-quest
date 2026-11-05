@@ -527,24 +527,6 @@ html[data-shade] .stage-edge::after {
   border-radius: 0.08em;
   transform: translate(-50%, -50%) rotate(35deg);
 }
-.eq-sign {
-  position: absolute; /* above the balance, under the caption (js/world.js) */
-  z-index: 6;
-  transform: translate(-50%, -50%);
-  font: 800 68px/1.15 var(--font);
-  color: var(--ink);
-  text-shadow: var(--halo);
-  white-space: nowrap;
-}
-.eq-sign.long {
-  font-size: 60px;
-}
-.eq-sign {
-  transition: opacity 0.4s, color 0.5s ease, text-shadow 0.5s ease;
-}
-.soft-all .eq-sign {
-  opacity: 0 !important; /* it rests while the whole scene is blurred (its pop-in leaves an inline opacity) */
-}
 .v {
   font-family: var(--math);
   font-style: italic;
@@ -1476,7 +1458,7 @@ html[data-shade] .stage-edge::after {
 }
 
 /* ---------------------------------------------------------------- check panel + equation board */
-/* The check, under the balance, as plain text (no panel); the equation itself is on the post sign. */
+/* The check, under the balance, as plain text (no panel): the two sides worked out, then compared. */
 .check-panel {
   position: absolute;
   left: var(--bx, 1085px); /* balance centre, set from js/ui.js */
@@ -2064,10 +2046,6 @@ html[data-shade] .stage-edge::after {
   z-index: 11;
   transition: filter 0.5s ease, z-index 0s;
 }
-#world.lit .eq-sign {
-  color: #fffaf0;
-  text-shadow: none;
-}
 .check-panel,
 .eq-board,
 .eq-strip,
@@ -2127,9 +2105,6 @@ body.lit .hot {
 #world.presenting > .balance-layer {
   z-index: 11;
   transition: filter 0.5s ease, z-index 0s;
-}
-#world.presenting .eq-sign {
-  opacity: 0 !important; /* the equation is on the screen itself */
 }
 /* nothing drifts across the maths meanwhile (Grumble's sleepy Zzz rest) */
 #world > .fx-layer {

@@ -1100,10 +1100,10 @@
       this.hub = hubPart(rig);
       this.level = true;
       this.setEmblem(true, true);
-      // The equation, as clear text above the balance (under the caption), at full size (outside the
-      // scaled container): numbers above the balance, the working-out below it.
-      this.sign = CQ.el("div", "eq-sign hidden", layer);
-      CQ.pos(this.sign, BX, PY - 156);
+      // The level's equation (x + 3 = 9), and after a swap its answer, for screen readers only: it is not
+      // shown over the balance (asked 2026-11-05), so the scene keeps to the balance. The equation is
+      // written out where it is worked with: the formula screen, the check, Levels 8–9's steps.
+      this.sign = CQ.el("div", "eq-sign sr-only", layer);
       this.pendingClang = false;
       CQ.ticker.add((dt) => this.step(dt));
       this.apply();
@@ -1360,17 +1360,7 @@
       }
     }
     setSign(text) {
-      if (!text) {
-        this.sign.classList.add("hidden");
-        return;
-      }
-      this.sign.innerHTML = CQ.rich(text);
-      this.sign.classList.toggle("long", text.length > 11); // e.g. 2 × 7 + 4 = 18 stays between the pans
-      this.sign.classList.remove("hidden");
-      CQ.anim(this.sign, [{ transform: "translate(-50%,-50%) scale(.6)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], {
-        duration: 420,
-        easing: CQ.EASE.back,
-      });
+      this.sign.textContent = text ? CQ.speakable(text) : "";
     }
     // Coin counting: tap coins to count them (1, 2, 3…), rising clinks. The running count shows on
     // the coin's own face, so a coin in the row above can never hide it.

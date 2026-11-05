@@ -63,7 +63,7 @@ Winning a level is a little story too:
 (The first of Level 9's two crowns flies up out of the picture instead, because he still needs his hands for the second swap.)
 
 **No panels in front of the scene.** When something needs looking at, the rest of the scene fades back to dark and blurs, and the thing being explained stays bright. Text sits straight on the scene as clear, dark letters with a soft white glow, or as bright letters on the dark fade. Around the balance:
-- **above the balance**, under the caption: the numbers, that is, the level's equation (x + 3 = 9) and later the answer (x = 6);
+- **above the balance**: nothing. The level's equation (x + 3 = 9) and its answer are not shown over the balance while the child plays; the scene keeps to the balance (they are there for screen readers);
 - **the balance** in the middle stays sharp;
 - **below the balance**: the working-out. That means x + 2 = 7 being built in Level 4, the check (LHS: 4 + 3 = 7, RHS: 9, then 7 ≠ 9 and "4 doesn't work"), and the steps of Levels 8 and 9 (x + 8 = 8 + 15, then x = 15).
 
