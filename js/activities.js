@@ -935,24 +935,38 @@
     const c = C().recap;
     const wrap = board("recap-act");
     const b = wrap.board;
-    CQ.el("div", "board-title", b, c.title);
-    const grid = CQ.el("div", "rc-grid", b);
+    const grid = CQ.el("div", "rc-grid", b); // no title on screen: the narrator says it (asked 2026-11-05)
     const panels = c.panels.map((p, i) => {
       const card = CQ.el("div", "rc-panel", grid);
-      card.num = CQ.el("div", "rc-n", card, String(i + 1));
       const box = CQ.el("div", "rc-eq-wrap", card);
       card.eqn = CQ.eqTokens(box, RECAP_EQ, "rc-eq");
+      card.num = CQ.el("div", "rc-n", card.eqn, String(i + 1)); // its number, just before the equation
       card.text = CQ.el("div", "rc-text", card, CQ.rich(p.text));
       [card.num, card.text, ...card.eqn.querySelectorAll(".tok")].forEach((e) => (e.style.opacity = "0"));
       return card;
     });
     await CQ.run.wait(80); // lay the equations out before measuring them for the labels
     panels.forEach((card, i) => (card.parts = recapLabels(card.eqn, c.panels[i].show, c.labels)));
+    // Where each panel goes (styles.css): big in the middle of the screen while it is built (.center),
+    // small and faded in its own corner while the others are (.parked: 1 top left, 2 top right, 3
+    // bottom left, 4 bottom right), and its place in the overview at the end (.home).
+    const gw = grid.offsetWidth;
+    const gh = grid.offsetHeight;
+    panels.forEach((card, i) => {
+      const w = card.offsetWidth;
+      const h = card.offsetHeight;
+      const k = 0.42; // its size in the corner
+      card.style.setProperty("--cx", gw / 2 - (card.offsetLeft + w / 2) + "px");
+      card.style.setProperty("--cy", gh / 2 - (card.offsetTop + h / 2) + "px");
+      card.style.setProperty("--px", ((i % 2 ? 1 : -1) * w * (1 - k)) / 2 + "px");
+      card.style.setProperty("--py", ((i < 2 ? -1 : 1) * h * (1 - k)) / 2 + "px");
+    });
     await CQ.say("recap-0", { text: c.title + ".", advance: "auto", pause: 200 });
-    // One panel at a time, while its line is said: the panels before it step back (faded), and the new
-    // one comes in step by step: its number, the equation sign by sign, the labels it shares with the
-    // panels before (together), then its own new label: the bracket, the dot on the part, the line
-    // drawn out to where the label goes, the word written in; last, the sentence under it.
+    // One panel at a time, big in the middle, while its line is said: its number, the equation sign by
+    // sign, the labels it shares with the panels before (together), then its own new label (the
+    // bracket, the dot on the part, the line drawn out to where the label goes, the word written in);
+    // last, its sentence, written in right under it. Then it goes to its corner and fades, and the next
+    // one is built in the middle.
     const W = (ms) => CQ.run.wait(ms);
     const playPanel = async (card) => {
       await showStep(card.num, "pop", 360);
@@ -982,17 +996,28 @@
         showStep(fresh.tag, "pop", 300);
         await W(writeIn(fresh.tag, 120, 55) + 150);
       }
-      await showStep(card.text, "rise", 420);
+      showStep(card.text, "rise", 300);
+      await W(writeIn(card.text, 60, 32) + 200);
     };
     for (let i = 0; i < panels.length; i++) {
       const card = panels[i];
-      panels.slice(0, i).forEach((p) => p.classList.add("rest")); // the panels before step back
-      card.classList.add("on");
+      if (i > 0) {
+        panels[i - 1].classList.replace("center", "parked"); // done: to its corner, and it fades
+        await W(500);
+      }
+      // the new one is in the middle at once (nothing of it shows yet), then builds up there
+      card.classList.add("snap", "center");
+      void card.offsetWidth;
+      card.classList.remove("snap");
       await Promise.all([playPanel(card), CQ.say(c.panels[i].id, { text: c.panels[i].text })]);
+      await W(400); // a moment to see it whole
     }
-    // all four together, for a good look, then on to the next screen by itself
-    panels.forEach((p) => p.classList.remove("rest"));
-    await CQ.run.wait(5000);
+    // all four in their places, for a good look, then on to the next screen by itself
+    panels.forEach((p) => {
+      p.classList.remove("center", "parked");
+      p.classList.add("home");
+    });
+    await W(900 + 5000);
     await closeBoard(wrap);
   };
 

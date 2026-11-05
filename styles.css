@@ -2431,7 +2431,11 @@ body.lit .hot {
   gap: 22px;
 }
 
-/* ---------------------------------------------------------------- A quick recap (four panels) */
+/* ---------------------------------------------------------------- A quick recap (four panels)
+   One equation at a time, big in the middle (.center), its sentence right under it; when it is done it
+   goes to its own corner, small and faded (.parked: 1 top left, 2 top right, 3 bottom left, 4 bottom
+   right) while the next one is built in the middle; at the end all four take their places in the
+   overview (.home). js/activities.js sets where the middle and the corners are (--cx/--cy, --px/--py). */
 .recap-act .board {
   top: 160px;
   height: 890px;
@@ -2440,7 +2444,7 @@ body.lit .hot {
   position: absolute;
   left: 26px;
   right: 26px;
-  top: 88px;
+  top: 40px; /* no title above the panels */
   bottom: 22px;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2452,16 +2456,26 @@ body.lit .hot {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center; /* the equation and its sentence together */
   padding: 14px 22px 16px;
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: transform 0.9s cubic-bezier(0.45, 0, 0.2, 1), opacity 0.7s ease;
 }
-.rc-panel.on {
+.rc-panel.center {
   opacity: 1;
+  z-index: 2;
+  transform: translate(var(--cx), var(--cy)) scale(1.45);
 }
-/* while the next panel is talked about, the ones before it step back */
-.rc-panel.on.rest {
-  opacity: 0.25;
+.rc-panel.parked {
+  opacity: 0.3;
+  transform: translate(var(--px), var(--py)) scale(0.42);
+}
+.rc-panel.home {
+  opacity: 1;
+  transform: none;
+}
+.rc-panel.snap {
+  transition: none;
 }
 /* the recap's lines are drawn out from the part (the dot) to where the label goes: no faint line first */
 .recap-act .lead {
@@ -2485,9 +2499,10 @@ body.lit .hot {
   visibility: hidden;
 }
 .rc-n {
-  position: absolute;
-  left: 14px;
-  top: 12px;
+  position: absolute; /* just before its equation (in the equation, js/activities.js) */
+  left: -92px;
+  top: 50%;
+  margin-top: -26px;
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -2497,13 +2512,13 @@ body.lit .hot {
   text-align: center;
 }
 .rc-eq-wrap {
-  flex: 1;
   width: 100%;
   display: grid;
   place-items: center;
+  padding-top: 92px; /* room for the labels over the equation */
 }
 .rc-panel.labels-below .rc-eq-wrap {
-  padding-bottom: 22px; /* the equation sits a little higher, so the labels under it stay clear of the words */
+  padding-bottom: 76px; /* and under it (LHS, RHS), clear of the sentence */
 }
 .rc-eq {
   font: 800 84px/1.1 var(--font);
@@ -2517,6 +2532,7 @@ body.lit .hot {
 }
 .rc-text {
   max-width: 660px;
+  margin-top: 12px; /* right under the equation it is about */
   font: 700 31px/1.2 var(--font);
   color: var(--ink);
   text-align: center;
