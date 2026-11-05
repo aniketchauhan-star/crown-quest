@@ -765,62 +765,78 @@
     o = o || {};
     const cp = CQ.checkPanel;
     const z = CQ.zippy;
+    const b = CQ.balance;
     const k = L.crowns || 1;
     const a = L.leftBar || L.left;
     const bb = L.rightBar || sum(L.right);
     const s = k * v + a;
     const vars = { v, s, a, b: bb, k, kv: k * v };
-    CQ.balance.counting = false;
-    CQ.balance.clearCounts();
+    b.counting = false;
+    b.clearCounts();
     CQ.bars.setVisible(false);
-    await R.wait(480); // the gold bars fade away first, then the check comes in under the balance
+    if (z.held && z.held.type === "bar") z.pose("barThink"); // he looks at the bar while it is checked
+    // Like the formula screen: the view glides until the balance stands at the right, bright, with the
+    // rest dark, and the check is worked at the left, one piece at a time. The frame on the balance
+    // follows it: the crown (x), the left pan (LHS), the right pan (RHS), then both (compared).
+    await R.when(cp.open());
+    CQ.frameBalance("crown");
     await R.when(cp.show({ k, a, b: bb, rhsGiven: o.rhsGiven }));
-    // The line is spoken while the number flies into x; both finish before the next instruction.
+    // "Replace x with 4": the value comes out of the crown (x is the crown's mass) into x, while it is said
     const line = o.line ? say(o.line, { vars, advance: "auto", pause: 0 }) : null;
-    await R.when(cp.substitute(v, o.from || z.holdPoint()));
-    if (z.held && z.held.type === "bar") z.pose("barThink"); // he looks at the bar while the sides are worked out
+    if (line) line.catch(() => {}); // (a chapter jump during the flight cancels both: no stray error)
+    const crown = b.items.left.find((it) => it.type === "crown" && !it.ghost) || b.items.left.find((it) => it.type === "crown");
+    await R.when(cp.substitute(v, o.from || (crown ? b.itemCenter(crown) : z.holdPoint())));
     if (line) await line;
+    // the left side
+    CQ.frameBalance("left");
+    const ch = o.auto ? null : chipsFor(L, v);
     if (o.auto) {
+      await R.wait(300);
       cp.setValue("lhs", s);
       await R.wait(450);
-      if (!o.rhsGiven) cp.setValue("rhs", bb);
     } else {
-      const ch = chipsFor(L, v);
       if (o.find) say(o.find, { vars, advance: "none" });
       await cp.fill("lhs", ch.lhs, s, (m) => {
         if (k > 1) return say("hint-lhs-k", { vars, advance: "none" });
         const seq = [];
         for (let i = 1; i <= a && i <= 8; i++) seq.push(v + i);
         say("hint-lhs", { vars: Object.assign({ seq: seq.join(", ") }, vars), advance: "none" });
-        if (m >= 2 && L.left) CQ.balance.autoCount("left", v).catch(() => {});
+        if (m >= 2 && L.left) b.autoCount("left", v).catch(() => {});
       });
       if (o.calc) await say(o.calc, { vars, advance: "auto" });
-      if (!o.rhsGiven) await cp.fill("rhs", ch.rhs, bb, () => say("hint-rhs", { advance: "none" }));
+    }
+    // then the right side
+    CQ.frameBalance("right");
+    await R.when(cp.side());
+    if (!o.rhsGiven) {
+      if (o.auto) {
+        cp.setValue("rhs", bb);
+        await R.wait(350);
+      } else await cp.fill("rhs", ch.rhs, bb, () => say("hint-rhs", { advance: "none" }));
     }
     await R.wait(350);
+    // compared: both sides
     const eq = s === bb;
     const verdict = CQ.fmt(eq ? C().ui.verdictYes : L.verdictNot || C().ui.verdictNot, vars);
+    CQ.frameBalance(eq ? "level" : "both");
+    if (eq) b.flashEmblem();
     await R.when(cp.compare(s, bb, verdict));
-    CQ.balance.clearCounts();
+    b.clearCounts();
+    for (const id of eq ? o.yesLines || [] : o.notLines || ["check-not"]) await say(id, { vars });
+    // back to the whole scene
+    await R.when(cp.close());
+    CQ.bars.setVisible(true);
     if (!eq) {
       CQ.grumble.stir();
       if (z.held && z.held.type === "bar") z.pose("hold");
       await R.when(z.say(C().zippy.checked));
-      look(cp.el, { text: true });
-      for (const id of o.notLines || ["check-not"]) await say(id, { vars });
-      look(null);
-      await R.when(cp.hide());
-      CQ.bars.setVisible(true);
       await tossTried(v);
       return false;
     }
-    if (o.yesLines && o.yesLines.length) look(cp.el, { text: true });
-    if (z.held && z.held.type === "bar") z.pose("barShow"); // it works: he shows the bar off
-    for (const id of o.yesLines || []) await say(id, { vars });
-    look(null);
-    if (z.held && z.held.type === "bar") z.pose("hold");
-    await R.when(cp.hide());
-    CQ.bars.setVisible(true);
+    if (z.held && z.held.type === "bar") {
+      z.pose("barShow"); // it works: he shows the bar off
+      setTimeout(() => z.held && z.held.type === "bar" && z.pose("hold"), 1500);
+    }
     return true;
   }
   // The checked bar is in Zippy's hands: tap SWAP. Only a checked value gets here, so the balance stays level.
@@ -885,15 +901,17 @@
 
   // ------------------------------------------------------------------ Levels 8 and 9: the smart way
   // Two "Taken off" stools just outside the plates.
+  // Two stools for the bars taken off, close together in the middle under the balance, with no words
+  // on them (asked 2026-11-05). (The gold bars and their stools are away meanwhile.)
   function makeLedges() {
     const mk = (x, side) => {
-      const l = CQ.el("div", "ledge " + side, CQ.world.drag, `<span>${C().ui.takenOff}</span>`);
+      const l = CQ.el("div", "ledge " + side, CQ.world.drag);
       CQ.placeStand(l, x); // a stool, like the ones under the gold bars
       l.rest = { x, y: CQ.L.BAR_BASE }; // where a bar rests on it
       CQ.anim(l, [{ opacity: 0, transform: "translateY(24px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
       return l;
     };
-    const off = CQ.BAL.R * CQ.BAL.S + 150;
+    const off = 165;
     return { left: mk(CQ.L.BX - off, "left"), right: mk(CQ.L.BX + off, "right") };
   }
   // A bar on a pan cracks into smaller bars (e.g. 23 into 8 and 15). Returns the new pan items.
@@ -1037,29 +1055,6 @@
     b.evaluate();
     await R.wait(600);
   }
-  async function trialThoughts() {
-    const rows = [
-      [10, 18],
-      [12, 20],
-      [14, 22],
-    ];
-    const out = [];
-    for (let i = 0; i < rows.length; i++) {
-      const [x, s] = rows[i];
-      const t = CQ.thought(
-        { x: 700 + i * 330, y: 440 + (i % 2) * 34 }, // under the equation over the balance, as in the PPT
-        `<div class="trial">${CQ.rich("x = " + x)}<br>${CQ.rich(x + " + 8 = " + s)} <span class="xmark">✗</span></div>`,
-        { w: 330, h: 200 }
-      );
-      out.push(t);
-      await R.wait(700);
-      CQ.audio.play("tryagain");
-    }
-    const dots = CQ.thought({ x: 1660, y: 440 }, '<div class="trial dots">…</div>', { w: 150, h: 120 });
-    out.push(dots);
-    return out;
-  }
-
   // ------------------------------------------------------------------ LEVEL 8: the smart way
   async function runL8() {
     const L = LV().L8;
@@ -1076,9 +1071,7 @@
     look(null);
     b.clearGlow();
     z.pose("idle");
-    const bubbles = await trialThoughts();
-    await say("l8-3");
-    bubbles.forEach((t) => CQ.hideThought(t));
+    await say("l8-3"); // (no clouds of tried values: asked 2026-11-05)
     z.pose("celebrate");
     CQ.audio.play("zippy.ooh");
     await R.when(z.say(C().zippy.idea, { keepPose: true }));
@@ -1087,8 +1080,12 @@
     look(crownEls);
     await say("l8-4", { advance: "auto" });
     glowCrown(false);
-    // First, split 23 into 8 and 15.
+    look(null);
+    // The working, like the formula screen: the view glides until the balance stands at the right,
+    // and the steps are written at the left, one under another (CQ.eqBoard).
     b.setSign(null);
+    await R.when(eb.open());
+    // First, split 23 into 8 and 15.
     look(panEls("right"));
     await splitBar("right", b.items.right[0], [8, 15]);
     await R.when(eb.show("x + 8 = 8 + 15"));
@@ -1101,24 +1098,28 @@
     b.glowItems("right", (it) => it.value === 8);
     look(bothPans);
     await say("l8-7");
-    look(null);
     b.clearGlow();
-    const ledges = makeLedges();
-    eb.set("x + 8 {{− 8}} = 8 + 15 {{− 8}}");
+    await R.when(eb.set("x + 8 {{− 8}} = 8 + 15 {{− 8}}"));
     await say("l8-8", { advance: "auto", pause: 150 });
+    // The child takes the bars off in the whole scene, with no equation (asked 2026-11-05).
+    look(null);
+    await R.when(eb.close());
+    const ledges = makeLedges();
     say("l8-8-drag", { advance: "none" });
     await dragOffBoth(8, ledges);
     CQ.audio.play("balance.level");
     b.flashEmblem();
     z.pose("phew");
     setTimeout(() => z.pose("idle"), 1400);
-    // Now the crown balances 15 units. So, x = 15.
-    eb.set("x = 15", { final: true });
+    await R.wait(900);
+    // Now the crown balances 15 units. So, x = 15. (The working again, its earlier steps faded.)
+    await R.when(eb.open());
+    look(bothPans);
+    await R.when(eb.set("x = 15", { final: true }));
     CQ.audio.play("correct");
-    look(eb.el, { text: true });
     await say("l8-9", { hold: 2600 }); // key moment: x = 15
     look(null);
-    await R.when(eb.hide());
+    await R.when(eb.close());
     // Check it in the original equation (the number flies out of the crown: the crown is x).
     await say("l8-10", { advance: "auto" });
     await putBack(ledges, 8, 23);
@@ -1147,6 +1148,8 @@
     const b = CQ.balance;
     const eb = CQ.eqBoard;
     z.pose("curious");
+    // The working, like the formula screen, from the start: the balance at the right, the steps at the left.
+    await R.when(eb.open());
     // Each crown has the same mass, x.
     const crowns = b.items.left.filter((it) => it.type === "crown");
     const xs = crowns.map((cr) => {
@@ -1164,32 +1167,38 @@
     const c1 = b.itemCenter(crowns[1]);
     const two = worldLabel(CQ.rich("2x"), (c0.x + c1.x) / 2, c0.y - 96, "xlabel");
     look(() => crownEls().concat(two));
-    eb.set("2x + 4 = 18");
+    await R.when(eb.set("2x + 4 = 18"));
     await say("l9-2");
     removeLabel(two);
     glowCrown(false);
     // First, let's remove these 4 units.
     b.glowItems("left", (it) => it.type === "bar");
     look(leftBarEls);
-    eb.set("2x <<+ 4>> = 18");
+    eb.set("2x <<+ 4>> = 18", { same: true }); // the same step: these 4 units marked
     await say("l9-3");
     b.clearGlow();
     // Split 18 into 4 and 14.
     look(panEls("right"));
     await splitBar("right", b.items.right[0], [4, 14]);
-    eb.set("2x + 4 = 4 + 14");
+    await R.when(eb.set("2x + 4 = 4 + 14"));
     await say("l9-4");
-    look(null);
     // Remove 4 from both sides.
-    const ledges = makeLedges();
-    eb.set("2x + 4 {{− 4}} = 4 + 14 {{− 4}}");
+    look(bothPans);
+    await R.when(eb.set("2x + 4 {{− 4}} = 4 + 14 {{− 4}}"));
     await say("l9-5", { advance: "auto", pause: 150 });
+    // The child takes the bars off in the whole scene, with no equation (asked 2026-11-05).
+    look(null);
+    await R.when(eb.close());
+    const ledges = makeLedges();
     say("l9-5-drag", { advance: "none" });
     await dragOffBoth(4, ledges);
     CQ.audio.play("balance.level");
     b.flashEmblem();
-    // We need the mass of one crown.
-    eb.set("2x = 14");
+    await R.wait(900);
+    // We need the mass of one crown. (The working again, its earlier steps faded.)
+    await R.when(eb.open());
+    look(crownEls);
+    await R.when(eb.set("2x = 14"));
     await say("l9-6");
     // Two identical crowns: divide both sides by 2.
     const halves = await splitBar("right", b.items.right.find((it) => it.value === 14), [7, 7]);
@@ -1200,7 +1209,7 @@
     glowCrown(true);
     b.glowItems("right");
     look(() => bothPans().concat(d1, d2));
-    eb.set("[[2x|2]] = [[14|2]]");
+    await R.when(eb.set("[[2x|2]] = [[14|2]]"));
     await say("l9-7");
     look(null);
     b.clearGlow();
@@ -1211,15 +1220,15 @@
     b.ghost(halves[1], true);
     CQ.audio.play("ui.swoosh");
     b.evaluate();
-    eb.set("x = 7", { final: true });
-    CQ.audio.play("correct");
     glowCrown(true);
     b.glowItems("right", (it) => !it.ghost);
-    look(eb.el, { text: true });
+    look(bothPans);
+    await R.when(eb.set("x = 7", { final: true }));
+    CQ.audio.play("correct");
     await say("l9-8", { hold: 2600 }); // key moment: x = 7
     look(null);
     b.clearGlow();
-    await R.when(eb.hide());
+    await R.when(eb.close());
     // Check in the original equation: everything goes back, then 7 goes in for x.
     b.ghost(crowns[1], false);
     b.ghost(halves[1], false);

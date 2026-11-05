@@ -766,16 +766,6 @@ html[data-shade] .stage-edge::after {
   stroke-dashoffset: 1600;
   animation: drawPath 0.9s ease-out forwards;
 }
-.ledge span {
-  position: absolute;
-  left: 50%;
-  top: 57%; /* on the rounded front edge of the stool's top */
-  transform: translate(-50%, -50%);
-  white-space: nowrap;
-  font: 800 23px/1 var(--font);
-  color: #fff;
-  text-shadow: 0 2px 0 #15323b, 2px 0 0 #15323b, -2px 0 0 #15323b, 0 -2px 0 #15323b;
-}
 .ledge.active {
   animation: ledgeGlow 1s ease-in-out infinite alternate;
 }
@@ -1226,18 +1216,6 @@ html[data-shade] .stage-edge::after {
 .thought.tip .ms-grumble {
   opacity: 1;
   transform: scale(1);
-}
-.trial {
-  font: 800 36px/1.25 var(--font);
-  color: var(--ink);
-  text-align: center;
-}
-.trial.dots {
-  font-size: 70px;
-}
-.xmark {
-  color: var(--no);
-  font-size: 1.2em;
 }
 .hand {
   position: absolute;
@@ -1952,6 +1930,24 @@ html[data-shade] .stage-edge::after {
 .notebook .nb-title {
   color: #74f0ac;
 }
+/* the solution, x = 5, when the voice says it: big and green in a green outline, its name under it */
+.notebook .nb-row.sol {
+  margin-top: 14px;
+  padding: 2px 30px 0;
+  font-size: 104px;
+  line-height: 1.2;
+  color: #74f0ac;
+  border: 6px dashed #74f0ac;
+  border-radius: 26px;
+}
+.notebook .nb-row.sol-name {
+  margin-top: 12px;
+  padding: 8px 22px 2px;
+  font: 800 40px/1.1 var(--font);
+  color: #07301d;
+  background: #74f0ac;
+  border-radius: 18px;
+}
 .notebook .tok.hl {
   color: #2b2100;
   box-shadow: 0 0 0 8px #ffd84d;
@@ -2058,45 +2054,109 @@ html[data-shade] .stage-edge::after {
 .hot {
   transition: color 0.5s ease, text-shadow 0.5s ease, background-color 0.5s ease, border-color 0.5s ease;
 }
-body.lit .check-panel,
-body.lit .eq-board,
-body.lit .eq-strip {
+:is(body.lit, body.checking, body.solving) .check-panel,
+:is(body.lit, body.checking, body.solving) .eq-board,
+:is(body.lit, body.checking, body.solving) .eq-strip {
   color: #fffaf0;
   text-shadow: none;
 }
-body.lit .cp-side.lhs,
-body.lit .cp-compare .cv.lhs {
+:is(body.lit, body.checking, body.solving) .cp-side.lhs,
+:is(body.lit, body.checking, body.solving) .cp-compare .cv.lhs {
   color: #5ee6dc;
 }
-body.lit .cp-side.rhs,
-body.lit .cp-compare .cv.rhs {
+:is(body.lit, body.checking, body.solving) .cp-side.rhs,
+:is(body.lit, body.checking, body.solving) .cp-compare .cv.rhs {
   color: #ffc35c;
 }
-body.lit .cp-side.lhs .blank {
+:is(body.lit, body.checking, body.solving) .cp-side.lhs .blank {
   color: var(--lhs); /* a number in its white box stays dark */
 }
-body.lit .cp-side.rhs .blank {
+:is(body.lit, body.checking, body.solving) .cp-side.rhs .blank {
   color: var(--rhs);
 }
-body.lit .csym.ok,
-body.lit .cp-compare.ok .cp-verdict,
-body.lit .eb-row.final,
-body.lit .eq-strip .es.b {
+:is(body.lit, body.checking, body.solving) .csym.ok,
+:is(body.lit, body.checking, body.solving) .cp-compare.ok .cp-verdict,
+:is(body.lit, body.checking, body.solving) .eb-row.final,
+:is(body.lit, body.checking, body.solving) .eq-strip .es.b {
   color: #74f0ac;
 }
-body.lit .csym.no,
-body.lit .cp-compare.no .cp-verdict {
+:is(body.lit, body.checking, body.solving) .csym.no,
+:is(body.lit, body.checking, body.solving) .cp-compare.no .cp-verdict {
   color: #ff8f80;
 }
-body.lit .same {
+:is(body.lit, body.checking, body.solving) .same {
   color: #8fc2ff;
   background: rgba(143, 194, 255, 0.12);
   border-color: rgba(143, 194, 255, 0.6);
 }
-body.lit .hot {
+:is(body.lit, body.checking, body.solving) .hot {
   color: #ff8f80;
   background: rgba(255, 143, 128, 0.1);
   border-color: rgba(255, 143, 128, 0.65);
+}
+/* The check, like the formula screen (body.checking: CQ.checkPanel.open in js/ui.js): the balance
+   stands at the right, bright, and the check is worked in the room at its left, big, one row under the
+   other: LHS, then RHS, then the two compared and what that means. */
+body.checking .check-panel {
+  left: 470px;
+  top: 290px;
+  width: 840px;
+}
+body.checking .cp-row {
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+  font-size: 80px;
+}
+body.checking .cp-side {
+  gap: 16px;
+}
+body.checking .cp-side .lab {
+  font-size: 52px;
+}
+body.checking .check-panel .blank {
+  min-width: 140px;
+  height: 104px;
+  font-size: 70px;
+}
+body.checking .check-panel .xslot {
+  min-width: 100px;
+  height: 100px;
+}
+body.checking .cp-compare {
+  margin-top: 44px;
+}
+body.checking .cp-cmp-row {
+  gap: 40px;
+  font-size: 120px;
+}
+body.checking .cp-verdict {
+  margin-top: 10px;
+  font-size: 50px;
+}
+/* Levels 8–9's working, like the formula screen (body.solving: CQ.eqBoard.open in js/ui.js): the
+   balance stands at the right, bright (with its labels: x, 2x, ÷ 2), and the steps are written at its
+   left, one row under another; the earlier rows fade back and the answer is green. */
+body.solving .eq-board {
+  left: 470px;
+  top: 206px;
+  width: 840px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 70px;
+  line-height: 1.32;
+}
+.eb-row {
+  transition: opacity 0.6s ease;
+}
+body.solving .eb-row.done {
+  opacity: 0.4;
+}
+#world.solving > .drag-layer {
+  z-index: 11; /* the labels over the crowns and pans stay bright with the balance */
 }
 /* the balance stays above the dark until the dark has gone */
 #world > .balance-layer {
@@ -2559,55 +2619,22 @@ body.lit .hot {
   width: 1480px;
   height: 888px;
 }
-.pr-head {
-  position: absolute;
-  left: 22px;
-  right: 22px;
-  top: 14px;
-  height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.pr-step {
-  font: 800 38px/1 var(--font);
-  color: #fff;
-  background: var(--lhs);
-  border-radius: 999px;
-  padding: 14px 30px 8px;
-  white-space: nowrap;
-}
-.pr-prog {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-.pr-dot {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: rgba(27, 58, 68, 0.12);
-  border: 4px solid rgba(27, 58, 68, 0.25);
-  transition: background 0.3s, border-color 0.3s, transform 0.3s;
-}
-.pr-dot.now {
-  border-color: #e0a21b;
-  background: #fff3c4;
-  transform: scale(1.2);
-}
-.pr-dot.done {
-  background: #f2c230;
-  border-color: #b8901a;
-  transform: none;
-}
 .pr-body {
   position: absolute;
   left: 22px;
   right: 22px;
-  top: 100px;
+  top: 24px;
   bottom: 18px;
   display: flex;
   gap: 24px;
+}
+/* the problem and the keypad side by side, together in the middle */
+.pr-body.with-pad {
+  justify-content: center;
+  gap: 70px;
+}
+.pr-body.with-pad .pr-main {
+  flex: 0 0 660px;
 }
 .pr-main {
   position: relative;
@@ -2719,6 +2746,7 @@ body.lit .hot {
   border: 5px solid var(--ink);
   border-radius: 22px;
   background: #fff;
+  color: var(--ink); /* the typed number shows dark in its white box (the row around it is bright) */
   font-style: normal;
 }
 .pr-input.empty {
@@ -3288,10 +3316,6 @@ body.lit .hot {
 }
 .activity .bin.hover {
   background: rgba(255, 216, 77, 0.14);
-}
-.activity .pr-dot {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.4);
 }
 .activity .pr-done {
   color: #74f0ac;
