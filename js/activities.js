@@ -316,8 +316,9 @@
         left: () => [plate("left")].concat(els("left")),
         right: () => [plate("right")].concat(els("right")),
         both: () => [plate("left"), plate("right")].concat(els("left"), els("right")),
-        level: () => [...CQ.world.balanceLayer.querySelectorAll("img")],
+        level: () => [...CQ.world.balanceLayer.querySelectorAll(".bal-art, .pan-item")],
       };
+      parts.whole = parts.level; // the whole balance, without the flash
       if (!parts[bal]) {
         if (this.framed) CQ.focus.off();
         this.framed = false;
@@ -342,7 +343,7 @@
   };
 
   CQ.NB_WORDS = [
-    { id: "l4-9", s: {} },
+    { id: "l4-9", s: { bal: "crown" } },
     { id: "l4-10", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "Variable", color: "var" }] } },
     { id: "l4-11", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "Variable", color: "var" }] }, gem: "variable" },
     { id: "l4-12", s: { box: LHS, mini: true, bal: "left" } },
@@ -385,7 +386,7 @@
     { id: "l4-23", s: { crown: true, bal: "crown" } },
     { id: "l4-24", s: { crown: true, bal: "both" } },
     { id: "l4-25", s: { crown: true, bal: "both", rows: [{ t: "LHS: 4 + 2 = 6" }, { t: "RHS: 7" }] } },
-    { id: "l4-26", s: { crown: true, rows: [{ t: "6 ≠ 7", cls: "big no" }, { t: "4 is not a solution", cls: "no" }] } },
+    { id: "l4-26", s: { crown: true, bal: "both", rows: [{ t: "6 ≠ 7", cls: "big no" }, { t: "4 is not a solution", cls: "no" }] } },
     { id: "l4-27", s: { crown: true, bal: "both", rows: [{ t: "LHS: 5 + 2 = 7" }, { t: "RHS: 7" }] } },
     { id: "l4-28", s: { crown: true, bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] } },
     { id: "l4-29", s: { crown: true, bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] }, gem: "solution" },
@@ -395,7 +396,7 @@
     { id: "l4-19", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "One variable: x", color: "var" }] } },
     { id: "l4-20", s: { hl: ["x"], crown: true, ghost: true, bal: "crown", tags: [{ ids: "x", text: "x means x¹", color: "var" }] } },
     { id: "l4-21", s: { hl: ["x"], crown: true, ghost: true, bal: "crown", tags: [{ ids: "x", text: "One variable · highest power 1", color: "var" }] } },
-    { id: "l4-22", s: { title: "Linear equation in one variable", outline: true }, gem: "linear" },
+    { id: "l4-22", s: { title: "Linear equation in one variable", outline: true, bal: "whole" }, gem: "linear" },
   ];
 
   // Things come in one at a time, so a child can follow: each element fades up in turn, gap ms apart

@@ -915,20 +915,22 @@
       opts = opts || {};
       const t = ++this.tok;
       const wasOn = !this.el.classList.contains("hidden") && !!this.shown;
-      if (opts.still) {
-        const r = this.rect(target);
-        this.get = () => r;
-      } else this.get = () => this.rect(target);
-      this.pad = opts.pad != null ? opts.pad : 24;
-      this.radius = opts.radius != null ? opts.radius : 44;
       // opts.text: a look at words and numbers under the balance (the check, the equation board): the
       // whole scene goes dark but for the balance, which stays bright and sharp in its place, and the
-      // words turn bright and flat (styles.css, .lit). No window here: on the dark, a window round the
-      // words would show the floor behind them, like a pale panel.
+      // words turn bright and flat (styles.css, .lit). The gold frame goes round the balance's beam and
+      // pans, what the words are about (no window: on the dark, a window round the words would show the
+      // floor behind them, like a pale panel).
       const lit = !!opts.text;
+      const frame = lit ? () => [...CQ.world.balanceLayer.querySelectorAll(".bal-beam, .bal-hub, .bal-hanger, .bal-plate, .pan-item")] : target;
+      if (opts.still) {
+        const r = this.rect(frame);
+        this.get = () => r;
+      } else this.get = () => this.rect(frame);
+      this.pad = lit ? 18 : opts.pad != null ? opts.pad : 24;
+      this.radius = lit ? 26 : opts.radius != null ? opts.radius : 44;
       this.lit(lit);
       this.hole.style.visibility = lit ? "hidden" : "";
-      this.ring.style.display = opts.ring === false || lit ? "none" : "";
+      this.ring.style.display = opts.ring === false && !lit ? "none" : "";
       this.from = wasOn ? this.shown : null; // glide from where the window is now
       this.t0 = performance.now();
       this.el.classList.remove("hidden");
