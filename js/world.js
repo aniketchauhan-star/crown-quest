@@ -1448,7 +1448,7 @@
   CQ.STAND = STAND;
   CQ.placeStand = (el, x) => CQ.box(el, x - STAND.w / 2, L.BAR_BASE - STAND.rest, STAND.w, STAND.h);
   const BAR_H = (L.BAR_W * IM().bar.h) / IM().bar.w; // a bar on its stand
-  // A faded copy of a gold bar (drag hints).
+  // A faded copy of a gold bar (the one left on its stand while it is dragged, the hint hand's).
   function barGhost(v, cls) {
     const g = CQ.el("div", "gbar bar-ghost" + (cls ? " " + cls : ""), null, `<span class="num">${v}</span>`);
     g.style.width = L.BAR_W + "px";
@@ -1464,7 +1464,6 @@
     setup(values, opts) {
       opts = opts || {};
       this.clear();
-      this.cueN = -1; // the first hint starts at the left-hand bar
       const order = opts.shuffle === false ? values.slice() : CQ.shuffle(values);
       const xs = [L.BX - 270, L.BX, L.BX + 270];
       order.forEach((v, i) => {
@@ -1481,26 +1480,10 @@
         const tag = CQ.el("div", "tried-tag", slot, CONTENT.ui.tried);
         const bar = { value: v, slot, g, ped, tag, home: { x, y: L.BAR_BASE - BAR_H / 2 }, cur: null, state: "idle" };
         CQ.pos(slot, bar.home.x, bar.home.y);
-        // a new level: the bars wait out of sight until the level's things come in (arrive)
-        if (opts.wait) slot.classList.add("waiting");
         this.list.push(bar);
         CQ.Give.bind(bar);
       });
       this.refresh();
-    }
-    // The waiting bars come down onto their stands one after another (left to right), from `at` ms.
-    arrive(at) {
-      this.list
-        .filter((b) => b.slot.classList.contains("waiting"))
-        .forEach((b, i) => {
-          b.slot.classList.remove("waiting");
-          CQ.anim(b.slot, [{ opacity: 0, transform: "translate(-50%,-50%) translateY(-30px)" }, { opacity: 1, transform: "translate(-50%,-50%) translateY(0)" }], {
-            duration: 520,
-            delay: (at || 0) + i * 320,
-            easing: CQ.EASE.out,
-            keep: false,
-          });
-        });
     }
     clear() {
       this.list.forEach((b) => {
@@ -1553,35 +1536,6 @@
       const b = this.get(v);
       return b ? { x: b.home.x, y: b.home.y } : { x: L.BX, y: L.BAR_BASE - BAR_H / 2 };
     }
-    // "This can be picked up and given to Zippy": a faded copy of ONE bar lifts off it and floats part
-    // of the way towards Zippy's hands, then fades. Each time it is the next bar (left to right), so the
-    // hint never points at the answer. The bars themselves stay still.
-    cue(values) {
-      const list = this.list
-        .filter((b) => b.state === "idle" && (!values || values.includes(b.value)))
-        .sort((p, q) => p.home.x - q.home.x);
-      if (!list.length) return;
-      const b = list[(this.cueN = (this.cueN || 0) + 1) % list.length];
-      const to = CQ.zippy.holdPoint("zippy_swap", 1);
-      const g = barGhost(b.value, "lift");
-      this.layer.appendChild(g);
-      CQ.pos(g, b.home.x, b.home.y);
-      const dx = (to.x - b.home.x) * 0.32;
-      const dy = (to.y - b.home.y) * 0.32;
-      // up off the stand first, then along a gentle curve towards Zippy
-      const at = (k) =>
-        `translate(-50%,-50%) translate(${(dx * k).toFixed(1)}px, ${(dy * k - 55 * Math.sin(Math.PI * Math.min(1, k * 1.4))).toFixed(1)}px) scale(${(1 - 0.12 * k).toFixed(3)})`;
-      CQ.anim(
-        g,
-        [
-          { transform: at(0), opacity: 0 },
-          { transform: at(0.15), opacity: 0.75, offset: 0.2 },
-          { transform: at(0.6), opacity: 0.6, offset: 0.65 },
-          { transform: at(1), opacity: 0 },
-        ],
-        { duration: 1900, delay: 200, easing: "ease-in-out", keep: false, essential: true }
-      ).then(() => g.remove());
-    }
     // The faded copy the hint hand carries from a bar to Zippy (screen coordinates, in the UI layer).
     carried(v) {
       const c = CQ.el("div", "hand-carry");
@@ -1616,32 +1570,12 @@
       this.allowed = new Set(values);
       this.onGive = onGive;
       this.busy = false;
-      CQ.bars.refresh();
-      this.startCue(values);
+      CQ.bars.refresh(); // which bar to give is the child's own choice: no hint floats off any bar
     },
     disable() {
       this.allowed = null;
       this.onGive = null;
-      this.stopCue();
       CQ.bars.refresh();
-    },
-    // While the child is choosing, the faded-copy hint (CQ.bars.cue) plays at once and then every few
-    // seconds, until a bar is in Zippy's hands. It waits while a bar is dragged, the hint hand is
-    // showing, or a menu is open.
-    startCue(values) {
-      this.stopCue();
-      const run = () => {
-        if (!this.allowed || this.dragging || this.busy || CQ.pauser.count || document.hidden) return;
-        if (CQ.zippy.held && CQ.zippy.held.type === "bar") return; // SWAP is the next step
-        if (!CQ.hand.el.classList.contains("hidden")) return;
-        CQ.bars.cue(values);
-      };
-      this.cueStart = setTimeout(run, 300);
-      this.cueTimer = setInterval(run, 6000);
-    },
-    stopCue() {
-      clearTimeout(this.cueStart);
-      clearInterval(this.cueTimer);
     },
     can(bar) {
       return !!(this.allowed && this.allowed.has(bar.value) && bar.state === "idle" && !this.busy);
