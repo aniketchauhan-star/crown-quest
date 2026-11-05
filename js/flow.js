@@ -20,8 +20,6 @@
   const WORDS_AT = { L4c: 6, L4e: 7, L4g: 7, L5: 8, L6: 8, L7: 8, L8: 8, L9: 8, P: 8, finale: 8 };
   // The gold bars wait off screen while the balance is being explained or solved.
   const BARS_HIDDEN = ["L4a", "L4c", "L4e", "L4g", "L8", "L9", "P", "finale"];
-  // Levels that open with a new crown appearing on the balance (poof)
-  const POOF_AT = ["L2", "L3", "L4a", "L5", "L6", "L7", "L8", "L9"];
   // Where a level begins when a chapter is opened straight away (Grumble snores twice there; a level
   // reached in the story gets its two snores as Zippy peeks at him, see sneakBack)
   const SNORE_AT = ["L1", "L2", "L3", "L4a", "L5", "L6", "L7", "L8", "L9"];
@@ -123,10 +121,9 @@
     CQ.audio.ambience(true);
     const lv = LV()[SCENE_OF[cp]];
     CQ.balance.setup(lv);
-    // a new level: its crown, coins and gold bars come in one by one once Zippy is back (see poof)
-    const wait = opts.animate && POOF_AT.includes(cp);
-    if (wait) ["left", "right"].forEach((s) => CQ.balance.items[s].forEach((it) => (it.el.style.opacity = "0")));
-    CQ.bars.setup(lv.bars, { wait: wait && !BARS_HIDDEN.includes(cp) });
+    // a new level's crown, coins and gold bars are simply there when it begins (set up behind the fade):
+    // nothing pops in by magic
+    CQ.bars.setup(lv.bars);
     CQ.bars.setVisible(!BARS_HIDDEN.includes(cp));
     if (["L4c", "L4e", "L4g"].includes(cp)) CQ.balance.setSign("x + 2 = 7");
     if (cp === "P" || cp === "finale") {
@@ -209,36 +206,6 @@
     CQ.audio.play(opts.sound || "zippy.whee");
     if (opts.giggle) setTimeout(() => CQ.audio.play("zippy.giggle"), 700);
     await R.when(z.swingBack());
-  }
-  // A new level's things come in one at a time, so a child can follow (and count the coins as they
-  // come): the new crown with a sparkle poof, the rest of its pan, the other pan, then the gold bars
-  // come down onto their stands.
-  function poof() {
-    const b = CQ.balance;
-    const gen = CQ.gen;
-    let t = 160;
-    ["left", "right"].forEach((s) => {
-      const p = b.panCenter(s);
-      setTimeout(() => {
-        if (gen !== CQ.gen) return;
-        CQ.fx.sparkle(CQ.world.fx, p.x, p.y - 40, 10, 110);
-        CQ.fx.dust(CQ.world.fx, p.x, p.y + 20, 6);
-        CQ.audio.play("dust.puff");
-      }, t - 160);
-      b.items[s].forEach((it) => {
-        it.el.style.opacity = ""; // they waited hidden while the level changed (resetScene)
-        CQ.anim(it.el, [{ transform: "scale(0) translateY(30px)", opacity: 0 }, { transform: "scale(1) translateY(0)", opacity: 1 }], {
-          duration: 600,
-          delay: t,
-          easing: CQ.EASE.back,
-          keep: false,
-        });
-        t += it.type === "crown" ? 380 : 130;
-      });
-      t += 250; // a breath before the other pan
-    });
-    CQ.audio.play("crown.sparkle");
-    CQ.bars.arrive(t);
   }
   function glowCrown(on) {
     CQ.balance.glowItems("left", (it) => it.type === "crown", on);
@@ -643,7 +610,6 @@
   async function runSwapLevel(key) {
     const L = LV()[key];
     const b = CQ.balance;
-    if (key !== "L1") poof();
     b.counting = true;
     if (key === "L1") look(barEls, { pad: 20 }); // which bar? these!
     if (key === "L3") CQ.grumble.snore(2); // One more crown. Grumble is still asleep!
@@ -685,7 +651,6 @@
   async function runL4a() {
     const z = CQ.zippy;
     const b = CQ.balance;
-    poof();
     z.pose("curious");
     b.glowItems("left", (it) => it.type === "coin", true);
     look(panEls("left"));
@@ -885,7 +850,6 @@
   async function runL5() {
     const L = LV().L5;
     const z = CQ.zippy;
-    poof();
     CQ.balance.setSign(`x + ${L.left} = ${sum(L.right)}`);
     for (let i = 0; i < L.tries.length; i++) {
       const v = L.tries[i];
@@ -901,7 +865,6 @@
   async function runIndependent(key) {
     const L = LV()[key];
     const S = L.say;
-    poof();
     CQ.balance.setSign(`x + ${L.left} = ${sum(L.right)}`);
     for (const id of L.intro) await say(id, { advance: "auto" });
     await say(S.prompt, { advance: "auto", pause: 150 });
@@ -1103,7 +1066,6 @@
     const z = CQ.zippy;
     const b = CQ.balance;
     const eb = CQ.eqBoard;
-    poof();
     b.setSign("x + 8 = 23");
     z.pose("curious");
     await say("l8-1", { advance: "auto" });
@@ -1184,7 +1146,6 @@
     const z = CQ.zippy;
     const b = CQ.balance;
     const eb = CQ.eqBoard;
-    poof();
     z.pose("curious");
     // Each crown has the same mass, x.
     const crowns = b.items.left.filter((it) => it.type === "crown");

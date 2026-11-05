@@ -252,6 +252,11 @@
   // A recorded line (js/voice.js) types itself out at the pace of its voice, so the words appear as
   // they are said; a tap on the words shows the whole line at once (the voice carries on). A line
   // without a recording shows at once, as before.
+  // The question bar shows a line one row at a time (asked 2026-11-05): a line too long for one row is
+  // cut, at whole words, into rows that each fit on their own (as even as they can be, broken after a
+  // full stop or comma where one is near). A recorded line types itself out with its voice, and when
+  // the voice is past a row, the next row takes its place; without a recording, each row stays long
+  // enough to be read. Every row is the same size.
   CQ.caption = {
     build(ui) {
       this.el = CQ.el("div", "caption hidden", ui);
@@ -259,15 +264,21 @@
       this.spk = button("spk", `<img src="${IMAGES.zippyFace.src}" alt="" draggable="false">`, "Hear it again", this.el, () => this.replay());
       this.txt = CQ.el("div", "cap-text", this.el);
       this.txt.setAttribute("aria-hidden", "true"); // screen readers get the whole line at once instead:
+      this.probe = CQ.el("span", "cap-text cap-probe", this.el); // measures rows (unseen)
+      this.probe.setAttribute("aria-hidden", "true");
       this.sr = CQ.el("div", "sr-only", this.el);
       this.sr.setAttribute("aria-live", "polite");
       this.txt.addEventListener("click", () => this.reveal());
       this.text = null;
+      this.rows = [""];
+      this.row = 0;
       this.busy = false; // true while the child is listening to the line again
       this.replays = 0;
       this.line = 0; // counts lines, so a voice that starts late can tell its line has gone
-      this.chars = null; // a typing line's letters
+      this.chars = null; // the row's letters while they wait to be typed
       this.typing = 0; // the line whose voice has started typing it
+      this.pass = 0; // counts replays, so only a replay's own voice moves its rows
+      this.paceTimer = null;
     },
     set(text, opts) {
       this.text = text;
@@ -275,17 +286,15 @@
       this.replays++;
       this.busy = false;
       const n = ++this.line;
-      this.chars = null;
+      clearTimeout(this.paceTimer);
       this.el.classList.remove("hidden");
-      this.txt.classList.remove("typing");
-      this.txt.innerHTML = CQ.rich(text);
+      this.rows = this.split(text);
       this.sr.textContent = CQ.speakable(text);
-      this.fit();
-      // a recorded line waits for its voice to start; if it never does, the line shows anyway
-      if (!this.opts.quiet && CQ.audio.isEnabled("voice") && window.CQVoice && CQVoice.lookup(text)) {
-        this.hideLetters();
-        setTimeout(() => this.typing !== n && this.reveal(n), 3500);
-      }
+      // a recorded line waits for its voice to start; if it never does, the rows are shown to be read
+      const voiced = !this.opts.quiet && CQ.audio.isEnabled("voice") && window.CQVoice && CQVoice.lookup(text);
+      this.showRow(0, !!voiced);
+      if (voiced) setTimeout(() => this.typing !== n && this.reveal(n), 3500);
+      else this.pace(n);
       CQ.anim(this.el, [{ transform: "translateY(-12px)", opacity: 0.2 }, { transform: "translateY(0)", opacity: 1 }], {
         duration: 420,
         easing: CQ.EASE.out,
@@ -293,15 +302,105 @@
       });
       CQ.anim(this.spk, [{ transform: "scale(.85)" }, { transform: "scale(1.08)" }, { transform: "scale(1)" }], { duration: 480, easing: CQ.EASE.back, keep: false });
     },
-    fit() {
-      let fs = 40;
-      this.txt.style.fontSize = fs + "px";
-      while (this.txt.scrollHeight > fs * 1.2 * 2 + 6 && fs > 28) {
-        fs -= 2;
-        this.txt.style.fontSize = fs + "px";
-      }
+    // The line in rows that each fit the bar on their own, read like subtitles: each sentence on a row
+    // of its own where it fits (short sentences share one), and a sentence too long for one row cut into
+    // as few rows as it needs, as even as they can be, at a comma or dash where one is near and never
+    // on a little word that leads into the next (…equals | 7). A fraction or a marked group of the line
+    // ([[…]], {{…}}, <<…>>) is never cut.
+    split(text) {
+      const max = this.txt.clientWidth - 6;
+      if (!(max > 0)) return [text];
+      const widths = new Map();
+      const width = (str) => {
+        if (!widths.has(str)) {
+          this.probe.innerHTML = CQ.rich(str);
+          widths.set(str, this.probe.offsetWidth);
+        }
+        return widths.get(str);
+      };
+      if (width(String(text)) <= max) return [text];
+      const open = (w) => ["[[", "{{", "<<"].some((o, i) => w.split(o).length > w.split(["]]", "}}", ">>"][i]).length);
+      const words = [];
+      String(text).split(" ").forEach((w) => {
+        const last = words.length - 1;
+        if (last >= 0 && open(words[last])) words[last] += " " + w;
+        else words.push(w);
+      });
+      // sentences
+      const sentences = [[]];
+      words.forEach((w, i) => {
+        sentences[sentences.length - 1].push(w);
+        if (/[.!?…]["”’)]?$/.test(w) && i < words.length - 1) sentences.push([]);
+      });
+      // a sentence too long for a row: the most even cut into as few rows as it needs
+      const WEAK = /^(a|an|the|of|to|and|or|but|is|are|equals|=|\+|−|-|×|÷|with|by|for|in|on|at|so|its|our|your|this|that|\d+)$/i;
+      const cut = (ws) => {
+        const row = (i, j) => ws.slice(i, j).join(" ");
+        let k = 0;
+        for (let i = 0; i < ws.length; k++) {
+          let j = i + 1;
+          while (j < ws.length && width(row(i, j + 1)) <= max) j++;
+          i = j;
+        }
+        const cost = (i, j, last) => {
+          const w = width(row(i, j));
+          if (w > max && j - i > 1) return Infinity;
+          const slack = (max - w) / max;
+          if (last) return slack * slack * 0.5; // the last row may be shorter
+          let c = slack * slack;
+          if (/[,;:—]$/.test(ws[j - 1])) c -= 0.08; // a good place to pause
+          else if (WEAK.test(ws[j - 1])) c += 0.25; // it leads into the next row
+          if (ws[j] === "—") c += 0.2; // a dash doesn't begin a row
+          return c;
+        };
+        const n = ws.length;
+        let layer = new Map([[0, { c: 0, cuts: [] }]]);
+        for (let r = 1; r <= k; r++) {
+          const next = new Map();
+          layer.forEach((prev, i) => {
+            for (let j = i + 1; j <= n - (k - r); j++) {
+              if (r === k && j !== n) continue;
+              const c = prev.c + cost(i, j, r === k);
+              if (c === Infinity) break;
+              if (!next.has(j) || c < next.get(j).c) next.set(j, { c, cuts: prev.cuts.concat(j) });
+            }
+          });
+          layer = next;
+        }
+        const end = layer.get(n);
+        if (!end) return [row(0, n)];
+        let i = 0;
+        return end.cuts.map((j) => {
+          const r = row(i, j);
+          i = j;
+          return r;
+        });
+      };
+      const pieces = [];
+      sentences.forEach((ws) => {
+        const whole = ws.join(" ");
+        if (width(whole) <= max) pieces.push(whole);
+        else pieces.push(...cut(ws));
+      });
+      // whole pieces share a row where they fit together
+      const rows = [];
+      pieces.forEach((p) => {
+        const last = rows.length - 1;
+        if (last >= 0 && width(rows[last] + " " + p) <= max) rows[last] += " " + p;
+        else rows.push(p);
+      });
+      return rows;
     },
-    // Each letter in its own span, hidden until it is typed: the line keeps its final layout and size.
+    // Show row i: its letters hidden, to be typed with the voice (typed), or in full.
+    showRow(i, typed) {
+      const swap = i !== this.row && this.txt.childNodes.length;
+      this.row = i;
+      this.txt.innerHTML = CQ.rich(this.rows[i] || "");
+      this.txt.classList.toggle("typing", !!typed);
+      this.chars = typed ? this.hideLetters() : null;
+      if (swap) CQ.anim(this.txt, [{ opacity: 0, translate: "0 6px" }, { opacity: 1, translate: "0 0" }], { duration: 200, easing: CQ.EASE.out, keep: false });
+    },
+    // Each letter of the row in its own span, hidden until it is typed: the row keeps its final layout.
     hideLetters() {
       const chars = [];
       const walk = (node) =>
@@ -319,40 +418,73 @@
           c.replaceWith(frag);
         });
       walk(this.txt);
-      this.chars = chars;
-      this.txt.classList.add("typing");
+      return chars;
+    },
+    // Without a recorded voice, each row stays long enough to be read, then the next takes its place.
+    pace(n) {
+      clearTimeout(this.paceTimer);
+      if (n !== this.line || this.row >= this.rows.length - 1) return;
+      this.paceTimer = setTimeout(() => {
+        if (n !== this.line) return;
+        this.showRow(this.row + 1, false);
+        this.pace(n);
+      }, Math.max(1800, [...this.rows[this.row]].length * 62));
     },
     // For CQ.say: when line n's voice starts, { clip, secs, rate } types its letters at the voice's
-    // pace (finishing just before the voice does); a voice without a clip shows the line at once.
-    voiced(n) {
+    // pace (finishing just before the voice does), row after row; a voice without a clip shows the rows
+    // to be read. (pass: a replay's own voice, see replay.)
+    voiced(n, pass) {
       return (v) => {
-        const chars = this.chars;
-        if (n !== this.line || !chars) return;
-        if (!v || !v.clip) return this.reveal(n);
+        if (n !== this.line || !this.chars) return;
+        if (!v || !v.clip) return this.reveal(n, pass);
         this.typing = n;
-        const ms = Math.max(16, ((v.secs - 0.35) * 1000) / chars.length) / (v.rate || 1);
+        const counts = this.rows.map((r) => {
+          this.probe.innerHTML = CQ.rich(r);
+          return [...this.probe.textContent].length;
+        });
+        const total = counts.reduce((a, c) => a + c, 0);
+        const ms = Math.max(16, ((v.secs - 0.35) * 1000) / total) / (v.rate || 1);
         const t0 = performance.now();
+        let before = 0; // letters in the rows already done
+        let chars = this.chars;
         let shown = 0;
         const step = (now) => {
-          if (this.chars !== chars) return; // shown in full, or replaced by another line
-          const k = Math.min(chars.length, Math.floor((now - t0) / ms) + 1);
-          while (shown < k) chars[shown++].classList.add("on");
-          if (shown < chars.length) requestAnimationFrame(step);
-          else this.reveal(n);
+          if (n !== this.line || this.chars !== chars) return; // shown in full, or replaced by another line
+          const k = Math.floor((now - t0) / ms) + 1; // letters the voice has reached
+          // the voice is a little past this row (a moment to finish reading it): the next row comes in
+          if (this.row < this.rows.length - 1 && k > before + counts[this.row] + 4) {
+            before += counts[this.row];
+            this.showRow(this.row + 1, true);
+            chars = this.chars;
+            shown = 0;
+          }
+          const upto = Math.min(chars.length, k - before);
+          while (shown < upto) chars[shown++].classList.add("on");
+          if (this.row < this.rows.length - 1 || shown < chars.length) requestAnimationFrame(step);
+          else this.reveal(n, pass);
         };
         requestAnimationFrame(step);
       };
     },
-    // The whole line now (with n: only if line n is still the one on screen).
-    reveal(n) {
-      if ((n != null && n !== this.line) || !this.chars) return;
+    // Line n (or the line on screen) is done typing: its voice has ended, or the child tapped it. A row
+    // still waiting for a voice that never started is shown, and the rows take turns to be read.
+    reveal(n, pass) {
+      if (n != null && n !== this.line) return;
+      if (pass !== undefined ? pass !== this.pass : this.busy) return; // a replay has the rows meanwhile
+      if (!this.chars) return; // already in full, or the rows are taking turns
+      const line = this.line;
+      const voiceRan = this.typing === line;
       this.chars = null;
       this.txt.classList.remove("typing");
+      if (voiceRan) {
+        if (this.row < this.rows.length - 1) this.showRow(this.rows.length - 1, false); // the voice has finished: its last row
+      } else this.pace(line);
     },
     hide(now) {
       this.text = null;
       this.line++;
       this.chars = null;
+      clearTimeout(this.paceTimer);
       this.replays++;
       this.busy = false;
       if (now || this.el.classList.contains("hidden")) {
@@ -363,14 +495,20 @@
         if (this.text === null) this.el.classList.add("hidden"); // no new line arrived meanwhile
       });
     },
-    // 🔊 Hear it again. The story waits until the line has been heard again.
+    // 🔊 Hear it again: the rows come round again with the voice. The story waits until the line has
+    // been heard again.
     replay() {
       if (!this.text) return;
-      this.reveal();
       CQ.audio.play("ui.tap");
       const n = ++this.replays;
+      const line = this.line;
+      const pass = ++this.pass; // the first voice ending now (cut short) must not touch the rows
       this.busy = true;
-      CQ.audio.speak(CQ.speakable(this.text), { who: this.opts.who || "narrator", line: this.text }).then(() => {
+      clearTimeout(this.paceTimer);
+      this.typing = 0;
+      this.showRow(0, true);
+      CQ.audio.speak(CQ.speakable(this.text), { who: this.opts.who || "narrator", line: this.text, onStart: this.voiced(line, pass) }).then(() => {
+        this.reveal(line, pass);
         if (n === this.replays) this.busy = false;
       });
     },
@@ -878,9 +1016,9 @@
       this.el = CQ.el("div", "hand hidden", ui);
       CQ.img("hand", "", this.el);
       this.k = 104 / IMAGES.hand.w; // drawn 104 px wide
-      // The art points up; it is shown mirrored (flipped horizontally, see .hand img in styles.css), so the
-      // finger points up at what to tap or drag and the hand sits just below it.
-      this.tip = { x: (IMAGES.hand.w - window.GEOM.hand.tipX) * this.k, y: window.GEOM.hand.tipY * this.k };
+      // The art points up, with the finger at the left of the hand (shown as drawn, not mirrored: asked
+      // 2026-11-05), so the finger points up at what to tap or drag and the hand sits just below it.
+      this.tip = { x: window.GEOM.hand.tipX * this.k, y: window.GEOM.hand.tipY * this.k };
       this.el.style.transformOrigin = `${this.tip.x}px ${this.tip.y}px`;
       this.seq = 0;
     },

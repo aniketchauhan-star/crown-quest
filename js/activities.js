@@ -85,7 +85,8 @@
       this.isOpen = false;
       const n = ++this.opens;
       CQ.audio.play("ui.swoosh");
-      CQ.balance.clearGlow();
+      CQ.focus.off();
+      this.framed = false;
       await CQ.anim(this.stage, [{ opacity: 1 }, { opacity: 0 }], { duration: 400, easing: CQ.EASE.in, essential: true });
       if (n !== this.opens) return;
       this.el.classList.add("hidden");
@@ -100,17 +101,19 @@
       this.isOpen = false;
       this.opens++;
       this.shown = null;
+      this.framed = false;
       this.content.innerHTML = "";
       this.el.classList.add("hidden");
       CQ.soft.set("notebook", false);
       CQ.balance.present(false, true);
     },
-    // Draw one beat. s = { hl, crown, tags, box, boxColor, label, pulse, outline, outlineLabel, lhs,
-    // rhs, ghost, title, rows, bal }. rows are lines worked out under the equation ({ t, cls }: cls
-    // "big", "no" red, "ok" green). bal is the part of the balance that lights up: "crown", "left",
-    // "right", "both", or "level" (both, and its centre flashes: the sides are equal). Each piece gets
-    // a key; pieces that were already on screen in the last beat stay as they were, so only the new
-    // ones catch the eye.
+    // Draw one beat. s = { hl, crown, mini, tags, box, boxColor, label, pulse, outline, outlineLabel,
+    // lhs, rhs, ghost, title, rows, bal }. crown: the crown over x; mini: the crown and two coins over
+    // x + 2 (both fly over from the balance). rows are lines worked out under the equation ({ t, cls }:
+    // cls "big", "no" red, "ok" green). bal is the part of the balance the frame goes round: "crown",
+    // "left", "right", "both", or "level" (the whole balance, and its centre flashes: the sides are
+    // equal). Each piece gets a key; pieces that were already on screen in the last beat stay as they
+    // were, so only the new ones catch the eye.
     render(s) {
       const sig = JSON.stringify(s);
       if (this.shown && this.shown.sig === sig) return this.content.querySelector(".eqn");
@@ -150,10 +153,22 @@
         const l = add(CQ.el("div", "grp-label above " + (s.label.color || ""), d, s.label.text), "label:" + s.label.text);
         CQ.pos(l, r.cx, r.y - 22);
       }
+      // pictures over the equation are copies of the things on the balance, and fly over from there
+      // (data-fly: which thing on the left pan)
       if (s.crown) {
         const r = groupRect(eqn, ["x"]);
         const i = add(CQ.img("crown", "mini-crown", d), "crown");
+        i.dataset.fly = "crown";
         CQ.pos(i, r.cx, r.y - 30);
+      }
+      if (s.mini) {
+        // x + 2 is the crown and the two coins
+        const r = groupRect(eqn, LHS);
+        const m = add(CQ.el("div", "mini-pic", d), "mini");
+        CQ.img("crown", "mp-crown", m).dataset.fly = "crown";
+        CQ.img("coin", "mp-coin", m).dataset.fly = "coin:0";
+        CQ.img("coin", "mp-coin", m).dataset.fly = "coin:1";
+        CQ.pos(m, r.cx, r.y - 34);
       }
       if (s.rows) {
         const rows = CQ.el("div", "nb-rows", c);
@@ -203,38 +218,114 @@
         void t.offsetWidth; // the old look is drawn first, so the change runs as a CSS transition
         t.className = now;
       });
-      // what is new fades in where it stays, one piece at a time (a tag with its line and bracket)
-      const fresh = [];
+      // First the frame goes round the part of the balance the line is about (the rest of it fades);
+      // then what is new comes in, one piece at a time (a tag with its line and bracket): words fade
+      // in where they stay, and pictures fly over from the balance last.
+      const framed = this.light(s.bal, before.bal);
+      if (framed && this.shown) start = Math.max(start, 550);
+      const groups = new Map();
       c.querySelectorAll("[data-key]").forEach((el) => {
         const key = el.dataset.key;
         if (before.keys.has(key)) return;
-        let n = fresh.indexOf(key);
-        if (n < 0) n = fresh.push(key) - 1;
-        CQ.anim(el, [{ opacity: 0, translate: "0 10px" }, { opacity: 1, translate: "0 0" }], {
-          duration: 600,
-          delay: start + n * 500,
-          easing: CQ.EASE.out,
-          keep: false,
-        });
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(el);
       });
-      if (this.shown)
-        fresh.forEach((key, n) =>
+      const flying = (els) => els.some((el) => el.matches("[data-fly]") || el.querySelector("[data-fly]"));
+      const order = [...groups.keys()].sort((a, b) => flying(groups.get(a)) - flying(groups.get(b)));
+      let at = start;
+      order.forEach((key) => {
+        const els = groups.get(key);
+        if (this.shown && !flying(els))
           setTimeout(() => {
             if (this.shown && this.shown.sig === sig) CQ.audio.play("ui.pop", { volume: 0.4 });
-          }, 150 + n * 500)
-        );
-      this.light(s.bal, before.bal);
+          }, at);
+        if (key.startsWith("tag:")) {
+          at = this.drawTag(els, at) + 250; // bracket, line, word: each after the other
+          return;
+        }
+        els.forEach((el) => {
+          const fliers = el.matches("[data-fly]") ? [el] : [...el.querySelectorAll("[data-fly]")];
+          if (fliers.length) return this.flyIn(fliers, at, sig);
+          CQ.anim(el, [{ opacity: 0, translate: "0 10px" }, { opacity: 1, translate: "0 0" }], { duration: 600, delay: at, easing: CQ.EASE.out, keep: false });
+          if (el.classList.contains("grp-label")) writeIn(el, at + 150, 45); // a label's word is written in
+        });
+        at += 500;
+      });
       this.shown = { sig, keys, toks, bal: s.bal };
       return eqn;
     },
-    // the part of the balance this beat is about lights up
+    // Copies of things on the left pan fly over to their places on the formula screen (each picture in
+    // fliers says which thing it is: "crown", "coin:0"…), one after another, starting at ms.
+    flyIn(fliers, ms, sig) {
+      fliers.forEach((f) => (f.style.opacity = "0"));
+      const left = CQ.balance.items.left;
+      const source = (spec) => (spec === "crown" ? left.find((it) => it.type === "crown") : left.filter((it) => it.type === "coin")[+spec.split(":")[1]]);
+      fliers.forEach((f, i) =>
+        setTimeout(() => {
+          if (!this.shown || this.shown.sig !== sig || !f.isConnected) return;
+          const it = source(f.dataset.fly);
+          const from = it && CQ.centerOf(it.el);
+          const to = CQ.centerOf(f);
+          if (!from || !to) return void (f.style.opacity = "");
+          const fw = f.getBoundingClientRect().width || 1;
+          const copy = f.cloneNode(true);
+          copy.removeAttribute("data-fly");
+          copy.style.opacity = "";
+          copy.style.width = f.getBoundingClientRect().width / CQ.stage.scale + "px";
+          copy.classList.add("nb-flyer");
+          if (i === 0) CQ.audio.play("ui.swoosh", { volume: 0.6 });
+          CQ.fly(CQ.ui.layer, copy, from, to, { duration: 950, arc: -150, scaleFrom: it.el.getBoundingClientRect().width / fw, scaleTo: 1 }).then(() => {
+            f.style.opacity = "";
+            CQ.audio.play("ui.pop", { volume: 0.45 });
+          });
+        }, ms + i * 170)
+      );
+    },
+    // A tag comes in as it would be drawn: its bracket, the dot on its part and the line drawn down from
+    // it, then the word written in. Returns when it is done (ms from now).
+    drawTag(els, at) {
+      const br = els.find((e) => e.classList.contains("under-bracket"));
+      const line = els.find((e) => e.classList.contains("tag-line"));
+      const tag = els.find((e) => e.classList.contains("tag"));
+      let t = at;
+      if (br) {
+        CQ.anim(br, [{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: t, easing: CQ.EASE.out, keep: false });
+        t += 280;
+      }
+      if (line) {
+        CQ.anim(line, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, delay: t, keep: false });
+        CQ.anim(line, [{ clipPath: "inset(-10px -10px calc(100% - 8px) -10px)" }, { clipPath: "inset(-10px -10px -10px -10px)" }], { duration: 440, delay: t + 120, easing: CQ.EASE.out, keep: false });
+        t += 560;
+      }
+      if (tag) {
+        CQ.anim(tag, [{ opacity: 0, scale: "0.85" }, { opacity: 1, scale: "1" }], { duration: 280, delay: t, easing: CQ.EASE.out, keep: false });
+        t = writeIn(tag, t + 100, 45);
+      }
+      return t;
+    },
+    // A frame goes round the part of the balance this beat is about, and the rest of the balance fades
+    // (CQ.focus: its window and gold ring; the maths stays bright above it). Returns whether the frame
+    // moved to something new.
     light(bal, was) {
       const b = CQ.balance;
-      b.clearGlow();
-      if (bal === "crown") b.glowItems("left", (it) => it.type === "crown");
-      if (bal === "left" || bal === "both" || bal === "level") b.glowItems("left");
-      if (bal === "right" || bal === "both" || bal === "level") b.glowItems("right");
       if (bal === "level" && was !== "level") b.flashEmblem();
+      const plate = (side) => b.sides[side].g.querySelector(".bal-plate");
+      const els = (side, pred) => b.items[side].filter((it) => !pred || pred(it)).map((it) => it.el);
+      const parts = {
+        crown: () => els("left", (it) => it.type === "crown"),
+        left: () => [plate("left")].concat(els("left")),
+        right: () => [plate("right")].concat(els("right")),
+        both: () => [plate("left"), plate("right")].concat(els("left"), els("right")),
+        level: () => [...CQ.world.balanceLayer.querySelectorAll("img")],
+      };
+      if (!parts[bal]) {
+        if (this.framed) CQ.focus.off();
+        this.framed = false;
+        return false;
+      }
+      if (bal !== was || !this.framed) CQ.focus.on(parts[bal], { pad: 20, radius: 26, quiet: true });
+      this.framed = true;
+      return bal !== was;
     },
     // Run a list of beats with Next / Back.
     async run(beats) {
@@ -254,11 +345,12 @@
     { id: "l4-9", s: {} },
     { id: "l4-10", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "Variable", color: "var" }] } },
     { id: "l4-11", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "Variable", color: "var" }] }, gem: "variable" },
-    { id: "l4-12", s: { box: LHS, bal: "left" } },
+    { id: "l4-12", s: { box: LHS, mini: true, bal: "left" } },
     {
       id: "l4-13",
       s: {
         box: LHS,
+        mini: true,
         bal: "left",
         tags: [
           { ids: "x", text: "variable", color: "var" },
@@ -290,19 +382,19 @@
   // not a solution) and for 5 (both sides equal 7, so 5 is the solution). The equation stays at the top
   // all along, like on a board; the working goes under it.
   CQ.NB_TRY = [
-    { id: "l4-23", s: { bal: "crown" } },
-    { id: "l4-24", s: { bal: "both" } },
-    { id: "l4-25", s: { bal: "both", rows: [{ t: "LHS: 4 + 2 = 6" }, { t: "RHS: 7" }] } },
-    { id: "l4-26", s: { rows: [{ t: "6 ≠ 7", cls: "big no" }, { t: "4 is not a solution", cls: "no" }] } },
-    { id: "l4-27", s: { bal: "both", rows: [{ t: "LHS: 5 + 2 = 7" }, { t: "RHS: 7" }] } },
-    { id: "l4-28", s: { bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] } },
-    { id: "l4-29", s: { bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] }, gem: "solution" },
+    { id: "l4-23", s: { crown: true, bal: "crown" } },
+    { id: "l4-24", s: { crown: true, bal: "both" } },
+    { id: "l4-25", s: { crown: true, bal: "both", rows: [{ t: "LHS: 4 + 2 = 6" }, { t: "RHS: 7" }] } },
+    { id: "l4-26", s: { crown: true, rows: [{ t: "6 ≠ 7", cls: "big no" }, { t: "4 is not a solution", cls: "no" }] } },
+    { id: "l4-27", s: { crown: true, bal: "both", rows: [{ t: "LHS: 5 + 2 = 7" }, { t: "RHS: 7" }] } },
+    { id: "l4-28", s: { crown: true, bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] } },
+    { id: "l4-29", s: { crown: true, bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] }, gem: "solution" },
   ];
 
   CQ.NB_LINEAR = [
-    { id: "l4-19", s: { hl: ["x"], bal: "crown", tags: [{ ids: "x", text: "One variable: x", color: "var" }] } },
-    { id: "l4-20", s: { hl: ["x"], ghost: true, bal: "crown", tags: [{ ids: "x", text: "x means x¹", color: "var" }] } },
-    { id: "l4-21", s: { hl: ["x"], ghost: true, bal: "crown", tags: [{ ids: "x", text: "One variable · highest power 1", color: "var" }] } },
+    { id: "l4-19", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "One variable: x", color: "var" }] } },
+    { id: "l4-20", s: { hl: ["x"], crown: true, ghost: true, bal: "crown", tags: [{ ids: "x", text: "x means x¹", color: "var" }] } },
+    { id: "l4-21", s: { hl: ["x"], crown: true, ghost: true, bal: "crown", tags: [{ ids: "x", text: "One variable · highest power 1", color: "var" }] } },
     { id: "l4-22", s: { title: "Linear equation in one variable", outline: true }, gem: "linear" },
   ];
 
@@ -560,9 +652,30 @@
       makeChip(el, { x: 600 + i * 240, y: rowY }, ctl);
       chips.push(el);
     });
-    // one at a time: the equation, its braces and lines, each empty box, then each label
-    oneByOne([eqn, ...d.querySelectorAll(".brace"), ...d.querySelectorAll(".lead"), ...targets, ...chips], 160, 300);
-    await CQ.say("", { text: c.title, advance: "auto", pause: 100 });
+    // One at a time, the way it would be drawn, while the line is said: the equation sign by sign; then
+    // each box in turn (its bracket, the dot on its part and the line drawn out from it, the empty box);
+    // then the labels, one by one.
+    const tokens = [...eqn.querySelectorAll(".tok")];
+    const ORDER = ["Variable", "Equation", "LHS", "RHS"];
+    hideAll([...tokens, ...Object.values(braces), ...Object.values(leads), ...targets, ...chips]);
+    const said = CQ.say("", { text: c.title, advance: "auto", pause: 100 });
+    await CQ.run.wait(350);
+    for (const t of tokens) {
+      comeIn(t, "rise", 360);
+      await CQ.run.wait(170);
+    }
+    await CQ.run.wait(300);
+    for (const name of ORDER) {
+      if (braces[name]) await comeIn(braces[name], "rise", 320);
+      await comeIn(leads[name], "line", 420);
+      await comeIn(targets.find((t) => t.answer === name), "pop", 300);
+      await CQ.run.wait(120);
+    }
+    for (const ch of chips) {
+      comeIn(ch, "rise", 360);
+      await CQ.run.wait(180);
+    }
+    await said;
     const firstChip = chips.find((ch) => ch.label === "Variable");
     CQ.hand.drag(CQ.centerOf(firstChip), CQ.centerOf(targets[0]), 1);
     CQ.idle.arm(() => {
@@ -671,8 +784,19 @@
       makeChip(el, { x: 600 + (i % 3) * 360, y: 750 + Math.floor(i / 3) * 110 }, ctl);
       cards.push(el);
     });
-    oneByOne([bins.linear, bins.nonlinear, ...cards], 220, 300); // the two boxes, then each card
-    await CQ.say("", { text: c.title, advance: "auto", pause: 100 });
+    // One at a time, while the line is said: each box, with its name written in; then the cards, one by one.
+    hideAll([bins.linear, bins.nonlinear, ...cards]);
+    const said = CQ.say("", { text: c.title, advance: "auto", pause: 100 });
+    await CQ.run.wait(300);
+    for (const bin of [bins.linear, bins.nonlinear]) {
+      comeIn(bin, "pop", 360);
+      await CQ.run.wait(writeIn(bin.querySelector(".bin-head"), 300, 45) + 150);
+    }
+    for (const cd of cards) {
+      comeIn(cd, "rise", 360);
+      await CQ.run.wait(180);
+    }
+    await said;
     const demo = cards[0];
     CQ.hand.drag(CQ.centerOf(demo), CQ.centerOf(bins[demo.card.linear ? "linear" : "nonlinear"]), 1);
     CQ.idle.arm(() => {
@@ -697,8 +821,8 @@
     { t: "9", id: "nine" },
   ];
   // A recap panel's labels, like the label activity's: each one right over or under the part it names,
-  // joined to it by a straight line ending in a dot on the part, all in the label's colour. Returns the
-  // lines, which draw themselves when the panel comes in.
+  // joined to it by a straight line ending in a dot on the part, all in the label's colour. Returns them
+  // in order, { brace, lead, tag } each, all hidden: the panel brings them in one by one (playPanel).
   function recapLabels(eqn, show, labels) {
     const d = eqn.deco;
     const all = groupRect(eqn, RECAP_EQ.map((t) => t.id));
@@ -711,33 +835,101 @@
       return e;
     };
     const brace = (r, up, cls) => CQ.box(CQ.el("div", "brace on " + (up ? "up " : "down ") + cls, d), r.x - 8, up ? r.y - 22 : r.y + r.h + 2, r.w + 16, 20);
+    // the line is drawn out from the part to the label
+    const line = (x, y0, y1, cls) => {
+      const l = leadLine(d, x, y0, y1, cls + " from-part");
+      return l;
+    };
     const above = all.y - 48; // the foot of a label over the equation
-    const leads = [];
+    const parts = [];
     if (show.includes("variable")) {
       eqn.querySelector('.tok[data-id="x"]').classList.add("rc-var");
-      tag("c-var", labels.variable, rx.cx, above);
-      leads.push(leadLine(d, rx.cx, above, rx.y - 4, "c-var" + (show.includes("equation") ? " hop" : "")));
+      const t = tag("c-var", labels.variable, rx.cx, above);
+      parts.push({ name: "variable", lead: line(rx.cx, above, rx.y - 4, "c-var" + (show.includes("equation") ? " hop" : "")), tag: t });
     }
     if (show.includes("equation")) {
-      brace(all, true, "c-eq");
+      const br = brace(all, true, "c-eq");
       const xe = show.includes("variable") ? Math.max(all.cx + 70, rx.cx + 170) : all.cx;
-      tag("c-eq", labels.equation, xe, above);
-      leads.push(leadLine(d, xe, above, all.y - 19, "c-eq"));
+      const t = tag("c-eq", labels.equation, xe, above);
+      parts.push({ name: "equation", brace: br, lead: line(xe, above, all.y - 19, "c-eq"), tag: t });
     }
     const below = (r) => r.y + r.h + 36; // the top of a label under the equation
     if (show.includes("lhs") || show.includes("rhs")) eqn.closest(".rc-panel").classList.add("labels-below"); // a little higher, clear of the words
     if (show.includes("lhs")) {
-      brace(rl, false, "c-lhs");
-      tag("c-lhs", labels.lhs, rl.cx, below(rl), true);
-      leads.push(leadLine(d, rl.cx, below(rl), rl.y + rl.h + 19, "c-lhs"));
+      const br = brace(rl, false, "c-lhs");
+      const t = tag("c-lhs", labels.lhs, rl.cx, below(rl), true);
+      parts.push({ name: "lhs", brace: br, lead: line(rl.cx, below(rl), rl.y + rl.h + 19, "c-lhs"), tag: t });
     }
     if (show.includes("rhs")) {
-      brace(rr, false, "c-rhs");
-      tag("c-rhs", labels.rhs, rr.cx, below(rr), true);
-      leads.push(leadLine(d, rr.cx, below(rr), rr.y + rr.h + 19, "c-rhs"));
+      const br = brace(rr, false, "c-rhs");
+      const t = tag("c-rhs", labels.rhs, rr.cx, below(rr), true);
+      parts.push({ name: "rhs", brace: br, lead: line(rr.cx, below(rr), rr.y + rr.h + 19, "c-rhs"), tag: t });
     }
-    return leads;
+    parts.forEach((p) => [p.brace, p.lead, p.tag].forEach((e) => e && (e.style.opacity = "0")));
+    return parts;
   }
+  // Letters of el come in one after another, as if written: from `at` ms, `each` ms apart. Returns
+  // when it will be done (ms).
+  function writeIn(el, at, each) {
+    each = each || 45;
+    const chars = [];
+    const walk = (node) =>
+      Array.from(node.childNodes).forEach((c) => {
+        if (c.nodeType === 1) return walk(c);
+        if (c.nodeType !== 3) return;
+        const frag = document.createDocumentFragment();
+        for (const ch of c.textContent) {
+          const sp = document.createElement("span");
+          sp.className = "wch";
+          sp.textContent = ch;
+          frag.appendChild(sp);
+          chars.push(sp);
+        }
+        c.replaceWith(frag);
+      });
+    walk(el);
+    el.classList.add("writing");
+    const t0 = performance.now() + (at || 0);
+    let shown = 0;
+    const step = (now) => {
+      if (!el.isConnected) return;
+      const k = Math.min(chars.length, Math.floor((now - t0) / each) + 1);
+      while (shown < k) chars[shown++].classList.add("on");
+      if (shown < chars.length) requestAnimationFrame(step);
+      else el.classList.remove("writing");
+    };
+    requestAnimationFrame(step);
+    return (at || 0) + chars.length * each;
+  }
+  CQ.writeIn = writeIn;
+  // One step at a time, so a child can follow: something comes into view (fade + a little rise, or a
+  // pop), and the steps wait for each other (CQ.run.wait stops while the menu is open).
+  const showStep = (el, how, ms) => {
+    if (!el) return Promise.resolve();
+    const kf = how === "pop" ? [{ opacity: 0, scale: "0.6" }, { opacity: 1, scale: "1" }] : [{ opacity: 0, translate: "0 10px" }, { opacity: 1, translate: "0 0" }];
+    el.style.opacity = "";
+    return CQ.anim(el, kf, { duration: ms || 380, easing: how === "pop" ? CQ.EASE.back : CQ.EASE.out, keep: false, essential: true });
+  };
+  // A board's things come in one at a time, each the way it would be drawn, and wait hidden (and can't
+  // be touched) until their turn: "rise" (fade in with a little rise), "pop", "line" (a line drawn out
+  // from the part it starts at, its dot first).
+  const hideAll = (els) =>
+    els.forEach((e) => {
+      if (!e) return;
+      e.style.opacity = "0";
+      e.style.pointerEvents = "none";
+    });
+  const comeIn = (el, how, ms) => {
+    if (!el) return Promise.resolve();
+    el.style.pointerEvents = "";
+    if (how === "line") {
+      el.style.opacity = "";
+      // .up: its part is above it, so it is drawn downwards; otherwise upwards from the part below
+      const from = el.classList.contains("up") ? "inset(-10px -10px calc(100% - 8px) -10px)" : "inset(calc(100% - 8px) -10px -10px -10px)";
+      return CQ.anim(el, [{ clipPath: from }, { clipPath: "inset(-10px -10px -10px -10px)" }], { duration: ms || 420, easing: CQ.EASE.out, keep: false, essential: true });
+    }
+    return showStep(el, how, ms);
+  };
   CQ.activityRecap = async function () {
     const c = C().recap;
     const wrap = board("recap-act");
@@ -746,24 +938,60 @@
     const grid = CQ.el("div", "rc-grid", b);
     const panels = c.panels.map((p, i) => {
       const card = CQ.el("div", "rc-panel", grid);
-      CQ.el("div", "rc-n", card, String(i + 1));
+      card.num = CQ.el("div", "rc-n", card, String(i + 1));
       const box = CQ.el("div", "rc-eq-wrap", card);
       card.eqn = CQ.eqTokens(box, RECAP_EQ, "rc-eq");
-      CQ.el("div", "rc-text", card, CQ.rich(p.text));
+      card.text = CQ.el("div", "rc-text", card, CQ.rich(p.text));
+      [card.num, card.text, ...card.eqn.querySelectorAll(".tok")].forEach((e) => (e.style.opacity = "0"));
       return card;
     });
     await CQ.run.wait(80); // lay the equations out before measuring them for the labels
-    panels.forEach((card, i) => (card.leads = recapLabels(card.eqn, c.panels[i].show, c.labels)));
+    panels.forEach((card, i) => (card.parts = recapLabels(card.eqn, c.panels[i].show, c.labels)));
     await CQ.say("recap-0", { text: c.title + ".", advance: "auto", pause: 200 });
+    // One panel at a time, while its line is said: the panels before it step back (faded), and the new
+    // one comes in step by step: its number, the equation sign by sign, the labels it shares with the
+    // panels before (together), then its own new label: the bracket, the dot on the part, the line
+    // drawn out to where the label goes, the word written in; last, the sentence under it.
+    const W = (ms) => CQ.run.wait(ms);
+    const playPanel = async (card) => {
+      await showStep(card.num, "pop", 360);
+      for (const t of card.eqn.querySelectorAll(".tok")) {
+        showStep(t, "rise", 360);
+        await W(150);
+      }
+      await W(250);
+      const seen = card.parts.slice(0, -1);
+      const fresh = card.parts[card.parts.length - 1];
+      if (seen.length) {
+        seen.forEach((p) => {
+          [p.brace, p.tag].forEach((e) => showStep(e, "rise", 420));
+          showStep(p.lead, "rise", 420);
+          p.lead.classList.add("on", "drawn");
+        });
+        await W(520);
+      }
+      if (fresh) {
+        if (fresh.brace) {
+          await showStep(fresh.brace, "rise", 360);
+        }
+        fresh.lead.style.opacity = "";
+        fresh.lead.classList.add("on"); // the dot on the part, then the line drawn out from it
+        CQ.audio.play("ui.pop", { volume: 0.4 });
+        await W(520);
+        showStep(fresh.tag, "pop", 300);
+        await W(writeIn(fresh.tag, 120, 55) + 150);
+      }
+      await showStep(card.text, "rise", 420);
+    };
     for (let i = 0; i < panels.length; i++) {
       const card = panels[i];
+      panels.slice(0, i).forEach((p) => p.classList.add("rest")); // the panels before step back
       card.classList.add("on");
-      CQ.audio.play("ui.pop");
-      CQ.anim(card, [{ opacity: 0, translate: "0 14px" }, { opacity: 1, translate: "0 0" }], { duration: 520, easing: CQ.EASE.out, essential: true });
-      setTimeout(() => card.leads.forEach((l) => l.classList.add("on")), 450); // each label's line draws to its part
-      await CQ.say(c.panels[i].id, { text: c.panels[i].text });
+      await Promise.all([playPanel(card), CQ.say(c.panels[i].id, { text: c.panels[i].text })]);
     }
-    await CQ.run.wait(300);
+    // all four together, for a good look, then on to the next screen by itself
+    panels.forEach((p) => p.classList.remove("rest"));
+    await CQ.run.wait(5000);
     await closeBoard(wrap);
   };
 
