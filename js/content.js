@@ -183,7 +183,6 @@ window.CONTENT = {
     restartQ: "Start this level again?",
     yes: "Yes",
     no: "No",
-    takenOff: "Taken off",
     playAgain: "Play again",
     unit: "1 unit",
     // what the check panel shows under LHS ≠ RHS or LHS = RHS ({v} = the value tried)

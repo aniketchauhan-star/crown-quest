@@ -57,6 +57,28 @@
   // bar above says the line. Zippy isn't on this screen: the balance and the maths have it to
   // themselves. On closing, the maths fades and the view glides back to the whole scene.
   const ASIDE = { x: 760, y: 472, z: 1.25 }; // the view: the balance at the right (x 910–1800 on screen), room at the left
+  CQ.ASIDE = ASIDE; // (the check uses it too: CQ.checkPanel in js/ui.js)
+  // The gold frame round a part of the balance, the rest of it faded (CQ.focus): "crown", "left" (pan),
+  // "right", "both" (pans), "level" or "whole" (the whole balance). Anything else: no frame.
+  CQ.frameBalance = function (part) {
+    const b = CQ.balance;
+    const plate = (side) => b.sides[side].g.querySelector(".bal-plate");
+    const els = (side, pred) => b.items[side].filter((it) => !pred || pred(it)).map((it) => it.el);
+    const parts = {
+      crown: () => els("left", (it) => it.type === "crown"),
+      left: () => [plate("left")].concat(els("left")),
+      right: () => [plate("right")].concat(els("right")),
+      both: () => [plate("left"), plate("right")].concat(els("left"), els("right")),
+      level: () => [...CQ.world.balanceLayer.querySelectorAll(".bal-art, .pan-item")],
+    };
+    parts.whole = parts.level;
+    if (!parts[part]) {
+      CQ.focus.off();
+      return false;
+    }
+    CQ.focus.on(parts[part], { pad: 20, radius: 26, quiet: true });
+    return true;
+  };
   CQ.notebook = {
     build(overlay) {
       this.el = CQ.el("div", "notebook hidden", overlay);
@@ -172,7 +194,10 @@
       }
       if (s.rows) {
         const rows = CQ.el("div", "nb-rows", c);
-        s.rows.forEach((r) => add(CQ.el("div", "nb-row " + (r.cls || ""), rows, CQ.rich(r.t)), "row:" + r.t));
+        s.rows.forEach((r) => {
+          const el = add(CQ.el("div", "nb-row " + (r.cls || ""), rows, CQ.rich(r.t)), "row:" + r.t);
+          if (r.cue) el.dataset.cue = r.cue; // it waits until the voice says this
+        });
       }
       // a tag hangs under its part on a straight line that starts with a dot on the part (or on the
       // middle of the part's bracket), like the labels of the activities
@@ -231,6 +256,29 @@
         groups.get(key).push(el);
       });
       const flying = (els) => els.some((el) => el.matches("[data-fly]") || el.querySelector("[data-fly]"));
+      // a piece with a cue comes in when the voice says its word (in order, if several share it)
+      const cued = new Map();
+      groups.forEach((els, key) => {
+        if (!els[0].dataset.cue) return;
+        const cue = els[0].dataset.cue;
+        if (!cued.has(cue)) cued.set(cue, []);
+        cued.get(cue).push(...els);
+        groups.delete(key);
+      });
+      cued.forEach((els, cue) => {
+        els.forEach((el) => (el.style.opacity = "0"));
+        this.onCue(cue, sig, () =>
+          els.forEach((el, n) =>
+            setTimeout(() => {
+              if (!this.shown || this.shown.sig !== sig) return;
+              el.style.opacity = "";
+              CQ.anim(el, [{ opacity: 0, scale: "0.7" }, { opacity: 1, scale: "1.08", offset: 0.7 }, { opacity: 1, scale: "1" }], { duration: 520, easing: CQ.EASE.out, keep: false });
+              if (n === 0) CQ.audio.play("ui.pop", { volume: 0.55 });
+              if (el.classList.contains("sol-name")) writeIn(el, 150, 45); // its name is written in
+            }, n * 450)
+          )
+        );
+      });
       const order = [...groups.keys()].sort((a, b) => flying(groups.get(a)) - flying(groups.get(b)));
       let at = start;
       order.forEach((key) => {
@@ -253,6 +301,19 @@
       });
       this.shown = { sig, keys, toks, bal: s.bal };
       return eqn;
+    },
+    // fn, when the voice of this beat's line gets to str (the question bar types with it), as long as
+    // the beat is still on screen; at the latest after 15 s.
+    onCue(str, sig, fn) {
+      const line = this.lineText;
+      const t0 = performance.now();
+      const tick = () => {
+        if (!this.shown || this.shown.sig !== sig) return;
+        const cap = CQ.caption;
+        if ((cap.text === line && cap.reached(str)) || performance.now() - t0 > 15000) return fn();
+        setTimeout(tick, 60);
+      };
+      setTimeout(tick, 60);
     },
     // Copies of things on the left pan fly over to their places on the formula screen (each picture in
     // fliers says which thing it is: "crown", "coin:0"…), one after another, starting at ms.
@@ -307,24 +368,13 @@
     // (CQ.focus: its window and gold ring; the maths stays bright above it). Returns whether the frame
     // moved to something new.
     light(bal, was) {
-      const b = CQ.balance;
-      if (bal === "level" && was !== "level") b.flashEmblem();
-      const plate = (side) => b.sides[side].g.querySelector(".bal-plate");
-      const els = (side, pred) => b.items[side].filter((it) => !pred || pred(it)).map((it) => it.el);
-      const parts = {
-        crown: () => els("left", (it) => it.type === "crown"),
-        left: () => [plate("left")].concat(els("left")),
-        right: () => [plate("right")].concat(els("right")),
-        both: () => [plate("left"), plate("right")].concat(els("left"), els("right")),
-        level: () => [...CQ.world.balanceLayer.querySelectorAll(".bal-art, .pan-item")],
-      };
-      parts.whole = parts.level; // the whole balance, without the flash
-      if (!parts[bal]) {
+      if (bal === "level" && was !== "level") CQ.balance.flashEmblem(); // ("whole": the same frame, no flash)
+      if (!bal) {
         if (this.framed) CQ.focus.off();
         this.framed = false;
         return false;
       }
-      if (bal !== was || !this.framed) CQ.focus.on(parts[bal], { pad: 20, radius: 26, quiet: true });
+      if (bal !== was || !this.framed) CQ.frameBalance(bal);
       this.framed = true;
       return bal !== was;
     },
@@ -333,6 +383,7 @@
       let i = 0;
       while (i < beats.length) {
         const b = beats[i];
+        this.lineText = CQ.T(b.id); // what the line says (things can wait for a word of it)
         this.render(b.s);
         if (b.gem && !CQ.gems.have.has(b.gem)) CQ.gems.collect(b.gem);
         const r = await CQ.say(b.id, { back: i > 0 });
@@ -389,7 +440,21 @@
     { id: "l4-26", s: { crown: true, bal: "both", rows: [{ t: "6 ≠ 7", cls: "big no" }, { t: "4 is not a solution", cls: "no" }] } },
     { id: "l4-27", s: { crown: true, bal: "both", rows: [{ t: "LHS: 5 + 2 = 7" }, { t: "RHS: 7" }] } },
     { id: "l4-28", s: { crown: true, bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] } },
-    { id: "l4-29", s: { crown: true, bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] }, gem: "solution" },
+    {
+      id: "l4-29",
+      s: {
+        crown: true,
+        bal: "level",
+        rows: [
+          { t: "LHS = 7" },
+          { t: "RHS = 7" },
+          { t: "7 = 7", cls: "big ok" },
+          { t: "x = 5", cls: "sol", cue: "So, 5" }, // the 5 comes when the voice says it
+          { t: "Solution", cls: "sol-name", cue: "So, 5" },
+        ],
+      },
+      gem: "solution",
+    },
   ];
 
   CQ.NB_LINEAR = [
@@ -1056,10 +1121,7 @@
     CQ.anim(wrap, [{ opacity: 0 }, { opacity: 1 }], { duration: 420, essential: true }); // the dark comes in softly, like the other boards'
     CQ.anim(b, [{ transform: "scale(.9)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 600, easing: CQ.EASE.out, essential: true });
     CQ.audio.play("scroll.open");
-    const head = CQ.el("div", "pr-head", b);
-    const stepEl = CQ.el("div", "pr-step", head);
-    const prog = CQ.el("div", "pr-prog", head);
-    const dots = P.problems.map(() => CQ.el("span", "pr-dot", prog));
+    // (no step title and no progress marks over it: asked 2026-11-05)
     const body = CQ.el("div", "pr-body", b);
     const main = CQ.el("div", "pr-main", body);
     const pad = CQ.el("div", "pr-pad hidden", body);
@@ -1114,21 +1176,28 @@
     // Wait for a number to be typed and Check to be tapped.
     const typed = () => {
       entry = "";
-      pad.classList.remove("hidden");
+      showPad(0);
       showEntry();
       return CQ.run.when(new Promise((res) => (onCheck = res)));
     };
 
     // ---- screens on the board
-    const setStep = (title) => {
-      stepEl.innerHTML = CQ.rich(title);
-      CQ.anim(stepEl, [{ transform: "translateX(-20px)", opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], { duration: 300, keep: false });
-    };
+    // The keypad comes in key by key (after the step's lines) when it appears.
+    function showPad(delay) {
+      if (!pad.classList.contains("hidden")) return;
+      pad.classList.remove("hidden");
+      oneByOne([...pad.children], 70, delay || 0);
+    }
+    // One thing at a time, each by itself: every line of the step, and the two sides of an LHS/RHS
+    // pair one after the other; then the keypad, key by key.
     const render = (html, withPad) => {
-      pad.classList.toggle("hidden", !withPad);
       body.classList.toggle("with-pad", !!withPad);
       main.innerHTML = html;
-      oneByOne([...main.children], 320); // each line of the step comes in turn
+      const parts = [];
+      [...main.children].forEach((el) => (el.classList.contains("pr-sides") ? parts.push(...el.children) : parts.push(el)));
+      oneByOne(parts, 560);
+      if (withPad) showPad(parts.length * 560 + 250);
+      else pad.classList.add("hidden");
     };
     const R = CQ.rich;
     const sides = (lhs, rhs) =>
@@ -1165,12 +1234,7 @@
 
     async function runProblem(i) {
       const p = P.problems[i];
-      dots.forEach((d, k) => {
-        d.classList.toggle("done", k < i);
-        d.classList.toggle("now", k === i);
-      });
       // 1) try on your own
-      setStep(P.stepTitles.try);
       render(
         `<div class="pr-find">${R(P.find)}</div>` + (p.hint ? `<div class="pr-hint">${R(p.hint)}</div>` : "") + `<div class="pr-eq">${R(p.eq)}</div>` + typeRow("x ="),
         true
@@ -1197,7 +1261,6 @@
         markInput(true);
         CQ.audio.play("correct");
         await CQ.run.wait(500);
-        setStep(T(P.stepTitles.right, { x: CQ.num(p.x) }));
         render(
           `<div class="pr-eq sm">${R(p.eq)}</div><div class="pr-x ok">${R("x = " + CQ.num(p.x))}</div>` +
             sides(R(w.text), CQ.num(p.rhs)) +
@@ -1213,7 +1276,6 @@
       markInput(false);
       CQ.audio.play("tryagain");
       await CQ.run.wait(500);
-      setStep(P.stepTitles.wrong);
       render(
         `<div class="pr-x no">${R(W.yourAnswer + " x = " + CQ.num(a))}</div><div class="pr-eq sm">${R(p.eq)}</div>` +
           sides(R(w.text), CQ.num(p.rhs)) +
@@ -1223,7 +1285,6 @@
       await CQ.say("", { text: T(P.lines.wrong, { l: CQ.num(w.value), r: CQ.num(p.rhs), a: CQ.num(a) }) });
       // 4–5) undo each operation on both sides
       for (const st of p.steps) {
-        setStep(st.title);
         let html = "";
         if (st.show) html += `<div class="pr-eq">${R(st.show)}</div>`;
         if (st.note) html += `<div class="pr-note blue">${R(st.note)}</div>`;
@@ -1281,7 +1342,6 @@
         await CQ.run.wait(700);
       }
       // 6) check in the original equation
-      setStep(P.stepTitles.check);
       const w2 = workLHS(p.lhs, p.x);
       render(
         `<div class="pr-eq sm">${R(p.eq)}</div><div class="pr-x">${R("x = " + CQ.num(p.x))}</div>` +
@@ -1304,12 +1364,8 @@
       for (let i = startAt || 0; i < P.problems.length; i++) {
         CQ.store.set("practiceAt", i);
         await runProblem(i);
-        dots[i].classList.add("done");
-        CQ.fx.sparkle(CQ.ui.layer, CQ.centerOf(dots[i]).x, CQ.centerOf(dots[i]).y, 6, 30);
       }
       CQ.store.set("practiceAt", 0);
-      dots.forEach((d) => d.classList.add("done"));
-      setStep(P.stepTitles.done);
       // a gem for every equation solved
       const colors = ["#F2C230", "#2BB673", "#9B5DE5", "#1FA3A3", "#E5484D", "#3D8BFD"];
       render(`<div class="pr-done">${R(CQ.fmt(W.allDone, { n: P.problems.length }))}</div><div class="pr-gems">${P.problems.map((q, k) => CQ.gem(colors[k % colors.length], 96)).join("")}</div>`);

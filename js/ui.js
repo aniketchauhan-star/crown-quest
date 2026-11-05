@@ -466,6 +466,14 @@
         requestAnimationFrame(step);
       };
     },
+    // Has the line got as far as str? For a line typed with its voice: the voice is saying it now (the
+    // letters typed so far); otherwise: the row it is in is on screen. (For things that appear on a word.)
+    reached(str) {
+      if (!this.text) return false;
+      const done = this.rows.slice(0, this.row).join(" ");
+      const cur = this.chars ? this.chars.filter((c) => c.classList.contains("on")).map((c) => c.textContent).join("") : this.txt.textContent;
+      return (done + " " + cur).includes(str);
+    },
     // Line n (or the line on screen) is done typing: its voice has ended, or the child tapped it. A row
     // still waiting for a voice that never started is shown, and the rows take turns to be read.
     reveal(n, pass) {
@@ -1353,6 +1361,10 @@
         chip.num = v; // (a button's own .value is always text)
         if (misses >= 2 && v === correct) chip.classList.add("glow");
       });
+      // the tiles stay within the check, clear of the balance beside it
+      const half = picker.offsetWidth / 2;
+      const cx = parseFloat(picker.style.left);
+      picker.style.left = Math.max(half, Math.min(host.offsetWidth - half, cx)) + "px";
     };
     b.onclick = (e) => {
       e.stopPropagation();
@@ -1371,6 +1383,19 @@
   };
 
   // ------------------------------------------------------------------ Check panel (substitute, find each side, compare)
+  // The check is shown like the formula screen (asked 2026-11-05): the view glides until the balance
+  // stands at the right, bright, with the rest of the scene dark (Zippy, holding the bar, waits unseen),
+  // and the check is worked at the left, big, one row under another, each piece coming in by itself.
+  // Pieces appear one at a time (styles.css: body.checking).
+  // (each piece by itself: it has faded in before the next one starts)
+  const comeUp = async (els, gap) => {
+    els.forEach((e) => (e.style.opacity = "0"));
+    for (const e of els) {
+      e.style.opacity = "";
+      CQ.anim(e, [{ opacity: 0, translate: "0 16px" }, { opacity: 1, translate: "0 0" }], { duration: 420, easing: CQ.EASE.out, keep: false, essential: true });
+      await CQ.run.wait(gap || 460);
+    }
+  };
   CQ.checkPanel = {
     build(ui) {
       this.el = CQ.el("div", "check-panel hidden", ui);
@@ -1379,6 +1404,34 @@
       this.lhs = CQ.el("div", "cp-side lhs", this.row);
       this.rhs = CQ.el("div", "cp-side rhs", this.row);
       this.cmp = CQ.el("div", "cp-compare", this.el);
+      this.isOpen = false;
+    },
+    // The view glides: the balance to the right, the rest dark. (close: back to the whole scene.)
+    async open() {
+      if (this.isOpen) return;
+      this.isOpen = true;
+      document.body.classList.add("checking");
+      CQ.soft.set("check", [CQ.world.balanceLayer], 2);
+      CQ.balance.present(true);
+      CQ.audio.play("focus.in");
+      const A = CQ.ASIDE;
+      await CQ.camera.to(A.x, A.y, A.z, 1400);
+      if (this.isOpen) CQ.zippy.setVisible(false); // already unseen under the dark
+    },
+    async close() {
+      if (!this.isOpen) return;
+      this.isOpen = false;
+      CQ.focus.off();
+      const p = this.el.querySelector(":scope > .cp-picker");
+      if (p) p.classList.add("hidden");
+      await CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 420, easing: CQ.EASE.in, essential: true });
+      this.el.classList.add("hidden");
+      this.el.style.opacity = "";
+      document.body.classList.remove("checking");
+      CQ.zippy.setVisible(true); // still under the dark: he is simply there as it lifts
+      CQ.balance.present(false);
+      CQ.soft.set("check", false);
+      await CQ.camera.to(960, 540, 1, 1300);
     },
     // eq = { k, a, b, rhsGiven }: the equation k·x + a = b (k is 1 except for Level 9's two crowns)
     async show(eq) {
@@ -1397,21 +1450,30 @@
       this.cmp.className = "cp-compare";
       const old = this.el.querySelector(":scope > .cp-picker");
       if (old) old.classList.add("hidden");
-      // under the balance, one side at a time: the left side, then the right side
-      const rise = [{ transform: "translateY(36px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }];
       this.el.style.opacity = "";
       this.el.style.transform = "";
+      // the left side, piece by piece; the right side waits (side)
       this.rhs.style.opacity = "0";
       CQ.audio.play("ui.pop");
-      await CQ.anim(this.lhs, rise, { duration: 520, easing: CQ.EASE.out, essential: true });
-      CQ.audio.play("ui.pop", { volume: 0.7 });
-      await CQ.anim(this.rhs, rise, { duration: 520, easing: CQ.EASE.out, essential: true });
+      await comeUp([...this.lhs.children]);
+      await CQ.run.wait(200);
+    },
+    // The right side comes in, piece by piece.
+    async side() {
+      const parts = [...this.rhs.children];
+      parts.forEach((e) => (e.style.opacity = "0"));
       this.rhs.style.opacity = "";
+      CQ.audio.play("ui.pop", { volume: 0.7 });
+      await comeUp(parts);
+      await CQ.run.wait(250);
     },
     hide(now) {
       const p = this.el.querySelector(":scope > .cp-picker");
       if (p) p.classList.add("hidden");
       if (now) {
+        // (a chapter jump: the scene, the blur and the camera are put back by the reset)
+        this.isOpen = false;
+        document.body.classList.remove("checking");
         this.el.classList.add("hidden");
         return Promise.resolve();
       }
@@ -1444,49 +1506,101 @@
       return CQ.pickNumber(this.blank(k), this.el, options, correct, onMiss);
     },
     // LHS = RHS or LHS ≠ RHS, and under it what that means ("4 is not a solution").
+    // One piece at a time: the left value, the sign, the right value; then what it means, written in.
     async compare(l, r, verdict) {
       const eq = l === r;
       this.cmp.innerHTML =
         `<div class="cp-cmp-row"><span class="cv lhs">${CQ.num(l)}</span><span class="csym ${eq ? "ok" : "no"}">${eq ? "=" : '<span class="neq">=</span>'}</span><span class="cv rhs">${CQ.num(r)}</span></div>` +
         (verdict ? `<div class="cp-verdict">${CQ.rich(verdict)}</div>` : "");
       this.cmp.className = "cp-compare " + (eq ? "ok" : "no");
+      const v = this.cmp.querySelector(".cp-verdict");
+      if (v) v.style.opacity = "0";
+      await comeUp([...this.cmp.querySelectorAll(".cp-cmp-row > span")], 520);
       CQ.audio.play(eq ? "balance.level" : "tryagain");
-      await CQ.anim(this.cmp, [{ transform: "scale(.3)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 520, easing: CQ.EASE.back, essential: true });
+      if (v) {
+        v.style.opacity = "";
+        await CQ.run.wait(CQ.writeIn ? CQ.writeIn(v, 60, 38) : 0);
+      }
       return eq;
     },
   };
 
   // ------------------------------------------------------------------ equation board (Levels 8 and 9)
-  // One equation under the balance that changes as each step is done to the balance.
+  // The working of Levels 8 and 9, shown like the formula screen (asked 2026-11-05): the view glides
+  // until the balance stands at the right, bright, and the steps are written at the left, one row under
+  // another, each one written in; the earlier rows fade back. While the child drags bars off the
+  // balance, the view goes back to the whole scene and the working waits, unseen (close); it comes back
+  // with the next step (open).
   CQ.eqBoard = {
     build(ui) {
       this.el = CQ.el("div", "eq-board hidden", ui);
-      this.row = CQ.el("div", "eb-row", this.el);
+      this.isOpen = false;
     },
+    async open() {
+      if (this.isOpen) return;
+      this.isOpen = true;
+      document.body.classList.add("solving");
+      CQ.world.root.classList.add("solving");
+      CQ.soft.set("solve", [CQ.world.balanceLayer, CQ.world.drag], 2);
+      CQ.balance.present(true);
+      CQ.audio.play("focus.in");
+      const A = CQ.ASIDE;
+      await CQ.camera.to(A.x, A.y, A.z, 1400);
+      if (!this.isOpen) return;
+      CQ.zippy.setVisible(false); // already unseen under the dark
+      if (this.el.children.length) {
+        // the rows so far come back, faded, before the next one is written
+        this.el.classList.remove("hidden");
+        await CQ.anim(this.el, [{ opacity: 0 }, { opacity: 1 }], { duration: 450, essential: true });
+      }
+    },
+    async close() {
+      if (!this.isOpen) return;
+      this.isOpen = false;
+      CQ.focus.off();
+      if (!this.el.classList.contains("hidden")) await CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 420, easing: CQ.EASE.in, essential: true });
+      this.el.classList.add("hidden");
+      this.el.style.opacity = "";
+      document.body.classList.remove("solving");
+      CQ.world.root.classList.remove("solving");
+      CQ.zippy.setVisible(true); // still under the dark: he is simply there as it lifts
+      CQ.balance.present(false);
+      CQ.soft.set("solve", false);
+      await CQ.camera.to(960, 540, 1, 1300);
+    },
+    // The first row of the working (a fresh board).
     show(text, opts) {
-      this.el.classList.remove("hidden");
-      this.set(text, Object.assign({}, opts, { quiet: true }));
-      return CQ.anim(this.el, [{ transform: "translate(-50%, 60px)", opacity: 0 }, { transform: "translate(-50%, 0)", opacity: 1 }], {
-        duration: 580,
-        easing: CQ.EASE.out,
-        essential: true,
-      });
+      this.el.innerHTML = "";
+      return this.set(text, opts);
     },
-    // opts.final: the answer (green)
+    // The next step: a new row under the others, written in, while the earlier rows fade back.
+    // opts.same: the last row changes instead (a highlight); opts.final: the answer (green).
     set(text, opts) {
       opts = opts || {};
-      this.row.innerHTML = CQ.rich(text);
-      this.row.classList.toggle("final", !!opts.final);
-      if (opts.quiet) return;
-      CQ.audio.play("ui.pop");
-      CQ.anim(this.row, [{ transform: "scale(.85)", opacity: 0.15 }, { transform: "scale(1)", opacity: 1 }], { duration: 480, easing: CQ.EASE.out, keep: false });
+      if (this.isOpen) this.el.classList.remove("hidden");
+      let row = opts.same ? this.el.lastElementChild : null;
+      if (!row) {
+        this.el.querySelectorAll(".eb-row").forEach((r) => r.classList.add("done"));
+        row = CQ.el("div", "eb-row", this.el);
+      }
+      row.innerHTML = CQ.rich(text);
+      row.classList.toggle("final", !!opts.final);
+      CQ.audio.play("ui.pop", { volume: 0.6 });
+      if (opts.same) {
+        CQ.anim(row, [{ opacity: 0.35 }, { opacity: 1 }], { duration: 480, easing: CQ.EASE.out, keep: false });
+        return CQ.sleep(480);
+      }
+      return CQ.sleep(CQ.writeIn ? CQ.writeIn(row, 0, 55) : 0);
     },
     hide(now) {
-      if (now) {
-        this.el.classList.add("hidden");
-        return Promise.resolve();
-      }
-      return CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 440, essential: true }).then(() => this.el.classList.add("hidden"));
+      // (a chapter jump: the scene, the blur and the camera are put back by the reset)
+      this.isOpen = false;
+      document.body.classList.remove("solving");
+      if (CQ.world.root) CQ.world.root.classList.remove("solving");
+      this.el.classList.add("hidden");
+      this.el.style.opacity = "";
+      this.el.innerHTML = "";
+      return Promise.resolve();
     },
   };
 })();
