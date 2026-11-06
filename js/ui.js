@@ -171,6 +171,7 @@
       CQ.hud.build(uiLayer);
       CQ.caption.build(uiLayer);
       CQ.next.build(uiLayer);
+      CQ.nav.build(uiLayer);
       CQ.swapBtn.build(uiLayer);
       CQ.bubble.build(uiLayer);
       CQ.spot.build(overlay);
@@ -223,8 +224,9 @@
   };
 
   // ------------------------------------------------------------------ crowns (no on-screen HUD)
-  // The screen has no level sign, crown row or corner buttons. The game still counts the crowns; a
-  // collected crown flies up out of the picture with a sparkle. (Esc opens the menu.)
+  // The screen has no level sign or crown row. (Its only corner buttons are the screens list and Play
+  // this screen again, top left: CQ.nav.) The game still counts the crowns; a collected crown flies up
+  // out of the picture with a sparkle. (Esc opens the menu.)
   CQ.hud = {
     crowns: 0,
     level: 1,
@@ -1197,6 +1199,91 @@
         CQ.run.resume();
         CQ.audio.duck(false);
       }
+    },
+  };
+
+  // ------------------------------------------------------------------ the screens list + replay (top left)
+  // Two wooden buttons in the top left corner, from the first screen on (asked 2026-11-06): the list of
+  // every screen of the quest (tap one to go straight there; the one on now is marked), and Play this
+  // screen again (it starts the screen on now from its beginning). While the list is open the game
+  // waits; a tap outside it, or Escape, closes it.
+  CQ.nav = {
+    build(ui) {
+      this.el = CQ.el("div", "nav hidden", ui);
+      this.listBtn = button("btn-wood nav-btn", ICON.menu, C().ui.screens, this.el, () => this.toggle());
+      this.replayBtn = button("btn-wood nav-btn", ICON.restart, C().ui.replay, this.el, () => this.replay());
+      this.listBtn.setAttribute("aria-haspopup", "true");
+      this.listBtn.setAttribute("aria-expanded", "false");
+      this.list = CQ.el("div", "panel nav-list hidden", ui);
+      this.list.setAttribute("role", "menu");
+      this.items = C().screens.map((s) => {
+        const b = button("nav-item", `<span class="ni-n">${s.n}</span><span class="ni-t">${CQ.rich(s.title)}</span>`, s.title, this.list, () => this.go(s.id));
+        b.setAttribute("role", "menuitem");
+        b.dataset.cp = s.id;
+        return b;
+      });
+      this.isOpen = false;
+      // a tap anywhere else closes the list
+      document.addEventListener(
+        "pointerdown",
+        (e) => {
+          if (this.isOpen && !e.target.closest(".nav-list, .nav")) this.close();
+        },
+        true
+      );
+      window.addEventListener(
+        "keydown",
+        (e) => {
+          if (e.key === "Escape" && this.isOpen) {
+            e.stopImmediatePropagation(); // (not the pause menu as well)
+            this.close();
+          }
+        },
+        true
+      );
+    },
+    show(on) {
+      this.el.classList.toggle("hidden", !on);
+      if (!on) this.close();
+    },
+    // the screen on now is marked in the list
+    setCurrent(cp) {
+      this.current = cp;
+      this.items.forEach((b) => b.classList.toggle("now", b.dataset.cp === cp));
+    },
+    toggle() {
+      if (this.isOpen) this.close();
+      else this.open();
+    },
+    open() {
+      if (this.isOpen) return;
+      this.isOpen = true;
+      this.list.classList.remove("hidden");
+      this.listBtn.setAttribute("aria-expanded", "true");
+      CQ.pauser.hold();
+      CQ.audio.play("ui.tap");
+      CQ.anim(this.list, [{ opacity: 0, transform: "translateY(-12px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 220, easing: CQ.EASE.out, keep: false });
+      const now = this.items.find((b) => b.classList.contains("now"));
+      if (now) now.focus({ preventScroll: true });
+    },
+    close() {
+      if (!this.isOpen) return;
+      this.isOpen = false;
+      this.list.classList.add("hidden");
+      this.listBtn.setAttribute("aria-expanded", "false");
+      CQ.pauser.release();
+    },
+    go(cp) {
+      this.close();
+      CQ.audio.play("ui.tap");
+      if (CQ.flow) CQ.flow.chapter(cp);
+    },
+    replay() {
+      this.close();
+      if (!CQ.flow || !CQ.flow.current) return;
+      CQ.audio.play("ui.tap");
+      CQ.anim(this.replayBtn.querySelector("svg"), [{ transform: "rotate(0)" }, { transform: "rotate(360deg)" }], { duration: 500, easing: CQ.EASE.out, keep: false });
+      CQ.flow.chapter(CQ.flow.current);
     },
   };
 
