@@ -36,6 +36,11 @@ window.IMAGES = {
   bgTree: { src: "assets/bg/jungle/11-tree.webp", w: 1040, h: 1096 },
   bgBushFrontRight: { src: "assets/bg/jungle/12-bush-front-right.webp", w: 468, h: 358 },
   bgBand: { src: "assets/bg/band.webp", w: 480, h: 270 },
+  tPlate: { src: "assets/title/plate.webp", w: 1672, h: 941 },
+  tZippy: { src: "assets/title/zippy.webp", w: 760, h: 587, x: 188, y: 68 },
+  tLogo: { src: "assets/title/logo.webp", w: 772, h: 338, x: 866, y: 134 },
+  tCrown: { src: "assets/title/crown.webp", w: 298, h: 187, x: 1291, y: 468 },
+  tGrumble: { src: "assets/title/grumble.webp", w: 223, h: 245, x: 1021, y: 444 },
   zippyFace: { src: "assets/ui/zippy-face.webp", w: 232, h: 232 },
   balBeam: { src: "assets/balance/beam.webp", w: 924, h: 152 },
   balHub: { src: "assets/balance/hub.webp", w: 280, h: 285 },
@@ -154,7 +159,7 @@ window.BG_LAYERS = [
     "y": -287,
     "w": 1040,
     "h": 1096,
-    "anim": null
+    "anim": "crown"
   },
   {
     "key": "bgBushFrontRight",

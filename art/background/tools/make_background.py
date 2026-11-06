@@ -319,7 +319,7 @@ LAYOUT = [
     ("lawn",),
     ("arch", 1308, 145, 1.1, False, "arch"),
     ("branch", 330, -70, 1.2, False, "branch", "branch"),
-    ("tree", -130, -250, 1.42, False, "tree"),
+    ("tree", -130, -250, 1.42, False, "tree", "crown"),
     ("bushBig", 1395, 700, 1.45, False, "bush-front-right", "sway"),
 ]
 

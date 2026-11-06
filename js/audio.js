@@ -853,6 +853,18 @@
     return 0.9;
   });
 
+  cue('title.boom', function (ctx, dest, t, o) { // the title's cinematic hit: a deep "boom" with an airy swell
+    var p = o.pitch;
+    blip(ctx, dest, t, 'sine', 92 * p, 34 * p, 1.1, 0.95, 0.006, 1.05);
+    blip(ctx, dest, t, 'triangle', 184 * p, 70 * p, 0.35, 0.22, 0.006, 0.3); // heard on small speakers
+    var g = G(ctx, 0, dest); // air rushing past
+    env(g.gain, t, [[0, 0], [0.03, 0.4], [0.5, 0.12], [1.2, 0]]);
+    var lp = F(ctx, 'lowpass', 2400 * p, 0.8, g);
+    glide(lp.frequency, t, [[0, 2400 * p], [1.1, 300 * p]]);
+    N(ctx, t, t + 1.25, lp);
+    return 1.25;
+  });
+
   cue('dust.puff', function (ctx, dest, t, o) { // soft "poof"
     var p = o.pitch, g = G(ctx, 0, dest);
     env(g.gain, t, [[0, 0], [0.02, 0.65], [0.08, 0.38], [0.28, 0]]);
@@ -1754,6 +1766,8 @@
     speak: speak,
     stopSpeech: guard('stopSpeech', stopSpeech),
     cues: Object.keys(CUES),
+    // 'running' once sound can play ('suspended' until the first tap on most browsers; 'none' before init)
+    state: function () { try { return ctx ? ctx.state : 'none'; } catch (e) { return 'none'; } },
     _renderCueOffline: renderCueOffline,
     _renderMusicOffline: renderMusicOffline
   };

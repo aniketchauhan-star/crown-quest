@@ -47,15 +47,90 @@
 
   // The background layers, back to front (BG_LAYERS in assets/sprites.js). Some have a gentle idle
   // motion: the clouds drift, the branch and the bushes sway (off with Reduced motion).
+  // The jungle lake, layer by layer (BG_LAYERS, back to front), each with its own idle motion, so the
+  // scene looks alive and natural (asked 2026-11-06):
+  //  - "drift": the clouds glide slowly across the sky, and come round again (bgClouds);
+  //  - "shimmer": soft wave lines roll slowly across the water, and glints of light come and go on it (bgWater);
+  //  - "crown": the tree's leafy top sways in the breeze, bending from the middle of the trunk, while the
+  //    trunk and roots stay put (bgCrown);
+  //  - "branch": the leafy branch overhead sways from where it joins the tree, in gusts;
+  //  - "sway": a plant sways from its foot.
+  // It all rests while the scene is blurred, and stays still with Reduced motion and in light mode.
   function buildBackground(layer) {
     const imgs = {};
     (window.BG_LAYERS || []).forEach((ly, i) => {
+      if (ly.anim === "drift") return (imgs[ly.key] = bgClouds(layer, ly));
+      if (ly.anim === "crown") return (imgs[ly.key] = bgCrown(layer, ly));
       const img = CQ.img(ly.key, ly.anim && ly.anim !== "shimmer" ? "anim-" + ly.anim : "", layer);
       CQ.box(img, ly.x, ly.y, ly.w, ly.h);
       if (ly.anim) img.style.animationDelay = (-(i * 1.37) % 6).toFixed(2) + "s"; // no two sway in step
+      if (ly.anim === "shimmer") bgWater(layer, ly);
       imgs[ly.key] = img;
     });
     return imgs;
+  }
+  // A picture's soft mask (both spellings: Safari still wants -webkit-).
+  function softMask(el, mask) {
+    Object.assign(el.style, { maskImage: mask, webkitMaskImage: mask, maskRepeat: "no-repeat", webkitMaskRepeat: "no-repeat", maskSize: "100% 100%", webkitMaskSize: "100% 100%" });
+  }
+  // The clouds: two copies of the cloud band, one screen width apart, glide right together; after one
+  // screen width the second copy is where the first began, so the band comes round without a jump.
+  function bgClouds(layer, ly) {
+    const strip = CQ.el("div", "bg-clouds", layer);
+    CQ.box(strip, ly.x, ly.y, ly.w, ly.h);
+    [0, -CQ.W].forEach((x) => CQ.box(CQ.img(ly.key, "", strip), x, 0, ly.w, ly.h));
+    return strip;
+  }
+  // The water: soft wave lines roll slowly across it and fade, and short glints of light come and go,
+  // each at its own pace, all on the open water (stage px: the lake shows between the forest and the
+  // paving, y 640 to 746; the balance stands in front of its middle).
+  const WAVES = [
+    // stage x, y, width, seconds, delay
+    [520, 664, 190, 11, 0],
+    [640, 712, 240, 13, 4.5],
+    [1080, 690, 210, 12, 8],
+    [1290, 722, 180, 10.5, 2.5],
+    [1440, 668, 230, 14, 6.5],
+    [1530, 704, 160, 11.5, 10],
+  ];
+  const GLINTS = [
+    [560, 686, 60, 5.6, 0],
+    [700, 666, 44, 4.8, 1.9],
+    [880, 728, 70, 6.2, 3.4],
+    [1170, 670, 52, 5.1, 0.8],
+    [1330, 694, 64, 6.6, 2.6],
+    [1470, 730, 48, 4.6, 4.1],
+    [1590, 684, 56, 5.9, 1.3],
+  ];
+  function bgWater(layer) {
+    const add = (cls, [x, y, w, secs, delay], h) => {
+      const e = CQ.el("div", cls, layer);
+      CQ.box(e, x - w / 2, y - h / 2, w, h);
+      e.style.animationDuration = secs + "s";
+      e.style.animationDelay = -delay + "s";
+    };
+    WAVES.forEach((w) => add("bg-wave", w, 5));
+    GLINTS.forEach((g) => add("bg-glint", g, 6));
+  }
+  // The tree: the leafy top sways in the breeze and the trunk and roots stay put. The picture is drawn
+  // twice, cut across the middle of the trunk (CROWN.cut, in the picture's pixels, where the trunk is
+  // solid and nothing else is near): the lower copy keeps the trunk and roots, the upper one the top,
+  // fading out over CROWN.blend px across the cut. The top bends about the cut, so where the two meet
+  // nothing moves and no join shows. (The returned picture is the lower one: Zippy peeks out from
+  // behind both.)
+  const CROWN = { cut: 650, blend: 70, pivotX: 300 };
+  function bgCrown(layer, ly) {
+    const k = ly.h / IM()[ly.key].h;
+    const top = (CROWN.cut - CROWN.blend / 2) * k;
+    const end = (CROWN.cut + CROWN.blend / 2) * k;
+    const trunk = CQ.img(ly.key, "bg-trunk", layer);
+    CQ.box(trunk, ly.x, ly.y, ly.w, ly.h);
+    softMask(trunk, `linear-gradient(to bottom, transparent ${top - 1}px, #000 ${top}px)`);
+    const crown = CQ.img(ly.key, "bg-crown", layer);
+    CQ.box(crown, ly.x, ly.y, ly.w, ly.h);
+    softMask(crown, `linear-gradient(to bottom, #000 ${top}px, transparent ${end}px)`);
+    crown.style.transformOrigin = `${CROWN.pivotX * k}px ${CROWN.cut * k}px`;
+    return trunk;
   }
 
   // ================================================================== Zippy peeking from behind the tree
