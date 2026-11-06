@@ -9,6 +9,7 @@ The prompts that made the game's art sheets with ChatGPT, and the prompt the gam
 | `ChatGPT-Zippy-Bar-Prompt.md` | `art/zippy/zippy bar.png` |
 | `ChatGPT-Zippy-Crown-Prompt.md` | `art/zippy/zippy crown..png` |
 | `ChatGPT-Zippy-Scared-Crown-Prompt.md` | `art/zippy/zippy scared crown.png` |
+| `ChatGPT-Title-Screen-Prompt.md` | the title screen, sharp, in 5 pictures: `art/ui/title background.png`, `title zippy.png`, `title sign.png`, `title grumble.png`, `title crown.png` |
 | `Zippy-Crown-Quest-Build-Prompt.md` | the first build of the game (14 October 2026) |
 
 When a prompt says "this folder", it means where the pictures are now: `art/` and its folders (`art/zippy`, `art/props`, `art/ui`). To use a remade sheet, save it over the old one there, with the same name, and run `python3 tools/prepare_assets.py`.
