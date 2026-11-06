@@ -25,13 +25,18 @@ Most browsers only let sound start after a tap, so the loading screen ends on th
 
 The play button always starts a new game from the intro. It forgets the saved progress and shows the first-time hints again, but keeps the sound settings. The play button is the wooden one from `art/ui/start button.png`. (When each character comes in: `play()` in `js/main.js`.)
 
-The game screen has no level sign, crown row or corner buttons, so nothing distracts from the balance. The question bar shows Zippy's face; tap it to hear the line again. Every line in it is the same size (40 px), and the bar shows one row at a time: a line too long for one row is cut, at whole words, into rows that each fit (as even as they can be, broken after a full stop or comma where one is near). A recorded line types itself out with its voice, row after row: when the voice is past a row, the next row takes its place. A line without a recording shows each row long enough to be read. Tapping Zippy's face plays the line again, rows and all. Collected crowns fly up out of the picture.
+The game screen has no level sign or crown row, so nothing distracts from the balance. Its only corner buttons are two small wooden ones at the top left, there from the intro on (not on the title):
+- **the list (☰)** opens a list of every screen of the quest, from the intro to the finale. The screen on now is marked in gold; tap any screen to go straight there. While the list is open the game waits; a tap anywhere else, or Esc, closes it;
+- **play again (↻)** starts the screen on now again from its beginning.
+
+(`CQ.nav` in `js/ui.js`; the list's names are `screens` in `js/content.js`.) The question bar shows Zippy's face; tap it to hear the line again. Every line in it is the same size (40 px), and the bar shows one row at a time: a line too long for one row is cut, at whole words, into rows that each fit (as even as they can be, broken after a full stop or comma where one is near). A recorded line types itself out with its voice, row after row: when the voice is past a row, the next row takes its place. A line without a recording shows each row long enough to be read. Tapping Zippy's face plays the line again, rows and all. Collected crowns fly up out of the picture.
 
 ## Teacher shortcuts
 
 | Do this | How |
 |---|---|
-| Jump to any chapter | Press Esc → Chapters (there is no menu button on screen) |
+| Jump to any screen | Tap the list button (☰) at the top left, then the screen. (Esc → Chapters works too.) |
+| Play this screen again | The ↻ button at the top left |
 | Share a link that starts at a chapter | Add `#` and the chapter to the address, e.g. `index.html#L5`. Start then opens that chapter. |
 | Pace | Each screen moves on by itself after its line is read, with a short pause to look. The **Next** button (top right) is always there: during a line it moves on to the next line, and at any other moment it goes on to the next part of the quest. → or a presenter clicker also moves on a line. ← goes back on formula screens. |
 | Pause | The Esc key. The story holds until you close the menu. |

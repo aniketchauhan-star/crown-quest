@@ -49,6 +49,8 @@
           if (change) await outro();
           this.current = id;
           CQ.next.showNext(id !== "finale");
+          CQ.nav.show(true); // the screens list and replay, top left
+          CQ.nav.setCurrent(id);
           CQ.store.set("progress", { cp: id });
           resetScene(id, { animate: change });
           if (i === start && SNORE_AT.includes(id)) CQ.grumble.snore(2); // a level begins: he snores twice

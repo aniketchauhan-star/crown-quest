@@ -181,6 +181,8 @@ window.CONTENT = {
     voice: "Voice",
     reducedMotion: "Reduced motion",
     chapters: "Chapters",
+    screens: "All the screens", // the list in the top left corner (read by screen readers)
+    replay: "Play this screen again",
     restartQ: "Start this level again?",
     yes: "Yes",
     no: "No",
@@ -190,6 +192,26 @@ window.CONTENT = {
     verdictNot: "{v} is not a solution",
     verdictYes: "{v} is the solution!",
   },
+
+  // Every screen of the quest, in order: the list in the top left corner jumps to any of them (and
+  // shows which one is on). id = where it starts; n = the badge in front of its name.
+  screens: [
+    { id: "intro", n: "★", title: "Intro: meet Zippy and Grumble" },
+    { id: "L1", n: "1", title: "Level 1: which bar?" },
+    { id: "L2", n: "2", title: "Level 2: another crown" },
+    { id: "L3", n: "3", title: "Level 3: one more crown" },
+    { id: "L4a", n: "4", title: "Level 4: the mystery crown, x + 2 = 7" },
+    { id: "L4c", n: "4", title: "Level 4: label the parts" },
+    { id: "L4e", n: "4", title: "Level 4: sort, and a quick recap" },
+    { id: "L4g", n: "4", title: "Level 4: find the solution" },
+    { id: "L5", n: "5", title: "Level 5: check it, step by step" },
+    { id: "L6", n: "6", title: "Level 6: your turn" },
+    { id: "L7", n: "7", title: "Level 7: your turn again" },
+    { id: "L8", n: "8", title: "Level 8: the smart way" },
+    { id: "L9", n: "9", title: "Level 9: two crowns" },
+    { id: "P", n: "P", title: "Practice: six equations" },
+    { id: "finale", n: "♛", title: "Finale: quest complete" },
+  ],
 
   // Chapter select (menu). id = where the chapter starts.
   chapters: [

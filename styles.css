@@ -965,6 +965,65 @@ html[data-shade] .stage-edge::after {
   color: #ffe27a;
   margin-top: -6px;
 }
+/* top left: the list of every screen, and Play this screen again (CQ.nav in js/ui.js) */
+.nav {
+  position: absolute;
+  left: 36px;
+  top: 34px;
+  display: flex;
+  gap: 14px;
+  z-index: 21;
+}
+.nav-btn {
+  min-width: 140px;
+}
+.panel.nav-list {
+  /* under the caption bar (it ends at 163 px); all 15 screens fit (826 px tall), with no scrolling */
+  position: absolute;
+  left: 28px;
+  top: 178px;
+  width: 660px;
+  min-width: 0;
+  padding: 6px 4px;
+  pointer-events: auto;
+  z-index: 75; /* over the game and its fades */
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin: 0;
+  padding: 4px 14px 2px;
+  border: none;
+  border-radius: 14px;
+  background: none;
+  font: 700 30px/1.15 var(--font);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.nav-item:hover {
+  background: rgba(255, 216, 77, 0.35);
+}
+.nav-item.now {
+  background: #ffd84d; /* the screen on now */
+}
+.ni-n {
+  flex: 0 0 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding-top: 4px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fffaf0;
+  font: 800 26px/1 var(--font);
+}
+.nav-item.now .ni-n {
+  background: #8a5a00;
+}
 .swap-btn {
   position: absolute; /* placed under the left pan from js/ui.js */
   transform: translate(-50%, -50%);
