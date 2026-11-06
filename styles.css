@@ -99,7 +99,7 @@ button:focus-visible,
   filter: blur(28px) brightness(0.82) saturate(0.95);
 }
 html.on-title #viewport::before {
-  background-image: url(assets/ui/start-screen.webp);
+  background-image: url(assets/title/plate.webp);
   filter: blur(28px) brightness(0.55) saturate(0.9);
 }
 /* ...and the bands take on the game's dark fade, in the same colour and as deeply (CQ.screen.shade),

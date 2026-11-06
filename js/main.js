@@ -16,25 +16,27 @@
   };
 
   // ------------------------------------------------------------------ the title screen
-  // The start screen as it was drawn ("start screen.png"), with only its characters coming in, in a
-  // 5-second opening like a film (asked 2026-11-06): out of the dark the camera glides back into the
+  // The temple, with only its characters coming in, in a 5-second opening like a film (asked
+  // 2026-11-06): out of the dark the camera glides back into the
   // temple (a deep "boom"), Zippy flies in and catches his vine ("wheee!"), the crown drops onto its
   // pedestal, Grumble rises behind the ledge and ROARS (the screen shakes, leaves fall, the fires flare),
   // the title sign slams in, and the play button pops up. Afterwards the scene stays alive: it turns
   // gently in 3D (on its own and with the mouse; the sign is a little in front of the wall), Zippy
   // swings from his vine, Grumble breathes, a shine runs over the sign, the crown glints, fireflies drift
   // and the fires flicker. A tap during the opening skips to its end.
-  // The pictures: the start screen with the characters painted out (tPlate) and each character cut out
-  // of it (tZippy, tLogo, tCrown, tGrumble: x, y in the start screen's px), made by
-  // tools/make_title.swift; at rest they make the start screen exactly.
+  // The pictures (art/ui/title *.png, made with docs/prompts/ChatGPT-Title-Screen-Prompt.md): the empty
+  // temple (tPlate) and each character alone (tZippy, tLogo, tCrown, tGrumble: x, y = its top-left on the
+  // background, in the background's px; s = its scale there), put in place by tools/make_title.swift so
+  // the title looks like the old title screen, but sharp.
   // The play button (or Enter) starts the game afresh from the intro (a chapter link like #L5 starts at
   // that chapter instead). Saved progress and the "first time" hints are reset; settings are kept.
   const TITLE = { P: 1400, ox: 960, oy: 486, zoom: 1.04 }; // the perspective (px), its vanishing point, and a touch of zoom so the edges never show as the scene turns
-  const K = () => CQ.W / IMAGES.tPlate.w; // start screen px -> stage px
+  const K = () => CQ.W / IMAGES.tPlate.w; // background px -> stage px
   const st = (x, y) => ({ x: x * K(), y: y * K() });
-  const ZIPPY_HAND = { x: 452, y: 118 }; // his fist on the vine (start screen px): he swings from it
-  const GRUMBLE_FRONT = [[990, 690], [1252, 690], [1266, 667], [1292, 659], [1330, 656]]; // the ledge and the pedestal's corner in front of him
-  const FIRES = [[646, 748, 1.0], [968, 640, 1.15]]; // the glowing doorways (start screen px, size)
+  // On the background (title background.png, in its px):
+  const ZIPPY_HAND = { x: 452, y: 118 }; // his fist on the vine: he swings from it
+  const GRUMBLE_FRONT = [[840, 686], [1234, 686], [1238, 664], [1252, 654], [1290, 648], [1340, 645]]; // the ledge and the pedestal's corner in front of him (left to right)
+  const FIRES = [[646, 748, 1.0], [995, 630, 1.3]]; // the glowing doorways (where, and how big)
   const PLAY_AT = { x: 1000, y: 905, w: 320 }; // the play button's centre on the stage, and its width
   const SIGN_Z = 110; // the title sign stands this far in front of the wall
 
@@ -66,21 +68,23 @@
       const put = (key, cls, parent) => {
         const im = IMAGES[key];
         const p = st(im.x, im.y);
+        const k = (im.s || 1) * K(); // the picture is kept larger than shown, so it stays sharp
         const wrap = CQ.el("div", "t-piece " + cls, parent);
-        CQ.box(wrap, p.x, p.y, im.w * K(), im.h * K());
+        CQ.box(wrap, p.x, p.y, im.w * k, im.h * k);
         CQ.img(key, "", wrap);
         return wrap;
       };
       // Grumble stands in his doorway behind the ledge: he is only seen above it (a fixed clip, so he can
       // rise from behind it)
       this.grumbleBay = CQ.el("div", "t-bay", this.card);
-      this.grumbleBay.style.clipPath = "polygon(0 0, 1920px 0, 1920px " + st(0, 656).y.toFixed(1) + "px, " +
-        GRUMBLE_FRONT.slice().reverse().map(([x, y]) => `${st(x, y).x.toFixed(1)}px ${st(x, y).y.toFixed(1)}px`).join(", ") +
-        ", 0 " + st(0, 690).y.toFixed(1) + "px)";
+      const front = GRUMBLE_FRONT.map(([x, y]) => st(x, y));
+      this.grumbleBay.style.clipPath = `polygon(0 0, 1920px 0, 1920px ${front[front.length - 1].y.toFixed(1)}px, ` +
+        front.slice().reverse().map((q) => `${q.x.toFixed(1)}px ${q.y.toFixed(1)}px`).join(", ") +
+        `, 0 ${front[0].y.toFixed(1)}px)`;
       this.grumble = put("tGrumble", "t-grumble", this.grumbleBay);
       this.crown = put("tCrown", "t-crown", this.card);
       this.zippy = put("tZippy", "t-zippy", this.card);
-      const hand = st(ZIPPY_HAND.x - IMAGES.tZippy.x, ZIPPY_HAND.y - IMAGES.tZippy.y);
+      const hand = st(ZIPPY_HAND.x - IMAGES.tZippy.x, ZIPPY_HAND.y - IMAGES.tZippy.y); // (in the piece, as shown)
       this.zippy.style.transformOrigin = `${hand.x.toFixed(1)}px ${hand.y.toFixed(1)}px`;
       // the fireflies drift in the air in front of the wall, and the sign stands a little in front of it
       // (each layer drawn so that, seen through the perspective, it is exactly in place at rest)
@@ -133,10 +137,11 @@
       this.bar.firstChild.style.width = Math.round(p * 100) + "%";
       this.bar.classList.toggle("done", p >= 1);
     },
-    // Stage points for the effects: on a character (its picture's px)
-    at(key, x, y) {
+    // Stage points for the effects: on a character (fx, fy: 0..1 across and down it)
+    at(key, fx, fy) {
       const im = IMAGES[key];
-      return st(im.x + x, im.y + y);
+      const k = im.s || 1;
+      return st(im.x + im.w * k * fx, im.y + im.h * k * fy);
     },
     // The opening: 5 seconds, then the title and the play button. Each step at its time (ms).
     play() {
@@ -186,7 +191,7 @@
         { transform: "translateY(0) rotate(0)" },
       ], { duration: 800, delay: 1800, easing: "cubic-bezier(.5,0,.6,1)" });
       at(2300, () => {
-        const c = this.at("tCrown", 149, 100);
+        const c = this.at("tCrown", 0.5, 0.55);
         sfx("crown.sparkle");
         CQ.fx.sparkle(this.fx, c.x, c.y - 40, 14, 120);
         CQ.fx.ring(this.fx, c.x, c.y, "#ffd84d");
@@ -203,7 +208,7 @@
         { transform: "scale(1)", opacity: 1 },
       ], { duration: 700, delay: 3900, easing: "cubic-bezier(.3,.6,.4,1)" });
       at(4300, () => {
-        const s = this.at("tLogo", 386, 169);
+        const s = this.at("tLogo", 0.5, 0.5);
         sfx("title.boom", { volume: 0.7 });
         sfx("name.burst", { volume: 0.6 });
         this.shake(10, 380);
@@ -231,7 +236,7 @@
       });
       this.shake(16, 800);
       this.flare(900);
-      const m = this.at("tGrumble", 112, 160); // his mouth
+      const m = this.at("tGrumble", 0.5, 0.36); // his mouth
       [0, 160, 320].forEach((d) => setTimeout(() => this.ring(m.x, m.y), d));
       const word = CQ.el("div", "t-roar", this.fx, C().title.roar || "ROAR!");
       CQ.pos(word, m.x - 30, m.y - 230);
@@ -305,7 +310,7 @@
       clearInterval(this.sparkle);
       this.sparkle = setInterval(() => {
         if (document.hidden) return;
-        const c = this.at("tCrown", 149, 70);
+        const c = this.at("tCrown", 0.5, 0.35);
         CQ.fx.sparkle(this.fx, c.x + CQ.rand(-90, 90), c.y, 3, 40); // the crown glints
       }, 1500);
     },

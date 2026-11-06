@@ -402,11 +402,11 @@ def cut_part(w, h, px, box):
 
 
 # --------------------------------------------------------------------------- the title screen
-# The title screen is the start screen as drawn, with its characters coming in (js/main.js). Its pictures
-# are made by tools/make_title.swift (macOS: swift -O tools/make_title.swift) into assets/title/: the
-# start screen with the characters painted out (the plate), and each character cut out of it, listed in
-# assets/title/title.json. Here they are only added to IMAGES (tPlate, tZippy, tLogo, tCrown, tGrumble;
-# x, y: where each goes on the start screen, in its px).
+# The title screen is the temple with its characters coming in (js/main.js). Its pictures are made by
+# tools/make_title.swift (macOS: swift -O tools/make_title.swift) from art/ui/title *.png into
+# assets/title/: the background (the plate) and each character, listed in assets/title/title.json. Here
+# they are only added to IMAGES (tPlate, tZippy, tLogo, tCrown, tGrumble; x, y: where each goes on the
+# background, in its px; s: its scale there, background px per picture px).
 TITLE_JSON = os.path.join(OUT, "title", "title.json")
 
 
@@ -418,7 +418,7 @@ def add_title(images):
     images["tPlate"] = {"src": t["plate"]["src"], "w": t["plate"]["w"], "h": t["plate"]["h"]}
     for name in ("zippy", "logo", "crown", "grumble"):
         v = t[name]
-        images["t" + name.capitalize()] = {"src": v["src"], "w": v["w"], "h": v["h"], "x": v["x"], "y": v["y"]}
+        images["t" + name.capitalize()] = {"src": v["src"], "w": v["w"], "h": v["h"], "x": v["x"], "y": v["y"], "s": v.get("s", 1)}
     print("title: the plate and 4 characters from assets/title/")
 
 
