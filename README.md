@@ -8,10 +8,22 @@ A 16:9 browser game that teaches **linear equations in one variable** (Class 8, 
 - **On a classroom network or website:** upload the whole folder as it is, then open `index.html`.
 - Works on laptops, Chromebooks, iPads, Android tablets and phones, with touch, mouse or keyboard. It was tested in Chrome and Safari's engine; Edge uses Chrome's engine. Phones and tablets need to be held sideways.
 - **Any screen:** the game keeps its 16:9 picture and fits it to the screen. A screen close to 16:9 (most laptops and browser windows) is filled edge to edge, with no frame round the game: a sliver of at most 1.5% a side, where nothing sits, is cut off. On a screen of another shape, the game's jungle carries on, blurred, in the bands at the sides or the top and bottom (`assets/bg/band.webp`). When the game fades to dark, the bands go dark with it, in the same colour, and the game's edge melts into them, so there is no line between them. On a phone or tablet, Play makes the game fill the whole screen and holds it sideways (Android, iPad). On an iPhone, add the game to the home screen (Share → Add to Home Screen): it then opens full screen (`manifest.webmanifest`).
-- **Quick to load:** the pictures are WebP (4.2 MB in all), and the title screen appears as soon as its own two pictures are in. The rest load behind it, shown by a slim golden bar at its foot; if Play is tapped sooner, it waits for them. The voice clips load quietly during play.
+- **Quick to load:** the pictures are WebP (4.5 MB in all), and the title screen appears as soon as its own pictures are in (0.3 MB). The rest load behind it, shown by a slim golden bar at its foot; if Play is tapped sooner, it waits for them. The voice clips load quietly during play.
 - **Smooth on slow devices:** on a device with little memory or few cores, or if the game runs below about 40 frames a second, it switches to a light mode. There is no blur behind "look here" moments (the dark fade stays) and no idle motion in the background.
 
-The title screen shows only the artwork and the play button. The play button always starts a new game from the intro. It forgets the saved progress and shows the first-time hints again, but keeps the sound settings.
+**The title screen** is the start screen as it was drawn, with only its characters coming in, in a 5-second opening like a film, with sound:
+- 0 s: out of the dark, the camera glides back from close up into the temple (a deep "boom"), and the fires in its doorways flare up;
+- 0.6 s: Zippy flies in from the top left corner ("wheee!"), swoops down and catches his vine at 1.5 s, and swings on it (then a laugh);
+- 1.8 s: the crown drops onto its pedestal and sparkles;
+- 2.4 s: Grumble rises behind the ledge (a stomp), and at 2.9 s he ROARS: the screen shakes, rings burst from his mouth, a comic "ROAR!" pops up, leaves fall and the fires flare;
+- 3.9 s: the title sign "Zippy's Crown Quest" slams in (a boom and a boing);
+- 4.5 s: the play button pops up; at 5 s the title music begins.
+
+The background is the start screen itself, with the characters painted out; each character is cut out of the start screen, so once they are all in, the title is the start screen exactly (`tools/make_title.swift`, below). Afterwards the scene stays alive: it turns gently in 3D on its own and with the mouse (the title sign stands a little in front of the wall), Zippy swings from his vine, Grumble breathes, a shine runs over the title sign, the crown glints, fireflies drift in the light falling from above and the fires flicker. A tap during the opening skips to its end. With Reduced motion it shows the finished title at once; light mode leaves out the fireflies, the light and the drift.
+
+Most browsers only let sound start after a tap, so the loading screen ends on the play button, and the opening starts (with its sounds) when it is tapped (or Enter is pressed). Where sound may start without a tap (some apps and tablets), the opening plays straight after loading.
+
+The play button always starts a new game from the intro. It forgets the saved progress and shows the first-time hints again, but keeps the sound settings. The play button is the wooden one from `art/ui/start button.png`. (When each character comes in: `play()` in `js/main.js`.)
 
 The game screen has no level sign, crown row or corner buttons, so nothing distracts from the balance. The question bar shows Zippy's face; tap it to hear the line again. Every line in it is the same size (40 px), and the bar shows one row at a time: a line too long for one row is cut, at whole words, into rows that each fit (as even as they can be, broken after a full stop or comma where one is near). A recorded line types itself out with its voice, row after row: when the voice is past a row, the next row takes its place. A line without a recording shows each row long enough to be read. Tapping Zippy's face plays the line again, rows and all. Collected crowns fly up out of the picture.
 
@@ -129,13 +141,13 @@ art/zippy/        Zippy's sheets: hold crown, hold crown and up, winning monkey,
 art/grumble/      Grumble's sheets: monster slepping, slightly open his eyes, when fail then monster roar
 art/props/        crown, number coin, number bricks (the gold bar), break stand (the stool),
                   new balance (the balance parts), tree bails (Zippy's vine)
-art/ui/           elements (the interface sheet), start button
+art/ui/           elements (the interface sheet), start button (the play button), thumbnail ui (the title sign's shape, for make_title)
 art/background/   the jungle lake: background sheet, its pieces and layers, the tools that make them
 ```
 
 To change a picture, save the new one over the old one in its folder, with the same name, and run the tool (below).
 
-**The background** is the jungle lake in `art/background/`, built from the pieces in `art/background/background sheet.png` (see `art/background/README.md`). The game draws it as 12 separate layers, so the clouds drift and the branch and the big plant sway gently (off with Menu → Reduced motion). To change it:
+**The background** is the jungle lake in `art/background/`, built from the pieces in `art/background/background sheet.png` (see `art/background/README.md`). The game draws it as 12 separate layers, so it can move naturally (off with Menu → Reduced motion, and in light mode; it rests while the scene is blurred): the clouds glide slowly across the sky and come round again (4 minutes a screen width); soft wave lines roll across the lake and glints of light come and go on it; the tree's leafy top sways in the breeze, bending from the middle of its trunk while the roots stay still (the tree is drawn twice, cut across the solid trunk: `CROWN` in js/world.js); the leafy branch overhead sways in gusts and its leaves flutter; the big plant at the front sways from its foot. Each layer's motion is its `anim` in `art/background/tools/make_background.py` (`drift`, `shimmer`, `crown`, `branch`, `sway`). To change it:
 1. Edit `LAYOUT` in `art/background/tools/make_background.py` and run it. This tool needs numpy, Pillow and scipy.
 2. Run `python3 tools/prepare_assets.py`, which copies the layers into `assets/bg/jungle/`. It also makes `assets/bg/band.webp` from `art/background/background.png`: a small copy of the whole scene for the bands round the game on a screen that isn't 16:9.
 
@@ -187,6 +199,14 @@ It needs only Python 3, with no extra packages. It cuts every character frame ou
 
 At its end it runs `tools/compress_assets.py`, which saves every picture as WebP: quality 88 with transparency, or 85 for opaque pictures. That looks the same as the PNG at about a fifth of the size (21.3 MB → 4.2 MB), and the game and `styles.css` are pointed at the WebP files. It needs `cwebp` (`brew install webp`); without it the pictures stay PNG. The compression takes several minutes. If `art/ui/start screen.png` isn't there, the tool keeps the title picture already in `assets/`.
 
+**The title screen's pictures** are made by a separate tool (macOS), from the start screen (`art/ui/start screen.png`, or else the game's copy, `assets/ui/start-screen.webp`):
+
+```
+swift -O tools/make_title.swift
+```
+
+It paints Zippy, the title sign, Grumble and the crown out of the start screen (the wall's stones carry on softly where they were, Zippy's vine runs on through where his hand held it, and Grumble's doorway is left empty), and cuts each of them out of it, with a soft edge, into `assets/title/` (`plate`, `zippy`, `logo`, `grumble`, `crown`, and `title.json` with where each goes). Each character is found by its colours in its own part of the picture; the title sign by its shape on `art/ui/thumbnail ui .png`. It takes about ten seconds; `tools/prepare_assets.py` then lists the pictures in `assets/sprites.js` (`tPlate`, `tZippy`…). Run it again if the start screen changes.
+
 ## Files
 
 The game itself is the top of the folder (`index.html`, `styles.css`, `manifest.webmanifest`, `js/`, `assets/`): open `index.html` to play. The rest is what it is made from.
@@ -203,7 +223,7 @@ js/flow.js          the story: intro, levels 1–9, practice, finale
 js/audio.js         generated sound effects and music; plays the voice lines
 js/voice.js         finds and loads the recorded voice lines
 js/vo_lines.js      every line as shown → its clip and length (generated by tools/vo_build.py)
-js/main.js          loading + title screen
+js/main.js          loading, the tap to start, the title screen and its opening
 assets/             game-ready images and sprites.js (generated; the fonts are embedded in styles.css)
 assets/vo/          the voice-over: one Ogg Opus clip per line (see docs/VOICEOVER.md)
 assets/elements/    the pieces cut from art/ui/elements.png (generated)
@@ -213,6 +233,7 @@ art/background/     the background: the sheet, pieces, layers, the tools that ma
 docs/VOICEOVER.md         how the voice-over was made, how the game plays it, how to remake a line
 docs/prompts/             the prompts that made the art sheets (ChatGPT-*.md) and the game's first build prompt
 tools/prepare_assets.py   rebuilds assets/ from the original PNGs in art/
+tools/make_title.swift    makes the title screen's pictures from the start screen (macOS)
 tools/compress_assets.py  saves the game's pictures as WebP (run by prepare_assets.py)
 tools/vo_script.json      every voice line: as shown, as spoken, and the Devanagari the voice read
 tools/vo_build.py         turns the TTS studio's zips into assets/vo/ and js/vo_lines.js

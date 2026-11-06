@@ -100,7 +100,7 @@ window.LAYOUT = {
    "y": -287,
    "w": 1040,
    "h": 1096,
-   "anim": null
+   "anim": "crown"
   },
   {
    "id": "bush-front-right",

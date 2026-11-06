@@ -194,6 +194,7 @@
   };
   CQ.audio = {
     init: () => safe(() => A() && A().init()),
+    state: () => safe(() => (A() && A().state ? A().state() : "none"), "none"), // 'running' once sound can play
     play: (c, o) => safe(() => A() && A().play(c, o)),
     music: (n) => safe(() => A() && A().music(n)),
     ambience: (on) => safe(() => A() && A().ambience(on)),

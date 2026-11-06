@@ -10,8 +10,9 @@
  */
 window.CONTENT = {
   title: {
-    name: "Zippy's Crown Quest", // browser tab name (the title screen itself shows no words)
+    name: "Zippy's Crown Quest", // browser tab name (the title screen shows only its painted title)
     start: "Start", // the play button's name for screen readers (not shown)
+    roar: "ROAR!", // Grumble's roar in the title's opening (a comic sound word)
     loading: "Loading the jungle…",
     rotate: "Please turn your device sideways",
   },

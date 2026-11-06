@@ -401,6 +401,27 @@ def cut_part(w, h, px, box):
     return x0 + cx0, y0 + cy0, cx1 - cx0, cy1 - cy0, crop(W, H, out, cx0, cy0, cx1 - cx0, cy1 - cy0)
 
 
+# --------------------------------------------------------------------------- the title screen
+# The title screen is the start screen as drawn, with its characters coming in (js/main.js). Its pictures
+# are made by tools/make_title.swift (macOS: swift -O tools/make_title.swift) into assets/title/: the
+# start screen with the characters painted out (the plate), and each character cut out of it, listed in
+# assets/title/title.json. Here they are only added to IMAGES (tPlate, tZippy, tLogo, tCrown, tGrumble;
+# x, y: where each goes on the start screen, in its px).
+TITLE_JSON = os.path.join(OUT, "title", "title.json")
+
+
+def add_title(images):
+    if not os.path.exists(TITLE_JSON):
+        print("title: assets/title/title.json is missing: run swift -O tools/make_title.swift")
+        return
+    t = json.load(open(TITLE_JSON))
+    images["tPlate"] = {"src": t["plate"]["src"], "w": t["plate"]["w"], "h": t["plate"]["h"]}
+    for name in ("zippy", "logo", "crown", "grumble"):
+        v = t[name]
+        images["t" + name.capitalize()] = {"src": v["src"], "w": v["w"], "h": v["h"], "x": v["x"], "y": v["y"]}
+    print("title: the plate and 4 characters from assets/title/")
+
+
 # The game's background: the layers of art/background/ (built from "background sheet.png" there).
 BACKGROUND_DIR = os.path.join("art", "background")
 
@@ -736,6 +757,7 @@ def main():
             images[name] = {"src": f"assets/elements/{name}.png", "w": cw, "h": ch}
         geom = measure_elements(items)
         print(f"elements: {len(used)} of {len(items)} pieces -> assets/elements/ (measured: {', '.join(geom)})")
+    add_title(images)
     if bal_geom:
         geom["balance"] = bal_geom
     if bar_frames:

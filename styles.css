@@ -202,7 +202,9 @@ html[data-shade] .stage-edge::after {
 #title {
   z-index: 50;
   overflow: hidden;
-  background: #0b2f39;
+  background: #071a2b;
+  perspective: 1400px; /* the title is a 3D scene (TITLE in js/main.js) */
+  perspective-origin: 960px 486px;
 }
 .layer {
   position: absolute;
@@ -249,44 +251,156 @@ html[data-shade] .stage-edge::after {
 }
 
 /* ---------------------------------------------------------------- the background's idle motion */
-/* (set per layer in BG_LAYERS; js/world.js gives each one its own start, so no two sway in step) */
-.anim-drift {
-  animation: bgDrift 70s ease-in-out infinite alternate;
+/* Each part of the jungle moves in its own way and at its own pace, so it looks natural (js/world.js,
+   buildBackground). Two slow motions with different periods run together on the leaves (a sway and a
+   flutter: the rotate and transform properties add up), so their movement never quite repeats. */
+
+/* the clouds glide across the sky, one screen width in 4 minutes, and come round again */
+.bg-clouds {
+  position: absolute;
+  animation: bgClouds 240s linear infinite;
 }
+@keyframes bgClouds {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(1920px);
+  }
+}
+
+/* the water: soft wave lines roll slowly across it and fade, and glints of light come and go */
+.bg-wave {
+  position: absolute;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.7) 35%, rgba(255, 255, 255, 0.7) 65%, rgba(255, 255, 255, 0));
+  opacity: 0;
+  animation: bgWave 12s ease-in-out infinite;
+}
+@keyframes bgWave {
+  0% {
+    opacity: 0;
+    transform: translateX(-40px) scaleX(0.6);
+  }
+  35% {
+    opacity: 0.55;
+    transform: translateX(0) scaleX(1);
+  }
+  70% {
+    opacity: 0.4;
+    transform: translateX(34px) scaleX(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(60px) scaleX(0.6);
+  }
+}
+.bg-glint {
+  position: absolute;
+  border-radius: 3px;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+  opacity: 0;
+  animation: bgGlint 5s ease-in-out infinite;
+}
+@keyframes bgGlint {
+  0% {
+    opacity: 0;
+    transform: translateX(-12px) scaleX(0.4);
+  }
+  30% {
+    opacity: 0.85;
+    transform: translateX(0) scaleX(1);
+  }
+  65% {
+    opacity: 0.3;
+    transform: translateX(9px) scaleX(0.75);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(16px) scaleX(0.4);
+  }
+}
+
+/* the tree's leafy top sways in the breeze, bending about the cut across its trunk (transform-origin is
+   set in js/world.js), with a gentle bob of its long arm of leaves on the right */
+.bg-crown {
+  animation: bgCrownSway 7.3s ease-in-out infinite alternate, bgCrownBob 4.7s ease-in-out infinite alternate;
+}
+@keyframes bgCrownSway {
+  0% {
+    transform: skewX(0.5deg);
+  }
+  35% {
+    transform: skewX(-0.9deg);
+  }
+  55% {
+    transform: skewX(-0.5deg);
+  }
+  100% {
+    transform: skewX(-1.4deg);
+  }
+}
+@keyframes bgCrownBob {
+  from {
+    rotate: -0.3deg;
+  }
+  to {
+    rotate: 0.3deg;
+  }
+}
+
+/* the leafy branch overhead sways from where it joins the tree, in gusts, and its hanging leaves flutter */
 .anim-branch {
   transform-origin: 3% 25%;
-  animation: bgBranch 6.5s ease-in-out infinite alternate;
+  animation: bgBranch 8.6s ease-in-out infinite alternate, bgFlutter 3.1s ease-in-out infinite alternate;
 }
+@keyframes bgBranch {
+  0% {
+    rotate: -0.8deg;
+  }
+  30% {
+    rotate: 0.6deg;
+  }
+  45% {
+    rotate: 0.2deg;
+  }
+  75% {
+    rotate: 1.3deg;
+  }
+  100% {
+    rotate: 0.4deg;
+  }
+}
+@keyframes bgFlutter {
+  from {
+    transform: skewX(-0.6deg);
+  }
+  to {
+    transform: skewX(0.6deg);
+  }
+}
+
+/* a plant sways from its foot */
 .anim-sway {
   transform-origin: 50% 100%;
-  animation: bgSway 5.5s ease-in-out infinite alternate;
+  animation: bgSway 6s ease-in-out infinite alternate, bgFlutter 2.7s ease-in-out infinite alternate;
 }
 .anim-tuft {
   transform-origin: 50% 100%;
   animation: bgSway 3.2s ease-in-out infinite alternate;
 }
-@keyframes bgDrift {
-  from {
-    transform: translateX(-24px);
-  }
-  to {
-    transform: translateX(24px);
-  }
-}
-@keyframes bgBranch {
-  from {
-    transform: rotate(-0.5deg);
-  }
-  to {
-    transform: rotate(0.7deg);
-  }
-}
 @keyframes bgSway {
-  from {
-    transform: rotate(-1.2deg);
+  0% {
+    rotate: -1.3deg;
   }
-  to {
-    transform: rotate(1.2deg);
+  40% {
+    rotate: 0.4deg;
+  }
+  60% {
+    rotate: 0deg;
+  }
+  100% {
+    rotate: 1.4deg;
   }
 }
 
@@ -1076,7 +1190,7 @@ html[data-shade] .stage-edge::after {
 #world > .bg-scene.soft {
   transform: scale(1.015);
 }
-#world > .bg-scene.soft img {
+#world > .bg-scene.soft * {
   animation-play-state: paused;
 }
 .focus-ring {
@@ -2865,37 +2979,319 @@ body.solving .eb-row.done {
 }
 
 /* ---------------------------------------------------------------- title + loading + rotate */
-.title-bg {
+/* The title is the start screen as drawn, in 3D (CQ.title in js/main.js): a camera (.t-cam: its move in
+   the opening and a touch of zoom, so the edges never show as it turns; .t-drift: its slow turn
+   afterwards; .t-tilt: its turn with the mouse) looks at the wall (.t-card: the start screen without its
+   characters, with the characters on it), the fireflies a little in front, and the title sign a little
+   further. Each layer is drawn so that at rest everything is exactly where the start screen has it. The
+   effects, the dark of the opening and the play button lie flat on top. */
+.t-cam,
+.t-drift,
+.t-tilt,
+.t-layer {
   position: absolute;
   left: 0;
   top: 0;
   width: 1920px;
   height: 1080px;
-  /* a slow, gentle zoom from the centre: small enough that the title sign painted into the
-     artwork (top right) never reaches the edge of the screen */
-  transform-origin: 50% 50%;
-  animation: kenburns 18s ease-in-out infinite alternate;
+  transform-style: preserve-3d;
+  transform-origin: 960px 486px; /* the vanishing point */
 }
+.t-cam {
+  transform: scale(1.04);
+}
+.t-tilt {
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+#title.t-idle .t-drift {
+  animation: tDrift 14s ease-in-out infinite alternate;
+}
+@keyframes tDrift {
+  from {
+    transform: rotateY(-1deg) rotateX(0.5deg);
+  }
+  to {
+    transform: rotateY(1deg) rotateX(-0.4deg) translateZ(18px);
+  }
+}
+.t-plate {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+}
+.t-piece {
+  position: absolute;
+  will-change: transform;
+}
+.t-piece img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.t-bay {
+  position: absolute;
+  inset: 0; /* Grumble's doorway: he is seen only above the ledge (its clip is set in js/main.js) */
+}
+/* before the opening the characters wait unseen (the scene is still dark) */
+#title.t-waiting .t-piece {
+  visibility: hidden;
+}
+/* the fires in the doorways flicker (and flare at the start and when Grumble roars) */
+.t-fire {
+  position: absolute;
+  width: calc(110px * var(--k));
+  height: calc(150px * var(--k));
+  transform: translate(-50%, -60%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 65%, rgba(255, 200, 90, 0.85), rgba(255, 140, 40, 0.35) 42%, rgba(255, 120, 30, 0) 72%);
+  mix-blend-mode: screen;
+  opacity: 0.45;
+  animation: tFire 2.4s ease-in-out infinite;
+  transition: transform 0.25s ease-out, opacity 0.25s;
+}
+@keyframes tFire {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translate(-50%, -60%) scale(1);
+  }
+  30% {
+    opacity: 0.8;
+    transform: translate(-50%, -63%) scale(1.08, 1.12);
+  }
+  55% {
+    opacity: 0.5;
+    transform: translate(-50%, -60%) scale(0.96);
+  }
+  80% {
+    opacity: 0.7;
+    transform: translate(-50%, -61%) scale(1.04);
+  }
+}
+#title.t-flare .t-fire {
+  animation: none;
+  opacity: 1;
+  transform: translate(-50%, -66%) scale(1.6, 1.8);
+}
+/* light falling in from above, and fireflies drifting in the air */
+.t-shaft {
+  position: absolute;
+  top: -260px;
+  width: 240px;
+  height: 1500px;
+  background: linear-gradient(90deg, rgba(255, 236, 180, 0), rgba(255, 236, 180, 0.14), rgba(255, 236, 180, 0));
+  transform: rotate(-24deg);
+  transform-origin: 50% 0;
+  filter: blur(8px);
+  animation: tShaft 7s ease-in-out infinite alternate;
+}
+.t-shaft.a {
+  left: 640px;
+}
+.t-shaft.b {
+  left: 1080px;
+  width: 160px;
+  animation-delay: -3.5s;
+}
+@keyframes tShaft {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.t-fly {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffbd0 0%, #ffd84d 45%, rgba(255, 216, 77, 0) 72%);
+  box-shadow: 0 0 14px 5px rgba(255, 216, 77, 0.4);
+  opacity: 0;
+  animation: tFly 6s ease-in-out infinite;
+}
+@keyframes tFly {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  25% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+    transform: translate(34px, -50px);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-18px, -110px);
+  }
+}
+/* the idle life after the opening: Zippy swings from his fist on the vine (transform-origin: his fist,
+   set in js/main.js), Grumble breathes, a shine runs over the title sign */
+#title.t-idle .t-zippy {
+  animation: tSwing 3.4s ease-in-out infinite alternate;
+}
+@keyframes tSwing {
+  from {
+    transform: rotate(-2.6deg);
+  }
+  to {
+    transform: rotate(2.2deg);
+  }
+}
+.t-grumble {
+  transform-origin: 50% 100%;
+}
+#title.t-idle .t-grumble {
+  animation: tBreathe 2.8s ease-in-out infinite;
+}
+@keyframes tBreathe {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.012, 1.03);
+  }
+}
+.t-logo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  -webkit-mask: var(--shape) center / 100% 100% no-repeat;
+  mask: var(--shape) center / 100% 100% no-repeat;
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0) 40%, rgba(255, 251, 220, 0.6) 50%, rgba(255, 255, 255, 0) 60%) no-repeat;
+  background-size: 300% 100%;
+  background-position: 120% 0;
+  opacity: 0;
+}
+#title.t-idle .t-logo::after {
+  animation: tShine 4.5s ease-in-out infinite 0.6s;
+}
+@keyframes tShine {
+  0% {
+    background-position: 120% 0;
+    opacity: 1;
+  }
+  40%,
+  100% {
+    background-position: -20% 0;
+    opacity: 1;
+  }
+}
+/* effects over the scene: the roar's rings and word, falling leaves */
+.t-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.t-ring {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 10px solid rgba(255, 236, 200, 0.85);
+  box-shadow: 0 0 30px rgba(255, 200, 120, 0.6);
+}
+.t-roar {
+  position: absolute;
+  font: 800 110px/1 var(--font);
+  color: #ffd84d;
+  white-space: nowrap;
+  -webkit-text-stroke: 6px #4a1d6e;
+  paint-order: stroke fill;
+  text-shadow: 0 10px 0 #4a1d6e, 0 18px 24px rgba(0, 0, 0, 0.45);
+}
+.t-leaf {
+  position: absolute;
+  width: 34px;
+  height: 20px;
+  border-radius: 0 80% 0 80%;
+  background: linear-gradient(135deg, #8ee04a, #2f9a3a);
+  box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.12);
+}
+/* the dark the opening comes out of */
+.t-black {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  pointer-events: none;
+}
+.t-black.gone {
+  display: none;
+}
+/* the play button: the wooden one (start button.png), at the foot of the scene */
 .start-btn {
-  position: absolute; /* on the empty stone block at the bottom of the art, clear of all three characters */
-  left: 1000px;
-  top: 905px;
-  transform: translate(-50%, -50%);
-  width: 320px;
+  position: absolute; /* placed by js/main.js (PLAY_AT) */
   padding: 0;
   background: none;
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  animation: startPulse 1.3s ease-in-out infinite;
 }
 .start-btn img {
   display: block;
-  width: 320px;
-  filter: drop-shadow(0 14px 14px rgba(0, 0, 0, 0.45));
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 16px 16px rgba(0, 0, 0, 0.5));
+}
+.start-btn.t-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+#title.t-idle .start-btn:not(.waiting) {
+  animation: tPulse 1.3s ease-in-out infinite;
+}
+@keyframes tPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
 }
 .start-btn.waiting img {
-  filter: saturate(0.6) brightness(0.92) drop-shadow(0 14px 14px rgba(0, 0, 0, 0.45));
+  filter: saturate(0.6) brightness(0.92) drop-shadow(0 16px 16px rgba(0, 0, 0, 0.5));
+}
+html.lite .t-fly,
+html.lite .t-shaft {
+  display: none;
+}
+html.lite #title .t-drift {
+  animation: none;
+}
+/* the loading screen ends on the play button when sound needs a tap to start (js/main.js) */
+.lb-go {
+  display: none;
+}
+#loading.gate {
+  cursor: pointer;
+  background: radial-gradient(circle at 50% 45%, #154869, #050f18);
+}
+#loading.gate .lb-box {
+  display: none;
+}
+#loading.gate .lb-go {
+  display: block;
+  width: 420px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  animation: tPulse 1.3s ease-in-out infinite;
+}
+.lb-go img {
+  display: block;
+  width: 100%;
+  filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.5));
 }
 .title-load {
   position: absolute; /* at the foot of the title while the rest of the pictures load (no words) */
@@ -3010,15 +3406,6 @@ body.solving .eb-row.done {
     transform: translate(-50%, -50%) scale(1.08);
   }
 }
-@keyframes startPulse {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) scale(1);
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.07);
-  }
-}
 @keyframes glowPulse {
   from {
     filter: drop-shadow(0 0 6px #ffd84d) drop-shadow(0 0 2px #fff);
@@ -3117,14 +3504,6 @@ body.solving .eb-row.done {
   }
   to {
     transform: rotate(calc(var(--r) + 4deg));
-  }
-}
-@keyframes kenburns {
-  from {
-    transform: scale(1);
-  }
-  to {
-    transform: scale(1.03);
   }
 }
 @keyframes coinSpin {
@@ -3352,7 +3731,7 @@ html.lite #world > .layer.soft {
 html.lite #world > .bg-scene.soft {
   transform: none;
 }
-html.lite .bg-scene img,
+html.lite .bg-scene *,
 html.lite .focus-ring,
 html.lite .bar-slot .gbar,
 html.lite .tower-crown {
@@ -3364,8 +3743,9 @@ html.lite #viewport::before {
 
 /* ---------------------------------------------------------------- reduced motion */
 html.reduced-motion .focus-ring,
-html.reduced-motion .bg-scene img,
-html.reduced-motion .title-bg,
+html.reduced-motion .bg-scene *,
+html.reduced-motion #title *,
+html.reduced-motion #loading .lb-go,
 html.reduced-motion .bar-slot .gbar,
 html.reduced-motion .nameburst.purple .nb-word,
 html.reduced-motion .tower-crown,
