@@ -46,6 +46,7 @@
           // a level won (he is wearing its crown) or a new room: Zippy swings off and the screen fades;
           // the next part is set up behind the fade, and he sneaks back into it
           const change = i > start && (SCENE_OF[ORDER[i - 1]] !== SCENE_OF[id] || CQ.zippy.wearing);
+          if (i > start) await R.hold(CQ.PACE.between); // a moment before the next part (or before he swings off)
           if (change) await outro();
           this.current = id;
           CQ.next.showNext(id !== "finale");
@@ -141,6 +142,25 @@
   }
 
   // ------------------------------------------------------------------ small helpers
+  // When the voice of the line (text) gets to str: the question bar types with a recorded voice; a line
+  // with no recording yet (or with the voice off) shows whole at once, so the time a voice takes to get
+  // there is guessed from where str is in the line. At once if the line doesn't have str; at the latest
+  // after 15 s.
+  function untilSaid(text, str) {
+    return new Promise((res) => {
+      const at = String(text).indexOf(str);
+      if (at < 0) return res();
+      const t0 = performance.now();
+      const guess = at * 65; // about 15 letters a second
+      const tick = () => {
+        const cap = CQ.caption;
+        const here = cap.text === text;
+        if ((here && cap.chars && cap.reached(str)) || (here && !cap.chars && performance.now() - t0 > guess) || performance.now() - t0 > 15000) return res();
+        setTimeout(tick, 60);
+      };
+      tick();
+    });
+  }
   // On-pan sizes in stage pixels (Level 9 draws its crowns and bars smaller; a heavier crown is bigger).
   const barPx = () => CQ.L.PAN_BAR_PX * CQ.balance.itemK;
   const crownPx = () => CQ.balance.crownW() * CQ.BAL.S;
@@ -229,16 +249,18 @@
     CQ.audio.play("alarm", { volume: volume || 1 });
     CQ.comic(C().grumble.alarm, { x: CQ.L.BX, y: CQ.L.PIVOT_Y - 130 }, { color: "yellow", size: 64, dur: 1300 });
   }
-  // Hint: hand drags from a bar to Zippy.
+  // Hint: hand drags from a bar to Zippy. Returns the gesture (it settles when the hand is done).
   function demoGive(v) {
     const bar = CQ.bars.get(v);
     // too late: a bar was given meanwhile (the SWAP hint must not be replaced), or the swap has begun
-    if (!bar || bar.state !== "idle" || (CQ.zippy.held && CQ.zippy.held.type === "bar") || CQ.Give.busy || !CQ.Give.allowed) return;
+    if (!bar || bar.state !== "idle" || (CQ.zippy.held && CQ.zippy.held.type === "bar") || CQ.Give.busy || !CQ.Give.allowed) return null;
     const from = CQ.camera.toScreen(CQ.bars.center(v));
     const to = CQ.camera.toScreen(CQ.zippy.holdPoint("zippy_swap", 1)); // into his open hands
-    CQ.hand.drag(from, to, 2, { carry: () => CQ.bars.carried(v), carryScale: CQ.zippy.barBox(1).w / CQ.L.BAR_W });
+    return CQ.hand.drag(from, to, 2, { carry: () => CQ.bars.carried(v), carryScale: CQ.zippy.barBox(1).w / CQ.L.BAR_W });
   }
   // The child gives one of `values` to Zippy. Resolves with the value once he has caught it.
+  // A child who does nothing for a while gets the hand showing how, and only that: the instruction is
+  // not said again (review, 2026-11-07: "do not repeat the instruction. Give hand nudge only").
   function giveBar(values, opts) {
     opts = opts || {};
     CQ.balance.counting = true; // coins can be tapped to count them while the child decides
@@ -246,7 +268,6 @@
     CQ.idle.arm(() => {
       const v = values.find((x) => CQ.bars.get(x) && CQ.bars.get(x).state === "idle");
       if (v != null) demoGive(v);
-      if (opts.idleLine) CQ.caption.replay();
     }, 8000);
     const given = R.when(
       new Promise((res) =>
@@ -260,16 +281,17 @@
     );
     return given;
   }
-  // The child gives a bar to Zippy, then taps SWAP (they may change bars before tapping).
-  function giveThenSwap(values) {
+  // The child gives a bar to Zippy, then taps SWAP (they may change bars before tapping). Idle: the
+  // hand only (as in giveBar), with the `show` bar if it is still on its stand (Level 1: the right one,
+  // as in the first demo).
+  function giveThenSwap(values, show) {
     let firstSwap = !CQ.store.get("swapDemoSeen", false);
     CQ.idle.arm(() => {
       if (CQ.zippy.held && CQ.zippy.held.type === "bar") CQ.hand.tapAt(CQ.centerOf(CQ.swapBtn.el));
       else {
-        const v = values.find((x) => CQ.bars.get(x) && CQ.bars.get(x).state === "idle");
+        const v = [show].concat(values).find((x) => x != null && CQ.bars.get(x) && CQ.bars.get(x).state === "idle");
         if (v != null) demoGive(v);
       }
-      CQ.caption.replay();
     }, 8000);
     return R.when(
       new Promise((res) => {
@@ -616,14 +638,23 @@
     if (key === "L1") look(barEls, { pad: 20 }); // which bar? these!
     if (key === "L3") CQ.grumble.snore(2); // One more crown. Grumble is still asleep!
     for (let i = 0; i < L.intro.length; i++) await say(L.intro[i], { advance: i < L.intro.length - 1 ? "auto" : "none" });
+    // Level 1: the hand shows how with the right bar, the crown's mass (review, 2026-11-07: "for the
+    // first time when we are explaining what to do, do it with the correct answer, 5")
+    const show = key === "L1" ? L.crown : null;
     if (key === "L1") {
       CQ.focus.offAfter(2400); // before the hand shows how
-      const v = CQ.bars.list[0].value;
-      setTimeout(() => demoGive(v), 2700); // after the bars have shown they can be picked up
+      // after the bars have shown they can be picked up. The idle help waits: it counts from when the
+      // hand is done (so the hand doesn't show it twice in a row).
+      setTimeout(() => {
+        const showing = demoGive(show);
+        if (!showing) return;
+        CQ.idle.reset();
+        showing.then(() => CQ.idle.reset(), () => {});
+      }, 2700);
     }
     let attempts = 0;
     for (;;) {
-      const v = await giveThenSwap(L.bars.filter((x) => CQ.bars.get(x).state !== "tried"));
+      const v = await giveThenSwap(L.bars.filter((x) => CQ.bars.get(x).state !== "tried"), show);
       b.counting = false;
       b.clearCounts();
       const { d, barItem } = await swapOnPan(v);
@@ -720,13 +751,13 @@
     look(null); // the look's dark hands over to the formula screen's
     b.setSign("x + 2 = 7"); // (for screen readers: nothing is shown over the balance)
     await R.when(opening);
-    await CQ.notebook.run(CQ.NB_WORDS);
+    await CQ.notebook.run(CQ.NB_WORDS, { lower: true });
     await R.when(CQ.notebook.close());
   }
   async function runL4c() {
     await CQ.activityLabel();
     await R.when(CQ.notebook.open());
-    await CQ.notebook.run(CQ.NB_LINEAR);
+    await CQ.notebook.run(CQ.NB_LINEAR, { lower: true });
     await R.when(CQ.notebook.close());
   }
   async function runL4e() {
@@ -739,11 +770,12 @@
   async function runL4g() {
     await R.when(CQ.notebook.open());
     await CQ.notebook.run(CQ.NB_TRY);
+    await R.when(CQ.notebook.restore()); // the crown back on its pan (5 was put in for it), for the swap
     await R.when(CQ.notebook.close());
     CQ.bars.setVisible(true, 700); // the gold bars come back for the swap
-    CQ.bars.glow(5, true);
+    CQ.bars.glow(5, true); // x = 5 is the solution: the 5 bar glows as it comes back, "this one"
     await say("l4-30", { advance: "auto" });
-    say("l1-2", { advance: "none" }); // Drag it to Zippy, then tap Swap.
+    say("l4-give", { advance: "none" }); // Drag the 5 bar to Zippy, then tap Swap.
     const v = await giveThenSwap([5]);
     await swapAndCollect(v);
   }
@@ -761,8 +793,8 @@
     };
   }
   // v goes in for x (flying from Zippy's hands, or from the crown), each side is worked out (by the
-  // child, or shown when o.auto), then LHS and RHS are compared.
-  // o: { from, line, find, auto, rhsGiven, calc, notLines, yesLines }  (line ids from content.js)
+  // child), then LHS and RHS are compared.
+  // o: { from, line, find, rhsGiven, calc, notLines, yesLines }  (line ids from content.js)
   async function checkRoutine(L, v, o) {
     o = o || {};
     const cp = CQ.checkPanel;
@@ -778,53 +810,69 @@
     CQ.bars.setVisible(false);
     if (z.held && z.held.type === "bar") z.pose("barThink"); // he looks at the bar while it is checked
     // Like the formula screen: the view glides until the balance stands at the right, bright, with the
-    // rest dark, and the check is worked at the left, one piece at a time. The frame on the balance
-    // follows it: the crown (x), the left pan (LHS), the right pan (RHS), then both (compared).
+    // rest dark, and the check is worked at the left, one row at a time, the equation itself kept in
+    // sight at the top. The frame on the balance follows it: the crown (x), the left pan (LHS), the
+    // right pan (RHS); then the balance shows the totals (review, 2026-11-08).
     await R.when(cp.open());
     CQ.frameBalance("crown");
     await R.when(cp.show({ k, a, b: bb, rhsGiven: o.rhsGiven }));
-    // "Replace x with 4": the value comes out of the crown (x is the crown's mass) into x, while it is said
+    // "Replace x with 4": the value comes out of the crown (x is the crown's mass) into x = 4, and on the
+    // balance the crown makes way for four unit coins beside the coins there, all of them then gathered
+    // into one group (a gold bar of the value, where a bar lies beside the crown), while it is said. The
+    // balance stays level for now.
     const line = o.line ? say(o.line, { vars, advance: "auto", pause: 0 }) : null;
     if (line) line.catch(() => {}); // (a chapter jump during the flight cancels both: no stray error)
     const crown = b.items.left.find((it) => it.type === "crown" && !it.ghost) || b.items.left.find((it) => it.type === "crown");
-    await R.when(cp.substitute(v, o.from || (crown ? b.itemCenter(crown) : z.holdPoint())));
+    const from = o.from || (crown ? b.itemCenter(crown) : z.holdPoint());
+    await R.when(Promise.all([cp.substitute(v, from), CQ.xPan.put(v)]));
     if (line) await line;
-    // the left side
+    // the left side: the left pan, and LHS: 4 + 3 = ? as "Find the value of each side" is said
     CQ.frameBalance("left");
-    const ch = o.auto ? null : chipsFor(L, v);
-    if (o.auto) {
-      await R.wait(300);
-      cp.setValue("lhs", s);
-      await R.wait(450);
-    } else {
-      if (o.find) say(o.find, { vars, advance: "none" });
-      await cp.fill("lhs", ch.lhs, s, (m) => {
-        if (k > 1) return say("hint-lhs-k", { vars, advance: "none" });
-        const seq = [];
-        for (let i = 1; i <= a && i <= 8; i++) seq.push(v + i);
-        say("hint-lhs", { vars: Object.assign({ seq: seq.join(", ") }, vars), advance: "none" });
-        if (m >= 2 && L.left) b.autoCount("left", v).catch(() => {});
-      });
-      if (o.calc) await say(o.calc, { vars, advance: "auto" });
-    }
-    // then the right side
+    const ch = chipsFor(L, v);
+    if (o.find) say(o.find, { vars, advance: "none" });
+    await R.when(cp.lhsRow());
+    await cp.fill("lhs", ch.lhs, s, (m) => {
+      if (k > 1) return say("hint-lhs-k", { vars, advance: "none" });
+      const seq = [];
+      for (let i = 1; i <= a && i <= 8; i++) seq.push(v + i);
+      say("hint-lhs", { vars: Object.assign({ seq: seq.join(", ") }, vars), advance: "none" });
+      if (m >= 2 && L.left) b.autoCount("left", v).catch(() => {});
+    });
+    if (o.calc) await say(o.calc, { vars, advance: "auto" });
+    // then the right side: the right pan, and RHS: 9 = ?
     CQ.frameBalance("right");
     await R.when(cp.side());
-    if (!o.rhsGiven) {
-      if (o.auto) {
-        cp.setValue("rhs", bb);
-        await R.wait(350);
-      } else await cp.fill("rhs", ch.rhs, bb, () => say("hint-rhs", { advance: "none" }));
-    }
+    if (!o.rhsGiven) await cp.fill("rhs", ch.rhs, bb, () => say("hint-rhs", { advance: "none" }));
     await R.wait(350);
-    // compared: both sides
+    // The two compared, as the voice says so ("They're different" / "Both sides equal"): 7 ≠ 9 (or 9 = 9)
+    // comes in, and the balance shows the totals: it tips, the heavier side lower (7 < 9: the right pan),
+    // or stays level, its hub flashing. The conclusion is only said, in the question bar ("The sides
+    // aren't equal, so 4 is not a solution."): nothing is written under the comparison (review,
+    // 2026-11-08). No frame round both pans.
     const eq = s === bb;
-    const verdict = CQ.fmt(eq ? C().ui.verdictYes : L.verdictNot || C().ui.verdictNot, vars);
-    CQ.frameBalance(eq ? "level" : "both");
-    if (eq) b.flashEmblem();
-    await R.when(cp.compare(s, bb, verdict));
+    CQ.focus.off();
+    let compared = null;
+    const compareNow = () => {
+      if (!compared) {
+        b.evaluate();
+        if (eq) b.flashEmblem();
+        compared = R.when(cp.compare(s, bb));
+      }
+      return compared;
+    };
+    const lines = eq ? o.yesLines || [] : o.notLines || ["check-not", "check-not-so"];
+    for (let i = 0; i < lines.length; i++) {
+      const said = say(lines[i], { vars });
+      if (i === 0) {
+        await R.when(untilSaid(CQ.T(lines[i], vars), eq ? "equal" : "different"));
+        compareNow();
+      }
+      await said;
+    }
+    await compareNow();
     b.clearCounts();
-    for (const id of eq ? o.yesLines || [] : o.notLines || ["check-not"]) await say(id, { vars });
+    // the crown back on its pan before the view goes back to the scene
+    await R.when(CQ.xPan.restore());
     // back to the whole scene
     await R.when(cp.close());
     CQ.bars.setVisible(true);
@@ -850,13 +898,13 @@
     CQ.idle.disarm();
     return swapAndCollect(v, o);
   }
-  // SWAP was tapped with a bar that works: the swap, "That works!", and he collects the crown.
+  // SWAP was tapped with a bar that works: the swap, and he collects the crown. (No "That works!": not
+  // needed, review 2026-11-08.)
   async function swapAndCollect(v, o) {
     o = o || {};
     const { d } = await swapOnPan(v);
     if (d !== 0) return d;
     CQ.Give.useHeld();
-    if (!o.noCheer) CQ.zippy.say(C().zippy.thatWorks, { keepPose: true });
     if (o.oneOfTwo) await collectCrown();
     else await celebrate();
     if (o.sign !== false) CQ.balance.setSign(o.sign || `x = ${v}`);
@@ -873,8 +921,8 @@
       const v = L.tries[i];
       await R.when(z.say(CQ.fmt(i ? C().zippy.tryNext : C().zippy.tryN, { v })));
       say("l5-give", { vars: { v }, advance: "none" });
-      await giveBar([v], { glow: true, idleLine: true });
-      const ok = await checkRoutine(L, v, { line: "check-replace", find: "check-find", notLines: ["l5-not"], yesLines: ["l5-yes"] });
+      await giveBar([v], { glow: true });
+      const ok = await checkRoutine(L, v, { line: "check-replace", find: "check-find", yesLines: ["l5-yes"] });
       if (ok) return swapAfterCheck(v);
     }
   }
@@ -889,10 +937,12 @@
     let misses = 0;
     for (;;) {
       const left = L.bars.filter((x) => CQ.bars.get(x).state !== "tried");
-      const v = await giveBar(left, { idleLine: true });
+      const v = await giveBar(left);
       let ok;
-      if (v === L.crown && misses === 0) ok = await checkRoutine(L, v, { auto: true, yesLines: [S.firstRight] });
-      else if (misses === 0) ok = await checkRoutine(L, v, { line: S.firstTry, find: S.find, yesLines: [S.success] });
+      // the same check whichever bar it is, the right one first too: the child works out each side (review,
+      // 2026-11-08: "Do not automatically fill in 10 for the LHS… Compare both sides only after the learner
+      // completes these steps")
+      if (misses === 0) ok = await checkRoutine(L, v, { line: S.firstTry, find: S.find, yesLines: [v === L.crown ? S.firstRight : S.success] });
       else ok = await checkRoutine(L, v, { line: S.nextTry, find: "check-find", yesLines: [S.success] });
       if (ok) return swapAfterCheck(v);
       misses++;
@@ -902,19 +952,62 @@
   }
 
   // ------------------------------------------------------------------ Levels 8 and 9: the smart way
-  // Two "Taken off" stools just outside the plates.
-  // Two stools for the bars taken off, close together in the middle under the balance, with no words
-  // on them (asked 2026-11-05). (The gold bars and their stools are away meanwhile.)
-  function makeLedges() {
-    const mk = (x, side) => {
-      const l = CQ.el("div", "ledge " + side, CQ.world.drag);
-      CQ.placeStand(l, x); // a stool, like the ones under the gold bars
-      l.rest = { x, y: CQ.L.BAR_BASE }; // where a bar rests on it
-      CQ.anim(l, [{ opacity: 0, transform: "translateY(24px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
-      return l;
+  // Levels 8 and 9: two small trays, one under each pan, in the side view (review, 2026-11-08: "Reveal
+  // two small drop trays beneath the pans"): the stool art, small, low enough that a pan tipped right
+  // down still clears it. A bar taken off rests on its tray at its size on the pan.
+  function makeTrays() {
+    const b = CQ.balance;
+    const w = 150;
+    const h = (w * IMAGES.brickStand.h) / IMAGES.brickStand.w;
+    const restY = 822; // where a bar rests on it (world y): a pan tipped right down ends ~780
+    const mk = (side) => {
+      const x = b.panCenter(side).x;
+      const t = CQ.el("div", "ledge tray " + side, CQ.world.drag);
+      CQ.box(t, x - w / 2, restY - h * CQ.L.STAND_REST, w, h);
+      t.rest = { x, y: restY };
+      t.barW = barPx();
+      CQ.anim(t, [{ opacity: 0, transform: "translateY(24px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
+      return t;
     };
-    const off = 165;
-    return { left: mk(CQ.L.BX - off, "left"), right: mk(CQ.L.BX + off, "right") };
+    return { left: mk("left"), right: mk("right") };
+  }
+  // Values tried for x, quickly, on the balance (Level 8: review, 2026-11-08), with no child input and
+  // no verdicts: for each, the crown (or the bar before) makes way for a gold bar of the value beside the
+  // a bar, "v + a = sum" shows by the balance, and the balance tips the way the totals say, further the
+  // further apart they are (20 is nearer 23 than 18 is). Then the crown is back and the balance level.
+  async function tryValues(values, a, total) {
+    const b = CQ.balance;
+    let cur = b.items.left.find((it) => it.type === "crown" && !it.ghost);
+    if (!cur) return;
+    let label = null;
+    const swapIn = async (spec) => {
+      await R.when(CQ.anim(cur.el, [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(0.5)" }], { duration: 300, easing: CQ.EASE.in, essential: true }));
+      cur = b.replaceItem(cur, spec);
+      cur.el.style.visibility = "";
+      CQ.anim(cur.el, [{ opacity: 0, transform: "scale(0.5)" }, { opacity: 1, transform: "scale(1)" }], { duration: 360, easing: CQ.EASE.back, keep: false });
+      CQ.audio.play("ui.pop", { volume: 0.6 });
+    };
+    for (const v of values) {
+      await swapIn({ type: "bar", value: v, slot: "main" });
+      const sum = `${v} + ${a} = ${v + a}`;
+      if (!label) {
+        label = CQ.el("div", "wlabel trial", CQ.world.drag, CQ.rich(sum));
+        CQ.pos(label, CQ.L.BX + 560, 470); // beside the balance, at its right
+      } else label.innerHTML = CQ.rich(sum);
+      CQ.anim(label, [{ transform: "translate(-50%,-50%) scale(.4)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], { duration: 380, easing: CQ.EASE.back, keep: false });
+      await R.wait(450);
+      const d = total - (v + a);
+      b.target = Math.sign(d) * Math.min(16, 4 + 2 * Math.abs(d)); // the right pan lower, by less as they near
+      b.setEmblem(d === 0);
+      CQ.audio.play("balance.creak");
+      b.pendingClang = true;
+      await R.wait(2300); // a moment to read it
+    }
+    // back as it was: the crown, and the balance level
+    removeLabel(label);
+    await swapIn({ type: "crown", slot: "main" });
+    b.evaluate();
+    await R.wait(1100);
   }
   // A bar on a pan cracks into smaller bars (e.g. 23 into 8 and 15). Returns the new pan items.
   async function splitBar(side, it, parts) {
@@ -931,118 +1024,152 @@
     b.evaluate();
     return made;
   }
-  // The child drags a bar of value v off either pan. The matching bar on the other pan comes off
-  // with it, so both sides lose the same mass and the balance stays level. Both land on the ledges.
-  function dragOffBoth(v, ledges) {
+  // The child takes a bar of value v off each pan, one at a time, with the working in view (Level 8:
+  // review, 2026-11-08: "Let the learner remove either 8 bar first… The balance should tilt
+  // temporarily… Now remove 8 from the other side… The learner performs the action, and the equation
+  // updates alongside it"). Both bars glow gently and either can go first. A bar leaves its pan as it is
+  // picked up, so the balance tips the moment one side is lighter and levels again when the other comes
+  // off; wherever it is let go, it lands on the tray under its own pan. opts.off(side, n) runs as each
+  // one is let go (n = 1, then 2), one after the other: it writes − v on that side of the equation. Then,
+  // after the first, opts.next() if the other bar is still on its pan (the prompt for it); that bar is
+  // highlighted from then on.
+  function takeOffEach(v, trays, opts) {
     const b = CQ.balance;
     const items = {};
     ["left", "right"].forEach((s) => (items[s] = b.items[s].find((x) => x.type === "bar" && x.value === v && !x.ghost)));
-    // A bar taken off sits on its stool at full size, like the gold bars on theirs (asked 2026-11-05):
-    // it grows from its size on the pan as it flies there.
-    const ledgePt = (s) => ({ x: ledges[s].rest.x, y: ledges[s].rest.y - (CQ.L.BAR_W * IMAGES.bar.h) / IMAGES.bar.w / 2 }); // the bar rests on its top face
+    const numPx = panNumPx(items.left);
+    const bar = () => {
+      const f = CQ.barFlyer(v, barPx());
+      f.style.fontSize = numPx + "px"; // its number as it reads on the pan
+      return f;
+    };
+    const restPt = (s) => ({ x: trays[s].rest.x, y: trays[s].rest.y - (barPx() * IMAGES.bar.h) / IMAGES.bar.w / 2 }); // on the tray's top
+    const onPan = (s) => !items[s].lifted;
+    const demo = () => {
+      const s = ["left", "right"].find(onPan);
+      if (s) CQ.hand.drag(CQ.camera.toScreen(b.itemCenter(items[s])), CQ.camera.toScreen(restPt(s)), 1);
+    };
     ["left", "right"].forEach((s) => {
-      items[s].el.classList.add("draggable", "glow");
-      ledges[s].classList.add("active");
+      items[s].el.classList.add("draggable", "glow", "soft");
+      trays[s].classList.add("active");
+      trays[s].numPx = numPx;
     });
-    const demo = () => CQ.hand.drag(CQ.camera.toScreen(b.itemCenter(items.left)), CQ.camera.toScreen(ledgePt("left")), 1);
     CQ.idle.arm(demo, 7000);
     const demoTimer = setTimeout(demo, 600);
     return R.when(
       new Promise((res) => {
-        let lifted = false;
-        let done = false;
-        let side = null;
-        let proxy = null;
-        let grab = null;
-        let otherLanded = null;
-        const land = (s, from) =>
-          new Promise((ok) => {
-            const fl = CQ.barFlyer(v, CQ.L.BAR_W);
-            CQ.fly(CQ.world.drag, fl, from, ledgePt(s), { duration: 620, arc: -90, remove: false, scaleFrom: barPx() / CQ.L.BAR_W, scaleTo: 1 }).then(() => {
-              fl.classList.remove("flyer");
-              fl.classList.add("ledge-bar");
-              CQ.pos(fl, ledgePt(s).x, ledgePt(s).y);
-              fl.style.transform = "translate(-50%,-50%)";
-              ledges[s].bar = fl;
-              ledges[s].classList.remove("active");
-              CQ.audio.play("bar.place");
-              ok();
-            });
-          });
+        let held = null; // the bar being carried: { s, proxy, grab }
+        let n = 0;
+        let chain = Promise.resolve();
         const lift = (s, pt) => {
-          side = s;
+          const it = items[s];
           clearTimeout(demoTimer);
           CQ.hand.stop();
           CQ.idle.disarm();
-          const other = s === "left" ? "right" : "left";
-          const c = b.itemCenter(items[s]);
-          const co = b.itemCenter(items[other]);
-          grab = pt ? { dx: c.x - pt.x, dy: c.y - pt.y } : { dx: 0, dy: 0 };
-          proxy = CQ.barFlyer(v, barPx());
-          proxy.classList.add("glow", "flyer");
+          const c = b.itemCenter(it);
+          const proxy = bar();
+          proxy.classList.add("flyer");
           CQ.world.drag.appendChild(proxy);
           CQ.pos(proxy, c.x, c.y);
           proxy.style.transform = "translate(-50%,-50%)";
-          // Both bars leave their pans together. The dragged one stays in the page (invisible) until it
-          // is dropped: it owns the pointer capture, and removing it would end the drag.
-          ["left", "right"].forEach((k) => {
-            const list = b.items[k];
-            list.splice(list.indexOf(items[k]), 1);
-            b.layout(k);
-          });
-          items[s].el.style.opacity = "0";
-          items[other].el.remove();
+          held = { s, proxy, grab: pt ? { dx: c.x - pt.x, dy: c.y - pt.y } : { dx: 0, dy: 0 } };
+          // Off the pan now: one side is lighter and the balance tips (the second time, it levels). The bar
+          // stays in the page, unseen, until it is let go: it owns the pointer capture.
+          it.lifted = true;
+          const list = b.items[s];
+          list.splice(list.indexOf(it), 1);
+          b.layout(s);
+          it.el.style.opacity = "0";
           b.evaluate();
-          lifted = true;
           CQ.audio.play("bar.pick");
-          otherLanded = land(other, co);
         };
         const place = () => {
-          if (done) return;
-          done = true;
-          items[side].el.remove();
+          if (!held) return;
+          const { s, proxy } = held;
+          held = null;
+          items[s].el.remove();
           const from = { x: parseFloat(proxy.style.left), y: parseFloat(proxy.style.top) };
           proxy.remove();
-          Promise.all([land(side, from), otherLanded]).then(() => res());
+          const k = ++n;
+          const o = s === "left" ? "right" : "left";
+          if (k === 1) items[o].el.classList.remove("soft"); // the one left: highlighted (the full orange glow)
+          const fl = bar();
+          const landed = CQ.fly(CQ.world.drag, fl, from, restPt(s), { duration: 560, arc: -70, remove: false }).then(() => {
+            fl.classList.remove("flyer");
+            fl.classList.add("ledge-bar");
+            CQ.pos(fl, restPt(s).x, restPt(s).y);
+            fl.style.transform = "translate(-50%,-50%)";
+            trays[s].bar = fl;
+            trays[s].classList.remove("active");
+            CQ.audio.play("bar.place");
+          });
+          // the equation changes at once, while the bar is on its way to the tray
+          chain = chain
+            .then(() => opts.off && opts.off(s, k))
+            .then(() => landed)
+            .then(() => {
+              if (k === 2) return res();
+              if (!onPan(o)) return;
+              if (opts.next) opts.next(o);
+              CQ.idle.arm(demo, 7000);
+            });
         };
         ["left", "right"].forEach((s) => {
           const it = items[s];
           CQ.drag(it.el, {
-            enabled: () => !lifted,
+            enabled: () => !held && onPan(s),
             start: (pt) => lift(s, CQ.camera.toWorld(pt)),
             move: (pt) => {
-              if (!proxy || done) return;
+              if (!held || held.s !== s) return;
               const w = CQ.camera.toWorld(pt);
-              CQ.pos(proxy, w.x + grab.dx, w.y + grab.dy);
+              CQ.pos(held.proxy, w.x + held.grab.dx, w.y + held.grab.dy);
             },
             end: () => {
-              if (!done && lifted) place();
+              if (held && held.s === s) place();
             },
             tap: () => {
-              if (!done && lifted) place();
+              if (held && held.s === s) place();
             },
             key: () => {
-              if (!lifted) lift(s, null);
-              place();
+              if (!held && onPan(s)) lift(s, null);
+              if (held && held.s === s) place();
             },
           });
           it.el.tabIndex = 0;
           it.el.setAttribute("role", "button");
-          it.el.setAttribute("aria-label", `Gold bar ${v}: drag it off the balance`);
+          it.el.setAttribute("aria-label", `Gold bar ${v} on the ${s} pan: take it off the balance`);
         });
       })
     );
   }
-  // The two bars go back onto their pans, then the right pan's bars join back into one bar.
-  async function putBack(ledges, v, merged) {
+  // The bars are off, so the trays go, with the bars on them (review, 2026-11-08: "hide the drop trays
+  // once the removal is complete"). Where the bars lay is kept: they come back from there for the check.
+  function hideTrays(trays) {
+    return Promise.all(
+      ["left", "right"].map((s) => {
+        const t = trays[s];
+        t.from = { x: parseFloat(t.bar.style.left), y: parseFloat(t.bar.style.top) };
+        const fade = (e) => CQ.anim(e, [{ opacity: 1 }, { opacity: 0 }], { duration: 500, easing: CQ.EASE.in });
+        return Promise.all([fade(t), fade(t.bar)]).then(() => {
+          t.bar.remove();
+          t.bar = null;
+          t.remove();
+        });
+      })
+    );
+  }
+  // For the check, the two bars come back into view where they lay and go back onto their pans; then
+  // the right pan's bars join back into one bar.
+  async function putBack(trays, v, merged) {
     const b = CQ.balance;
     const moves = ["left", "right"].map((side) => {
-      const l = ledges[side];
-      const from = { x: parseFloat(l.bar.style.left), y: parseFloat(l.bar.style.top) };
-      l.bar.remove();
+      const t = trays[side];
+      const fl = CQ.barFlyer(v, t.barW);
+      fl.style.fontSize = t.numPx + "px";
       const to = b.panCenter(side);
-      // from full size on the stool back to its size on the pan
-      return CQ.fly(CQ.world.drag, CQ.barFlyer(v, CQ.L.BAR_W), from, { x: to.x + (side === "left" ? 80 : -80), y: to.y }, { duration: 850, arc: -160, scaleFrom: 1, scaleTo: barPx() / CQ.L.BAR_W });
+      const flight = CQ.fly(CQ.world.drag, fl, t.from, { x: to.x + (side === "left" ? 80 : -80), y: to.y }, { duration: 850, arc: -160 });
+      CQ.anim(fl, [{ opacity: 0 }, { opacity: 1 }], { duration: 320, keep: false });
+      return flight;
     });
     CQ.audio.play("ui.swoosh");
     await R.when(Promise.all(moves));
@@ -1050,8 +1177,6 @@
     b.addItem("right", { type: "bar", value: v }, 0);
     b.evaluate();
     CQ.audio.play("bar.place");
-    ledges.left.remove();
-    ledges.right.remove();
     await R.wait(500);
     CQ.audio.play("bar.merge");
     const c = b.panCenter("right");
@@ -1069,65 +1194,96 @@
     b.setSign("x + 8 = 23");
     z.pose("curious");
     await say("l8-1", { advance: "auto" });
+    // "The crown and 8 units balance 23 units." (review, 2026-11-08): the view comes a little closer, so
+    // the numbers on the bars read easily, and the parts light up as the voice says them: the crown and
+    // the 8 bar together, then the 23 bar. No box round both pans; the balance stays level. (The view
+    // stays closer until the working opens.)
+    await R.when(CQ.camera.to(CQ.L.BX, 560, 1.15, 900));
+    const l82 = CQ.T("l8-2");
+    const saying = say("l8-2");
+    await R.when(untilSaid(l82, "The crown and 8 units"));
     b.glowItems("left");
+    await R.when(untilSaid(l82, "balance 23"));
+    b.glowItems("left", null, false);
     b.glowItems("right");
-    look(bothPans);
-    await say("l8-2");
-    look(null);
+    await saying;
     b.clearGlow();
     z.pose("idle");
-    await say("l8-3"); // (no clouds of tried values: asked 2026-11-05)
-    z.pose("celebrate");
-    CQ.audio.play("zippy.ooh");
-    await R.when(z.say(C().zippy.idea, { keepPose: true }));
-    z.pose("idle");
-    glowCrown(true);
-    look(crownEls);
-    await say("l8-4", { advance: "auto" });
-    glowCrown(false);
-    look(null);
-    // The working, like the formula screen: the view glides until the balance stands at the right,
-    // and the steps are written at the left, one under another (CQ.eqBoard).
+    // Trying values first, quickly, on the balance (review, 2026-11-08): "Let's try different values of
+    // x." The crown makes way for a 10 bar (10 + 8 = 18: the balance tips, the right pan lower), then a
+    // 12 bar (12 + 8 = 20: the beam comes nearer to level), then the crown is back and the balance level.
+    // Then "Trying different values could take a while." (No "I know!": every line is in the question
+    // bar.)
+    await say("l8-try", { advance: "auto" });
+    await tryValues([10, 12], 8, 23);
+    await say("l8-3", { advance: "auto" });
+    // The working, like the formula screen (CQ.eqBoard): as "Let's find the mass of the crown directly"
+    // is said, the view glides until the balance stands at the right, the crown gently lit, and
+    // x + 8 = 23 is written in at the left.
     b.setSign(null);
+    glowCrown(true);
+    const l84 = say("l8-4", { advance: "auto" });
     await R.when(eb.open());
-    // First, split 23 into 8 and 15.
+    await R.when(eb.show("x + 8 = 23"));
+    await l84;
+    glowCrown(false);
+    // "First, split 23 into 8 and 15": the 23 bar lights up and splits into an 8 bar and a 15 bar on its
+    // pan, while x + 8 = 8 + 15 is written in under x + 8 = 23 (its = under the other, 8 + 15 lit). The
+    // balance stays level: splitting a bar doesn't change its mass.
+    const l85 = say("l8-5");
     look(panEls("right"));
-    await splitBar("right", b.items.right[0], [8, 15]);
-    await R.when(eb.show("x + 8 = 8 + 15"));
-    await say("l8-5");
+    await Promise.all([splitBar("right", b.items.right[0], [8, 15]), R.when(eb.set("x + 8 = ##8 + 15##"))]);
+    await l85;
     // There are 8 units beside the crown…
     b.glowItems("left", (it) => it.type === "bar");
     look(leftBarEls);
     await say("l8-6");
-    // …so remove 8 from both sides.
+    // …so remove 8 from both sides. (Both 8 bars glow: no box round both pans.)
     b.glowItems("right", (it) => it.value === 8);
-    look(bothPans);
+    look(null);
     await say("l8-7");
     b.clearGlow();
-    await R.when(eb.set("x + 8 {{− 8}} = 8 + 15 {{− 8}}"));
-    await say("l8-8", { advance: "auto", pause: 150 });
-    // The child takes the bars off in the whole scene, with no equation (asked 2026-11-05).
-    look(null);
-    await R.when(eb.close());
-    const ledges = makeLedges();
+    // The child takes them off right here, one side at a time, with the working in view (review,
+    // 2026-11-08: "Keep this interaction on the previous screen… The learner performs the action, and
+    // the equation updates alongside it"; it used to go back to the whole scene, where one drag took
+    // both off). Two small trays come in under the pans and both 8 bars glow gently: "Drag an 8 bar off
+    // each side of the balance." As each lands on its tray, − 8 is written on its side of the equation
+    // (x + 8 − 8 = 8 + 15 − 8, its = under the others). The first leaves the balance tipped; then "Now
+    // remove 8 from the other side.", the other bar lit up; the second levels it.
+    const trays = makeTrays();
     say("l8-8-drag", { advance: "none" });
-    await dragOffBoth(8, ledges);
+    const minus = (s) => (s === "left" ? ".eb-l .same" : ".eb-r .same");
+    await takeOffEach(8, trays, {
+      off: (s, n) => R.when(n === 1 ? eb.set("x + 8 {{− 8}} = 8 + 15 {{− 8}}", { hold: minus(s === "left" ? "right" : "left"), each: 40 }) : eb.reveal(minus(s))),
+      next: () => say("l8-other", { advance: "none" }),
+    });
     CQ.audio.play("balance.level");
     b.flashEmblem();
-    z.pose("phew");
-    setTimeout(() => z.pose("idle"), 1400);
-    await R.wait(900);
-    // Now the crown balances 15 units. So, x = 15. (The working again, its earlier steps faded.)
-    await R.when(eb.open());
-    look(bothPans);
+    await R.wait(600);
+    // The removal done, the trays go, with the 8 bars on them: the crown stands opposite the 15 bar on
+    // their own (review, 2026-11-08: "hide the drop trays once the removal is complete").
+    await R.when(hideTrays(trays));
+    await R.wait(400);
+    // "Now the crown balances 15 units. So, x = 15." (review, 2026-11-08): the crown lights up as it is
+    // named, then the 15 bar as "15 units" is said, each by itself (no box round both pans); on "So,
+    // x = 15" the answer is written under the subtraction step, big and green in its outline.
+    const l89 = CQ.T("l8-9");
+    const saying9 = say("l8-9", { hold: 2600 }); // key moment: x = 15
+    await R.when(untilSaid(l89, "the crown"));
+    b.glowItems("left", (it) => it.type === "crown");
+    await R.when(untilSaid(l89, "15 units"));
+    b.glowItems("left", null, false);
+    b.glowItems("right", (it) => it.value === 15);
+    await R.when(untilSaid(l89, "So, x = 15"));
+    b.clearGlow();
     await R.when(eb.set("x = 15", { final: true }));
     CQ.audio.play("correct");
-    await say("l8-9", { hold: 2600 }); // key moment: x = 15
+    await saying9;
     look(null);
     await R.when(eb.close());
     // Check it in the original equation (the number flies out of the crown: the crown is x).
     await say("l8-10", { advance: "auto" });
-    await putBack(ledges, 8, 23);
+    await putBack(trays, 8, 23);
     b.setSign("x + 8 = 23");
     const crown = b.find("left", (it) => it.type === "crown");
     await checkRoutine(L, 15, { from: b.itemCenter(crown), rhsGiven: true, line: "l8-11", find: "check-find-lhs", calc: "l8-12", yesLines: ["l8-13"] });
@@ -1135,13 +1291,13 @@
     await say("l8-14", { advance: "auto" });
     say("l8-give", { advance: "none" });
     for (;;) {
-      const v = await giveBar(L.bars.filter((x) => CQ.bars.get(x).state !== "tried"), { idleLine: true });
+      const v = await giveBar(L.bars.filter((x) => CQ.bars.get(x).state !== "tried"));
       if (v !== 15) {
         await checkRoutine(L, v, { line: "check-lets", find: "check-find-lhs", rhsGiven: true });
         say("l8-give", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
         continue;
       }
-      await swapAfterCheck(15, { noCheer: true, line: "l8-15", sign: "15 + 8 = 23" });
+      await swapAfterCheck(15, { line: "l8-15", sign: "15 + 8 = 23" });
       return;
     }
   }
@@ -1153,90 +1309,157 @@
     const b = CQ.balance;
     const eb = CQ.eqBoard;
     z.pose("curious");
-    // The working, like the formula screen, from the start: the balance at the right, the steps at the left.
+    // The working, like the formula screen, from the start, and the whole solving sequence stays on it,
+    // the bars taken off here too (review, 2026-11-08: "Keep the whole solving sequence on the same
+    // learning screen, with the balance on the right and the equation steps on the left").
     await R.when(eb.open());
-    // Each crown has the same mass, x.
-    const crowns = b.items.left.filter((it) => it.type === "crown");
-    const xs = crowns.map((cr) => {
-      const c = b.itemCenter(cr);
-      return worldLabel('<i class="v">x</i>', c.x, c.y - 80, "xlabel small");
-    });
-    glowCrown(true);
-    look(() => crownEls().concat(xs));
-    await R.when(eb.show("x + x + 4 = 18"));
     z.pose("idle");
-    await say("l9-1");
-    // Two lots of x make 2x.
-    xs.forEach(removeLabel);
-    const c0 = b.itemCenter(crowns[0]);
-    const c1 = b.itemCenter(crowns[1]);
-    const two = worldLabel(CQ.rich("2x"), (c0.x + c1.x) / 2, c0.y - 96, "xlabel");
-    look(() => crownEls().concat(two));
-    await R.when(eb.set("2x + 4 = 18"));
-    await say("l9-2");
-    removeLabel(two);
+    // "Each crown has the same mass, x." (review, 2026-11-08): two crowns and a 4 bar on the left pan
+    // balance an 18 bar. As x + x + 4 = 18 is written in, each x lights up with its own crown (and an x
+    // comes over that crown), one after the other. No box round the crowns.
+    const crowns = b.items.left.filter((it) => it.type === "crown");
+    const xs = [];
+    const said1 = say("l9-1");
+    await R.when(
+      eb.show("x + x + 4 = 18", {
+        each: 140, // (slowly: the two x's come about half a second apart)
+        onWrite: [
+          "i.v",
+          (el, i) => {
+            el.classList.add("x-lit");
+            crowns[i].el.classList.add("glow");
+            const c = b.itemCenter(crowns[i]);
+            xs[i] = worldLabel('<i class="v">x</i>', c.x, c.y - 80, "xlabel small");
+          },
+        ],
+      })
+    );
+    await said1;
+    eb.el.querySelectorAll(".x-lit").forEach((e) => e.classList.remove("x-lit"));
     glowCrown(false);
+    await R.wait(450); // (a moment unlit, so both crowns lighting up together is seen as the next step)
+    // "Two lots of x make 2x." (review, 2026-11-08: "Highlight x + x, then reveal 2x + 4 = 18 beneath
+    // it. Highlight the two crowns together, keeping them as separate objects"): as the line starts,
+    // x + x lights up as one in the first row and both crowns light up at once, each by itself (still two
+    // crowns, each with its x over it: no box, no one label over both); on "make 2x", 2x + 4 = 18 is
+    // written under it, 2x in gold. (From here on each line starts with its step, so the question bar
+    // always shows the line for what is happening: same review, "Update the top instruction panel for
+    // each VO line".)
+    const l92 = CQ.T("l9-2");
+    const said2 = say("l9-2");
+    const [xa, xb] = eb.el.lastElementChild.querySelectorAll("i.v");
+    const xx = eb.light(xa, xb);
+    glowCrown(true);
+    await R.when(untilSaid(l92, "make"));
+    await R.when(eb.set("##2x## + 4 = 18"));
+    await said2;
+    xx.classList.remove("x-lit");
+    glowCrown(false);
+    xs.forEach(removeLabel);
     // First, let's remove these 4 units.
     b.glowItems("left", (it) => it.type === "bar");
     look(leftBarEls);
     eb.set("2x <<+ 4>> = 18", { same: true }); // the same step: these 4 units marked
     await say("l9-3");
     b.clearGlow();
-    // Split 18 into 4 and 14.
+    // Split 18 into 4 and 14: the 18 bar splits on its pan while 2x + 4 = 4 + 14 is written, 4 + 14 lit
+    // (as in Level 8).
+    const said4 = say("l9-4");
     look(panEls("right"));
-    await splitBar("right", b.items.right[0], [4, 14]);
-    await R.when(eb.set("2x + 4 = 4 + 14"));
-    await say("l9-4");
-    // Remove 4 from both sides.
-    look(bothPans);
-    await R.when(eb.set("2x + 4 {{− 4}} = 4 + 14 {{− 4}}"));
-    await say("l9-5", { advance: "auto", pause: 150 });
-    // The child takes the bars off in the whole scene, with no equation (asked 2026-11-05).
+    await Promise.all([splitBar("right", b.items.right[0], [4, 14]), R.when(eb.set("2x + 4 = ##4 + 14##"))]);
+    await said4;
+    // Remove 4 from both sides. (Both 4 bars glow: no box round both pans.)
     look(null);
-    await R.when(eb.close());
-    const ledges = makeLedges();
+    b.glowItems("left", (it) => it.type === "bar");
+    b.glowItems("right", (it) => it.value === 4);
+    await say("l9-5");
+    b.clearGlow();
+    // The child takes them off right here, one side at a time, with the working in view, as in Level 8
+    // (review, 2026-11-08: "Keep the whole solving sequence on the same learning screen"; it used to go
+    // back to the whole scene, where one drag took both off): two small trays under the pans, "Drag a 4
+    // bar off each side of the balance.", − 4 written on each side as its bar comes off, "Now remove 4
+    // from the other side." after the first; then the trays go, with the bars on them.
+    const ledges = makeTrays();
     say("l9-5-drag", { advance: "none" });
-    await dragOffBoth(4, ledges);
+    const minus = (s) => (s === "left" ? ".eb-l .same" : ".eb-r .same");
+    await takeOffEach(4, ledges, {
+      off: (s, n) => R.when(n === 1 ? eb.set("2x + 4 {{− 4}} = 4 + 14 {{− 4}}", { hold: minus(s === "left" ? "right" : "left"), each: 40 }) : eb.reveal(minus(s))),
+      next: () => say("l9-other", { advance: "none" }),
+    });
     CQ.audio.play("balance.level");
     b.flashEmblem();
     await R.wait(900);
-    // We need the mass of one crown. (The working again, its earlier steps faded.)
-    await R.when(eb.open());
-    look(crownEls);
-    await R.when(eb.set("2x = 14"));
-    await say("l9-6");
-    // Two identical crowns: divide both sides by 2.
-    const halves = await splitBar("right", b.items.right.find((it) => it.value === 14), [7, 7]);
-    const lp = b.panCenter("left");
-    const rp = b.panCenter("right");
-    const d1 = worldLabel("÷ 2", lp.x, lp.y - 150, "xlabel half");
-    const d2 = worldLabel("÷ 2", rp.x, rp.y - 150, "xlabel half");
-    glowCrown(true);
-    b.glowItems("right");
-    look(() => bothPans().concat(d1, d2));
-    await R.when(eb.set("[[2x|2]] = [[14|2]]"));
-    await say("l9-7");
+    // "The two crowns balance 14 units." (review, 2026-11-08: "Highlight the terms that cancel, then
+    // reveal 2x = 14. The balance now shows two crowns opposite the 14 bar. Hide the drop trays."): as
+    // the line starts the trays go, with the 4 bars on them, and the terms that cancel light up (+ 4 − 4
+    // at the left, 4 and − 4 at the right); the crowns light up as "two crowns" is said, the 14 bar on
+    // "14 units", when 2x = 14 is written under the subtraction step. (The review lists "We need the mass
+    // of one crown" before this, but its 14 bar is split there, so this comes first.)
     look(null);
-    b.clearGlow();
-    removeLabel(d1);
-    removeLabel(d2);
-    // One crown has a mass of 7 units.
-    b.ghost(crowns[1], true);
-    b.ghost(halves[1], true);
-    CQ.audio.play("ui.swoosh");
-    b.evaluate();
+    const l9t = CQ.T("l9-two");
+    const saidT = say("l9-two");
+    const traysGone = R.when(hideTrays(ledges));
+    const r4 = eb.el.lastElementChild;
+    const s4l = r4.querySelector(".eb-l");
+    const s4r = r4.querySelector(".eb-r");
+    const plus = Array.from(s4l.children).find((e) => e.textContent === "+");
+    const cancels = [eb.light(plus, s4l.querySelector(".same"), "c-lit"), eb.light(s4r.firstElementChild, s4r.firstElementChild, "c-lit"), eb.light(s4r.querySelector(".same"), s4r.querySelector(".same"), "c-lit")];
+    await R.when(untilSaid(l9t, "two crowns"));
     glowCrown(true);
-    b.glowItems("right", (it) => !it.ghost);
-    look(bothPans);
+    await R.when(untilSaid(l9t, "14 units"));
+    glowCrown(false);
+    b.glowItems("right", (it) => it.value === 14);
+    await R.when(eb.set("2x = 14"));
+    await saidT;
+    await traysGone;
+    cancels.forEach((e) => e.classList.remove("c-lit"));
+    b.clearGlow();
+    // "We need the mass of one crown.": one crown lights up.
+    const said6 = say("l9-6");
+    crowns[0].el.classList.add("glow");
+    await said6;
+    crowns[0].el.classList.remove("glow");
+    // "Divide both sides into two equal groups." (review, 2026-11-08: "Visually separate the crowns into
+    // two groups of one. Split the 14 bar into two equal 7 bars, pairing each crown with one 7 bar
+    // through matching highlights. Keep all objects on their pans so the balance remains level." and
+    // "As the equal groups form, reveal beneath 2x = 14: 2x ÷ 2 = 14 ÷ 2. Highlight division by 2 on both
+    // sides. Show that each group contains one crown and 7 units."): the crowns move a little apart on
+    // their pan, each lit in a colour of its own (two groups of one); the 14 bar splits into two 7 bars,
+    // which move a little apart too, each lit in the colour of one crown (each group: a crown and 7
+    // units); and as the groups form, 2x ÷ 2 = 14 ÷ 2 is written, ÷ 2 marked on both sides. Everything
+    // stays on the pans: the balance stays level.
+    const said7 = say("l9-7");
+    const apart = (pair, d) => pair.forEach((it, i) => (it.el.style.marginLeft = (i ? d : -d) + "px"));
+    crowns[0].el.classList.add("grp-a");
+    crowns[1].el.classList.add("grp-b");
+    apart(crowns, 14);
+    await R.wait(600);
+    const divRow = R.when(eb.set("2x {{÷ 2}} = 14 {{÷ 2}}"));
+    const sevens = await splitBar("right", b.items.right.find((it) => it.value === 14), [7, 7]);
+    sevens[0].el.classList.add("grp-a");
+    sevens[1].el.classList.add("grp-b");
+    apart(sevens, 8);
+    await divRow;
+    await said7;
+    // "Each crown has a mass of 7 units. So, x = 7." (review, 2026-11-08: "Reveal x = 7 as the final
+    // line. Keep both crown–7 pairings visible; do not make objects disappear without an explanation"):
+    // both groups stay lit and nothing fades away; x = 7 is written on "So, x = 7", big and green in
+    // its outline.
+    const l98 = CQ.T("l9-8");
+    const said8 = say("l9-8", { hold: 2600 }); // key moment: x = 7
+    await R.when(untilSaid(l98, "So, x = 7"));
     await R.when(eb.set("x = 7", { final: true }));
     CQ.audio.play("correct");
-    await say("l9-8", { hold: 2600 }); // key moment: x = 7
+    await said8;
+    // the groups end: their colours go, and the crowns and the 7 bars stand together again
+    crowns.concat(sevens).forEach((it) => {
+      it.el.classList.remove("grp-a", "grp-b");
+      it.el.style.marginLeft = "";
+    });
     look(null);
-    b.clearGlow();
     await R.when(eb.close());
-    // Check in the original equation: everything goes back, then 7 goes in for x.
-    b.ghost(crowns[1], false);
-    b.ghost(halves[1], false);
+    // Check in the original equation, as in the levels before: everything goes back, then 7 goes in for
+    // x.
     await putBack(ledges, 4, 18);
     b.setSign("2x + 4 = 18");
     await checkRoutine(L, 7, { from: b.itemCenter(crowns[0]), rhsGiven: true, line: "l9-9", find: "check-find-lhs", calc: "l9-calc", yesLines: ["l9-10"] });
@@ -1244,7 +1467,7 @@
     say("l9-give", { advance: "none" });
     let swapped = 0;
     while (swapped < 2) {
-      const v = await giveBar(L.bars.filter((x) => CQ.bars.list.some((bar) => bar.value === x && bar.state === "idle")), { idleLine: true });
+      const v = await giveBar(L.bars.filter((x) => CQ.bars.list.some((bar) => bar.value === x && bar.state === "idle")));
       if (v !== 7) {
         await checkRoutine(L, v, { line: "check-lets", find: "check-find-lhs", rhsGiven: true });
         say(swapped ? "l9-give2" : "l9-give", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
