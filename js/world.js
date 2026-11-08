@@ -14,9 +14,13 @@
   CQ.world = {
     build(root) {
       this.root = root;
-      // the jungle lake, in layers (made from "background sheet.png": see art/background/README.md)
+      // the jungle lake, in layers (made from "background sheet.png": see art/background/README.md), and,
+      // only when a side view looks past its right edge (CQ.ASIDE.free), its mirror image there (see
+      // mirrorBackground)
+      if (CQ.ASIDE && CQ.ASIDE.free) this.beyond = CQ.el("div", "layer bg-beyond", root);
       this.decor = CQ.el("div", "layer bg-scene", root);
       this.bgImgs = buildBackground(this.decor);
+      if (this.beyond) mirrorBackground(this.beyond);
       CQ.peek.build(this.decor, this.bgImgs.bgTree); // Zippy's head peeking out from behind the tree trunk
       this.balanceLayer = CQ.el("div", "layer balance-layer", root);
       this.grumbleLayer = CQ.el("div", "layer grumble-layer", root);
@@ -68,6 +72,16 @@
       imgs[ly.key] = img;
     });
     return imgs;
+  }
+  // Past the scene's right edge, its mirror image: still copies of its layers, flipped, so it carries on
+  // there with no seam. It is only built when a side view looks past the edge (CQ.ASIDE.free: the
+  // balance at the left of the screen, as from 2026-11-07 to 11-08), and there it is blurred and dark,
+  // under the maths. (The clouds, the tree and its branch are nowhere near that edge.)
+  function mirrorBackground(layer) {
+    (window.BG_LAYERS || []).forEach((ly) => {
+      if (["drift", "crown", "branch"].includes(ly.anim)) return;
+      CQ.box(CQ.img(ly.key, "", layer), ly.x, ly.y, ly.w, ly.h);
+    });
   }
   // A picture's soft mask (both spellings: Safari still wants -webkit-).
   function softMask(el, mask) {
@@ -825,16 +839,24 @@
       });
       await this.home(480);
     }
+    // Zippy says a line in his own voice, and only that: no speech bubble (review, 2026-11-07: "We can
+    // have it in VO only"). The bubble is only for when his voice can't be heard (voice switched off, no
+    // recording, or it didn't play), so the line isn't lost.
     async say(text, opts) {
       opts = opts || {};
       const prev = this.poseName;
       const talkPose = this.held ? "holdTalk" : "talk";
       if (!opts.keepPose) this.pose(talkPose);
-      const owner = CQ.bubble.show(text, () => this.center(), { who: "zippy" });
+      const bubble = () => CQ.bubble.show(text, () => this.center(), { who: "zippy" });
+      const voiced = CQ.audio.isEnabled("voice") && window.CQVoice && CQVoice.lookup(text);
+      let owner = voiced ? null : bubble();
       const r = await CQ.audio.speak(CQ.speakable(text), { who: "zippy", line: text });
-      if (!r || !r.spoken) await CQ.sleep(Math.max(1100, text.split(" ").length * 330));
+      if (!r || !r.spoken) {
+        if (owner == null) owner = bubble();
+        await CQ.sleep(Math.max(1100, text.split(" ").length * 330));
+      }
       if (!opts.keepPose && this.poseName === talkPose) this.pose(prev === talkPose ? (this.held ? "hold" : "idle") : prev);
-      if (!opts.keepBubble) CQ.bubble.hide(false, owner);
+      if (owner != null) CQ.bubble.hide(false, owner);
     }
     tapped() {
       const now = performance.now();
@@ -1234,7 +1256,7 @@
       } else {
         el = CQ.el("div", "pan-item pbar", null, `<span class="num">${spec.value}</span>`);
         w = (spec.w || L.PAN_BAR_W) * this.itemK;
-        if (this.itemK !== 1) el.firstChild.style.fontSize = Math.round(44 * Math.sqrt(this.itemK)) + "px"; // small bars keep a readable number
+        if (this.itemK !== 1) el.firstChild.style.fontSize = Math.round(54 * Math.sqrt(this.itemK)) + "px"; // small bars keep a readable number
         h = (w * im.bar.h) / im.bar.w;
       }
       el.style.width = w + "px";
@@ -1325,24 +1347,42 @@
       });
     }
     layoutLeft(items) {
-      const main = items.filter((it) => it.slot === "main");
-      const extra = items.filter((it) => it.slot !== "main");
+      const cw = BAL.COIN_STEP;
+      const res = new Map();
+      // Coins gathered into one group (a value put in for x, with the coins that were beside it): rows
+      // of up to four, like the right pan's.
+      const group = items.filter((it) => it.slot === "group");
+      group.forEach((c, i) => {
+        const r = Math.floor(i / 4);
+        const inRow = Math.min(4, group.length - r * 4);
+        const rowW = inRow * cw - (cw - L.COIN_W);
+        res.set(c, { x: -rowW / 2 + (i % 4) * cw + L.COIN_W / 2, y: -r * BAL.COIN_ROW, z: 3 + r });
+      });
+      const rest = items.filter((it) => it.slot !== "group");
+      const main = rest.filter((it) => it.slot === "main");
+      const subst = rest.filter((it) => it.slot === "subst"); // coins put in for x, where the crown stood
+      const extra = rest.filter((it) => it.slot !== "main" && it.slot !== "subst");
       const coins = extra.filter((it) => it.type === "coin");
       const bars = extra.filter((it) => it.type === "bar");
-      const cw = BAL.COIN_STEP;
+      const pileW = (n) => Math.min(2, n) * cw - (cw - L.COIN_W); // coins two to a row
       let extraW = 0;
-      if (coins.length) extraW = Math.min(2, coins.length) * cw - (cw - L.COIN_W);
+      if (coins.length) extraW = pileW(coins.length);
       if (bars.length) extraW = Math.max(extraW, bars[0].w);
-      // the crown (or crowns, side by side: two crowns overlap a little), then what lies beside them
+      // the crown (or crowns, side by side: two crowns overlap a little), or the coins put in for x in
+      // its place, then what lies beside them
       const MAIN_GAP = -10;
-      const mainW = main.reduce((w, m) => w + m.w, 0) + Math.max(0, main.length - 1) * MAIN_GAP;
+      const mainW = main.reduce((w, m) => w + m.w, 0) + Math.max(0, main.length - 1) * MAIN_GAP + (subst.length ? pileW(subst.length) : 0);
       const gap = mainW && extraW ? 8 : 0;
       let x0 = -(mainW + gap + extraW) / 2;
-      const res = new Map();
       let mx = x0;
       main.forEach((m) => {
         res.set(m, { x: mx + m.w / 2, y: 0, z: 2 });
         mx += m.w + MAIN_GAP;
+      });
+      subst.forEach((c, i) => {
+        const row = Math.floor(i / 2);
+        const inRow = Math.min(2, subst.length - row * 2);
+        res.set(c, { x: x0 + (pileW(subst.length) - pileW(inRow)) / 2 + (i % 2) * cw + L.COIN_W / 2, y: -row * BAL.COIN_ROW, z: 3 + row });
       });
       x0 += mainW + gap;
       coins.forEach((c, i) => {
@@ -1467,7 +1507,8 @@
     async autoCount(side, startAt) {
       this.clearCounts();
       this.countN = startAt || 0;
-      const coins = this.items[side].filter((it) => it.type === "coin");
+      // counting on from x's value: the coins put in for x (CQ.xPan) are that value already
+      const coins = this.items[side].filter((it) => it.type === "coin" && !it.forX);
       for (const c of coins) {
         this.countN++;
         this.markCount(c, this.countN);
@@ -1483,6 +1524,17 @@
     }
     clearGlow() {
       ["left", "right"].forEach((s) => this.items[s].forEach((it) => it.el.classList.remove("glow")));
+    }
+    // Each pan, its plate and all on it, glows in its side's colour: the left like the LHS (teal), the
+    // right like the RHS (orange). (on false: stops.)
+    glowSides(on) {
+      [
+        ["left", "glow-lhs"],
+        ["right", "glow-rhs"],
+      ].forEach(([side, cls]) => {
+        const plate = this.sides[side] && this.sides[side].g.querySelector(".bal-plate");
+        [plate, ...this.items[side].map((it) => it.el)].forEach((el) => el && el.classList.toggle(cls, on !== false));
+      });
     }
     // Set up a whole level instantly and level the beam.
     setup(cfg) {

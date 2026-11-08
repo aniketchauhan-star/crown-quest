@@ -354,10 +354,6 @@ def bar_in_hands(sw, sh, strip, cell_w, count):
     return frames
 
 
-# Zippy's face for the caption bar: a square around his head in a frame of the swap sheet (cx, cy, r).
-FACE = ("zippy_swap", 4, (205, 255, 116))
-
-
 # --------------------------------------------------------------------------- the balance
 # "new balance .png" is a sheet of separate balance parts. Each part is cut out by its box: inside a box
 # only its biggest piece is kept (with its soft edge), so the edge of a neighbour that pokes in is left
@@ -714,20 +710,6 @@ def main():
         if key == "zippy_bar":
             bar_frames = bar_in_hands(sw, sh, strip, meta["w"], meta["count"])
             print("sheet  zippy_bar: the bar measured in " + ", ".join(f"{i + 1}: {b['fx']:.0f},{b['fy']:.0f} {b['tilt']:+.0f}°" for i, b in enumerate(bar_frames)))
-        if key == FACE[0]:
-            frame, (cx, cy, r) = FACE[1], FACE[2]
-            x0 = (frame - 1) * meta["w"] + cx - r
-            n = 2 * r
-            face = bytearray(n * n * 4)
-            for yy in range(n):
-                for xx in range(n):
-                    sx, sy = x0 + xx, cy - r + yy
-                    if 0 <= sx < sw and 0 <= sy < sh:
-                        i = (sy * sw + sx) * 4
-                        face[(yy * n + xx) * 4:(yy * n + xx) * 4 + 4] = strip[i:i + 4]
-            write_png(os.path.join(OUT, "ui/zippy-face.png"), n, n, face)
-            images["zippyFace"] = {"src": "assets/ui/zippy-face.png", "w": n, "h": n}
-            print(f"image  zippyFace    -> assets/ui/zippy-face.png ({n}x{n})")
         print(f"sheet  {key:14s} -> assets/{dst} cell {meta['w']}x{meta['h']} anchor ({meta['ax']},{meta['ay']})")
 
     bal_geom = {}

@@ -254,16 +254,17 @@
   // A recorded line (js/voice.js) types itself out at the pace of its voice, so the words appear as
   // they are said; a tap on the words shows the whole line at once (the voice carries on). A line
   // without a recording shows at once, as before.
-  // The question bar shows a line one row at a time (asked 2026-11-05): a line too long for one row is
-  // cut, at whole words, into rows that each fit on their own (as even as they can be, broken after a
-  // full stop or comma where one is near). A recorded line types itself out with its voice, and when
-  // the voice is past a row, the next row takes its place; without a recording, each row stays long
-  // enough to be read. Every row is the same size.
+  // The question bar shows the whole line at once (review, 2026-11-07: "One text in the instruction
+  // panel should not be split into two screens"; from 2026-11-05 it showed one row at a time). A line
+  // too long for one row is cut, at whole words, into rows (as even as they can be, broken after a full
+  // stop or comma where one is near), shown one under the other, and the bar grows to fit them. A
+  // recorded line types itself out with its voice, row after row. Every row is the same size.
   CQ.caption = {
     build(ui) {
       this.el = CQ.el("div", "caption hidden", ui);
-      // Zippy's face at the left of the caption; tapping it plays the line again
-      this.spk = button("spk", `<img src="${IMAGES.zippyFace.src}" alt="" draggable="false">`, "Hear it again", this.el, () => this.replay());
+      // a speaker at the left of the caption; tapping it plays the line again. (Not Zippy's face: the
+      // narrator reads these lines, not Zippy. Review, 2026-11-07.)
+      this.spk = button("spk", ICON.speaker, "Hear it again", this.el, () => this.replay());
       this.txt = CQ.el("div", "cap-text", this.el);
       this.txt.setAttribute("aria-hidden", "true"); // screen readers get the whole line at once instead:
       this.probe = CQ.el("span", "cap-text cap-probe", this.el); // measures rows (unseen)
@@ -273,14 +274,12 @@
       this.txt.addEventListener("click", () => this.reveal());
       this.text = null;
       this.rows = [""];
-      this.row = 0;
       this.busy = false; // true while the child is listening to the line again
       this.replays = 0;
       this.line = 0; // counts lines, so a voice that starts late can tell its line has gone
-      this.chars = null; // the row's letters while they wait to be typed
+      this.chars = null; // the line's letters while they wait to be typed
       this.typing = 0; // the line whose voice has started typing it
-      this.pass = 0; // counts replays, so only a replay's own voice moves its rows
-      this.paceTimer = null;
+      this.pass = 0; // counts replays, so only a replay's own voice types the line
     },
     set(text, opts) {
       this.text = text;
@@ -288,15 +287,13 @@
       this.replays++;
       this.busy = false;
       const n = ++this.line;
-      clearTimeout(this.paceTimer);
       this.el.classList.remove("hidden");
       this.rows = this.split(text);
       this.sr.textContent = CQ.speakable(text);
-      // a recorded line waits for its voice to start; if it never does, the rows are shown to be read
+      // a recorded line waits for its voice to start; if it never does, the line is shown in full
       const voiced = !this.opts.quiet && CQ.audio.isEnabled("voice") && window.CQVoice && CQVoice.lookup(text);
-      this.showRow(0, !!voiced);
+      this.render(!!voiced);
       if (voiced) setTimeout(() => this.typing !== n && this.reveal(n), 3500);
-      else this.pace(n);
       CQ.anim(this.el, [{ transform: "translateY(-12px)", opacity: 0.2 }, { transform: "translateY(0)", opacity: 1 }], {
         duration: 420,
         easing: CQ.EASE.out,
@@ -304,10 +301,9 @@
       });
       CQ.anim(this.spk, [{ transform: "scale(.85)" }, { transform: "scale(1.08)" }, { transform: "scale(1)" }], { duration: 480, easing: CQ.EASE.back, keep: false });
     },
-    // The line in rows that each fit the bar on their own, read like subtitles: each sentence on a row
-    // of its own where it fits (short sentences share one), and a sentence too long for one row cut into
-    // as few rows as it needs, as even as they can be, at a comma or dash where one is near and never
-    // on a little word that leads into the next (…equals | 7). A fraction or a marked group of the line
+    // The line in as few rows as it needs, each fitting the bar, as even as they can be: cut at whole
+    // words, best at the end of a sentence or at a comma or dash where one is near, and never on a
+    // little word that leads into the next (…equals | 7). A fraction or a marked group of the line
     // ([[…]], {{…}}, <<…>>) is never cut.
     split(text) {
       const max = this.txt.clientWidth - 6;
@@ -328,81 +324,60 @@
         if (last >= 0 && open(words[last])) words[last] += " " + w;
         else words.push(w);
       });
-      // sentences
-      const sentences = [[]];
-      words.forEach((w, i) => {
-        sentences[sentences.length - 1].push(w);
-        if (/[.!?…]["”’)]?$/.test(w) && i < words.length - 1) sentences.push([]);
-      });
-      // a sentence too long for a row: the most even cut into as few rows as it needs
-      const WEAK = /^(a|an|the|of|to|and|or|but|is|are|equals|=|\+|−|-|×|÷|with|by|for|in|on|at|so|its|our|your|this|that|\d+)$/i;
-      const cut = (ws) => {
-        const row = (i, j) => ws.slice(i, j).join(" ");
-        let k = 0;
-        for (let i = 0; i < ws.length; k++) {
-          let j = i + 1;
-          while (j < ws.length && width(row(i, j + 1)) <= max) j++;
-          i = j;
-        }
-        const cost = (i, j, last) => {
-          const w = width(row(i, j));
-          if (w > max && j - i > 1) return Infinity;
-          const slack = (max - w) / max;
-          if (last) return slack * slack * 0.5; // the last row may be shorter
-          let c = slack * slack;
-          if (/[,;:—]$/.test(ws[j - 1])) c -= 0.08; // a good place to pause
-          else if (WEAK.test(ws[j - 1])) c += 0.25; // it leads into the next row
-          if (ws[j] === "—") c += 0.2; // a dash doesn't begin a row
-          return c;
-        };
-        const n = ws.length;
-        let layer = new Map([[0, { c: 0, cuts: [] }]]);
-        for (let r = 1; r <= k; r++) {
-          const next = new Map();
-          layer.forEach((prev, i) => {
-            for (let j = i + 1; j <= n - (k - r); j++) {
-              if (r === k && j !== n) continue;
-              const c = prev.c + cost(i, j, r === k);
-              if (c === Infinity) break;
-              if (!next.has(j) || c < next.get(j).c) next.set(j, { c, cuts: prev.cuts.concat(j) });
-            }
-          });
-          layer = next;
-        }
-        const end = layer.get(n);
-        if (!end) return [row(0, n)];
-        let i = 0;
-        return end.cuts.map((j) => {
-          const r = row(i, j);
-          i = j;
-          return r;
-        });
+      const WEAK = /^(a|an|the|of|to|and|or|but|is|are|be|can|will|equals|=|\+|−|-|×|÷|with|by|for|from|in|into|on|at|as|than|so|its|his|our|your|their|this|that|these|those|each|every|\d+)$/i;
+      const END = /[.!?…]["”’)]?$/; // a word that ends a sentence
+      const row = (i, j) => words.slice(i, j).join(" ");
+      // as few rows as it needs (filling each row in turn gives the fewest)
+      let k = 0;
+      for (let i = 0; i < words.length; k++) {
+        let j = i + 1;
+        while (j < words.length && width(row(i, j + 1)) <= max) j++;
+        i = j;
+      }
+      // then the most even cut into that many rows
+      const cost = (i, j, last) => {
+        const w = width(row(i, j));
+        if (w > max && j - i > 1) return Infinity;
+        const slack = (max - w) / max;
+        if (last) return slack * slack * 0.5; // the last row may be shorter
+        let c = slack * slack;
+        if (END.test(words[j - 1])) c -= 0.12; // the end of a sentence: the best place
+        else if (/[,;:—]$/.test(words[j - 1])) c -= 0.08; // a good place to pause
+        else if (WEAK.test(words[j - 1])) c += 0.25; // it leads into the next row
+        if (words[j] === "—") c += 0.2; // a dash doesn't begin a row
+        if (END.test(words[j]) && !END.test(words[j - 1])) c += 0.2; // nor does a sentence's last word
+        return c;
       };
-      const pieces = [];
-      sentences.forEach((ws) => {
-        const whole = ws.join(" ");
-        if (width(whole) <= max) pieces.push(whole);
-        else pieces.push(...cut(ws));
+      const n = words.length;
+      let layer = new Map([[0, { c: 0, cuts: [] }]]);
+      for (let r = 1; r <= k; r++) {
+        const next = new Map();
+        layer.forEach((prev, i) => {
+          for (let j = i + 1; j <= n - (k - r); j++) {
+            if (r === k && j !== n) continue;
+            const c = prev.c + cost(i, j, r === k);
+            if (c === Infinity) break;
+            if (!next.has(j) || c < next.get(j).c) next.set(j, { c, cuts: prev.cuts.concat(j) });
+          }
+        });
+        layer = next;
+      }
+      const end = layer.get(n);
+      if (!end) return [text];
+      let i = 0;
+      return end.cuts.map((j) => {
+        const r = row(i, j);
+        i = j;
+        return r;
       });
-      // whole pieces share a row where they fit together
-      const rows = [];
-      pieces.forEach((p) => {
-        const last = rows.length - 1;
-        if (last >= 0 && width(rows[last] + " " + p) <= max) rows[last] += " " + p;
-        else rows.push(p);
-      });
-      return rows;
     },
-    // Show row i: its letters hidden, to be typed with the voice (typed), or in full.
-    showRow(i, typed) {
-      const swap = i !== this.row && this.txt.childNodes.length;
-      this.row = i;
-      this.txt.innerHTML = CQ.rich(this.rows[i] || "");
+    // Show the whole line, row under row: its letters hidden, to be typed with the voice (typed), or in full.
+    render(typed) {
+      this.txt.innerHTML = this.rows.map((r) => `<span class="cap-row">${CQ.rich(r)}</span>`).join("");
       this.txt.classList.toggle("typing", !!typed);
       this.chars = typed ? this.hideLetters() : null;
-      if (swap) CQ.anim(this.txt, [{ opacity: 0, translate: "0 6px" }, { opacity: 1, translate: "0 0" }], { duration: 200, easing: CQ.EASE.out, keep: false });
     },
-    // Each letter of the row in its own span, hidden until it is typed: the row keeps its final layout.
+    // Each letter of the line in its own span, hidden until it is typed: the rows keep their final layout.
     hideLetters() {
       const chars = [];
       const walk = (node) =>
@@ -422,79 +397,51 @@
       walk(this.txt);
       return chars;
     },
-    // Without a recorded voice, each row stays long enough to be read, then the next takes its place.
-    pace(n) {
-      clearTimeout(this.paceTimer);
-      if (n !== this.line || this.row >= this.rows.length - 1) return;
-      this.paceTimer = setTimeout(() => {
-        if (n !== this.line) return;
-        this.showRow(this.row + 1, false);
-        this.pace(n);
-      }, Math.max(1800, [...this.rows[this.row]].length * 62));
-    },
     // For CQ.say: when line n's voice starts, { clip, secs, rate } types its letters at the voice's
-    // pace (finishing just before the voice does), row after row; a voice without a clip shows the rows
-    // to be read. (pass: a replay's own voice, see replay.)
+    // pace (finishing just before the voice does), row after row; a voice without a clip shows the line
+    // in full. (pass: a replay's own voice, see replay.)
     voiced(n, pass) {
       return (v) => {
         if (n !== this.line || !this.chars) return;
         if (!v || !v.clip) return this.reveal(n, pass);
         this.typing = n;
-        const counts = this.rows.map((r) => {
-          this.probe.innerHTML = CQ.rich(r);
-          return [...this.probe.textContent].length;
-        });
-        const total = counts.reduce((a, c) => a + c, 0);
-        const ms = Math.max(16, ((v.secs - 0.35) * 1000) / total) / (v.rate || 1);
+        const chars = this.chars;
+        const ms = Math.max(16, ((v.secs - 0.35) * 1000) / chars.length) / (v.rate || 1);
         const t0 = performance.now();
-        let before = 0; // letters in the rows already done
-        let chars = this.chars;
         let shown = 0;
         const step = (now) => {
           if (n !== this.line || this.chars !== chars) return; // shown in full, or replaced by another line
-          const k = Math.floor((now - t0) / ms) + 1; // letters the voice has reached
-          // the voice is a little past this row (a moment to finish reading it): the next row comes in
-          if (this.row < this.rows.length - 1 && k > before + counts[this.row] + 4) {
-            before += counts[this.row];
-            this.showRow(this.row + 1, true);
-            chars = this.chars;
-            shown = 0;
-          }
-          const upto = Math.min(chars.length, k - before);
+          const upto = Math.min(chars.length, Math.floor((now - t0) / ms) + 1); // letters the voice has reached
           while (shown < upto) chars[shown++].classList.add("on");
-          if (this.row < this.rows.length - 1 || shown < chars.length) requestAnimationFrame(step);
+          if (shown < chars.length) requestAnimationFrame(step);
           else this.reveal(n, pass);
         };
         requestAnimationFrame(step);
       };
     },
     // Has the line got as far as str? For a line typed with its voice: the voice is saying it now (the
-    // letters typed so far); otherwise: the row it is in is on screen. (For things that appear on a word.)
+    // letters typed so far); otherwise: it is on screen. (For things that appear on a word.)
     reached(str) {
       if (!this.text) return false;
-      const done = this.rows.slice(0, this.row).join(" ");
-      const cur = this.chars ? this.chars.filter((c) => c.classList.contains("on")).map((c) => c.textContent).join("") : this.txt.textContent;
-      return (done + " " + cur).includes(str);
+      const rows = Array.from(this.txt.querySelectorAll(".cap-row"));
+      const said = this.chars
+        ? rows.map((r) => Array.from(r.querySelectorAll(".ch.on"), (c) => c.textContent).join("")).join(" ")
+        : rows.map((r) => r.textContent).join(" ");
+      return said.includes(str);
     },
-    // Line n (or the line on screen) is done typing: its voice has ended, or the child tapped it. A row
-    // still waiting for a voice that never started is shown, and the rows take turns to be read.
+    // Line n (or the line on screen) is done typing: its voice has ended, or the child tapped it, or
+    // the voice never started. The whole line is shown.
     reveal(n, pass) {
       if (n != null && n !== this.line) return;
-      if (pass !== undefined ? pass !== this.pass : this.busy) return; // a replay has the rows meanwhile
-      if (!this.chars) return; // already in full, or the rows are taking turns
-      const line = this.line;
-      const voiceRan = this.typing === line;
+      if (pass !== undefined ? pass !== this.pass : this.busy) return; // a replay is typing it meanwhile
+      if (!this.chars) return; // already in full
       this.chars = null;
       this.txt.classList.remove("typing");
-      if (voiceRan) {
-        if (this.row < this.rows.length - 1) this.showRow(this.rows.length - 1, false); // the voice has finished: its last row
-      } else this.pace(line);
     },
     hide(now) {
       this.text = null;
       this.line++;
       this.chars = null;
-      clearTimeout(this.paceTimer);
       this.replays++;
       this.busy = false;
       if (now || this.el.classList.contains("hidden")) {
@@ -505,18 +452,17 @@
         if (this.text === null) this.el.classList.add("hidden"); // no new line arrived meanwhile
       });
     },
-    // 🔊 Hear it again: the rows come round again with the voice. The story waits until the line has
-    // been heard again.
+    // 🔊 Hear it again: the line types itself out again with the voice. The story waits until the line
+    // has been heard again.
     replay() {
       if (!this.text) return;
       CQ.audio.play("ui.tap");
       const n = ++this.replays;
       const line = this.line;
-      const pass = ++this.pass; // the first voice ending now (cut short) must not touch the rows
+      const pass = ++this.pass; // the first voice ending now (cut short) must not touch the line
       this.busy = true;
-      clearTimeout(this.paceTimer);
       this.typing = 0;
-      this.showRow(0, true);
+      this.render(true);
       CQ.audio.speak(CQ.speakable(this.text), { who: this.opts.who || "narrator", line: this.text, onStart: this.voiced(line, pass) }).then(() => {
         this.reveal(line, pass);
         if (n === this.replays) this.busy = false;
@@ -524,9 +470,18 @@
     },
   };
 
+  // How long the story pauses (review, 2026-11-07: "The transitions are fast. Please add pauses."):
+  //   breath: added after every line, before the next thing happens (CQ.say)
+  //   between: between two parts of the quest, and after a won level before Zippy swings off (js/flow.js)
+  //   settle: when the formula screen has opened, before the equation is written in, and when it has
+  //   closed, before the story goes on (CQ.notebook in js/activities.js)
+  // The clock of each stops while a menu is open.
+  CQ.PACE = { breath: 600, between: 1200, settle: 500 };
+
   // Show + speak a narrator line, then move on by itself once it has been heard.
   //   advance 'hold' (default): after the voice, a pause to look at the screen (opts.hold, or sized to the line)
   //   advance 'auto': after the voice, a short pause (opts.pause, default 450 ms), for lines that flow on
+  //   (both: plus CQ.PACE.breath)
   //   advance 'none': show + speak and return at once (an instruction while the child acts)
   // With the voice off, the caption gets time to be read instead. The clock stops while a menu is open,
   // the page is hidden, or the child is replaying the line (🔊). Teachers can skip ahead with → (or a
@@ -556,7 +511,7 @@
       const left = readMs - (performance.now() - t0);
       if (left > 0) await CQ.run.hold(left, busy);
       const look = advance === "auto" ? (opts.pause != null ? opts.pause : 450) : opts.hold != null ? opts.hold : CQ.next.lookTime(words);
-      await CQ.run.hold(look, busy);
+      await CQ.run.hold(look + CQ.PACE.breath, busy);
       return "next";
     })();
     timeline.catch(() => {}); // a skipped or cancelled step has nothing left to do
@@ -1046,12 +1001,15 @@
     },
     // Show a drag gesture between two stage points (repeats a few times).
     // opts.carry() makes what the hand carries along (a faded gold bar); opts.carryScale: its size at the end.
+    // opts.carryAt { x, y }: where the carried thing's middle is from the fingertip (a label held by its
+    // end, so the hand stays clear of what the label's box points to).
     async drag(from, to, times, opts) {
       const id = ++this.seq;
       this.dropCarry();
       if (!from || !to) return;
       times = times || 2;
       opts = opts || {};
+      const off = opts.carryAt || { x: 0, y: 0 };
       const alive = () => id === this.seq;
       for (let n = 0; n < times; n++) {
         if (!alive()) return;
@@ -1060,7 +1018,7 @@
         const c = opts.carry ? opts.carry() : null;
         if (c) {
           this.el.parentNode.insertBefore(c, this.el); // under the hand
-          CQ.pos(c, from.x, from.y);
+          CQ.pos(c, from.x + off.x, from.y + off.y);
           this.carry = c;
           CQ.anim(c, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, keep: false, essential: true });
         }
@@ -1074,7 +1032,7 @@
             const p = { x: CQ.lerp(from.x, to.x, k), y: CQ.lerp(from.y, to.y, k) };
             this.placeAt(p);
             if (c) {
-              CQ.pos(c, p.x, p.y);
+              CQ.pos(c, p.x + off.x, p.y + off.y);
               c.firstChild.style.transform = `translate(-50%,-50%) scale(${CQ.lerp(1, s1, k)})`;
             }
           },
@@ -1258,6 +1216,9 @@
     open() {
       if (this.isOpen) return;
       this.isOpen = true;
+      // just under the question bar (it grows for a long line), and never higher than styles.css has it
+      const cap = CQ.caption.el;
+      this.list.style.top = cap.classList.contains("hidden") ? "" : Math.max(178, cap.offsetTop + cap.offsetHeight + 15) + "px";
       this.list.classList.remove("hidden");
       this.listBtn.setAttribute("aria-expanded", "true");
       CQ.pauser.hold();
@@ -1472,7 +1433,7 @@
   // ------------------------------------------------------------------ Check panel (substitute, find each side, compare)
   // The check is shown like the formula screen (asked 2026-11-05): the view glides until the balance
   // stands at the right, bright, with the rest of the scene dark (Zippy, holding the bar, waits unseen),
-  // and the check is worked at the left, big, one row under another, each piece coming in by itself.
+  // and the check is worked at the right, big, one row under another, each piece coming in by itself.
   // Pieces appear one at a time (styles.css: body.checking).
   // (each piece by itself: it has faded in before the next one starts)
   const comeUp = async (els, gap) => {
@@ -1486,14 +1447,16 @@
   CQ.checkPanel = {
     build(ui) {
       this.el = CQ.el("div", "check-panel hidden", ui);
-      this.eqRow = CQ.el("div", "cp-eq", this.el);
+      this.eqRow = CQ.el("div", "cp-eq", this.el); // the equation, kept in sight all through the check
+      this.xRow = CQ.el("div", "cp-x", this.el); // x = 4: the value put in for x
       this.row = CQ.el("div", "cp-row", this.el);
       this.lhs = CQ.el("div", "cp-side lhs", this.row);
       this.rhs = CQ.el("div", "cp-side rhs", this.row);
       this.cmp = CQ.el("div", "cp-compare", this.el);
       this.isOpen = false;
     },
-    // The view glides: the balance to the right, the rest dark. (close: back to the whole scene.)
+    // The view glides: the balance to the right, the rest dark, the check at the left (CQ.ASIDE).
+    // (close: back to the whole scene.)
     async open() {
       if (this.isOpen) return;
       this.isOpen = true;
@@ -1502,7 +1465,7 @@
       CQ.balance.present(true);
       CQ.audio.play("focus.in");
       const A = CQ.ASIDE;
-      await CQ.camera.to(A.x, A.y, A.z, 1400);
+      await CQ.camera.to(A.x, A.y, A.z, 1400, null, A.free);
       if (this.isOpen) CQ.zippy.setVisible(false); // already unseen under the dark
     },
     async close() {
@@ -1520,38 +1483,48 @@
       CQ.soft.set("check", false);
       await CQ.camera.to(960, 540, 1, 1300);
     },
-    // eq = { k, a, b, rhsGiven }: the equation k·x + a = b (k is 1 except for Level 9's two crowns)
+    // eq = { k, a, b, rhsGiven }: the equation k·x + a = b (k is 1 except for Level 9's two crowns).
+    // The check, one row under another (review, 2026-11-08): the equation itself at the top, kept in
+    // sight; x = 4 (the value put in for x); LHS: 4 + 3 = ?, when the left side is worked out; RHS: 9 = ?,
+    // when the right side is (or RHS: 23, when it is given); then the two compared.
     async show(eq) {
       this.eq = eq;
       const k = eq.k || 1;
       this.el.classList.remove("hidden");
       this.eqRow.innerHTML = CQ.rich(`${k > 1 ? k : ""}x + ${eq.a} = ${eq.b}`);
-      this.lhs.innerHTML = `<span class="lab">LHS:</span>${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a} =</span><button type="button" class="blank" data-k="lhs" aria-label="Left-hand side value">?</button>`;
-      this.rhs.innerHTML = `<span class="lab">RHS:</span><button type="button" class="blank" data-k="rhs" aria-label="Right-hand side value">?</button>`;
-      if (eq.rhsGiven) {
-        const r = this.blank("rhs");
-        r.textContent = CQ.num(eq.b);
-        r.classList.add("filled");
-      }
+      this.xRow.innerHTML = `<i class="v">x</i><span class="op">=</span><span class="xslot"></span>`;
+      // each side in three parts (its name, its expression, = and its value), the two sides lined up
+      // on their = signs (review, 2026-11-08: "Align the LHS and RHS calculations")
+      this.lhs.innerHTML = `<span class="lab">LHS:</span><span class="ex">${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a}</span></span><span class="eqv"><span class="op">=</span><button type="button" class="blank" data-k="lhs" aria-label="Left-hand side value">?</button></span>`;
+      this.rhs.innerHTML = eq.rhsGiven
+        ? `<span class="lab">RHS:</span><span class="ex"><span class="op">${CQ.num(eq.b)}</span></span><span class="eqv"></span>`
+        : `<span class="lab">RHS:</span><span class="ex"><span class="op">${CQ.num(eq.b)}</span></span><span class="eqv"><span class="op">=</span><button type="button" class="blank" data-k="rhs" aria-label="Right-hand side value">?</button></span>`;
       this.cmp.innerHTML = "";
       this.cmp.className = "cp-compare";
       const old = this.el.querySelector(":scope > .cp-picker");
       if (old) old.classList.add("hidden");
       this.el.style.opacity = "";
       this.el.style.transform = "";
-      // the left side, piece by piece; the right side waits (side)
-      this.rhs.style.opacity = "0";
+      // the equation comes in; x = …, the left side and the right side wait for their turns
+      [this.xRow, ...this.pieces(this.lhs), ...this.pieces(this.rhs)].forEach((e) => (e.style.opacity = "0"));
       CQ.audio.play("ui.pop");
-      await comeUp([...this.lhs.children]);
+      await comeUp([this.eqRow]);
+      await CQ.run.wait(200);
+    },
+    // a side's pieces, one by one (its name, the parts of its expression, =, its value)
+    pieces(side) {
+      return [...side.querySelectorAll(":scope > .lab, :scope > .ex > *, :scope > .eqv > *")];
+    },
+    // The left side comes in, piece by piece (with the value already in for x).
+    async lhsRow() {
+      CQ.audio.play("ui.pop", { volume: 0.7 });
+      await comeUp(this.pieces(this.lhs));
       await CQ.run.wait(200);
     },
     // The right side comes in, piece by piece.
     async side() {
-      const parts = [...this.rhs.children];
-      parts.forEach((e) => (e.style.opacity = "0"));
-      this.rhs.style.opacity = "";
       CQ.audio.play("ui.pop", { volume: 0.7 });
-      await comeUp(parts);
+      await comeUp(this.pieces(this.rhs));
       await CQ.run.wait(250);
     },
     hide(now) {
@@ -1573,15 +1546,21 @@
     blank(k) {
       return this.el.querySelector(`.blank[data-k="${k}"]`);
     },
-    // The value flies (from Zippy's hands, or from the crown) into the x slot.
+    // x = …: the row comes in, and the value flies (from Zippy's hands, or from the crown) into its
+    // box; the left side's x takes the value too (it shows when the left side comes in).
     async substitute(v, fromWorld) {
-      const slot = this.lhs.querySelector(".xslot");
+      const parts = [...this.xRow.children];
+      parts.forEach((e) => (e.style.opacity = "0"));
+      this.xRow.style.opacity = "";
+      await comeUp(parts);
+      const slot = this.xRow.querySelector(".xslot");
       const to = CQ.centerOf(slot);
       const from = fromWorld ? CQ.camera.toScreen(fromWorld) : to;
       const chip = CQ.el("div", "num-chip", null, CQ.num(v));
       CQ.audio.play("ui.swoosh");
       await CQ.fly(CQ.ui.layer, chip, from, to, { duration: 900, arc: -180 });
       slot.innerHTML = `<span class="subbed">${CQ.num(v)}</span>`;
+      this.lhs.querySelector(".xslot").innerHTML = `<span class="subbed">${CQ.num(v)}</span>`;
       CQ.audio.play("ui.pop");
       CQ.anim(slot, [{ transform: "scale(1.5)" }, { transform: "scale(1)" }], { duration: 380, easing: CQ.EASE.back, keep: false });
     },
@@ -1615,9 +1594,9 @@
   // ------------------------------------------------------------------ equation board (Levels 8 and 9)
   // The working of Levels 8 and 9, shown like the formula screen (asked 2026-11-05): the view glides
   // until the balance stands at the right, bright, and the steps are written at the left, one row under
-  // another, each one written in; the earlier rows fade back. While the child drags bars off the
-  // balance, the view goes back to the whole scene and the working waits, unseen (close); it comes back
-  // with the next step (open).
+  // another, each one written in; the earlier rows fade back a little. The child takes bars off with the
+  // working in view, and each − 8 (− 4) is written as its bar comes off (set's hold, then reveal:
+  // review, 2026-11-08).
   CQ.eqBoard = {
     build(ui) {
       this.el = CQ.el("div", "eq-board hidden", ui);
@@ -1631,8 +1610,8 @@
       CQ.soft.set("solve", [CQ.world.balanceLayer, CQ.world.drag], 2);
       CQ.balance.present(true);
       CQ.audio.play("focus.in");
-      const A = CQ.ASIDE;
-      await CQ.camera.to(A.x, A.y, A.z, 1400);
+      const A = CQ.ASIDE; // the balance at the right, the working at the left
+      await CQ.camera.to(A.x, A.y, A.z, 1400, null, A.free);
       if (!this.isOpen) return;
       CQ.zippy.setVisible(false); // already unseen under the dark
       if (this.el.children.length) {
@@ -1661,7 +1640,11 @@
       return this.set(text, opts);
     },
     // The next step: a new row under the others, written in, while the earlier rows fade back.
-    // opts.same: the last row changes instead (a highlight); opts.final: the answer (green).
+    // opts.same: the last row changes instead (a highlight); opts.final: the answer (green);
+    // opts.hold: a selector for parts of the row left out until reveal() (taking no room meanwhile);
+    // opts.each: ms per letter as it is written in (55); opts.onWrite [selector, fn(el, i)]: fn runs for
+    // each part of the row matching the selector as its first letter is written (Level 9: each x with
+    // its crown).
     set(text, opts) {
       opts = opts || {};
       if (this.isOpen) this.el.classList.remove("hidden");
@@ -1670,14 +1653,63 @@
         this.el.querySelectorAll(".eb-row").forEach((r) => r.classList.add("done"));
         row = CQ.el("div", "eb-row", this.el);
       }
-      row.innerHTML = CQ.rich(text);
+      // its left side, =, its right side: every row's = stands in the middle of the board, under the
+      // one above (review, 2026-11-08: "Keep the equal signs vertically aligned")
+      const i = text.indexOf(" = ");
+      row.innerHTML =
+        i < 0
+          ? `<span class="eb-all">${CQ.rich(text)}</span>`
+          : `<span class="eb-l">${CQ.rich(text.slice(0, i))}</span><span class="eb-eq">=</span><span class="eb-r">${CQ.rich(text.slice(i + 3))}</span>`;
       row.classList.toggle("final", !!opts.final);
+      if (opts.hold) row.querySelectorAll(opts.hold).forEach((e) => (e.style.display = "none"));
       CQ.audio.play("ui.pop", { volume: 0.6 });
       if (opts.same) {
         CQ.anim(row, [{ opacity: 0.35 }, { opacity: 1 }], { duration: 480, easing: CQ.EASE.out, keep: false });
         return CQ.sleep(480);
       }
-      return CQ.sleep(CQ.writeIn ? CQ.writeIn(row, 0, 55) : 0);
+      const each = opts.each || 55;
+      const took = CQ.writeIn ? CQ.writeIn(row, 0, each) : 0;
+      if (opts.onWrite) {
+        const [sel, fn] = opts.onWrite;
+        const chars = Array.from(row.querySelectorAll(".wch"));
+        row.querySelectorAll(sel).forEach((el, n) => {
+          const k = Math.max(0, chars.indexOf(el.querySelector(".wch"))); // its first letter comes at k × each
+          setTimeout(() => el.isConnected && fn(el, n), k * each);
+        });
+      }
+      return CQ.sleep(took);
+    },
+    // A stretch of a row lit up as one, from one of its parts to a later one in the same side (Level 9:
+    // x + x; the terms that cancel): they are wrapped in a span, lit with a ring that takes no room (cls:
+    // x-lit, gold; c-lit, red). Returns the span (its class off: unlit).
+    light(first, last, cls) {
+      const span = document.createElement("span");
+      span.className = "x-span " + (cls || "x-lit");
+      first.parentNode.insertBefore(span, first);
+      for (let n = first; n; ) {
+        const next = n.nextSibling;
+        span.appendChild(n);
+        if (n === last) break;
+        n = next;
+      }
+      return span;
+    },
+    // Parts of the last row left out by set's hold come in, gently: what stands beside them glides
+    // over to make room (the left side grows to the left, its = staying under the others).
+    reveal(sel) {
+      const row = this.el.lastElementChild;
+      const els = row ? [...row.querySelectorAll(sel)].filter((e) => e.style.display === "none") : [];
+      if (!els.length) return Promise.resolve();
+      const parts = [...row.children];
+      const was = parts.map((e) => e.getBoundingClientRect().left);
+      els.forEach((e) => (e.style.display = ""));
+      parts.forEach((e, i) => {
+        const dx = (was[i] - e.getBoundingClientRect().left) / CQ.stage.scale;
+        if (Math.abs(dx) > 0.5) CQ.anim(e, [{ transform: `translateX(${dx}px)` }, { transform: "translateX(0px)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
+      });
+      els.forEach((e) => CQ.anim(e, [{ opacity: 0 }, { opacity: 1 }], { duration: 520, easing: CQ.EASE.out, keep: false }));
+      CQ.audio.play("ui.pop", { volume: 0.6 });
+      return CQ.sleep(520);
     },
     hide(now) {
       // (a chapter jump: the scene, the blur and the camera are put back by the reset)

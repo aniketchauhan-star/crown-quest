@@ -71,12 +71,13 @@
   // Rich text for captions, bubbles and equations: the variable x in italic serif, real minus signs,
   // superscript powers and a drawn ≠ sign. "x" inside ordinary words (Next, box…) is left alone.
   // Maths marks: [[a|b]] is a fraction (a over b), {{…}} the blue "same on both sides" highlight,
-  // <<…>> a red highlight.
+  // <<…>> a red highlight, ##…## a gold one (what has just changed).
   CQ.rich = function (s) {
     return esc(s)
       .replace(/\[\[(.+?)\|(.+?)\]\]/g, '<span class="frac"><span class="fn">$1</span><span class="fd">$2</span></span>')
       .replace(/\{\{(.+?)\}\}/g, '<span class="same">$1</span>')
       .replace(/&lt;&lt;(.+?)&gt;&gt;/g, '<span class="hot">$1</span>')
+      .replace(/##(.+?)##/g, '<span class="mark-new">$1</span>')
       .replace(/ - /g, " − ")
       .replace(/\^(\d)/g, "<sup>$1</sup>")
       .replace(/²/g, "<sup>2</sup>")
@@ -87,7 +88,7 @@
   CQ.speakable = function (s) {
     return String(s)
       .replace(/\[\[(.+?)\|(.+?)\]\]/g, "$1 divided by $2")
-      .replace(/\{\{|\}\}|<<|>>/g, "")
+      .replace(/\{\{|\}\}|<<|>>|##/g, "")
       .replace(/(\d)x(\^2|²)/g, "$1 x squared")
       .replace(/x(\^2|²)/g, "x squared")
       .replace(/(\d)x\b/g, "$1 x")
@@ -557,8 +558,11 @@
     apply() {
       if (this.el) this.el.style.transform = `translate(${this.x}px, ${this.y}px) scale(${this.z})`;
     },
-    frame(fx, fy, z) {
-      const x = CQ.clamp(W / 2 - fx * z, W - W * z, 0);
+    // The view centred on (fx, fy) at zoom z, kept inside the scene, unless free: then it may look past
+    // the scene's right edge, where the scene carries on in a mirror image (CQ.ASIDE; js/world.js,
+    // mirrorBackground).
+    frame(fx, fy, z, free) {
+      const x = free ? W / 2 - fx * z : CQ.clamp(W / 2 - fx * z, W - W * z, 0);
       const y = CQ.clamp(H / 2 - fy * z, H - H * z, 0);
       return { x, y, z };
     },
@@ -566,9 +570,9 @@
       Object.assign(this, this.frame(fx, fy, z));
       this.apply();
     },
-    to(fx, fy, z, dur, ease) {
+    to(fx, fy, z, dur, ease, free) {
       const a = { x: this.x, y: this.y, z: this.z };
-      const b = this.frame(fx, fy, z);
+      const b = this.frame(fx, fy, z, free);
       if (CQ.motion.reduced) dur = Math.min(dur || 0, 300);
       return CQ.tween(
         dur,

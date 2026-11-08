@@ -50,16 +50,110 @@
 
   // The formula screen. The view glides (zooms in and pans) until the balance stands at the right of
   // the screen, on its own ground, bright and sharp, while the rest of the scene goes soft and dark
-  // (CQ.balance.present). Then the equation is written in at the left, one sign at a time. The part of
+  // (CQ.balance.present). Then the equation is written in at the left, one sign at a time (review,
+  // 2026-11-08: "the balance on the right and the equation steps on the left"). The part of
   // the balance a beat talks about lights up: the crown for x, a pan for a side, both pans when the
   // sides are equal. Each beat adds tags, boxes and highlights: what stays the same from one beat to
   // the next stays still, and what is new fades in where it stays, one piece at a time. The question
   // bar above says the line. Zippy isn't on this screen: the balance and the maths have it to
   // themselves. On closing, the maths fades and the view glides back to the whole scene.
-  const ASIDE = { x: 760, y: 472, z: 1.25 }; // the view: the balance at the right (x 910–1800 on screen), room at the left
+  // the view: the balance at the right (x 910–1800 on screen), room at the left (x 50–890) for the maths
+  // (review, 2026-11-08: "the balance on the right and the equation steps on the left", as the
+  // reviewer's screenshots show; from 2026-11-07 it was the other way round). (With free: true and an x
+  // past the middle, a view could look past the scene's right edge, where the scene goes on in a mirror
+  // image: js/world.js, mirrorBackground. Not needed this way round.)
+  const ASIDE = { x: 760, y: 472, z: 1.25 };
   CQ.ASIDE = ASIDE; // (the check uses it too: CQ.checkPanel in js/ui.js)
   // The gold frame round a part of the balance, the rest of it faded (CQ.focus): "crown", "left" (pan),
   // "right", "both" (pans), "level" or "whole" (the whole balance). Anything else: no frame.
+  // The left pan's things glide from where they were to where change() puts them (things it adds come
+  // in where they belong; the caller brings them in).
+  function glideLeft(change) {
+    const b = CQ.balance;
+    const was = new Map(b.items.left.map((it) => [it, { x: it.x, y: it.y }]));
+    change();
+    b.layout("left");
+    b.items.left.forEach((it) => {
+      const p = was.get(it);
+      if (!p || (p.x === it.x && p.y === it.y)) return;
+      CQ.anim(it.el, [{ transform: `translate(${p.x - it.x}px, ${p.y - it.y}px)` }, { transform: "translate(0px, 0px)" }], { duration: 560, easing: CQ.EASE.out, keep: false });
+    });
+  }
+  // Putting a value in for x on the balance (review, 2026-11-07: "show the substitution through
+  // animation… replace the crown on the left pan with four unit coins. Keep the two existing coins
+  // visible, then group all six together"; the same in the check, 2026-11-08). Each crown on the left
+  // pan stands for x: it goes, and in its place come that many unit coins, one by one, beside what is
+  // there, and then all the coins gather into one group. Where a bar lies beside the crown, or the
+  // value is big (Levels 8 and 9), a gold bar of the value takes the crown's place instead. The
+  // balance stays level until the working says otherwise (CQ.balance.evaluate: it tips, or levels, the
+  // way the pans now weigh). restore puts the crowns back (quick: at once). Both are safe to repeat.
+  CQ.xPan = {
+    sub: null,
+    reset() {
+      this.sub = null;
+    },
+    async put(v) {
+      const b = CQ.balance;
+      b.target = 0; // level, until the working says otherwise
+      if (this.sub && this.sub.v === v) return;
+      if (this.sub) await this.restore(true);
+      const crowns = b.items.left.filter((it) => it.type === "crown" && !it.ghost);
+      if (!crowns.length) return;
+      const others = b.items.left.filter((it) => !crowns.includes(it));
+      const asCoins = others.every((it) => it.type === "coin") && Number.isInteger(v) && v > 0 && v * crowns.length + others.length <= 12;
+      const sub = (this.sub = {
+        v,
+        added: [],
+        asCoins,
+        crowns: crowns.map((c) => ({ at: b.items.left.indexOf(c), slot: c.slot })),
+        slots: new Map(others.map((it) => [it, it.slot])),
+      });
+      CQ.audio.play("ui.swoosh");
+      await Promise.all(crowns.map((c) => CQ.anim(c.el, [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(0.4)" }], { duration: 380, easing: CQ.EASE.in, essential: true })));
+      if (this.sub !== sub) return;
+      glideLeft(() => {
+        crowns.forEach((c) => b.removeItem(c));
+        if (asCoins) for (let i = 0; i < v * crowns.length; i++) sub.added.push(b.addItem("left", { type: "coin", slot: "subst" }, i));
+        else sub.crowns.forEach((c, n) => sub.added.push(b.addItem("left", { type: "bar", value: v, slot: "main" }, n)));
+        sub.added.forEach((it) => {
+          it.el.style.opacity = "0";
+          it.forX = true; // (counting on from x's value skips these: Balance.autoCount)
+        });
+      });
+      const gap = asCoins ? 170 : 320;
+      sub.added.forEach((it, i) =>
+        setTimeout(() => {
+          if (this.sub !== sub) return;
+          it.el.style.opacity = "";
+          CQ.anim(it.el, [{ opacity: 0, transform: "scale(0.3)" }, { opacity: 1, transform: "scale(1)" }], { duration: 320, easing: CQ.EASE.back, keep: false });
+          CQ.audio.play(asCoins ? "coin.clink" : "ui.pop", { volume: 0.5 });
+        }, 120 + i * gap)
+      );
+      await CQ.run.wait(120 + sub.added.length * gap + 650);
+      if (this.sub !== sub || !asCoins) return;
+      glideLeft(() => b.items.left.forEach((it) => (it.slot = "group"))); // all the coins, one group
+      await CQ.run.wait(560);
+    },
+    async restore(quick) {
+      const b = CQ.balance;
+      const sub = this.sub;
+      if (!sub) return;
+      this.sub = null;
+      if (!quick) {
+        sub.added.forEach((it) => CQ.anim(it.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: CQ.EASE.in }));
+        await CQ.run.wait(320);
+      }
+      glideLeft(() => {
+        sub.added.forEach((it) => b.removeItem(it));
+        sub.slots.forEach((slot, it) => (it.slot = slot));
+        sub.crowns.forEach((c) => {
+          const crown = b.addItem("left", { type: "crown", slot: c.slot }, c.at);
+          if (!quick) CQ.anim(crown.el, [{ opacity: 0, transform: "scale(0.4)" }, { opacity: 1, transform: "scale(1)" }], { duration: 420, easing: CQ.EASE.back, keep: false });
+        });
+      });
+      b.evaluate(); // the crown is back: level again
+    },
+  };
   CQ.frameBalance = function (part) {
     const b = CQ.balance;
     const plate = (side) => b.sides[side].g.querySelector(".bal-plate");
@@ -95,12 +189,15 @@
       this.el.classList.remove("hidden");
       this.content.innerHTML = "";
       this.stage.style.opacity = ""; // (a close leaves it faded out)
+      CQ.xPan.reset(); // no value put in for x yet
       this.shown = null;
       CQ.soft.set("notebook", [CQ.world.balanceLayer], 2); // all but the balance goes soft
       CQ.balance.present(true);
       CQ.audio.play("focus.in");
-      await CQ.camera.to(ASIDE.x, ASIDE.y, ASIDE.z, 1400); // then the first beat writes the equation in
-      if (n === this.opens) CQ.zippy.setVisible(false); // already unseen under the dark
+      await CQ.camera.to(ASIDE.x, ASIDE.y, ASIDE.z, 1400, null, ASIDE.free); // then the first beat writes the equation in
+      if (n !== this.opens) return;
+      CQ.zippy.setVisible(false); // already unseen under the dark
+      await CQ.run.hold(CQ.PACE.settle); // a moment before the equation is written in
     },
     async close() {
       if (!this.isOpen) return;
@@ -115,14 +212,17 @@
       this.content.innerHTML = "";
       this.shown = null;
       CQ.zippy.setVisible(true); // still under the dark: he is simply there as it lifts
+      CQ.balance.glowSides(false);
       CQ.balance.present(false);
       CQ.soft.set("notebook", false);
       await CQ.camera.to(960, 540, 1, 1300); // back to the whole scene
+      if (n === this.opens) await CQ.run.hold(CQ.PACE.settle); // a moment before the story goes on
     },
     hideNow() {
       this.isOpen = false;
       this.opens++;
       this.shown = null;
+      CQ.xPan.reset(); // (the scene is set up again: the crown is back)
       this.framed = false;
       this.content.innerHTML = "";
       this.el.classList.add("hidden");
@@ -130,32 +230,81 @@
       CQ.balance.present(false, true);
     },
     // Draw one beat. s = { hl, crown, mini, tags, box, boxColor, label, pulse, outline, outlineLabel,
-    // lhs, rhs, ghost, title, rows, bal }. crown: the crown over x; mini: the crown and two coins over
-    // x + 2 (both fly over from the balance). rows are lines worked out under the equation ({ t, cls }:
-    // cls "big", "no" red, "ok" green). bal is the part of the balance the frame goes round: "crown",
-    // "left", "right", "both", or "level" (the whole balance, and its centre flashes: the sides are
-    // equal). Each piece gets a key; pieces that were already on screen in the last beat stay as they
-    // were, so only the new ones catch the eye.
+    // lhs, rhs, ghost, title, rows, bal, cue }. crown: the crown over x; mini: the crown and two coins
+    // over x + 2 (both fly over from the balance). rows are lines worked out under the equation
+    // ({ t, cls }: cls "big", "no" red, "ok" green). bal is the part of the balance the frame goes
+    // round: "crown", "left", "right", "both", or "level" (the whole balance, and its centre flashes:
+    // the sides are equal). Each piece gets a key; pieces that were already on screen in the last beat
+    // stay as they were, so only the new ones catch the eye. A new piece can wait for the words of the
+    // line that name it (the question bar types with the voice): a tag's or a row's cue, or
+    // s.cue = { title, outline (the outline and its label), label, hl, lhs, rhs }; x's power (x¹):
+    // s.power = { in, out }.
     render(s) {
       const sig = JSON.stringify(s);
       if (this.shown && this.shown.sig === sig) return this.content.querySelector(".eqn");
       const c = this.content;
       c.innerHTML = "";
+      CQ.balance.glowSides(false); // (a beat's pans glow only in that beat)
       const keys = new Set();
       const add = (el, key) => {
         el.dataset.key = key;
         keys.add(key);
         return el;
       };
+      const cueFor = (el, part) => {
+        if (s.cue && s.cue[part]) el.dataset.cue = s.cue[part];
+        return el;
+      };
       const eqn = CQ.eqTokens(c, EQ_X2, "big");
-      if (s.title) add(CQ.el("div", "nb-title", c, s.title), "title:" + s.title);
+      if (s.title) cueFor(add(CQ.el("div", "nb-title", c, s.title), "title:" + s.title), "title");
       const tok = (id) => eqn.querySelector(`.tok[data-id="${id}"]`);
       (s.hl || []).forEach((id) => tok(id).classList.add("hl"));
       if (s.lhs) LHS.forEach((id) => tok(id).classList.add("lhs"));
       if (s.rhs) tok("seven").classList.add("rhs");
       (s.pulse || []).forEach((id) => tok(id).classList.add("pulse"));
-      if (s.ghost) add(CQ.el("sup", "ghost-power", tok("x"), "1"), "ghost");
+      // a part of the equation that changes (a highlight, a colour) eases from how it was to how it is.
+      // A new highlight or side colour can wait for the voice, each for its own words (s.cue.hl,
+      // s.cue.lhs, s.cue.rhs): x can light up on one word and turn teal with x + 2 on a later one. (On a
+      // first beat, a part waits in its plain look. Done before anything below measures the page, so a
+      // new look is never drawn too early.)
+      const before = this.shown || { keys: new Set(), toks: {} };
+      const toks = {};
+      eqn.querySelectorAll(".tok").forEach((t) => {
+        const now = t.className;
+        toks[t.dataset.id] = now;
+        const want = now.split(" ");
+        let was = before.toks[t.dataset.id];
+        const had = (was || "").split(" ");
+        const waits = want.filter((k) => ["hl", "lhs", "rhs"].includes(k) && s.cue && s.cue[k] && !had.includes(k));
+        const start = want.filter((k) => !waits.includes(k)).join(" ");
+        if (was == null) {
+          if (!waits.length) return;
+          was = start;
+        }
+        if (was === now) return;
+        t.className = was;
+        void t.offsetWidth; // the old look is drawn first, so the change runs as a CSS transition
+        t.className = start;
+        waits.forEach((k) => this.onCue(s.cue[k], sig, () => t.classList.add(k)));
+      });
       const d = eqn.deco;
+      // x with a value put in for it (s.x): the value stands over the x in a gold box (the x stays
+      // underneath, so nothing moves), coming in as the voice says "Replace x with…" (s.cue.x)
+      if (s.x != null) {
+        const t = tok("x");
+        const o = add(CQ.el("div", "x-sub", d, String(s.x)), "xsub:" + s.x);
+        CQ.box(o, t.offsetLeft, t.offsetTop, t.offsetWidth, t.offsetHeight);
+        if (s.cue && s.cue.x) o.dataset.cue = s.cue.x;
+      }
+      // x's power: a 1 at the top right of the x (x¹), in its own layer so the equation never moves. It
+      // appears as the voice gets to s.power.in and fades as it gets to s.power.out.
+      if (s.power) {
+        const t = tok("x");
+        const p = add(CQ.el("div", "x-power", d, "1"), "power:" + (s.power.in || ""));
+        CQ.pos(p, inkX(t).x1 - 2, t.offsetTop + t.offsetHeight * 0.02);
+        if (s.power.in) p.dataset.cue = s.power.in;
+        if (s.power.out) this.onCue(s.power.out, sig, () => CQ.anim(p, [{ opacity: 1 }, { opacity: 0 }], { duration: 700, easing: CQ.EASE.out }));
+      }
       if (s.box) {
         const r = groupRect(eqn, s.box);
         const b = add(CQ.el("div", "grp-box" + (s.boxColor ? " " + s.boxColor : ""), d), "box:" + s.box.join() + (s.boxColor || ""));
@@ -163,16 +312,18 @@
       }
       if (s.outline) {
         const r = groupRect(eqn, EQ_X2.map((t) => t.id));
-        const b = add(CQ.el("div", "grp-outline", d), "outline");
+        const b = cueFor(add(CQ.el("div", "grp-outline", d), "outline"), "outline");
         CQ.box(b, r.x - 30, r.y - 14, r.w + 60, r.h + 28);
         if (s.outlineLabel) {
-          const l = add(CQ.el("div", "grp-label above", d, s.outlineLabel), "olabel:" + s.outlineLabel);
-          CQ.pos(l, r.cx, r.y - 30);
+          // under the outline, where there is room (review, 2026-11-07: over it, against the question
+          // bar, "it looks congested")
+          const l = cueFor(add(CQ.el("div", "grp-label below", d, s.outlineLabel), "olabel:" + s.outlineLabel), "outline");
+          CQ.pos(l, r.cx, r.y + r.h + 30);
         }
       }
       if (s.label) {
         const r = groupRect(eqn, s.label.ids);
-        const l = add(CQ.el("div", "grp-label above " + (s.label.color || ""), d, s.label.text), "label:" + s.label.text);
+        const l = cueFor(add(CQ.el("div", "grp-label above " + (s.label.color || ""), d, s.label.text), "label:" + s.label.text), "label");
         CQ.pos(l, r.cx, r.y - 22);
       }
       // pictures over the equation are copies of the things on the balance, and fly over from there
@@ -200,18 +351,34 @@
         });
       }
       // a tag hangs under its part on a straight line that starts with a dot on the part (or on the
-      // middle of the part's bracket), like the labels of the activities
+      // middle of the part's bracket, or on the bottom of the box round it), like the labels of the
+      // activities. t.box: a box in the tag's colour round the part, drawn in when the voice gets to
+      // t.boxCue (the line and the word wait for t.cue).
       (s.tags || []).forEach((t) => {
         const ids = Array.isArray(t.ids) ? t.ids : [t.ids];
         const r = groupRect(eqn, ids);
         const row = t.row || 0;
-        const y = r.y + r.h + (t.bracket ? 34 : 14) + row * 66;
+        const y = r.y + r.h + (t.bracket || t.box ? 34 : 14) + row * 66;
         const key = "tag:" + t.text;
+        if (t.box) {
+          // round the part; the = stays outside, with room on either side of it
+          let x0 = r.x - 14;
+          let x1 = r.x + r.w + 14;
+          const eq = tok("eq");
+          if (eq && !ids.includes("eq")) {
+            const e = inkX(eq);
+            if (r.x + r.w <= eq.offsetLeft + 1) x1 = Math.min(x1, e.x0 - 16); // the box left of the =
+            else if (r.x >= eq.offsetLeft + eq.offsetWidth - 1) x0 = Math.max(x0, e.x1 + 16); // right of it
+          }
+          const bx = add(CQ.el("div", "grp-box tag-box " + (t.color || ""), d), "tagbox:" + t.text);
+          CQ.box(bx, x0, r.y - 4, x1 - x0, r.h + 8);
+          if (t.boxCue) bx.dataset.cue = t.boxCue;
+        }
         if (t.bracket) {
           const br = add(CQ.el("div", "under-bracket " + (t.color || ""), d), key);
           CQ.box(br, r.x - 6, r.y + r.h - 2, r.w + 12, 18);
         }
-        const top = t.bracket ? r.y + r.h + 13 : r.y + r.h - 6;
+        const top = t.box ? r.y + r.h + 4 : t.bracket ? r.y + r.h + 13 : r.y + r.h - 6;
         const line = add(CQ.el("div", "tag-line " + (t.color || ""), d), key);
         CQ.box(line, r.cx - 2, top, 4, y - top);
         CQ.el("div", "tag-dot", line);
@@ -221,6 +388,7 @@
         const lo = -eqn.offsetLeft - this.stage.offsetLeft + 24 + half;
         const hi = this.stage.offsetWidth - eqn.offsetLeft + 30 - half;
         CQ.pos(tag, Math.max(lo, Math.min(hi, r.cx)), y);
+        if (t.cue) c.querySelectorAll(`[data-key="${CSS.escape(key)}"]`).forEach((el) => (el.dataset.cue = t.cue)); // it waits until the voice says this
       });
       // the first beat: the equation is written in, one sign at a time; the beat's other pieces follow
       let start = 150;
@@ -231,18 +399,6 @@
         );
         start = 120 + signs.length * 190 + 300;
       }
-      // a part of the equation that changes (a highlight, a colour) eases from how it was to how it is
-      const before = this.shown || { keys: new Set(), toks: {} };
-      const toks = {};
-      eqn.querySelectorAll(".tok").forEach((t) => {
-        const now = t.className;
-        const was = before.toks[t.dataset.id];
-        toks[t.dataset.id] = now;
-        if (was == null || was === now) return;
-        t.className = was;
-        void t.offsetWidth; // the old look is drawn first, so the change runs as a CSS transition
-        t.className = now;
-      });
       // First the frame goes round the part of the balance the line is about (the rest of it fades);
       // then what is new comes in, one piece at a time (a tag with its line and bracket): words fade
       // in where they stay, and pictures fly over from the balance last.
@@ -256,28 +412,44 @@
         groups.get(key).push(el);
       });
       const flying = (els) => els.some((el) => el.matches("[data-fly]") || el.querySelector("[data-fly]"));
-      // a piece with a cue comes in when the voice says its word (in order, if several share it)
+      // a piece with a cue comes in when the voice says its word (in order, if several share it); a tag
+      // with a cue is drawn in then, as tags always are: bracket, line, then its word written in
       const cued = new Map();
       groups.forEach((els, key) => {
         if (!els[0].dataset.cue) return;
         const cue = els[0].dataset.cue;
         if (!cued.has(cue)) cued.set(cue, []);
-        cued.get(cue).push(...els);
+        cued.get(cue).push([key, els]);
         groups.delete(key);
       });
-      cued.forEach((els, cue) => {
-        els.forEach((el) => (el.style.opacity = "0"));
-        this.onCue(cue, sig, () =>
-          els.forEach((el, n) =>
-            setTimeout(() => {
-              if (!this.shown || this.shown.sig !== sig) return;
-              el.style.opacity = "";
-              CQ.anim(el, [{ opacity: 0, scale: "0.7" }, { opacity: 1, scale: "1.08", offset: 0.7 }, { opacity: 1, scale: "1" }], { duration: 520, easing: CQ.EASE.out, keep: false });
-              if (n === 0) CQ.audio.play("ui.pop", { volume: 0.55 });
-              if (el.classList.contains("sol-name")) writeIn(el, 150, 45); // its name is written in
-            }, n * 450)
-          )
-        );
+      cued.forEach((list, cue) => {
+        // unseen until then (visibility: a piece's own animation, like the faint 1's blink, can't show it)
+        list.forEach(([, els]) => els.forEach((el) => (el.style.visibility = "hidden")));
+        this.onCue(cue, sig, () => {
+          let n = 0;
+          list.forEach(([key, els]) => {
+            if (key.startsWith("tag:")) {
+              els.forEach((el) => (el.style.visibility = ""));
+              CQ.audio.play("ui.pop", { volume: 0.55 });
+              this.drawTag(els, 0);
+              return;
+            }
+            els.forEach((el) => {
+              const i = n++;
+              setTimeout(() => {
+                if (!this.shown || this.shown.sig !== sig) return;
+                el.style.visibility = "";
+                // a worked-out row pops in; a tag's box is drawn; anything else fades in where it
+                // stays, as it does uncued
+                if (el.classList.contains("nb-row") || el.classList.contains("x-sub")) CQ.anim(el, [{ opacity: 0, scale: "0.7" }, { opacity: 1, scale: "1.08", offset: 0.7 }, { opacity: 1, scale: "1" }], { duration: 520, easing: CQ.EASE.out, keep: false });
+                else if (el.classList.contains("tag-box") || el.classList.contains("grp-outline")) drawBox(el, 0); // a box is drawn
+                else CQ.anim(el, [{ opacity: 0, translate: "0 10px" }, { opacity: 1, translate: "0 0" }], { duration: 600, easing: CQ.EASE.out, keep: false });
+                if (i === 0) CQ.audio.play("ui.pop", { volume: 0.55 });
+                if (el.classList.contains("sol-name") || el.classList.contains("grp-label")) writeIn(el, 150, 45); // its name is written in
+              }, i * 450);
+            });
+          });
+        });
       });
       const order = [...groups.keys()].sort((a, b) => flying(groups.get(a)) - flying(groups.get(b)));
       let at = start;
@@ -294,13 +466,38 @@
         els.forEach((el) => {
           const fliers = el.matches("[data-fly]") ? [el] : [...el.querySelectorAll("[data-fly]")];
           if (fliers.length) return this.flyIn(fliers, at, sig);
+          if (el.classList.contains("tag-box") || el.classList.contains("grp-outline")) return drawBox(el, at); // a box is drawn
           CQ.anim(el, [{ opacity: 0, translate: "0 10px" }, { opacity: 1, translate: "0 0" }], { duration: 600, delay: at, easing: CQ.EASE.out, keep: false });
           if (el.classList.contains("grp-label")) writeIn(el, at + 150, 45); // a label's word is written in
         });
         at += 500;
       });
       this.shown = { sig, keys, toks, bal: s.bal };
+      // things a beat does as the voice gets to its words (s.steps: { cue, bal, pans, sub, restore,
+      // tilt, flash }; a step with no cue happens at once): bal moves the frame to that part of the
+      // balance (null: no frame); pans: the left pan glows like the LHS and the right pan like the RHS;
+      // sub: that value is put in for x on the balance (substitute); restore: the crown is put back;
+      // tilt: the balance tips (or levels) the way its pans now weigh; flash: its hub flashes (level)
+      const runStep = (st) => {
+        if ("bal" in st) {
+          this.light(st.bal, this.shown.bal);
+          this.shown.bal = st.bal;
+        }
+        if (st.pans) CQ.balance.glowSides(true);
+        if (st.restore) this.restore().catch(() => {});
+        if (st.sub != null) this.substitute(st.sub).catch(() => {});
+        if (st.tilt) CQ.balance.evaluate();
+        if (st.flash) CQ.balance.flashEmblem();
+      };
+      (s.steps || []).forEach((st) => (st.cue ? this.onCue(st.cue, sig, () => runStep(st)) : runStep(st)));
       return eqn;
+    },
+    // A value put in for x on the balance, and the crown put back (CQ.xPan, below).
+    substitute(v) {
+      return CQ.xPan.put(v);
+    },
+    restore(quick) {
+      return CQ.xPan.restore(quick);
     },
     // fn, when the voice of this beat's line gets to str (the question bar types with it), as long as
     // the beat is still on screen; at the latest after 15 s.
@@ -378,8 +575,11 @@
       this.framed = true;
       return bal !== was;
     },
-    // Run a list of beats with Next / Back.
-    async run(beats) {
+    // Run a list of beats with Next / Back. opts.lower: the equation sits lower on the screen (review,
+    // 2026-11-07: "It can be little below"), for the runs with little written under it (the words, the
+    // linear equation); trying values fills the screen under it, so that run keeps it higher.
+    async run(beats, opts) {
+      this.content.classList.toggle("lower", !!(opts && opts.lower));
       let i = 0;
       while (i < beats.length) {
         const b = beats[i];
@@ -395,36 +595,57 @@
 
   CQ.NB_WORDS = [
     { id: "l4-9", s: { bal: "crown" } },
-    { id: "l4-10", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "Variable", color: "var" }] } },
-    { id: "l4-11", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "Variable", color: "var" }] }, gem: "variable" },
-    { id: "l4-12", s: { box: LHS, mini: true, bal: "left" } },
+    { id: "l4-10", s: { hl: ["x"], crown: true, bal: "crown" } },
+    // the Variable tag comes in as the voice says "…our variable is x" (review, 2026-11-07: "This
+    // should come when we say here x is our variable and its value is unknown")
+    { id: "l4-11", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "Variable", color: "var", cue: "our variable is x" }] }, gem: "variable" },
+    // No box round x + 2, so its labels read clearly; each label comes in as the voice names it (review,
+    // 2026-11-07: "We don't need a box around x + 2 so that the labelling becomes clear. Labelling
+    // should come synced with VO.")
+    { id: "l4-12", s: { mini: true, bal: "left" } },
     {
       id: "l4-13",
       s: {
-        box: LHS,
         mini: true,
         bal: "left",
         tags: [
-          { ids: "x", text: "variable", color: "var" },
-          { ids: "plus", text: "addition", color: "op", row: 1 },
-          { ids: "two", text: "constant", color: "const" },
+          { ids: "x", text: "variable", color: "var", cue: "x is a variable" },
+          { ids: "plus", text: "addition", color: "op", row: 1, cue: "We add" },
+          { ids: "two", text: "constant", color: "const", cue: "2 is a constant" },
         ],
       },
       gem: "constant",
     },
-    { id: "l4-14", s: { box: LHS, boxColor: "expr", bal: "left", label: { ids: LHS, text: "Algebraic expression", color: "expr" } }, gem: "expression" },
+    { id: "l4-14", s: { bal: "left", tags: [{ ids: LHS, text: "Algebraic expression", color: "expr", bracket: true, cue: "the algebraic expression" }] }, gem: "expression" },
     { id: "l4-15", s: { pulse: ["eq"], bal: "level" } },
-    { id: "l4-16", s: { outline: true, outlineLabel: "Equation", bal: "level" }, gem: "equation" },
-    { id: "l4-17", s: { lhs: true, bal: "left", tags: [{ ids: LHS, text: "Left-hand side (LHS)", color: "lhs", bracket: true }] }, gem: "lhs" },
+    // the outline and its Equation label come at the end of the line, under the equation (review,
+    // 2026-11-07: "equation should come at the end of the VO"; "it can come below")
+    { id: "l4-16", s: { outline: true, outlineLabel: "Equation", cue: { outline: "an equation." }, bal: "level" }, gem: "equation" },
+    // As the voice says "the expression to the left of the equals sign", x + 2 turns teal and a box is
+    // drawn round it; its label only comes in as the voice names it ("the left-hand side"). The same
+    // for 7 and the right-hand side. The = stays outside both boxes. (Review, 2026-11-07: "Please sync
+    // the animations with the VO… Keep both labels hidden initially and leave the equal sign outside
+    // the boxes.")
+    {
+      id: "l4-17",
+      s: {
+        lhs: true,
+        bal: "left",
+        cue: { lhs: "to the left" },
+        tags: [{ ids: LHS, text: "Left-hand side (LHS)", color: "lhs", box: true, boxCue: "to the left", cue: "the left-hand side" }],
+      },
+      gem: "lhs",
+    },
     {
       id: "l4-18",
       s: {
         lhs: true,
         rhs: true,
         bal: "right",
+        cue: { rhs: "to the right" },
         tags: [
-          { ids: LHS, text: "Left-hand side (LHS)", color: "lhs", bracket: true },
-          { ids: "seven", text: "Right-hand side (RHS)", color: "rhs", bracket: true, row: 1 },
+          { ids: LHS, text: "Left-hand side (LHS)", color: "lhs", box: true },
+          { ids: "seven", text: "Right-hand side (RHS)", color: "rhs", box: true, row: 1, boxCue: "to the right", cue: "the right-hand side" },
         ],
       },
       gem: "rhs",
@@ -434,34 +655,92 @@
   // not a solution) and for 5 (both sides equal 7, so 5 is the solution). The equation stays at the top
   // all along, like on a board; the working goes under it.
   CQ.NB_TRY = [
-    { id: "l4-23", s: { crown: true, bal: "crown" } },
-    { id: "l4-24", s: { crown: true, bal: "both" } },
-    { id: "l4-25", s: { crown: true, bal: "both", rows: [{ t: "LHS: 4 + 2 = 6" }, { t: "RHS: 7" }] } },
-    { id: "l4-26", s: { crown: true, bal: "both", rows: [{ t: "6 ≠ 7", cls: "big no" }, { t: "4 is not a solution", cls: "no" }] } },
-    { id: "l4-27", s: { crown: true, bal: "both", rows: [{ t: "LHS: 5 + 2 = 7" }, { t: "RHS: 7" }] } },
-    { id: "l4-28", s: { crown: true, bal: "level", rows: [{ t: "LHS = 7" }, { t: "RHS = 7" }, { t: "7 = 7", cls: "big ok" }] } },
+    { id: "l4-23", s: { bal: "crown" } },
+    // No floating crown over x and no big frame round both pans (review, 2026-11-07): on "a value of x",
+    // x and the crown on the left pan light up; on "makes both sides equal", x + 2 and 7 light up
+    // together, each with its own pan (teal, orange). The balance is level: the equality we want.
+    {
+      id: "l4-24",
+      s: {
+        hl: ["x"],
+        lhs: true,
+        rhs: true,
+        cue: { hl: "a value of x", lhs: "makes both sides", rhs: "makes both sides" },
+        steps: [
+          { cue: "a value of x", bal: "crown" },
+          { cue: "makes both sides", bal: null, pans: true },
+        ],
+      },
+    },
+    // Trying 4, then 5, on the balance as well as in the equation (review, 2026-11-07): as the voice
+    // says "Replace x with 4", the x becomes 4 and the crown on the left pan becomes four unit coins,
+    // beside the two coins there, then all six gather into one group. Each side is worked out as the
+    // voice says it, its pan framed; then 6 ≠ 7 and the balance tips, the right pan lower (7 > 6), and
+    // "So, 4 is not a solution." The crown comes back for 5, the same, and the balance stays level
+    // (7 = 7). No frame round both pans.
+    { id: "l4-25", s: { x: 4, cue: { x: "Replace x with 4" }, steps: [{ cue: "Replace x with 4", sub: 4 }] } },
+    {
+      id: "l4-26",
+      s: {
+        x: 4,
+        lhs: true,
+        rhs: true,
+        cue: { lhs: "The left side", rhs: "the right side" },
+        rows: [
+          { t: "LHS = 4 + 2 = 6", cue: "The left side equals 6" },
+          { t: "RHS = 7", cue: "the right side equals 7" },
+          { t: "6 ≠ 7", cls: "big no", cue: "different" },
+          { t: "So, 4 is not a solution.", cls: "no", cue: "so 4 is not a solution" },
+        ],
+        steps: [{ sub: 4 }, { cue: "The left side", bal: "left" }, { cue: "the right side", bal: "right" }, { cue: "different", bal: null, tilt: true }],
+      },
+    },
+    { id: "l4-27", s: { x: 5, cue: { x: "Replace x with 5" }, steps: [{ restore: true }, { cue: "Replace x with 5", sub: 5 }] } },
+    {
+      id: "l4-28",
+      s: {
+        x: 5,
+        lhs: true,
+        rhs: true,
+        cue: { lhs: "Both sides", rhs: "Both sides" },
+        rows: [
+          { t: "LHS = 5 + 2 = 7", cue: "Both sides" },
+          { t: "RHS = 7", cue: "Both sides" },
+          { t: "7 = 7", cls: "big ok", cue: "equal 7" },
+        ],
+        steps: [{ sub: 5 }, { cue: "Both sides", pans: true }, { cue: "equal 7", tilt: true, flash: true }],
+      },
+    },
     {
       id: "l4-29",
       s: {
-        crown: true,
-        bal: "level",
+        x: 5,
+        lhs: true,
+        rhs: true,
         rows: [
-          { t: "LHS = 7" },
+          { t: "LHS = 5 + 2 = 7" },
           { t: "RHS = 7" },
           { t: "7 = 7", cls: "big ok" },
           { t: "x = 5", cls: "sol", cue: "So, 5" }, // the 5 comes when the voice says it
           { t: "Solution", cls: "sol-name", cue: "So, 5" },
         ],
+        steps: [{ sub: 5 }],
       },
       gem: "solution",
     },
   ];
 
+  // The linear equation is shown in the equation itself, in step with the voice, with no labels
+  // (review, 2026-11-07: "use labels only when naming specific parts… sync animations and highlights
+  // directly within the equation with the VO… Remove the separate 'x means x¹' label"): x lights up as
+  // "one variable" is said; a 1 comes on x (x¹) as "its power is 1" is said, and fades as "we usually
+  // leave the 1 unwritten"; it comes back for "its highest power is 1"; and a box is drawn round the
+  // whole equation as "a linear equation" is said.
   CQ.NB_LINEAR = [
-    { id: "l4-19", s: { hl: ["x"], crown: true, bal: "crown", tags: [{ ids: "x", text: "One variable: x", color: "var" }] } },
-    { id: "l4-20", s: { hl: ["x"], crown: true, ghost: true, bal: "crown", tags: [{ ids: "x", text: "x means x¹", color: "var" }] } },
-    { id: "l4-21", s: { hl: ["x"], crown: true, ghost: true, bal: "crown", tags: [{ ids: "x", text: "One variable · highest power 1", color: "var" }] } },
-    { id: "l4-22", s: { title: "Linear equation in one variable", outline: true, bal: "whole" }, gem: "linear" },
+    { id: "l4-19", s: { hl: ["x"], crown: true, cue: { hl: "one variable" }, bal: "crown" } },
+    { id: "l4-20", s: { hl: ["x"], crown: true, power: { in: "its power is 1", out: "leave the 1" }, bal: "crown" } },
+    { id: "l4-21", s: { hl: ["x"], crown: true, power: { in: "highest power is 1" }, bal: "crown" } },
+    { id: "l4-22", s: { outline: true, cue: { outline: "a linear equation" }, bal: "whole" }, gem: "linear" },
   ];
 
   // Things come in one at a time, so a child can follow: each element fades up in turn, gap ms apart
@@ -485,10 +764,11 @@
   // on that part, in equation coordinates. cls gives its colour (c-var, c-eq, c-lhs, c-rhs); "hop"
   // leaves a little gap where it crosses a bracket, so it plainly goes on to its own part. It is drawn
   // faint; .on runs the colour down it from the label to the part (styles.css, "Labels joined to an
-  // equation").
-  function leadLine(d, x, y0, y1, cls) {
+  // equation"). w: how thick it is.
+  function leadLine(d, x, y0, y1, cls, w) {
+    w = w || 4;
     const e = CQ.el("div", "lead " + (y1 > y0 ? "down " : "up ") + (cls || ""), d);
-    CQ.box(e, x - 2, Math.min(y0, y1), 4, Math.abs(y1 - y0));
+    CQ.box(e, x - w / 2, Math.min(y0, y1), w, Math.abs(y1 - y0));
     CQ.el("div", "lead-fill", e);
     CQ.el("div", "lead-dot", e);
     return e;
@@ -575,7 +855,7 @@
     const c = C().label;
     const wrap = board("label-act");
     const b = wrap.board;
-    CQ.el("div", "board-title", b, c.sub);
+    // (no heading on the board: the question bar says what to do; review, 2026-11-07)
     const eqn = CQ.eqTokens(
       b,
       [
@@ -592,21 +872,34 @@
     const d = eqn.deco;
     const all = ["four", "x", "plus", "three", "eq", "r"];
     const R = (ids) => groupRect(eqn, ids);
+    const tok = (id) => eqn.querySelector(`.tok[data-id="${id}"]`);
     const ra = R(all);
     const rx = R(["x"]);
     const rl = R(["four", "x", "plus", "three"]);
     const rr = R(["r"]);
-    // Each box sits right over or under the part it names, joined to it by one straight line that
-    // ends in a dot on the part: Variable over x, Equation over the bracket round the whole equation,
-    // LHS under the bracket under 4x + 3, RHS under the bracket under 19. (Equation coordinates.)
-    const brace = (r, up, cls) => {
+    const xInk = inkX(tok("x"));
+    const eqInk = inkX(tok("eq"));
+    const xMid = (xInk.x0 + xInk.x1) / 2; // the middle of the x itself (not of 4x)
+    // Each box sits right over or under the part it names, joined to it by one straight line that ends
+    // in a dot on the part (review, 2026-11-07: the faint grey brackets ran together, so it was hard to
+    // tell which box points to what):
+    //   Variable: right over x, its short line ending on x itself;
+    //   Equation: one bracket over the whole of 4x + 3 = 19, its box over the bracket's right end, well
+    //   clear of the Variable box;
+    //   LHS, RHS: under their own brackets, under 4x + 3 and under 19; the = is outside both brackets.
+    // (Equation coordinates.)
+    const brace = (x0, x1, y, up, cls) => {
       const e = CQ.el("div", "brace " + (up ? "up " : "down ") + cls, d);
-      CQ.box(e, r.x - 10, up ? r.y - 34 : r.y + r.h + 6, r.w + 20, 30);
+      CQ.box(e, x0, y, x1 - x0, 30);
       return e;
     };
-    const braces = { Equation: brace(ra, true, "c-eq"), LHS: brace(rl, false, "c-lhs"), RHS: brace(rr, false, "c-rhs") };
+    const braces = {
+      Equation: brace(ra.x - 12, ra.x + ra.w + 12, ra.y - 34, true, "c-eq"),
+      LHS: brace(rl.x - 10, Math.min(rl.x + rl.w + 10, eqInk.x0 - 16), rl.y + rl.h + 6, false, "c-lhs"),
+      RHS: brace(Math.max(rr.x - 10, eqInk.x1 + 16), rr.x + rr.w + 10, rr.y + rr.h + 6, false, "c-rhs"),
+    };
     const COLOR = { Variable: "c-var", Equation: "c-eq", LHS: "c-lhs", RHS: "c-rhs" };
-    // boxes (targets), positioned in equation coordinates
+    // boxes (targets), positioned in equation coordinates; a box takes a label once it has come in
     const targets = [];
     const mk = (answer, x, y) => {
       const t = CQ.el("button", "drop-box " + COLOR[answer], d);
@@ -615,6 +908,7 @@
       CQ.pos(t, x, y);
       t.answer = answer;
       t.misses = 0;
+      t.ready = false;
       t.addEventListener("click", () => ctl.tapTarget(t));
       targets.push(t);
       return t;
@@ -622,34 +916,46 @@
     const topY = ra.y - 132;
     const botY = ra.y + ra.h + 96;
     const half = 48; // half a box's height, with its border
-    // the Equation box stands over the bracket's right half, clear of the Variable box over x
-    const xEq = Math.min(ra.x + ra.w - 70, Math.max(rx.cx + 330, ra.cx + 140));
-    mk("Variable", rx.cx, topY);
+    const xEq = ra.x + ra.w - 110;
+    mk("Variable", xMid, topY);
     mk("Equation", xEq, topY);
     mk("LHS", rl.cx, botY);
     mk("RHS", rr.cx, botY);
+    const LW = 6; // the lines' thickness
     const leads = {
-      Variable: leadLine(d, rx.cx, topY + half, rx.y - 8, "c-var hop"), // over the bracket, onto x
-      Equation: leadLine(d, xEq, topY + half, ra.y - 31, "c-eq"),
-      LHS: leadLine(d, rl.cx, botY - half, rl.y + rl.h + 33, "c-lhs"),
-      RHS: leadLine(d, rr.cx, botY - half, rr.y + rr.h + 33, "c-rhs"),
+      Variable: leadLine(d, xMid, topY + half, rx.y - 8, "c-var hop", LW), // through the bracket, onto x
+      Equation: leadLine(d, xEq, topY + half, ra.y - 31, "c-eq", LW),
+      LHS: leadLine(d, rl.cx, botY - half, rl.y + rl.h + 33, "c-lhs", LW),
+      RHS: leadLine(d, rr.cx, botY - half, rr.y + rr.h + 33, "c-rhs", LW),
     };
     // the numbers each box names light up in its colour (Equation: its bracket round all of them)
     const parts = { Variable: ["x"], LHS: ["four", "x", "plus", "three"], RHS: ["r"], Equation: [] };
     const colors = { Variable: "var", LHS: "lhs", RHS: "rhs" };
+    // Variable and Equation first, then LHS and RHS, on the same board (review, 2026-11-07: fewer lines
+    // to make sense of at once). Each pair's labels lie in the tray in another order than their boxes.
+    const PAIRS = [
+      ["Variable", "Equation"],
+      ["LHS", "RHS"],
+    ];
+    const TRAY = [
+      ["Equation", "Variable"],
+      ["RHS", "LHS"],
+    ];
 
     let filled = 0;
     let selected = null;
     let finish;
+    let nextPair;
     const done = new Promise((r) => (finish = r));
+    const firstPairIn = new Promise((r) => (nextPair = r));
     const chips = [];
     const ctl = {
       busy: false,
       hover(p) {
-        targets.forEach((t) => t.classList.toggle("hover", !t.done && inRect(p, rectOf(t, 30))));
+        targets.forEach((t) => t.classList.toggle("hover", t.ready && !t.done && inRect(p, rectOf(t, 30))));
       },
       targetAt(p) {
-        return targets.find((t) => !t.done && inRect(p, rectOf(t, 40)));
+        return targets.find((t) => t.ready && !t.done && inRect(p, rectOf(t, 40)));
       },
       select(el) {
         chips.forEach((ch) => ch.classList.toggle("selected", ch === el && !ch.placed));
@@ -657,7 +963,7 @@
         CQ.audio.play("ui.pop");
       },
       tapTarget(t) {
-        if (selected && !t.done) {
+        if (selected && t.ready && !t.done) {
           const el = selected;
           selected = null;
           el.classList.remove("selected");
@@ -674,6 +980,7 @@
         if (el.label === t.answer) {
           el.placed = true;
           t.done = true;
+          el.classList.remove("glow"); // (a hint's glow stops once it is in)
           el.classList.add("placed", COLOR[t.answer]);
           const tc = rectOf(t);
           CQ.pos(el, (tc.x0 + tc.x1) / 2, (tc.y0 + tc.y1) / 2);
@@ -683,16 +990,22 @@
           leads[t.answer].classList.add("on");
           setTimeout(() => {
             if (braces[t.answer]) braces[t.answer].classList.add("on");
-            parts[t.answer].forEach((id) => eqn.querySelector(`.tok[data-id="${id}"]`).classList.add("glow-" + colors[t.answer]));
+            parts[t.answer].forEach((id) => tok(id).classList.add("glow-" + colors[t.answer]));
           }, 420);
+          // A right label gets a short success sound and its box's border turns green (styles.css), and
+          // nothing is said or written: the question bar keeps the instruction (review, 2026-11-07: "For
+          // correct responses, remove the spoken and written feedback… Keep the instruction panel
+          // unchanged"). After a hint it goes back to the instruction, shown, not said again.
           CQ.audio.play("correct");
-          CQ.audio.play("zippy.giggle", { volume: 0.7 });
           CQ.fx.sparkle(CQ.ui.layer, (tc.x0 + tc.x1) / 2, (tc.y0 + tc.y1) / 2, 8, 70);
           CQ.track("answer", { activity: "label", box: t.answer, choice: el.label, correct: true });
+          if (CQ.caption.text !== c.title) CQ.say("", { text: c.title, advance: "none", quiet: true });
           filled++;
           const last = filled === targets.length;
-          const line = CQ.say("", { text: c.correct[t.answer], advance: last ? "auto" : "none", pause: 200 });
-          if (last) line.then(finish, finish); // let the last "Yes!" finish before moving on
+          const turn = filled === PAIRS[0].length; // the first pair is in: the second comes next
+          // a moment to see it go in (its line and part light up) before what comes next
+          if (last) CQ.run.wait(1100).then(finish, () => {});
+          else if (turn) CQ.run.wait(1100).then(nextPair, () => {});
         } else {
           t.misses++;
           CQ.track("answer", { activity: "label", box: t.answer, choice: el.label, correct: false, attempt: t.misses });
@@ -700,9 +1013,9 @@
           el.from = { x: parseFloat(el.style.left), y: parseFloat(el.style.top) };
           el.goHome();
           CQ.anim(t, [{ transform: "translate(-50%,-50%) translateX(0)" }, { transform: "translate(-50%,-50%) translateX(-10px)" }, { transform: "translate(-50%,-50%) translateX(10px)" }, { transform: "translate(-50%,-50%) translateX(0)" }], { duration: 300, keep: false });
-          if (t.misses === 1) CQ.say("", { text: c.miss1, advance: "none" });
-          else {
-            CQ.say("", { text: c.miss2[t.answer], advance: "none" });
+          // straight to what this box names; from the second miss on it, the right label glows too
+          CQ.say("", { text: c.miss[t.answer], advance: "none" });
+          if (t.misses >= 2) {
             const right = chips.find((ch) => ch.label === t.answer && !ch.placed);
             if (right) right.classList.add("glow");
           }
@@ -710,20 +1023,48 @@
       },
     };
     const rowY = 862;
-    c.chips.forEach((label, i) => {
-      const el = CQ.el("div", "label-chip", wrap, label);
-      el.label = label;
-      el.setAttribute("role", "button");
-      el.setAttribute("aria-label", label);
-      makeChip(el, { x: 600 + i * 240, y: rowY }, ctl);
-      chips.push(el);
-    });
-    // One at a time, the way it would be drawn, while the line is said: the equation sign by sign; then
-    // each box in turn (its bracket, the dot on its part and the line drawn out from it, the empty box);
-    // then the labels, one by one.
+    // A pair's boxes come in one at a time, the way they would be drawn (its bracket, the line drawn out
+    // from its part, the empty box); then the pair's labels into the tray, one by one.
+    const bringIn = async (k) => {
+      for (const name of PAIRS[k]) {
+        const t = targets.find((x) => x.answer === name);
+        if (braces[name]) await comeIn(braces[name], "rise", 320);
+        await comeIn(leads[name], "line", 420);
+        await comeIn(t, "pop", 300);
+        t.ready = true;
+        await CQ.run.wait(120);
+      }
+      for (const [i, label] of TRAY[k].entries()) {
+        const el = CQ.el("div", "label-chip", wrap, label);
+        el.label = label;
+        el.setAttribute("role", "button");
+        el.setAttribute("aria-label", label);
+        makeChip(el, { x: 840 + i * 240, y: rowY }, ctl);
+        chips.push(el);
+        hideAll([el]);
+        comeIn(el, "rise", 360);
+        await CQ.run.wait(180);
+      }
+    };
+    // The hand shows how: it takes a label from the tray to its box, holding it by its right end, so it
+    // never covers the part the box names (review, 2026-11-07: it covered x).
+    const showHow = (ch) => {
+      const t = targets.find((x) => x.answer === ch.label);
+      if (!t) return;
+      const grip = { x: 92, y: 14 }; // the fingertip, from the label's middle
+      const a = CQ.centerOf(ch);
+      const z = CQ.centerOf(t);
+      CQ.hand.drag({ x: a.x + grip.x, y: a.y + grip.y }, { x: z.x + grip.x, y: z.y + grip.y }, 1, {
+        carry: () => {
+          const w = CQ.el("div", "hand-carry");
+          CQ.el("div", "label-chip carried", w, ch.label);
+          return w;
+        },
+        carryAt: { x: -grip.x, y: -grip.y },
+      });
+    };
     const tokens = [...eqn.querySelectorAll(".tok")];
-    const ORDER = ["Variable", "Equation", "LHS", "RHS"];
-    hideAll([...tokens, ...Object.values(braces), ...Object.values(leads), ...targets, ...chips]);
+    hideAll([...tokens, ...Object.values(braces), ...Object.values(leads), ...targets]);
     const said = CQ.say("", { text: c.title, advance: "auto", pause: 100 });
     await CQ.run.wait(350);
     for (const t of tokens) {
@@ -731,24 +1072,17 @@
       await CQ.run.wait(170);
     }
     await CQ.run.wait(300);
-    for (const name of ORDER) {
-      if (braces[name]) await comeIn(braces[name], "rise", 320);
-      await comeIn(leads[name], "line", 420);
-      await comeIn(targets.find((t) => t.answer === name), "pop", 300);
-      await CQ.run.wait(120);
-    }
-    for (const ch of chips) {
-      comeIn(ch, "rise", 360);
-      await CQ.run.wait(180);
-    }
+    await bringIn(0);
     await said;
-    const firstChip = chips.find((ch) => ch.label === "Variable");
-    CQ.hand.drag(CQ.centerOf(firstChip), CQ.centerOf(targets[0]), 1);
+    showHow(chips.find((ch) => ch.label === "Variable"));
     CQ.idle.arm(() => {
       const ch = chips.find((x) => !x.placed);
-      const t = ch && targets.find((x) => x.answer === ch.label);
-      if (ch && t) CQ.hand.drag(CQ.centerOf(ch), CQ.centerOf(t), 1);
+      if (ch) showHow(ch);
     }, 9000);
+    await CQ.run.when(firstPairIn);
+    CQ.hand.stop();
+    await bringIn(1);
+    CQ.idle.reset();
     await CQ.run.when(done);
     CQ.idle.disarm();
     CQ.hand.stop();
@@ -760,21 +1094,49 @@
   CQ.activitySort = async function () {
     const c = C().sort;
     const wrap = board("sort-act");
-    const b = wrap.board;
+    // Three panels across the screen (review, 2026-11-07): Linear equations at the left, the six
+    // equation cards stacked in a narrower tray in the middle, Nonlinear equations at the right, the two
+    // equal in size. Each category panel has three placeholders, so the sorted cards line up neatly; a
+    // card taken out of the tray leaves its placeholder there. (Stage coordinates.)
+    const TOP = 200;
+    const H = 780;
+    const PANEL_W = 560;
+    const TRAY_W = 400;
+    const GAP = 50;
+    const CARD = { w: 330, h: 100 };
+    const X = { linear: 960 - TRAY_W / 2 - GAP - PANEL_W, tray: 960 - TRAY_W / 2, nonlinear: 960 + TRAY_W / 2 + GAP };
+    const at = (cls, x, y, w, h) => {
+      const e = CQ.el("div", cls, wrap);
+      CQ.box(e, x, y, w, h);
+      return e;
+    };
+    // a placeholder round a card's place (its middle at p)
+    const slotAt = (cls, p) => {
+      const e = at("card-slot" + (cls ? " " + cls : ""), p.x - CARD.w / 2 - 8, p.y - CARD.h / 2 - 8, CARD.w + 16, CARD.h + 16);
+      e.at = p;
+      return e;
+    };
     const bins = {};
     [
       ["linear", c.linear, "lhs"],
       ["nonlinear", c.nonlinear, "rhs"],
     ].forEach(([k, label, color]) => {
-      const bin = CQ.el("button", "bin " + color, b);
+      const bin = CQ.el("button", "bin " + color, wrap);
+      CQ.box(bin, X[k], TOP, PANEL_W, H);
       bin.type = "button";
       CQ.el("div", "bin-head", bin, label);
-      bin.list = CQ.el("div", "bin-list", bin);
       bin.kind = k;
       bin.setAttribute("aria-label", label);
       bin.addEventListener("click", () => ctl.tapTarget(bin));
+      // three placeholders, one under another, under the heading
+      const room = (H - 110) / 3;
+      bin.slots = [0, 1, 2].map((j) => slotAt(color, { x: X[k] + PANEL_W / 2, y: TOP + 90 + room * (j + 0.5) }));
+      bin.used = 0;
       bins[k] = bin;
     });
+    const tray = at("sort-tray", X.tray, TOP, TRAY_W, H);
+    const pitch = H / 6;
+    const traySlots = [0, 1, 2, 3, 4, 5].map((i) => slotAt("", { x: 960, y: TOP + pitch * (i + 0.5) }));
     let placed = 0;
     let selected = null;
     let finish;
@@ -810,22 +1172,23 @@
       async drop(el, bin) {
         const right = el.card.linear ? "linear" : "nonlinear";
         if (bin.kind === right) {
+          // Right: it snaps into the panel's next placeholder with a short success sound, and nothing is
+          // said or written: the question bar keeps the instruction (review, 2026-11-07; as in the label
+          // activity). After a hint it goes back to the instruction, shown, not said again.
+          const slot = bin.slots[bin.used++];
           el.placed = true;
-          el.classList.add("placed");
-          el.classList.remove("glow");
-          bin.list.appendChild(el);
-          el.style.left = "";
-          el.style.top = "";
+          el.classList.add("placed", right === "linear" ? "lin" : "nonlin");
+          el.classList.remove("glow", "selected");
           if (right === "nonlinear") el.classList.add("show-2"); // its power 2 turns orange
+          const from = el.from && el.from !== el.home ? el.from : { x: parseFloat(el.style.left), y: parseFloat(el.style.top) };
+          CQ.tween(260, (k) => CQ.pos(el, CQ.lerp(from.x, slot.at.x, k), CQ.lerp(from.y, slot.at.y, k)), CQ.ease.out);
+          slot.classList.add("filled");
           CQ.audio.play("correct");
-          CQ.audio.play("zippy.giggle", { volume: 0.7 });
-          const bc = rectOf(bin);
-          CQ.fx.sparkle(CQ.ui.layer, (bc.x0 + bc.x1) / 2, bc.y0 + 120, 8, 120);
+          CQ.fx.sparkle(CQ.ui.layer, slot.at.x, slot.at.y, 8, 90);
           CQ.track("answer", { activity: "sort", card: el.card.eq, choice: bin.kind, correct: true });
+          if (CQ.caption.text !== c.title) CQ.say("", { text: c.title, advance: "none", quiet: true });
           placed++;
-          const last = placed === cards.length;
-          const line = CQ.say("", { text: right === "linear" ? c.correctLinear : c.correctNonlinear, advance: last ? "auto" : "none", pause: 200 });
-          if (last) line.then(finish, finish);
+          if (placed === cards.length) CQ.run.wait(1100).then(finish, () => {}); // a moment to see it go in
         } else {
           el.misses = (el.misses || 0) + 1;
           CQ.track("answer", { activity: "sort", card: el.card.eq, choice: bin.kind, correct: false, attempt: el.misses });
@@ -847,27 +1210,52 @@
       el.card = card;
       el.setAttribute("role", "button");
       el.setAttribute("aria-label", CQ.speakable(card.eq));
-      makeChip(el, { x: 600 + (i % 3) * 360, y: 750 + Math.floor(i / 3) * 110 }, ctl);
+      makeChip(el, traySlots[i].at, ctl);
       cards.push(el);
     });
-    // One at a time, while the line is said: each box, with its name written in; then the cards, one by one.
-    hideAll([bins.linear, bins.nonlinear, ...cards]);
+    // The hand shows how: it takes a card from the tray to its panel's placeholder, holding it by its
+    // right end, so the equation stays in sight.
+    const showHow = (cd) => {
+      const bin = bins[cd.card.linear ? "linear" : "nonlinear"];
+      const slot = bin.slots[bin.used];
+      if (!slot) return;
+      const grip = { x: 120, y: 16 };
+      const a = CQ.centerOf(cd);
+      CQ.hand.drag({ x: a.x + grip.x, y: a.y + grip.y }, { x: slot.at.x + grip.x, y: slot.at.y + grip.y }, 1, {
+        carry: () => {
+          const w = CQ.el("div", "hand-carry");
+          CQ.el("div", "eq-card carried", w, cd.innerHTML);
+          return w;
+        },
+        carryAt: { x: -grip.x, y: -grip.y },
+      });
+    };
+    // One at a time, while the line is said: each panel, with its name written in, and its
+    // placeholders; then the tray, and its cards one by one.
+    const allSlots = [...bins.linear.slots, ...bins.nonlinear.slots, ...traySlots];
+    hideAll([bins.linear, bins.nonlinear, tray, ...allSlots, ...cards]);
     const said = CQ.say("", { text: c.title, advance: "auto", pause: 100 });
     await CQ.run.wait(300);
     for (const bin of [bins.linear, bins.nonlinear]) {
       comeIn(bin, "pop", 360);
-      await CQ.run.wait(writeIn(bin.querySelector(".bin-head"), 300, 45) + 150);
+      await CQ.run.wait(writeIn(bin.querySelector(".bin-head"), 300, 45) + 100);
+      for (const sl of bin.slots) {
+        comeIn(sl, "rise", 300);
+        await CQ.run.wait(120);
+      }
     }
+    comeIn(tray, "rise", 360);
+    traySlots.forEach((sl) => comeIn(sl, "rise", 300));
+    await CQ.run.wait(250);
     for (const cd of cards) {
       comeIn(cd, "rise", 360);
-      await CQ.run.wait(180);
+      await CQ.run.wait(160);
     }
     await said;
-    const demo = cards[0];
-    CQ.hand.drag(CQ.centerOf(demo), CQ.centerOf(bins[demo.card.linear ? "linear" : "nonlinear"]), 1);
+    showHow(cards[0]);
     CQ.idle.arm(() => {
       const cd = cards.find((x) => !x.placed);
-      if (cd) CQ.hand.drag(CQ.centerOf(cd), CQ.centerOf(bins[cd.card.linear ? "linear" : "nonlinear"]), 1);
+      if (cd) showHow(cd);
     }, 9000);
     await CQ.run.when(done);
     CQ.idle.disarm();
@@ -908,31 +1296,47 @@
     };
     const above = all.y - 48; // the foot of a label over the equation
     const parts = [];
+    // what a label's part does when the label comes in: it lights up in its colour (x in its gold box,
+    // as on the formula screen; the sides in their colours; the equation has its bracket)
+    const lit = (ids, cls) => () => ids.forEach((id) => eqn.querySelector(`.tok[data-id="${id}"]`).classList.add(cls));
     if (show.includes("variable")) {
-      eqn.querySelector('.tok[data-id="x"]').classList.add("rc-var");
       const t = tag("c-var", labels.variable, rx.cx, above);
-      parts.push({ name: "variable", lead: line(rx.cx, above, rx.y - 4, "c-var" + (show.includes("equation") ? " hop" : "")), tag: t });
+      parts.push({ name: "variable", lead: line(rx.cx, above, rx.y - 4, "c-var" + (show.includes("equation") ? " hop" : "")), tag: t, light: lit(["x"], "glow-var") });
     }
     if (show.includes("equation")) {
       const br = brace(all, true, "c-eq");
       const xe = show.includes("variable") ? Math.max(all.cx + 70, rx.cx + 170) : all.cx;
       const t = tag("c-eq", labels.equation, xe, above);
-      parts.push({ name: "equation", brace: br, lead: line(xe, above, all.y - 19, "c-eq"), tag: t });
+      parts.push({ name: "equation", brace: br, lead: line(xe, above, all.y - 19, "c-eq"), tag: t, light: () => {} });
     }
     const below = (r) => r.y + r.h + 36; // the top of a label under the equation
     if (show.includes("lhs") || show.includes("rhs")) eqn.closest(".rc-panel").classList.add("labels-below"); // a little higher, clear of the words
     if (show.includes("lhs")) {
       const br = brace(rl, false, "c-lhs");
       const t = tag("c-lhs", labels.lhs, rl.cx, below(rl), true);
-      parts.push({ name: "lhs", brace: br, lead: line(rl.cx, below(rl), rl.y + rl.h + 19, "c-lhs"), tag: t });
+      parts.push({ name: "lhs", brace: br, lead: line(rl.cx, below(rl), rl.y + rl.h + 19, "c-lhs"), tag: t, light: lit(["x", "plus", "four"], "glow-lhs") });
     }
     if (show.includes("rhs")) {
       const br = brace(rr, false, "c-rhs");
       const t = tag("c-rhs", labels.rhs, rr.cx, below(rr), true);
-      parts.push({ name: "rhs", brace: br, lead: line(rr.cx, below(rr), rr.y + rr.h + 19, "c-rhs"), tag: t });
+      parts.push({ name: "rhs", brace: br, lead: line(rr.cx, below(rr), rr.y + rr.h + 19, "c-rhs"), tag: t, light: lit(["nine"], "glow-rhs") });
     }
     parts.forEach((p) => [p.brace, p.lead, p.tag].forEach((e) => e && (e.style.opacity = "0")));
     return parts;
+  }
+  // Where a token's sign is actually drawn (its ink, not its padded box), across, in equation
+  // coordinates: { x0, x1 }.
+  function inkX(t) {
+    const cs = getComputedStyle(t);
+    const ctx = (inkX.ctx = inkX.ctx || document.createElement("canvas").getContext("2d"));
+    ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const m = ctx.measureText(t.textContent);
+    const start = t.offsetLeft + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth);
+    return { x0: start - m.actualBoundingBoxLeft, x1: start + m.actualBoundingBoxRight };
+  }
+  // A box is drawn round its part, from left to right, from `at` ms (hidden until then).
+  function drawBox(el, at) {
+    return CQ.anim(el, [{ clipPath: "inset(-16px 100% -16px -16px)" }, { clipPath: "inset(-16px -16px -16px -16px)" }], { duration: 560, delay: at || 0, easing: CQ.EASE.out, keep: false });
   }
   // Letters of el come in one after another, as if written: from `at` ms, `each` ms apart. Returns
   // when it will be done (ms).
@@ -999,90 +1403,66 @@
   CQ.activityRecap = async function () {
     const c = C().recap;
     const wrap = board("recap-act");
-    const b = wrap.board;
-    const grid = CQ.el("div", "rc-grid", b); // no title on screen: the narrator says it (asked 2026-11-05)
-    const panels = c.panels.map((p, i) => {
-      const card = CQ.el("div", "rc-panel", grid);
-      const box = CQ.el("div", "rc-eq-wrap", card);
-      card.eqn = CQ.eqTokens(box, RECAP_EQ, "rc-eq");
-      card.num = CQ.el("div", "rc-n", card.eqn, String(i + 1)); // its number, just before the equation
-      card.text = CQ.el("div", "rc-text", card, CQ.rich(p.text));
-      [card.num, card.text, ...card.eqn.querySelectorAll(".tok")].forEach((e) => (e.style.opacity = "0"));
-      return card;
-    });
-    await CQ.run.wait(80); // lay the equations out before measuring them for the labels
-    panels.forEach((card, i) => (card.parts = recapLabels(card.eqn, c.panels[i].show, c.labels)));
-    // Where each panel goes (styles.css): big in the middle of the screen while it is built (.center),
-    // small and faded in its own corner while the others are (.parked: 1 top left, 2 top right, 3
-    // bottom left, 4 bottom right), and its place in the overview at the end (.home).
-    const gw = grid.offsetWidth;
-    const gh = grid.offsetHeight;
-    panels.forEach((card, i) => {
-      const w = card.offsetWidth;
-      const h = card.offsetHeight;
-      const k = 0.42; // its size in the corner
-      card.style.setProperty("--cx", gw / 2 - (card.offsetLeft + w / 2) + "px");
-      card.style.setProperty("--cy", gh / 2 - (card.offsetTop + h / 2) + "px");
-      card.style.setProperty("--px", ((i % 2 ? 1 : -1) * w * (1 - k)) / 2 + "px");
-      card.style.setProperty("--py", ((i < 2 ? -1 : 1) * h * (1 - k)) / 2 + "px");
-    });
+    // One equation, x + 4 = 9, large and centred, and the summary built up on it with the voice (review,
+    // 2026-11-07: "avoid repeating the same equation in four sections. Use one large, centred x + 4 = 9
+    // and build the summary progressively with the VO… At the end, retain the single equation with all
+    // four labels clearly spaced"). Each definition is only in the question bar, while its part comes
+    // in; there are no number badges and no sentences under the equation. No title on screen: the
+    // narrator says it (asked 2026-11-05).
+    const card = CQ.el("div", "rc-panel", wrap);
+    const box = CQ.el("div", "rc-eq-wrap", card);
+    const eqn = CQ.eqTokens(box, RECAP_EQ, "rc-eq");
+    const tokens = [...eqn.querySelectorAll(".tok")];
+    tokens.forEach((e) => (e.style.opacity = "0"));
+    await CQ.run.wait(80); // lay the equation out before measuring it for the labels
+    // all four labels, hidden, in the order the lines name them: variable, equation, lhs, rhs
+    const parts = recapLabels(eqn, c.panels[c.panels.length - 1].show, c.labels);
+    // large, with the equation's middle a little above the middle of the space under the question bar
+    const S = 1.9;
+    const MID = { x: 960, y: 560 };
+    card.style.setProperty("--cs", S);
+    CQ.pos(card, MID.x - S * (eqn.offsetLeft + eqn.offsetWidth / 2), MID.y - S * (eqn.offsetTop + eqn.offsetHeight / 2));
     await CQ.say("recap-0", { text: c.title + ".", advance: "auto", pause: 200 });
-    // One panel at a time, big in the middle, while its line is said: its number, the equation sign by
-    // sign, the labels it shares with the panels before (together), then its own new label (the
-    // bracket, the dot on the part, the line drawn out to where the label goes, the word written in);
-    // last, its sentence, written in right under it. Then it goes to its corner and fades, and the next
-    // one is built in the middle.
     const W = (ms) => CQ.run.wait(ms);
-    const playPanel = async (card) => {
-      await showStep(card.num, "pop", 360);
-      for (const t of card.eqn.querySelectorAll(".tok")) {
-        showStep(t, "rise", 360);
-        await W(150);
-      }
-      await W(250);
-      const seen = card.parts.slice(0, -1);
-      const fresh = card.parts[card.parts.length - 1];
-      if (seen.length) {
-        seen.forEach((p) => {
-          [p.brace, p.tag].forEach((e) => showStep(e, "rise", 420));
-          showStep(p.lead, "rise", 420);
-          p.lead.classList.add("on", "drawn");
-        });
-        await W(520);
-      }
-      if (fresh) {
-        if (fresh.brace) {
-          await showStep(fresh.brace, "rise", 360);
-        }
-        fresh.lead.style.opacity = "";
-        fresh.lead.classList.add("on"); // the dot on the part, then the line drawn out from it
-        CQ.audio.play("ui.pop", { volume: 0.4 });
-        await W(520);
-        showStep(fresh.tag, "pop", 300);
-        await W(writeIn(fresh.tag, 120, 55) + 150);
-      }
-      showStep(card.text, "rise", 300);
-      await W(writeIn(card.text, 60, 32) + 200);
+    // When the voice gets to str in the line text (the question bar types with it); at the latest
+    // after 15 s.
+    const untilSaid = (text, str) =>
+      new Promise((res) => {
+        const t0 = performance.now();
+        const tick = () => {
+          const cap = CQ.caption;
+          if ((cap.text === text && cap.reached(str)) || performance.now() - t0 > 15000) return res();
+          setTimeout(tick, 60);
+        };
+        tick();
+      });
+    // A part, as the voice names it: it lights up (x in its gold box, x + 4 teal, 9 orange; the whole
+    // equation gets its bracket), then the dot on it and the line drawn out to its label, and the word
+    // written in.
+    const nameIt = async (part, text, cue) => {
+      await CQ.run.when(untilSaid(text, cue));
+      part.light();
+      if (part.brace) await showStep(part.brace, "rise", 360);
+      part.lead.style.opacity = "";
+      part.lead.classList.add("on");
+      CQ.audio.play("ui.pop", { volume: 0.4 });
+      await W(520);
+      showStep(part.tag, "pop", 300);
+      await W(writeIn(part.tag, 120, 55) + 150);
     };
-    for (let i = 0; i < panels.length; i++) {
-      const card = panels[i];
-      if (i > 0) {
-        panels[i - 1].classList.replace("center", "parked"); // done: to its corner, and it fades
-        await W(500);
-      }
-      // the new one is in the middle at once (nothing of it shows yet), then builds up there
-      card.classList.add("snap", "center");
-      void card.offsetWidth;
-      card.classList.remove("snap");
-      await Promise.all([playPanel(card), CQ.say(c.panels[i].id, { text: c.panels[i].text })]);
-      await W(400); // a moment to see it whole
+    // the equation, sign by sign
+    for (const t of tokens) {
+      showStep(t, "rise", 360);
+      await W(150);
     }
-    // all four in their places, for a good look, then on to the next screen by itself
-    panels.forEach((p) => {
-      p.classList.remove("center", "parked");
-      p.classList.add("home");
-    });
-    await W(900 + 5000);
+    await W(400);
+    // then its parts, one line each: the variable, the equation, the LHS, the RHS
+    for (let i = 0; i < c.panels.length; i++) {
+      const P = c.panels[i];
+      await Promise.all([nameIt(parts[i], P.text, P.cue), CQ.say(P.id, { text: P.text })]);
+    }
+    // the whole summary on the one equation, for a good look, then on to the next screen by itself
+    await W(4500);
     await closeBoard(wrap);
   };
 

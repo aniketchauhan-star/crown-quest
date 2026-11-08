@@ -215,6 +215,16 @@ html[data-shade] .stage-edge::after {
   z-index: 1;
   overflow: hidden;
 }
+/* past the scene's right edge, its mirror image (js/world.js, mirrorBackground): built and seen only
+   when a side view looks past that edge (CQ.ASIDE.free), blurred and dark under the maths */
+#world > .bg-beyond {
+  left: 1920px;
+  right: auto;
+  width: 1920px;
+  z-index: 1;
+  overflow: hidden;
+  transform: scaleX(-1);
+}
 .bg-scene img {
   position: absolute;
   display: block;
@@ -595,7 +605,7 @@ html[data-shade] .stage-edge::after {
   left: 44%;
   top: 57%;
   transform: translate(-50%, -50%);
-  font: 800 44px/1 var(--font);
+  font: 800 54px/1 var(--font); /* (larger, to read easily on the balance: review, 2026-11-08) */
   color: #6b3e00;
   text-shadow: 0 2px 0 #ffe9a0;
 }
@@ -604,6 +614,15 @@ html[data-shade] .stage-edge::after {
 }
 .pan-item.glow {
   animation: glowPulse 0.9s ease-in-out infinite alternate;
+}
+/* a pan glowing in its side's colour (Balance.glowSides): left like the LHS, right like the RHS */
+.pan-item.glow-lhs,
+.bal-plate.glow-lhs {
+  animation: glowLhs 0.9s ease-in-out infinite alternate;
+}
+.pan-item.glow-rhs,
+.bal-plate.glow-rhs {
+  animation: glowRhs 0.9s ease-in-out infinite alternate;
 }
 .pan-item.crown.glint {
   animation: glint 0.9s ease-in-out 2;
@@ -703,12 +722,37 @@ html[data-shade] .stage-edge::after {
 .bar-slot.glow .gbar {
   animation: barGlow 1.1s ease-in-out infinite alternate; /* a soft glow, the bar itself stays still */
 }
+/* "this one": a warm halo pulses gently behind the bar (gold alone hardly showed on the light paving:
+   review, 2026-11-08) */
+.bar-slot.glow::before {
+  content: "";
+  position: absolute;
+  left: -56px;
+  right: -56px;
+  top: -64px;
+  bottom: -30px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 140, 0, 0.7), rgba(255, 140, 0, 0.32) 58%, rgba(255, 140, 0, 0) 100%);
+  animation: barHalo 1.1s ease-in-out infinite alternate;
+  pointer-events: none;
+}
 @keyframes barGlow {
   from {
-    filter: drop-shadow(0 0 4px rgba(255, 216, 77, 0.6)) drop-shadow(0 6px 4px rgba(0, 0, 0, 0.3));
+    filter: drop-shadow(0 0 6px rgba(255, 140, 0, 0.8)) drop-shadow(0 6px 4px rgba(0, 0, 0, 0.3));
   }
   to {
-    filter: drop-shadow(0 0 16px #ffd84d) drop-shadow(0 0 6px #fff);
+    filter: drop-shadow(0 0 12px #ff8c00) drop-shadow(0 0 26px rgba(255, 140, 0, 0.85)) drop-shadow(0 0 4px #fff);
+  }
+}
+@keyframes barHalo {
+  from {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.05);
   }
 }
 .bar-slot.tried .gbar {
@@ -1062,11 +1106,14 @@ html[data-shade] .stage-edge::after {
   z-index: 20; /* the words children read always sit above name bursts and effects */
 }
 .spk {
-  /* Zippy's face in a gold medallion (tap it to hear the line again) */
+  /* a speaker in a gold medallion (tap it to hear the line again). Not Zippy's face: the narrator
+     reads these lines, not Zippy. */
   position: relative;
   flex: 0 0 96px;
   width: 96px;
   height: 96px;
+  display: grid;
+  place-items: center;
   padding: 0;
   border: 5px solid #4a2300;
   border-radius: 50%;
@@ -1074,13 +1121,13 @@ html[data-shade] .stage-edge::after {
   background: radial-gradient(circle at 38% 32%, #fff3b0, #ffd84d 45%, #f0a01c);
   box-shadow: inset 0 -4px 0 rgba(107, 62, 0, 0.35);
   filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.3));
+  color: #5e3415;
   cursor: pointer;
 }
-.spk img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.spk svg {
+  width: 58px;
+  height: 58px;
+  margin-left: 2px;
 }
 .spk:active {
   transform: translateY(4px);
@@ -1092,6 +1139,10 @@ html[data-shade] .stage-edge::after {
   line-height: 1.2;
   color: var(--ink);
   padding-top: 4px;
+}
+/* the whole line at once, row under row (js/ui.js, CQ.caption.render) */
+.cap-row {
+  display: block;
 }
 /* a recorded line types itself out as it is said: letters wait, hidden, in their places */
 .cap-text.typing .ch:not(.on) {
@@ -1877,7 +1928,8 @@ html[data-shade] .stage-edge::after {
 /* The view glides (zooms in and pans) until the balance stands at the right of the screen, on its own
    ground, bright and sharp; the rest of the scene goes soft and dark, darkest at the left. The equation
    and its working are written in that space at the left, bright on the dark, with no shadows
-   (js/activities.js; below: .world-shade, #world.presenting). */
+   (js/activities.js, ASIDE; below: .world-shade, #world.presenting). Review, 2026-11-08: "the balance
+   on the right and the equation steps on the left". */
 .notebook {
   position: absolute;
   inset: 0;
@@ -1910,6 +1962,11 @@ html[data-shade] .stage-edge::after {
   align-items: center;
   justify-content: flex-start;
   padding-top: 180px; /* the equation sits in the upper part of the screen, always in the same place, with the labels over it clear of the question bar */
+}
+/* the words and the linear equation have little under the equation: it sits a little lower, near the
+   middle of the screen (review, 2026-11-07: "It can be little below"; js/activities.js, run) */
+.nb-content.lower {
+  padding-top: 300px;
 }
 .nb-title {
   margin-top: 46px; /* under the equation, which never moves */
@@ -1948,13 +2005,14 @@ html[data-shade] .stage-edge::after {
   color: var(--ok);
   animation: pulseTok 1s ease-in-out infinite;
 }
-.ghost-power {
-  font-size: 0.42em;
-  color: var(--lhs);
-  vertical-align: top;
-  font-family: var(--font);
+/* x's power, x¹: a 1 at the top right of the x, in the equation's own layer (js/activities.js,
+   render: s.power) */
+.x-power {
+  position: absolute;
+  font: 800 0.46em/1 var(--font);
   font-style: normal;
-  animation: ghost 2s ease-in-out infinite;
+  color: #2b2100; /* like the highlighted x it belongs to, on its gold */
+  pointer-events: none;
 }
 .deco {
   position: absolute;
@@ -1991,6 +2049,10 @@ html[data-shade] .stage-edge::after {
 }
 .grp-label.expr {
   color: #7b4fd6;
+}
+/* a label under its group (hangs from the point it is placed at) */
+.grp-label.below {
+  transform: translate(-50%, 0);
 }
 .tag {
   position: absolute;
@@ -2125,6 +2187,25 @@ html[data-shade] .stage-edge::after {
   color: #2b2100;
   box-shadow: 0 0 0 8px #ffd84d;
 }
+/* a value put in for x (js/activities.js, render: s.x): over the x, in its gold box, its digit set
+   like the equation's own (the x stays underneath, so nothing moves) */
+.notebook .x-sub {
+  position: absolute;
+  display: block;
+  text-align: center;
+  line-height: inherit;
+  border-radius: 0.16em;
+  background: #ffd84d;
+  box-shadow: 0 0 0 8px #ffd84d;
+  color: #2b2100;
+  pointer-events: none;
+}
+/* x lit, then part of x + 2 lit as the LHS: it turns teal with the rest of x + 2, its gold box goes */
+.notebook .tok.hl.lhs {
+  color: var(--c, #5ee6dc);
+  background-color: transparent;
+  box-shadow: none;
+}
 .notebook .var {
   --c: #ffd84d;
 }
@@ -2140,18 +2221,24 @@ html[data-shade] .stage-edge::after {
 .notebook .rhs {
   --c: #ffc35c;
 }
+.notebook .expr {
+  --c: #c4a0ff; /* the algebraic expression's tag, bracket and line */
+}
 .notebook .tok.lhs,
 .notebook .tok.rhs {
   color: var(--c, #5ee6dc);
-}
-.notebook .ghost-power {
-  color: #0b6b66; /* on the highlighted (gold) x */
 }
 .notebook .tok.pulse {
   color: #74f0ac;
 }
 .notebook .grp-box {
   border-color: #fffaf0;
+}
+/* a side's box (LHS, RHS), in its colour, drawn round it as the voice talks about it */
+.notebook .grp-box.tag-box {
+  border-width: 6px;
+  border-color: var(--c, #fffaf0);
+  background: color-mix(in srgb, var(--c, #fffaf0) 10%, transparent);
 }
 .notebook .grp-box.expr {
   border-color: #c4a0ff;
@@ -2192,8 +2279,10 @@ html[data-shade] .stage-edge::after {
   opacity: 0;
   transition: opacity 0.7s ease;
 }
-/* the formula screen (the view zoomed in on the balance at the right): dark at the left, behind the
-   maths, and a light dim round the balance (in world pixels: the screen's x is 1.25 times these) */
+/* the formula screen, the check and Levels 8–9's working (the view zoomed in on the balance at the
+   right, CQ.ASIDE; review, 2026-11-08): dark at the left, behind the maths, and a light dim round the
+   balance. In world pixels: on screen, x is 1.25 times these, so the dark lightens from screen x 675
+   to 900, where the balance begins. */
 .world-shade.aside {
   background: linear-gradient(to right, rgba(5, 16, 24, 0.93) 0, rgba(5, 16, 24, 0.9) 540px, rgba(5, 16, 24, 0.42) 720px, rgba(5, 16, 24, 0.36) 100%);
 }
@@ -2269,20 +2358,55 @@ html[data-shade] .stage-edge::after {
 }
 /* The check, like the formula screen (body.checking: CQ.checkPanel.open in js/ui.js): the balance
    stands at the right, bright, and the check is worked in the room at its left, big, one row under the
-   other: LHS, then RHS, then the two compared and what that means. */
+   other: LHS, then RHS, then the two compared. */
 body.checking .check-panel {
   left: 470px;
-  top: 290px;
+  top: 196px;
   width: 840px;
 }
-body.checking .cp-row {
-  flex-direction: column;
+/* the equation itself, kept in sight at the top, and under it x = 4 (review, 2026-11-08) */
+body.checking .cp-eq {
+  display: block;
+  margin-bottom: 26px;
+  font: 800 66px/1.1 var(--font);
+  color: #fffaf0;
+}
+body.checking .cp-x {
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 36px;
-  font-size: 80px;
+  gap: 16px;
+  margin-bottom: 30px;
+  font: 800 72px/1 var(--font);
+  color: #fffaf0;
+}
+/* the two sides lined up on their = signs: name | expression | = value (review, 2026-11-08) */
+body.checking .cp-row {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  justify-content: center;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 30px;
+  font-size: 72px;
 }
 body.checking .cp-side {
+  display: contents;
+}
+body.checking .cp-side .lab {
+  justify-self: end;
+}
+body.checking .cp-side .ex,
+body.checking .cp-side .eqv {
+  display: flex;
+  align-items: center;
   gap: 16px;
+}
+body.checking .cp-side .ex {
+  justify-self: end;
+}
+body.checking .cp-side .eqv {
+  justify-self: start;
 }
 body.checking .cp-side .lab {
   font-size: 52px;
@@ -2297,18 +2421,18 @@ body.checking .check-panel .xslot {
   height: 100px;
 }
 body.checking .cp-compare {
-  margin-top: 44px;
+  margin-top: 34px;
 }
 body.checking .cp-cmp-row {
   gap: 40px;
-  font-size: 120px;
+  font-size: 110px;
 }
 body.checking .cp-verdict {
   margin-top: 10px;
   font-size: 50px;
 }
 /* Levels 8–9's working, like the formula screen (body.solving: CQ.eqBoard.open in js/ui.js): the
-   balance stands at the right, bright (with its labels: x, 2x, ÷ 2), and the steps are written at its
+   balance stands at the right, bright (with its labels: x, ÷ 2), and the steps are written at its
    left, one row under another; the earlier rows fade back and the answer is green. */
 body.solving .eq-board {
   left: 470px;
@@ -2325,8 +2449,57 @@ body.solving .eq-board {
 .eb-row {
   transition: opacity 0.6s ease;
 }
+/* a row: its left side, =, its right side; the = of every row in the middle of the board, one under
+   another (js/ui.js, eqBoard.set) */
+body.solving .eb-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  column-gap: 0.28em;
+  align-items: center;
+  width: 100%;
+}
+.eb-l {
+  justify-self: end;
+}
+.eb-r {
+  justify-self: start;
+}
+.eb-all {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+/* ##…##: what has just changed, in gold (x + 8 = 8 + 15) */
+.mark-new {
+  color: #ffd84d;
+  background: rgba(255, 216, 77, 0.14);
+  border: 4px solid rgba(255, 216, 77, 0.7);
+  border-radius: 14px;
+  padding: 0 10px;
+}
+/* a value tried on the balance, by it (Level 8: 10 + 8 = 18) */
+.wlabel.trial {
+  font: 800 64px/1 var(--font);
+  color: var(--ink);
+  background: #fbefd2;
+  border: 5px solid #c79a57;
+  border-radius: 22px;
+  padding: 14px 26px 8px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+}
 body.solving .eb-row.done {
-  opacity: 0.4;
+  opacity: 0.6; /* the earlier steps stay readable, so the change can be followed (review, 2026-11-08) */
+}
+/* the answer (x = 15, x = 7): big and green in a green outline, like the solution in Level 4 (review,
+   2026-11-08: "make x = 15 prominent"); just as wide as it needs, with its = still under the others
+   (its two sides are equal columns) */
+body.solving .eb-row.final {
+  width: auto;
+  margin-top: 14px;
+  padding: 2px 30px 0;
+  font-size: 100px;
+  line-height: 1.2;
+  border: 6px dashed #74f0ac;
+  border-radius: 26px;
 }
 #world.solving > .drag-layer {
   z-index: 11; /* the labels over the crowns and pans stay bright with the balance */
@@ -2396,10 +2569,6 @@ body.solving .eb-row.done {
 }
 .tok.after-coef {
   padding-left: 0.02em;
-}
-.label-act .board-title {
-  top: 12px;
-  font-size: 40px;
 }
 .tok.glow-var {
   background: #ffd84d;
@@ -2506,14 +2675,6 @@ body.solving .eb-row.done {
   white-space: nowrap;
 }
 .eq-card.placed {
-  position: relative;
-  left: auto !important;
-  top: auto !important;
-  transform: none;
-  width: 296px;
-  height: 88px;
-  margin: 8px 6px;
-  font-size: 48px;
   cursor: default;
   box-shadow: none;
 }
@@ -2555,15 +2716,6 @@ body.solving .eb-row.done {
 }
 .bin.rhs .bin-head {
   color: #b57d0e;
-}
-.bin-list {
-  flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  justify-content: center;
-  gap: 4px;
-  padding: 26px 12px;
 }
 .bin.hover {
   transform: scale(1.02);
@@ -2669,46 +2821,16 @@ body.solving .eb-row.done {
    goes to its own corner, small and faded (.parked: 1 top left, 2 top right, 3 bottom left, 4 bottom
    right) while the next one is built in the middle; at the end all four take their places in the
    overview (.home). js/activities.js sets where the middle and the corners are (--cx/--cy, --px/--py). */
-.recap-act .board {
-  top: 160px;
-  height: 890px;
-}
-.rc-grid {
-  position: absolute;
-  left: 26px;
-  right: 26px;
-  top: 40px; /* no title above the panels */
-  bottom: 22px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 20px;
-}
+/* The quick recap: one equation, large and centred, its summary built up on it with the voice: no
+   box round it, just the equation and its labels (js/activities.js, activityRecap places and sizes it) */
 .rc-panel {
-  position: relative; /* one of the four parts: no box round it, just the number, the equation and the words */
+  position: absolute;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* the equation and its sentence together */
   padding: 14px 22px 16px;
-  opacity: 0;
-  transition: transform 0.9s cubic-bezier(0.45, 0, 0.2, 1), opacity 0.7s ease;
-}
-.rc-panel.center {
-  opacity: 1;
-  z-index: 2;
-  transform: translate(var(--cx), var(--cy)) scale(1.45);
-}
-.rc-panel.parked {
-  opacity: 0.3;
-  transform: translate(var(--px), var(--py)) scale(0.42);
-}
-.rc-panel.home {
-  opacity: 1;
-  transform: none;
-}
-.rc-panel.snap {
-  transition: none;
+  transform-origin: 0 0;
+  transform: scale(var(--cs, 1.9));
 }
 /* the recap's lines are drawn out from the part (the dot) to where the label goes: no faint line first */
 .recap-act .lead {
@@ -2731,19 +2853,6 @@ body.solving .eb-row.done {
 .writing .wch:not(.on) {
   visibility: hidden;
 }
-.rc-n {
-  position: absolute; /* just before its equation (in the equation, js/activities.js) */
-  left: -92px;
-  top: 50%;
-  margin-top: -26px;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: #f2c230;
-  color: var(--ink);
-  font: 800 30px/58px var(--font);
-  text-align: center;
-}
 .rc-eq-wrap {
   width: 100%;
   display: grid;
@@ -2751,24 +2860,14 @@ body.solving .eb-row.done {
   padding-top: 92px; /* room for the labels over the equation */
 }
 .rc-panel.labels-below .rc-eq-wrap {
-  padding-bottom: 76px; /* and under it (LHS, RHS), clear of the sentence */
+  padding-bottom: 76px; /* and under it (LHS, RHS) */
 }
 .rc-eq {
   font: 800 84px/1.1 var(--font);
   color: var(--ink);
 }
-.tok.rc-var {
-  color: #c99500;
-}
 .rc-eq .tok.eq {
   padding: 0 0.72em; /* room for the LHS and RHS labels side by side, each under its own side */
-}
-.rc-text {
-  max-width: 660px;
-  margin-top: 12px; /* right under the equation it is about */
-  font: 700 31px/1.2 var(--font);
-  color: var(--ink);
-  text-align: center;
 }
 .rc-tag {
   position: absolute;
@@ -3473,6 +3572,22 @@ html.lite #title .t-drift {
     filter: drop-shadow(0 0 20px #ffd84d) drop-shadow(0 0 8px #fff);
   }
 }
+@keyframes glowLhs {
+  from {
+    filter: drop-shadow(0 0 6px #5ee6dc) drop-shadow(0 0 2px #fff);
+  }
+  to {
+    filter: drop-shadow(0 0 20px #5ee6dc) drop-shadow(0 0 8px #fff);
+  }
+}
+@keyframes glowRhs {
+  from {
+    filter: drop-shadow(0 0 6px #ffc35c) drop-shadow(0 0 2px #fff);
+  }
+  to {
+    filter: drop-shadow(0 0 20px #ffc35c) drop-shadow(0 0 8px #fff);
+  }
+}
 @keyframes blankPulse {
   from {
     box-shadow: 0 0 0 0 rgba(255, 216, 77, 0.9);
@@ -3537,15 +3652,6 @@ html.lite #title .t-drift {
 @keyframes drawPath {
   to {
     stroke-dashoffset: 0;
-  }
-}
-@keyframes ghost {
-  0%,
-  100% {
-    opacity: 0.25;
-  }
-  50% {
-    opacity: 1;
   }
 }
 @keyframes pulseTok {
@@ -3631,9 +3737,6 @@ html.lite #title .t-drift {
   color: #fffaf0;
   text-shadow: none;
 }
-.activity .rc-text {
-  color: #dce6e9;
-}
 .activity .tok.glow-var {
   color: #2b2100; /* on its gold highlight */
 }
@@ -3646,9 +3749,6 @@ html.lite #title .t-drift {
 }
 .activity .tok.glow-var.glow-lhs {
   color: #2b2100; /* x is in the LHS too: it stays dark on its gold */
-}
-.activity .tok.rc-var {
-  color: #ffd84d;
 }
 
 /* ---- Labels joined to an equation (the label activity, the quick recap). Each label sits right over or
@@ -3731,6 +3831,52 @@ html.lite #title .t-drift {
   border: 6px solid var(--c);
   background: var(--c-bg);
 }
+/* The label activity (review, 2026-11-07: "Use thicker, brighter brackets and connectors. Give the
+   drop boxes a soft cream fill to match the instruction panel"): bright cream brackets and lines, until
+   a label is in and they take its colour; cream boxes with a warm dashed edge. */
+.activity.label-act .brace {
+  border-width: 8px;
+  border-color: rgba(255, 246, 225, 0.9);
+}
+.activity.label-act .brace.on {
+  border-color: var(--c);
+}
+.activity.label-act .lead {
+  background: rgba(255, 246, 225, 0.9);
+}
+.activity.label-act .lead-dot {
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  background: #fff6e1;
+}
+.activity.label-act .lead.down .lead-dot {
+  bottom: -9px;
+}
+.activity.label-act .lead.up .lead-dot {
+  top: -9px;
+}
+.activity.label-act .lead.on .lead-dot {
+  background: var(--c);
+}
+.activity.label-act .drop-box:not(.ok) {
+  background: #fbefd2;
+  border-color: #c79a57;
+}
+.activity.label-act .drop-box.hover:not(.ok) {
+  background: #fff6d8;
+  border-color: #ffd84d;
+  border-style: solid;
+}
+/* a right label: its box's border turns green (review, 2026-11-07) */
+.activity.label-act .drop-box.ok {
+  border-color: #3fd27e;
+}
+/* the label the hand carries when it shows how (a faded copy) */
+.hand-carry .label-chip.carried {
+  opacity: 0.8;
+  box-shadow: none;
+}
 .activity .label-chip.placed {
   color: var(--c-ink);
 }
@@ -3754,6 +3900,78 @@ html.lite #title .t-drift {
 }
 .activity .bin.hover {
   background: rgba(255, 216, 77, 0.14);
+}
+/* The sort activity: three panels (review, 2026-11-07): solid, rounded frames (cyan for linear, amber
+   for nonlinear) with smaller headings, a narrower tray between them, subtle placeholders for the
+   cards, and cream cards with dark text. (Places: js/activities.js, activitySort.) */
+.sort-act .bin {
+  display: block;
+  overflow: visible;
+  border-width: 6px;
+  border-style: solid;
+  border-radius: 28px;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+.sort-act .bin.lhs {
+  border-color: #5ee6dc;
+  background: rgba(94, 230, 220, 0.07);
+}
+.sort-act .bin.rhs {
+  border-color: #ffc35c;
+  background: rgba(255, 195, 92, 0.07);
+}
+.sort-act .bin .bin-head {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28px;
+  padding: 0;
+  font: 800 40px/1 var(--font);
+  text-align: center;
+}
+.sort-act .bin.hover {
+  transform: none;
+  background: rgba(255, 216, 77, 0.12);
+  box-shadow: 0 0 0 8px rgba(255, 216, 77, 0.55);
+}
+.sort-tray {
+  position: absolute;
+  border: 4px solid rgba(255, 246, 225, 0.25);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+.card-slot {
+  position: absolute;
+  border: 3px dashed rgba(255, 246, 225, 0.3);
+  border-radius: 20px;
+  pointer-events: none;
+}
+.card-slot.lhs {
+  border-color: rgba(94, 230, 220, 0.45);
+}
+.card-slot.rhs {
+  border-color: rgba(255, 195, 92, 0.45);
+}
+.card-slot.filled {
+  border-color: transparent;
+}
+.eq-card {
+  background: #fbefd2;
+  border: 4px solid #c79a57;
+  color: #2b2100;
+  font-size: 52px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
+}
+.eq-card.placed.lin {
+  border-color: #5ee6dc;
+}
+.eq-card.placed.nonlin {
+  border-color: #ffc35c;
+}
+.hand-carry .eq-card.carried {
+  opacity: 0.8;
+  box-shadow: none;
 }
 .activity .pr-done {
   color: #74f0ac;
@@ -3810,4 +4028,76 @@ html.reduced-motion .nameburst.purple .nb-word,
 html.reduced-motion .tower-crown,
 html.reduced-motion .bar-slot.glow .gbar {
   animation: none !important;
+}
+/* a gold bar on a pan, lit up: the orange pulse of a bar to use (barGlow, as on the stands), since a
+   gold glow hardly shows on a gold bar (review, 2026-11-08); a gentle glow for the bars ready to come
+   off in Levels 8–9 (.soft), warm too */
+.pan-item.pbar.glow {
+  animation: barGlow 0.9s ease-in-out infinite alternate;
+}
+.pan-item.pbar.glow.soft {
+  animation: glowSoft 1.6s ease-in-out infinite alternate;
+}
+@keyframes glowSoft {
+  from {
+    filter: drop-shadow(0 0 4px rgba(255, 150, 20, 0.7));
+  }
+  to {
+    filter: drop-shadow(0 0 12px rgba(255, 150, 20, 0.95)) drop-shadow(0 0 3px #fff);
+  }
+}
+/* an x of the equation lit up with its crown (Level 9: "Highlight each crown alongside its
+   corresponding x", review 2026-11-08), or x + x lit as one (.x-span, eqBoard.light): gold, with a ring
+   that takes no room, so nothing moves */
+.eq-board .v,
+.eq-board .x-span {
+  border-radius: 12px;
+  transition: color 0.4s ease, background-color 0.4s ease, box-shadow 0.4s ease;
+}
+.eq-board .x-lit {
+  color: #ffd84d;
+  background: rgba(255, 216, 77, 0.16);
+  box-shadow: 0 0 0 5px rgba(255, 216, 77, 0.75);
+}
+/* the terms that cancel (Level 9: + 4 − 4, and 4 … − 4, review 2026-11-08), lit red as one, with a
+   ring that takes no room; a "− 4" box inside takes the red look too */
+.eq-board .c-lit {
+  color: #ff8f80;
+  background: rgba(255, 143, 128, 0.14);
+  box-shadow: 0 0 0 5px rgba(255, 143, 128, 0.8);
+}
+.eq-board .c-lit .same {
+  color: inherit;
+  background: transparent;
+  border-color: transparent;
+}
+/* Level 9's two equal groups (review, 2026-11-08: "pairing each crown with one 7 bar through matching
+   highlights"): each crown and its 7 bar lit in a colour of their own (violet, pink: as strong as the
+   orange glow, so they read on gold), set a little apart on their pans (a margin, so they glide there
+   and back) */
+.pan-item.grp-a {
+  animation: grpA 1.2s ease-in-out infinite alternate;
+}
+.pan-item.grp-b {
+  animation: grpB 1.2s ease-in-out infinite alternate;
+}
+@keyframes grpA {
+  from {
+    filter: drop-shadow(0 0 7px rgba(164, 107, 255, 0.95)) drop-shadow(0 0 14px rgba(164, 107, 255, 0.6));
+  }
+  to {
+    filter: drop-shadow(0 0 12px #a46bff) drop-shadow(0 0 26px rgba(164, 107, 255, 0.9)) drop-shadow(0 0 4px #fff);
+  }
+}
+@keyframes grpB {
+  from {
+    filter: drop-shadow(0 0 7px rgba(255, 95, 191, 0.95)) drop-shadow(0 0 14px rgba(255, 95, 191, 0.6));
+  }
+  to {
+    filter: drop-shadow(0 0 12px #ff5fbf) drop-shadow(0 0 26px rgba(255, 95, 191, 0.9)) drop-shadow(0 0 4px #fff);
+  }
+}
+.pan-item.crown,
+.pan-item.pbar {
+  transition: margin-left 0.6s ease, opacity 0.4s; /* (keeps .ghost's fade too) */
 }

@@ -41,7 +41,6 @@ window.IMAGES = {
   tLogo: { src: "assets/title/logo.webp", w: 772, h: 338, x: 866, y: 134, s: 1 },
   tCrown: { src: "assets/title/crown.webp", w: 534, h: 386, x: 1271, y: 445.7, s: 0.5582 },
   tGrumble: { src: "assets/title/grumble.webp", w: 455, h: 526, x: 1009, y: 452, s: 0.5582 },
-  zippyFace: { src: "assets/ui/zippy-face.webp", w: 232, h: 232 },
   balBeam: { src: "assets/balance/beam.webp", w: 924, h: 152 },
   balHub: { src: "assets/balance/hub.webp", w: 280, h: 285 },
   balPost: { src: "assets/balance/post.webp", w: 184, h: 597 },
