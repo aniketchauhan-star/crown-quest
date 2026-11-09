@@ -445,8 +445,31 @@ window.CONTENT = {
   },
 
   // Sound effects: map any sound cue to a recorded file, e.g. overrides: { "zippy.laugh": "assets/audio/zippy-laugh.mp3" }.
-  // (The voice lines are in assets/vo/, see docs/VOICEOVER.md.)
+  // (The voice lines are in assets/vo/, see docs/VOICEOVER.md.) The recordings here are made from the
+  // ones in art/audio/ by tools/make_sounds.py (asked 2026-11-09: Grumble's snore, and Zippy's laugh
+  // when he wins a crown).
   audio: {
-    overrides: {},
+    overrides: {
+      "zippy.win": "assets/audio/zippy-win-laugh.mp3", // Zippy laughs when he has won the crown
+      "grumble.snore1": "assets/audio/grumble-snore-1.mp3",
+      "grumble.snore2": "assets/audio/grumble-snore-2.mp3",
+      "grumble.snore3": "assets/audio/grumble-snore-3.mp3",
+      "grumble.snore4": "assets/audio/grumble-snore-4.mp3",
+      "grumble.snore5": "assets/audio/grumble-snore-5.mp3",
+      "grumble.snore6": "assets/audio/grumble-snore-6.mp3",
+    },
+    // Grumble's recorded snores, one after another: each is a snore in, a pause and a snore out, which
+    // starts `out` s in; it lasts `len` s. His breathing follows each one (js/world.js, sleep).
+    // tools/make_sounds.py prints this list.
+    snores: [
+      { cue: "grumble.snore1", out: 2.46, len: 3.47 },
+      { cue: "grumble.snore2", out: 3.29, len: 4.33 },
+      { cue: "grumble.snore3", out: 3.3, len: 4.17 },
+      { cue: "grumble.snore4", out: 3.19, len: 4.1 },
+      { cue: "grumble.snore5", out: 3.33, len: 4.37 },
+      { cue: "grumble.snore6", out: 3.26, len: 4.53 },
+    ],
+    // Zippy's win laugh lasts this long (s); his next line waits for it
+    winLaugh: 5.6,
   },
 };

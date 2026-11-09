@@ -444,11 +444,15 @@
     const z = CQ.zippy;
     const g = CQ.grumble;
     await collectCrown({ wear: true }); // he puts the crown on, and keeps it on until he swings away
-    g.snore(2, 1.8); // "Sleep tight, Grumble!"
+    // He has won the crown: he laughs, in his own recorded laugh (asked 2026-11-09: "use this voice when
+    // monkey win"); his "Hee hee! Sleep tight, Grumble!" and Grumble's loud snores wait until it has
+    // nearly ended, so they don't talk over it.
     z.pose("laugh");
-    CQ.audio.play("zippy.laugh");
+    CQ.audio.play("zippy.win", { volume: 1.3 });
     CQ.fx.confetti(CQ.world.fx, 700, 420, 44);
     CQ.audio.play("confetti");
+    await R.wait(Math.max(0, ((C().audio && C().audio.winLaugh) || 1.2) * 1000 - 500));
+    g.snore(2, 1.8, true); // "Sleep tight, Grumble!" (a moment about him: even if he snored a moment ago)
     await R.when(z.say(C().zippy.sleepTight, { keepPose: true }));
     z.pose("idle");
     CQ.track("level_complete", { level: CQ.hud.crowns });
@@ -580,8 +584,8 @@
     CQ.audio.play("zippy.gulp");
     const gh = g.headTop();
     const th = CQ.thought({ x: gh.x + 380, y: gh.y - 212 }, miniTipScene(), { w: 760, h: 500, cls: "over-grumble" }); // its trail ends at his head, its top clear of the question bar
-    th.querySelector(".mini-scene").prepend(CQ.miniBalance({ width: 290, left: "bar", right: "coins3" }));
-    const miniG = new CQ.Sprite(th.querySelector(".ms-grumble"), "", 0.4);
+    th.querySelector(".mini-scene").prepend(CQ.miniBalance({ width: 240, left: "bar", right: "coins3" })); // (sizes: all inside the cloud)
+    const miniG = new CQ.Sprite(th.querySelector(".ms-grumble"), "", 0.34);
     miniG.show("grumble_roar", 7);
     CQ.focus.dimAll();
     setTimeout(() => {
