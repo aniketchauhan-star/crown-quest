@@ -1451,8 +1451,46 @@ html[data-shade] .stage-edge::after {
   filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.35));
 }
 .hand img {
+  position: relative; /* over the rings */
   display: block;
   width: 104px; /* as drawn: the finger points up, at the left of the hand (js/ui.js puts its tip on the target) */
+}
+/* the rings at the fingertip (CQ.hand): each grows from small to big as it fades, again and again while
+   the hand shows, two half a beat apart, white outlined in yellow like the hand (asked 2026-11-09) */
+.hand-ring {
+  position: absolute;
+  width: 124px;
+  height: 124px;
+  margin: -62px 0 0 -62px;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.95); /* white, outlined in yellow like the hand, so it shows on gold, wood and stone */
+  box-shadow: 0 0 0 3px #f2b705, inset 0 0 0 3px #f2b705, 0 0 12px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  animation: handRing 1.2s ease-out infinite;
+}
+.hand-ring.b {
+  animation-delay: 0.6s;
+}
+@keyframes handRing {
+  0% {
+    transform: scale(0.12);
+    opacity: 0.95;
+  }
+  70% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+html.reduced-motion .hand-ring {
+  animation: none;
+  transform: scale(0.5);
+  opacity: 0.7;
+}
+html.reduced-motion .hand-ring.b {
+  display: none;
 }
 
 /* ---------------------------------------------------------------- gems, Word Treasure, menu, confirm */
