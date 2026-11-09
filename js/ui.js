@@ -1649,6 +1649,9 @@
       opts = opts || {};
       if (this.isOpen) this.el.classList.remove("hidden");
       let row = opts.same ? this.el.lastElementChild : null;
+      // the rows already there, where they stand now: the board keeps its rows in the middle of its room
+      // (asked 2026-11-09: "utilise the negative space"), so they glide up as a new one comes (below)
+      const before = row ? null : Array.from(this.el.children).map((r) => [r, r.getBoundingClientRect().top]);
       if (!row) {
         this.el.querySelectorAll(".eb-row").forEach((r) => r.classList.add("done"));
         row = CQ.el("div", "eb-row", this.el);
@@ -1662,6 +1665,13 @@
           : `<span class="eb-l">${CQ.rich(text.slice(0, i))}</span><span class="eb-eq">=</span><span class="eb-r">${CQ.rich(text.slice(i + 3))}</span>`;
       row.classList.toggle("final", !!opts.final);
       if (opts.hold) row.querySelectorAll(opts.hold).forEach((e) => (e.style.display = "none"));
+      if (before) {
+        const k = CQ.stage.scale || 1;
+        before.forEach(([r, top]) => {
+          const dy = (top - r.getBoundingClientRect().top) / k;
+          if (Math.abs(dy) > 0.5) CQ.anim(r, [{ transform: `translateY(${dy}px)` }, { transform: "translateY(0px)" }], { duration: 560, easing: CQ.EASE.out, keep: false });
+        });
+      }
       CQ.audio.play("ui.pop", { volume: 0.6 });
       if (opts.same) {
         CQ.anim(row, [{ opacity: 0.35 }, { opacity: 1 }], { duration: 480, easing: CQ.EASE.out, keep: false });

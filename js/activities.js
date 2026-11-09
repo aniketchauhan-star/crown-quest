@@ -57,12 +57,14 @@
   // the next stays still, and what is new fades in where it stays, one piece at a time. The question
   // bar above says the line. Zippy isn't on this screen: the balance and the maths have it to
   // themselves. On closing, the maths fades and the view glides back to the whole scene.
-  // the view: the balance at the right (x 910–1800 on screen), room at the left (x 50–890) for the maths
-  // (review, 2026-11-08: "the balance on the right and the equation steps on the left", as the
-  // reviewer's screenshots show; from 2026-11-07 it was the other way round). (With free: true and an x
-  // past the middle, a view could look past the scene's right edge, where the scene goes on in a mirror
-  // image: js/world.js, mirrorBackground. Not needed this way round.)
-  const ASIDE = { x: 760, y: 472, z: 1.25 };
+  // the view: the balance at the right, big (x about 870–1890 on screen, from just under the question
+  // bar to near the bottom), room at the left (x 30–850) for the maths (review, 2026-11-08: "the
+  // balance on the right and the equation steps on the left", as the reviewer's screenshots show; from
+  // 2026-11-07 it was the other way round). Closer than before (1.25), so it fills its side (asked
+  // 2026-11-09: "utilise the negative space"). (With free: true and an x past the middle, a view could
+  // look past the scene's right edge, where the scene goes on in a mirror image: js/world.js,
+  // mirrorBackground. Not needed this way round.)
+  const ASIDE = { x: 790, y: 526, z: 1.42 };
   CQ.ASIDE = ASIDE; // (the check uses it too: CQ.checkPanel in js/ui.js)
   // The gold frame round a part of the balance, the rest of it faded (CQ.focus): "crown", "left" (pan),
   // "right", "both" (pans), "level" or "whole" (the whole balance). Anything else: no frame.
@@ -383,10 +385,11 @@
         CQ.box(line, r.cx - 2, top, 4, y - top);
         CQ.el("div", "tag-dot", line);
         const tag = add(CQ.el("div", "tag " + (t.color || ""), d, CQ.rich(t.text)), key);
-        // a wide tag slides along to stay on the screen and clear of the balance; its line still lands on it
+        // a wide tag slides along to stay on the screen and clear of the balance (inside the room at the
+        // left, now that the balance is bigger: 2026-11-09); its line still lands on it
         const half = tag.offsetWidth / 2;
         const lo = -eqn.offsetLeft - this.stage.offsetLeft + 24 + half;
-        const hi = this.stage.offsetWidth - eqn.offsetLeft + 30 - half;
+        const hi = this.stage.offsetWidth - eqn.offsetLeft - 12 - half;
         CQ.pos(tag, Math.max(lo, Math.min(hi, r.cx)), y);
         if (t.cue) c.querySelectorAll(`[data-key="${CSS.escape(key)}"]`).forEach((el) => (el.dataset.cue = t.cue)); // it waits until the voice says this
       });

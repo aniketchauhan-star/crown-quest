@@ -293,7 +293,8 @@
       CQ.fx.sparkle(this.fx, PLAY_AT.x, PLAY_AT.y, 10, 130);
     },
     // The end of the opening (also straight away on a tap during it, or with Reduced motion): every
-    // character in its place, the play button shown, the idle life and the music begin.
+    // character in its place, the play button shown and the idle life begins. No background music on
+    // the title screen (asked 2026-11-09: "in this thumbnail no need bg music"): it begins with the game.
     finish() {
       if (this.done) return;
       this.done = true;
@@ -306,7 +307,7 @@
       this.root.classList.remove("t-opening", "t-waiting");
       this.root.classList.add("t-idle");
       this.showPlay(false);
-      CQ.audio.music("title");
+      CQ.audio.music(null);
       clearInterval(this.sparkle);
       this.sparkle = setInterval(() => {
         if (document.hidden) return;
