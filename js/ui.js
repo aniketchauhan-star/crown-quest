@@ -983,11 +983,15 @@
   CQ.hand = {
     build(ui) {
       this.el = CQ.el("div", "hand hidden", ui);
-      CQ.img("hand", "", this.el);
       this.k = 104 / IMAGES.hand.w; // drawn 104 px wide
-      // The art points up, with the finger at the left of the hand (shown as drawn, not mirrored: asked
-      // 2026-11-05), so the finger points up at what to tap or drag and the hand sits just below it.
+      // The art (the user's own hand nudge since 2026-11-09: art/ui/hand nudge.png) points up, with the
+      // finger at the left of the hand (shown as drawn, not mirrored: asked 2026-11-05), so the finger
+      // points up at what to tap or drag and the hand sits just below it.
       this.tip = { x: window.GEOM.hand.tipX * this.k, y: window.GEOM.hand.tipY * this.k };
+      // Rings at the fingertip, under the finger: each grows from small to big as it fades, again and
+      // again while the hand shows, two half a beat apart (asked 2026-11-09: "circle shrink to big").
+      ["a", "b"].forEach((n) => CQ.pos(CQ.el("div", "hand-ring " + n, this.el), this.tip.x, this.tip.y));
+      CQ.img("hand", "", this.el);
       this.el.style.transformOrigin = `${this.tip.x}px ${this.tip.y}px`;
       this.seq = 0;
     },

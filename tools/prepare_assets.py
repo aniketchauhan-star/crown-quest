@@ -730,6 +730,11 @@ def main():
     geom = {}
     if os.path.exists(os.path.join(ART, ELEMENTS_FILE)):
         items = cut_elements(os.path.join(ART, ELEMENTS_FILE))
+        # the hint hand is the user's own picture when it is there (asked 2026-11-09): art/ui/hand nudge.png
+        # (white with a yellow outline, finger up at its left), in place of the sheet's hand
+        nudge = os.path.join(ART, "ui", "hand nudge.png")
+        if os.path.exists(nudge):
+            items["hand"] = read_png(nudge)
         el_dir = os.path.join(OUT, "elements")
         if os.path.isdir(el_dir):
             shutil.rmtree(el_dir)  # pieces that are no longer used go too

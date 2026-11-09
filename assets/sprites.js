@@ -67,7 +67,7 @@ window.IMAGES = {
   gemRed: { src: "assets/elements/gemRed.webp", w: 106, h: 103 },
   sparkle: { src: "assets/elements/sparkle.webp", w: 97, h: 109 },
   dust: { src: "assets/elements/dust.webp", w: 119, h: 99 },
-  hand: { src: "assets/elements/hand.webp", w: 100, h: 139 },
+  hand: { src: "assets/elements/hand.webp", w: 254, h: 358 },
 };
 
 // The background, back to front: where each layer goes in the 1920 x 1080 scene, and its idle motion.
@@ -173,8 +173,8 @@ window.BG_LAYERS = [
 // Joints and borders measured on the elements.png pieces (in each piece's own pixels).
 window.GEOM = {
   "hand": {
-    "tipX": 25,
-    "tipY": 3
+    "tipX": 94,
+    "tipY": 6
   },
   "thought": {
     "x0": 30,
