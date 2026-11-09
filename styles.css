@@ -1937,7 +1937,7 @@ html[data-shade] .stage-edge::after {
 }
 .nb-stage {
   position: absolute;
-  left: 50px; /* the room at the left of the balance (which stands from about x 910 to 1800) */
+  left: 30px; /* the room at the left of the balance (which stands from about x 870 to 1890) */
   top: 150px;
   width: 820px;
   height: 800px;
@@ -2281,10 +2281,10 @@ html[data-shade] .stage-edge::after {
 }
 /* the formula screen, the check and Levels 8–9's working (the view zoomed in on the balance at the
    right, CQ.ASIDE; review, 2026-11-08): dark at the left, behind the maths, and a light dim round the
-   balance. In world pixels: on screen, x is 1.25 times these, so the dark lightens from screen x 675
-   to 900, where the balance begins. */
+   balance. In world pixels: on screen, x = 1.42 × (these − 790) + 960, so the dark lightens from
+   screen x 633 to 875, where the balance begins. */
 .world-shade.aside {
-  background: linear-gradient(to right, rgba(5, 16, 24, 0.93) 0, rgba(5, 16, 24, 0.9) 540px, rgba(5, 16, 24, 0.42) 720px, rgba(5, 16, 24, 0.36) 100%);
+  background: linear-gradient(to right, rgba(5, 16, 24, 0.93) 0, rgba(5, 16, 24, 0.9) 560px, rgba(5, 16, 24, 0.42) 730px, rgba(5, 16, 24, 0.36) 100%);
 }
 #world.presenting > .world-shade.aside {
   opacity: 1;
@@ -2360,24 +2360,24 @@ html[data-shade] .stage-edge::after {
    stands at the right, bright, and the check is worked in the room at its left, big, one row under the
    other: LHS, then RHS, then the two compared. */
 body.checking .check-panel {
-  left: 470px;
-  top: 196px;
-  width: 840px;
+  left: 440px;
+  top: 262px;
+  width: 820px;
 }
 /* the equation itself, kept in sight at the top, and under it x = 4 (review, 2026-11-08) */
 body.checking .cp-eq {
   display: block;
-  margin-bottom: 26px;
-  font: 800 66px/1.1 var(--font);
+  margin-bottom: 30px;
+  font: 800 76px/1.1 var(--font);
   color: #fffaf0;
 }
 body.checking .cp-x {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 30px;
-  font: 800 72px/1 var(--font);
+  gap: 18px;
+  margin-bottom: 36px;
+  font: 800 82px/1 var(--font);
   color: #fffaf0;
 }
 /* the two sides lined up on their = signs: name | expression | = value (review, 2026-11-08) */
@@ -2386,9 +2386,9 @@ body.checking .cp-row {
   grid-template-columns: auto auto auto;
   justify-content: center;
   align-items: center;
-  column-gap: 16px;
-  row-gap: 30px;
-  font-size: 72px;
+  column-gap: 18px;
+  row-gap: 36px;
+  font-size: 82px;
 }
 body.checking .cp-side {
   display: contents;
@@ -2409,23 +2409,23 @@ body.checking .cp-side .eqv {
   justify-self: start;
 }
 body.checking .cp-side .lab {
-  font-size: 52px;
+  font-size: 58px;
 }
 body.checking .check-panel .blank {
-  min-width: 140px;
-  height: 104px;
-  font-size: 70px;
+  min-width: 156px;
+  height: 116px;
+  font-size: 78px;
 }
 body.checking .check-panel .xslot {
-  min-width: 100px;
-  height: 100px;
+  min-width: 112px;
+  height: 112px;
 }
 body.checking .cp-compare {
-  margin-top: 34px;
+  margin-top: 40px;
 }
 body.checking .cp-cmp-row {
-  gap: 40px;
-  font-size: 110px;
+  gap: 44px;
+  font-size: 124px;
 }
 body.checking .cp-verdict {
   margin-top: 10px;
@@ -2435,16 +2435,18 @@ body.checking .cp-verdict {
    balance stands at the right, bright (with its labels: x, ÷ 2), and the steps are written at its
    left, one row under another; the earlier rows fade back and the answer is green. */
 body.solving .eq-board {
-  left: 470px;
-  top: 206px;
-  width: 840px;
+  left: 440px;
+  top: 186px;
+  width: 820px;
+  height: 880px;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  font-size: 70px;
-  line-height: 1.32;
+  justify-content: center; /* the rows in the middle of the room at the left (asked 2026-11-09: "utilise the negative space") */
+  gap: 4px;
+  font-size: 80px;
+  line-height: 1.22; /* (Level 9's seven rows fit, clear of the question bar and the bottom) */
 }
 .eb-row {
   transition: opacity 0.6s ease;
@@ -2494,9 +2496,9 @@ body.solving .eb-row.done {
    (its two sides are equal columns) */
 body.solving .eb-row.final {
   width: auto;
-  margin-top: 14px;
+  margin-top: 8px;
   padding: 2px 30px 0;
-  font-size: 100px;
+  font-size: 112px;
   line-height: 1.2;
   border: 6px dashed #74f0ac;
   border-radius: 26px;
