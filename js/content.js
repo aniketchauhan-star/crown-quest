@@ -446,11 +446,12 @@ window.CONTENT = {
 
   // Sound effects: map any sound cue to a recorded file, e.g. overrides: { "zippy.laugh": "assets/audio/zippy-laugh.mp3" }.
   // (The voice lines are in assets/vo/, see docs/VOICEOVER.md.) The recordings here are made from the
-  // ones in art/audio/ by tools/make_sounds.py (asked 2026-11-09: Grumble's snore, and Zippy's laugh
-  // when he wins a crown).
+  // ones in art/audio/ by tools/make_sounds.py (asked 2026-11-09: Grumble's snore, Zippy's laugh when
+  // he wins a crown, and the wooden ring of the alarm when the balance tips).
   audio: {
     overrides: {
       "zippy.win": "assets/audio/zippy-win-laugh.mp3", // Zippy laughs when he has won the crown
+      alarm: "assets/audio/alarm-wood-ring.mp3", // the alarm when the balance tips: a wooden ring, twice (asked 2026-11-09)
       "grumble.snore1": "assets/audio/grumble-snore-1.mp3",
       "grumble.snore2": "assets/audio/grumble-snore-2.mp3",
       "grumble.snore3": "assets/audio/grumble-snore-3.mp3",

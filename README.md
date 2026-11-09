@@ -65,21 +65,23 @@ The story moves on by itself, so children only tap when there's something to do:
 
 **Pauses.** The story never rushes from one thing to the next: every line is followed by a pause to look (about 1 to 3 seconds, longer for longer lines), with 1.2 seconds more between two parts of the quest (and after a won level, before Zippy swings off), and half a second when the formula screen has opened, before the equation is written in, and when it has closed. All of these are `CQ.PACE` in `js/ui.js` (`breath` is added after every line, `between`, `settle`), in milliseconds: raise them for a slower game, lower them for a quicker one.
 
+**The swap.** As Zippy swings over to swap the bar for the crown, the view glides a little closer (about 1.2 times) to him and the balance, and stays there while the bar and the crown change places and he lifts the crown (or says "uh-oh"); it glides back out as he swings home, so what happens next, the win or the alarm waking Grumble, is seen in full (`SWAP_VIEW` in js/flow.js; asked 2026-11-09).
+
 Mistakes are safe, and a little funny. When a wrong swap tips the balance:
 - The alarm rings and Grumble wakes up and roars.
 - Zippy gets a fright with the crown in his hands. He clutches it while the alarm rings, hides behind it when Grumble stands up, and jumps at the roar.
 - He sheepishly gives it back: the crown jumps out of his hands onto the pan, and the wrong bar goes back to its own stand, marked "Tried".
-- Zippy swings away on his vine, up and out of the picture, empty-handed.
-- Grumble stands a moment (facing front) and yawns, and after a soft fade he is asleep again.
-- Only Zippy's smiling head peeks out from behind the tree ("Hmm?"). He ducks back, then swings in with a slide whistle and a giggle.
+- Zippy swings away to the left on his vine, up and out of the picture, empty-handed.
+- Grumble stands a moment (facing front), yawns and flops back to sleep, in plain view (no fade: asked 2026-11-09).
+- Only Zippy's smiling head peeks out from behind the tree ("Hmm?"), snoring Grumble below. He blinks at him twice, with a funny "bwip-bwip", ducks back, then swings in with a slide whistle and a giggle.
 
 Every task gives a short hint after the first miss and a full explanation after the second. (The label activity goes straight to the explanation of what the box names, each in its own words, e.g. "Look at x. It represents the unknown value."; from the second miss on a box the right label also glows, until it is in: `label.miss` in js/content.js. A right label there gets no words at all, only a short success sound, and its box's border turns green; the question bar keeps the instruction, and after a hint it goes back to it, shown but not said again. When all four are in: "Brilliant! You labelled every part.")
 
 Winning a level is a little story too:
 - Zippy lifts the crown and puts it on his own head ("wow!"), then celebrates wearing it.
-- He swings off on his vine, still wearing it and waving goodbye, and the screen fades.
-- The next level is set up behind the fade.
-- Zippy's head peeks out from behind the tree to check that Grumble is still asleep. He swings back in. The new level's crown, coins and gold bars are already in their places: nothing pops in by magic.
+- He swings off to the left on his vine, still wearing it and waving goodbye. There is no fade to dark (asked 2026-11-09: "no need to come screen of transition"): the light closes in on the tree and sleeping Grumble, and the rest of the scene dims and blurs.
+- The next level is set up there, unseen, in the dimmed scene.
+- Zippy's head peeks out from behind the tree to check that Grumble is still asleep (he snores once), and blinks at him twice with a funny "bwip-bwip". As he ducks back and swings in, the light opens up again: the new level's crown, coins and gold bars are already in their places, nothing pops in by magic (`outro`, `arrive` and `sneakBack` in js/flow.js; `CQ.peek.blink` in js/world.js).
 
 (The first of Level 9's two crowns flies up out of the picture instead, because he still needs his hands for the second swap.)
 
@@ -140,9 +142,9 @@ All text, voice lines, level numbers, answer choices and feedback live in **`js/
 
 If you change the words of a line in `js/content.js`, its recording no longer matches, so the device voice reads it until you make a new one (docs/VOICEOVER.md, "Remaking a line").
 
-**Grumble's snoring:** he sleeps quietly, and his breathing and Zzz show he is asleep. He snores out loud only twice at a time: when a level begins (as Zippy peeks at him), and when the story talks about him ("Grumble guards the treasure", "Grumble is still asleep!", "Sleep tight, Grumble!"). Two requests close together never add up (`snore()` in `js/world.js`). The snores are the recorded ones (`art/audio/snore.mp3`, asked 2026-11-09), cut into its six snores, each a snore in, a pause and a snore out, and played one after another; a snoring breath stretches to its snore, so he breathes in as it starts and out as its snore out starts, and the next breath waits until it has ended (`snores` in the `audio` section of `js/content.js`).
+**Grumble's snoring:** he sleeps quietly, and his breathing and Zzz show he is asleep. He snores out loud only once at a time: when a level begins (as Zippy peeks at him), and when the story talks about him ("Grumble guards the treasure", "Grumble is still asleep!", "Sleep tight, Grumble!"). A snore is never mixed with a voice (asked 2026-11-09): a voice line, its words in the question bar too, waits until his snore has ended, and a snore never starts while a voice is speaking (`quiet()` in js/world.js, used by `CQ.say` and Zippy's lines). Two requests close together never add up (`snore()` in `js/world.js`). The snores are the recorded ones (`art/audio/snore.mp3`, asked 2026-11-09), cut into its six snores, each a snore in, a pause and a snore out, and played one after another; a snoring breath stretches to its snore, so he breathes in as it starts and out as its snore out starts, and the next breath waits until it has ended (`snores` in the `audio` section of `js/content.js`).
 
-**Sound effects:** the sound effects and the music are generated in code, except two recordings (asked 2026-11-09): Grumble's snores (above) and Zippy's laugh when he wins a crown (`art/audio/monkey laugh.mp3`, its first 5.6 s; his "Hee hee! Sleep tight, Grumble!" and Grumble's loud snores wait until it has nearly ended). `tools/make_sounds.py` makes them from the recordings in `art/audio/` (needs ffmpeg): it cuts the snores, levels each sound under the voice, and writes `assets/audio/`. To use a recording for any other sound, add a mapping in `overrides` (the `audio` section at the bottom of `js/content.js`), e.g. `"zippy.laugh": "assets/audio/zippy-laugh.mp3"`. Every cue name is listed in `js/audio.js` (`grumble.snoreIn`, `zippy.laugh`, `balance.clang`, …). When the game is served from a web address, recordings are loaded once after the start tap and play through the sound engine, so they play on iPads too; opened straight from the folder, they play as audio elements. A recording that can't be played falls back to the generated sound.
+**Sound effects:** the sound effects and the music are generated in code, except three recordings (asked 2026-11-09): Grumble's snores (above), Zippy's laugh when he wins a crown (`art/audio/monkey laugh.mp3`, its first 5.6 s; his "Hee hee! Sleep tight, Grumble!" and Grumble's loud snore wait until it has nearly ended), and the alarm when the balance tips, on a wrong swap and in the intro's "what if" cloud: a wooden ring (`art/audio/wood ring.mp3`, its one strike struck twice, for RING! RING!) instead of the old electric bell. `tools/make_sounds.py` makes them from the recordings in `art/audio/` (needs ffmpeg): it cuts the snores, levels each sound under the voice, and writes `assets/audio/`. To use a recording for any other sound, add a mapping in `overrides` (the `audio` section at the bottom of `js/content.js`), e.g. `"zippy.laugh": "assets/audio/zippy-laugh.mp3"`. Every cue name is listed in `js/audio.js` (`grumble.snoreIn`, `zippy.laugh`, `balance.clang`, …). When the game is served from a web address, recordings are loaded once after the start tap and play through the sound engine, so they play on iPads too; opened straight from the folder, they play as audio elements. A recording that can't be played falls back to the generated sound.
 
 ## Replace the artwork
 
@@ -157,7 +159,7 @@ art/props/        crown, number coin, number bricks (the gold bar), break stand 
 art/ui/           elements (the interface sheet), start button (the play button), title background / zippy / grumble / crown
                   (the title screen's pictures), thumbnail ui (the first title sheet, no longer used)
 art/background/   the jungle lake: background sheet, its pieces and layers, the tools that make them
-art/audio/        snore (Grumble's snores) and monkey laugh (Zippy's win laugh): see "Voice and sound"
+art/audio/        snore (Grumble's snores), monkey laugh (Zippy's win laugh), wood ring (the alarm): see "Voice and sound"
 ```
 
 To change a picture, save the new one over the old one in its folder, with the same name, and run the tool (below).
@@ -241,7 +243,7 @@ js/vo_lines.js      every line as shown → its clip and length (generated by to
 js/main.js          loading, the tap to start, the title screen and its opening
 assets/             game-ready images and sprites.js (generated; the fonts are embedded in styles.css)
 assets/vo/          the voice-over: one Ogg Opus clip per line (see docs/VOICEOVER.md)
-assets/audio/       the recorded sound effects: Grumble's snores, Zippy's win laugh (made by tools/make_sounds.py)
+assets/audio/       the recorded sound effects: Grumble's snores, Zippy's win laugh, the alarm (made by tools/make_sounds.py)
 assets/elements/    the pieces cut from art/ui/elements.png (generated)
 manifest.webmanifest      lets a phone or tablet open the game full screen from its home screen
 art/                the original pictures (see "Replace the artwork")
