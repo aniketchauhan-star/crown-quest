@@ -1335,7 +1335,9 @@ html[data-shade] .stage-edge::after {
   display: grid;
   place-items: center;
 }
-/* the intro's "what if" cloud: the balance tips, RING! RING!, an arrow, Grumble roars (all inside the cloud) */
+/* the intro's "what if" cloud: the balance tips, RING! RING!, an arrow, Grumble roars, all well inside
+   the cloud's round outline (asked 2026-11-09: "this things should inside the thought bubble"); the
+   cloud's inside is narrow at its top and bottom, so each is placed where it is widest */
 .mini-scene {
   position: relative;
   width: 600px;
@@ -1343,15 +1345,15 @@ html[data-shade] .stage-edge::after {
 }
 .mini-scene .mini-bal {
   position: absolute;
-  left: 4px;
-  top: 128px;
+  left: 89px;
+  top: 118px;
 }
 .ms-arrow {
   position: absolute;
-  left: 312px;
-  top: 205px;
-  width: 100px;
-  height: 54px;
+  left: 333px;
+  top: 199px;
+  width: 70px;
+  height: 38px;
   opacity: 0;
   transform: translateX(-12px);
   transition: opacity 0.3s 0.35s, transform 0.45s ease-out 0.35s;
@@ -1402,8 +1404,8 @@ html[data-shade] .stage-edge::after {
 }
 .ms-grumble {
   position: absolute;
-  left: 488px; /* his feet (the sprite's anchor) */
-  top: 334px;
+  left: 481px; /* his feet (the sprite's anchor) */
+  top: 282px;
   width: 0;
   height: 0;
   opacity: 0;
@@ -1413,8 +1415,8 @@ html[data-shade] .stage-edge::after {
 }
 .ms-alarm {
   position: absolute;
-  left: 150px; /* above the little balance */
-  top: 56px;
+  left: 265px; /* above the little balance and the arrow, where the cloud is wide enough */
+  top: 73px;
   transform: translateX(-50%) scale(0.3);
   font: 800 44px/1 var(--font);
   color: #fff3b0;
@@ -4102,4 +4104,16 @@ html.reduced-motion .bar-slot.glow .gbar {
 .pan-item.crown,
 .pan-item.pbar {
   transition: margin-left 0.6s ease, opacity 0.4s; /* (keeps .ghost's fade too) */
+}
+/* A highlight box hugs its words: an inline block one line of text high (the box's own border and
+   ring round that), so boxes in rows one under another never run into each other, wherever they are
+   (asked 2026-11-09: "the things should not overlap with each other"): the working of Levels 8-9
+   (x + x over 2x, the - 4 and / 2 boxes), practice, the formula screen. */
+.same,
+.hot,
+.mark-new,
+.eq-board .x-span,
+.eq-board .v {
+  display: inline-block;
+  line-height: 1;
 }

@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+"""Makes the game's recorded sound effects from the recordings in art/audio/ (needs ffmpeg).
+
+- art/audio/snore.mp3 -> assets/audio/grumble-snore-1.mp3 ... (one file per snore): the recording is
+  cut on its silences into its snores, each a snore in, a pause and a snore out, and each is levelled
+  to -20 LUFS (under the voice). It prints each snore's timing: paste the list into `snores` in the
+  `audio` section of js/content.js (Grumble's breathing follows each sound: js/world.js, sleep).
+- art/audio/monkey laugh.mp3 -> assets/audio/zippy-win-laugh.mp3: Zippy's laugh when he wins a crown,
+  its first 5.6 s (the long tail of chuckles faded out from 4.8 s), levelled to -16 LUFS.
+
+Run from the project folder:  python3 tools/make_sounds.py
+"""
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+SRC = ROOT / "art" / "audio"
+OUT = ROOT / "assets" / "audio"
+
+
+def run(args):
+    return subprocess.run(args, capture_output=True, text=True, check=True)
+
+
+def loudness(path, start=None, dur=None):
+    """Integrated loudness (LUFS) of a file, or of a stretch of it."""
+    args = ["ffmpeg", "-hide_banner", "-nostats"]
+    if start is not None:
+        args += ["-ss", f"{start:.3f}", "-t", f"{dur:.3f}"]
+    args += ["-i", str(path), "-af", "ebur128", "-f", "null", "-"]
+    out = run(args).stderr
+    vals = re.findall(r"I:\s+(-?[\d.]+) LUFS", out)
+    return float(vals[-1])
+
+
+def true_peak(path):
+    out = run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(path), "-af", "ebur128=peak=true", "-f", "null", "-"]).stderr
+    return float(re.findall(r"Peak:\s+(-?[\d.]+) dBFS", out)[-1])
+
+
+def make(src, dst, start, dur, target, fade_from=None, mono=True, rate=44100):
+    """Cut [start, start + dur], level it to `target` LUFS, keep its peaks under -1 dBFS once encoded
+    (a clip whose sharp snorts still poke over is made a little quieter), write MP3."""
+    gain = target - loudness(src, start, dur)
+    for _ in range(3):
+        encode(src, dst, start, dur, gain, fade_from, mono, rate)
+        over = true_peak(dst) + 1.0
+        if over <= 0:
+            return
+        gain -= over + 0.1
+
+
+def encode(src, dst, start, dur, gain, fade_from, mono, rate):
+    filters = [f"volume={gain:.2f}dB", "alimiter=limit=0.66:level=false", "afade=t=in:d=0.03"]
+    if fade_from is not None:
+        filters.append(f"afade=t=out:st={fade_from - start:.3f}:d={start + dur - fade_from:.3f}")
+    else:
+        filters.append(f"afade=t=out:st={max(0.0, dur - 0.08):.3f}:d=0.08")
+    args = ["ffmpeg", "-v", "error", "-y", "-ss", f"{start:.3f}", "-t", f"{dur:.3f}", "-i", str(src), "-af", ",".join(filters)]
+    args += ["-ac", "1" if mono else "2", "-ar", str(rate), "-c:a", "libmp3lame", "-q:a", "4", str(dst)]
+    run(args)
+
+
+def snores():
+    src = SRC / "snore.mp3"
+    out = run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(src), "-af", "silencedetect=noise=-42dB:d=0.25", "-f", "null", "-"]).stderr
+    total = float(re.search(r"Duration: (\d+):(\d+):([\d.]+)", out).groups()[2]) + 60 * int(re.search(r"Duration: (\d+):(\d+)", out).groups()[1])
+    starts = [float(x) for x in re.findall(r"silence_start: ([\d.]+)", out)]
+    ends = [float(x) for x in re.findall(r"silence_end: ([\d.]+)", out)]
+    # the sounds between the silences: a snore in, then its snore out
+    sounds, t = [], 0.0
+    for s, e in zip(starts, ends + [total]):
+        if s > t + 0.05:
+            sounds.append((t, s))
+        t = e
+    if t < total - 0.05:
+        sounds.append((t, total))
+    timing = []
+    for k in range(0, len(sounds) - 1, 2):
+        (a, _), (o, b) = sounds[k], sounds[k + 1]
+        start, end = max(0.0, a - 0.05), b + 0.15
+        n = k // 2 + 1
+        make(src, OUT / f"grumble-snore-{n}.mp3", start, end - start, -20.0, rate=24000)
+        timing.append({"cue": f"grumble.snore{n}", "out": round(o - start, 2), "len": round(end - start, 2)})
+    return timing
+
+
+def laugh():
+    make(SRC / "monkey laugh.mp3", OUT / "zippy-win-laugh.mp3", 0.0, 5.6, -16.0, fade_from=4.8)
+
+
+if __name__ == "__main__":
+    OUT.mkdir(parents=True, exist_ok=True)
+    t = snores()
+    laugh()
+    print("snores:", json.dumps(t))
+    sys.exit(0)

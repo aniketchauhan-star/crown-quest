@@ -238,6 +238,7 @@
       this.sprite.show("grumble_sleep", 1);
       this.loud = 0; // snores still to be heard out loud (see snore)
       this.loudVol = 1;
+      this.snoreN = 0; // which recorded snore is next (CONTENT.audio.snores, in turn)
       this.heardAt = -1e9; // when the last one was heard
       this.state = "sleep";
       this.lastTap = 0;
@@ -259,26 +260,39 @@
       return this.state === "awake" ? { x: this.x + 10 * f, y: this.y - 430 * f } : { x: this.x + 95 * f, y: this.y - 215 * f };
     }
     // He sleeps quietly: his breathing and his Zzz show he is asleep. He snores out loud only when
-    // asked, twice: when a level begins, and when the story talks about him (snore).
+    // asked, twice: when a level begins, and when the story talks about him (snore). A snore is one of
+    // the recorded ones (the user's own, asked 2026-11-09: CONTENT.audio.snores, in turn), and its
+    // breath stretches to fit it: he breathes in as the snore starts (frame 2), out as its snore out
+    // starts (frame 4), and the next breath waits until it has ended. (No recordings: the made snore.)
     sleep() {
       this.state = "sleep";
       this.rig.classList.remove("standing");
       this.squash.style.transform = "";
       let aloud = false;
-      this.sprite.play("grumble_sleep", [1, 2, 3, 4, 5, 6, 7, 8], [700, 600, 800, 900], {
+      let rec = null; // the recorded snore of this breath
+      const recs = (CONTENT.audio && CONTENT.audio.snores) || [];
+      const breath = [700, 600, 800, 900]; // each frame's time (read as each frame shows: see CQ.Sprite)
+      this.sprite.play("grumble_sleep", [1, 2, 3, 4, 5, 6, 7, 8], breath, {
         loop: true,
         onFrame: (f) => {
           if (f === 2 || f === 6) {
             aloud = this.loud > 0;
-            if (aloud) CQ.audio.play("grumble.snoreIn", { volume: this.loudVol });
+            rec = aloud && recs.length ? recs[this.snoreN++ % recs.length] : null;
+            breath[1] = rec ? Math.round((rec.out * 1000 * 600) / 1400) : 600; // frames 2 and 3 span the
+            breath[2] = rec ? Math.round((rec.out * 1000 * 800) / 1400) : 800; // time to its snore out
+            if (aloud) CQ.audio.play(rec ? rec.cue : "grumble.snoreIn", { volume: this.loudVol });
             const h = this.head();
             CQ.fx.zzz(CQ.world.fx, h.x, h.y, aloud && this.loudVol > 1.3);
           }
-          if ((f === 4 || f === 8) && aloud) {
-            CQ.audio.play("grumble.snoreOut", { volume: this.loudVol * 0.85 });
-            aloud = false;
-            this.loud--;
-            this.heardAt = performance.now();
+          if (f === 4 || f === 8) {
+            breath[3] = rec ? Math.max(900, Math.round((rec.len - rec.out) * 1000) + 150) : 900; // until it ends
+            if (aloud) {
+              if (!rec) CQ.audio.play("grumble.snoreOut", { volume: this.loudVol * 0.85 });
+              aloud = false;
+              this.loud--;
+              this.heardAt = performance.now();
+            }
+            rec = null;
           }
         },
       });

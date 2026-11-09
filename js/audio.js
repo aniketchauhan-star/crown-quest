@@ -313,6 +313,9 @@
    * ================================================================== */
   var CUES = {};
   function cue(name, fn) { CUES[name] = fn; }
+  // cues that exist only as recordings (CONTENT.audio.overrides) play this made sound if their file
+  // can't be played: Zippy's win laugh, and Grumble's recorded snores (grumble.snore1, 2, …: snoreIn)
+  var SYNTH_FOR = { 'zippy.win': 'zippy.laugh' };
 
   // ---------------- Grumble: big, sleepy, purple ----------------
   cue('grumble.snoreIn', function (ctx, dest, t, o) { // "khrrrrr" inhale, rattling
@@ -1211,7 +1214,7 @@
   }
 
   function playSynth(name, o) {
-    var fn = CUES[name];
+    var fn = CUES[name] || CUES[SYNTH_FOR[name] || (/^grumble\.snore\d+$/.test(name) ? 'grumble.snoreIn' : '')];
     if (!fn) { warnOnce('unknown cue "' + name + '"'); return; }
     if (!isLive()) return;
     var now = ctx.currentTime, key = name + '|' + o.index;
@@ -1288,13 +1291,51 @@
       if (!Object.prototype.hasOwnProperty.call(ovLive, k)) continue;
       while (ovLive[k].length) { try { ovLive[k].shift().pause(); } catch (e) { /* ignore */ } }
     }
+    while (recLive.length) { try { recLive.shift().stop(); } catch (e) { /* ignore */ } }
+  }
+  // ---- recorded sounds through the sound engine (the game served over http/https) -------------
+  // Each override file is fetched and decoded once, after the start tap, and then plays like a made
+  // sound, through the effects volume, with no tap needed each time (iPads block new audio elements a
+  // tap didn't start). Opened straight from the folder, the audio element above plays them instead.
+  var recBuf = {}, recTried = {}, recLive = [];
+  function loadRecorded() {
+    var a = contentAudio(), m = a && a.overrides;
+    if (!ctx || !m || typeof m !== 'object' || typeof win.fetch !== 'function' || !/^https?:$/.test(win.location.protocol)) return;
+    Object.keys(m).forEach(function (name) {
+      var path = m[name];
+      if (typeof path !== 'string' || !path || recTried[path]) return;
+      recTried[path] = true;
+      win.fetch(path).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
+        .then(function (ab) {
+          return new Promise(function (res, rej) {
+            var p = ctx.decodeAudioData(ab, res, rej);
+            if (p && p.then) p.then(res, rej);
+          });
+        })
+        .then(function (buf) { recBuf[path] = buf; })
+        .catch(function () { /* the audio element plays it instead */ });
+    });
+  }
+  function playRecorded(path, o) {
+    var buf = recBuf[path];
+    if (!buf || !isLive()) return false;
+    var s = ctx.createBufferSource(), g = ctx.createGain();
+    s.buffer = buf;
+    if (o.pitch !== 1) { try { s.playbackRate.value = clamp(o.pitch, 0.5, 2); } catch (e) { /* ignore */ } }
+    g.gain.value = o.volume;
+    s.connect(g);
+    g.connect(sfxBus);
+    recLive.push(s);
+    s.onended = function () { var i = recLive.indexOf(s); if (i >= 0) recLive.splice(i, 1); };
+    try { s.start(); } catch (e) { return false; }
+    return true;
   }
 
   function play(name, opts) {
     if (!enabled.sfx) return;
     name = String(name);
     var o = normOpts(opts), path = overridePath(name);
-    if (path && playOverride(name, path, o)) return;
+    if (path && (playRecorded(path, o) || playOverride(name, path, o))) return;
     playSynth(name, o);
   }
 
@@ -1653,6 +1694,7 @@
       } catch (e) { /* ignore */ }
       if (wantMusic && !curPlayer) switchMusic(wantMusic);
       if (wantAmb && (!amb || amb.stopAt !== null)) ambStart();
+      loadRecorded();
     }
     if (synth && Utter && !speechUnlocked) { // iOS/Safari: first utterance must come from a gesture
       speechUnlocked = true;
