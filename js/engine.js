@@ -201,6 +201,7 @@
     ambience: (on) => safe(() => A() && A().ambience(on)),
     duck: (on) => safe(() => A() && A().duck(on)),
     stopSpeech: () => safe(() => A() && A().stopSpeech()),
+    speaking: () => safe(() => !!(A() && A().speaking && A().speaking()), false), // a voice line is being spoken
     setEnabled: (k, on) => safe(() => A() && A().setEnabled(k, on)),
     isEnabled: (k) => safe(() => (A() ? !!A().isEnabled(k) : false), false),
     speak(text, opts) {

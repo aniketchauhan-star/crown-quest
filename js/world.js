@@ -193,6 +193,21 @@
     center() {
       return { x: PEEK.out, y: PEEK.y };
     },
+    // He blinks at Grumble, twice, with a funny "bwip-bwip" (asked 2026-11-09): frame 6 has the same
+    // smile with his eyes shut; its head sits a little lower and to the left in the sheet, so it is moved
+    // to lie exactly over frame 7's.
+    async blink(times) {
+      const k = L.ZIPPY.scale;
+      CQ.audio.play("zippy.blink");
+      for (let i = 0; i < (times || 2); i++) {
+        this.sprite.show("zippy_hold", 6);
+        this.sprite.el.style.translate = `${12 * k}px ${-7 * k}px`;
+        await CQ.sleep(110);
+        this.sprite.show("zippy_hold", PEEK.frame);
+        this.sprite.el.style.translate = "";
+        await CQ.sleep(190);
+      }
+    },
   };
 
   // ================================================================== the drop ring around Zippy's hands
@@ -239,6 +254,7 @@
       this.loud = 0; // snores still to be heard out loud (see snore)
       this.loudVol = 1;
       this.snoreN = 0; // which recorded snore is next (CONTENT.audio.snores, in turn)
+      this.snoreEnd = 0; // when the snore being heard ends (see quiet)
       this.heardAt = -1e9; // when the last one was heard
       this.state = "sleep";
       this.lastTap = 0;
@@ -260,7 +276,8 @@
       return this.state === "awake" ? { x: this.x + 10 * f, y: this.y - 430 * f } : { x: this.x + 95 * f, y: this.y - 215 * f };
     }
     // He sleeps quietly: his breathing and his Zzz show he is asleep. He snores out loud only when
-    // asked, twice: when a level begins, and when the story talks about him (snore). A snore is one of
+    // asked, once: when a level begins, and when the story talks about him (snore); never while a voice
+    // speaks (then the snore waits for the next breath), and the voices wait for it (quiet). A snore is one of
     // the recorded ones (the user's own, asked 2026-11-09: CONTENT.audio.snores, in turn), and its
     // breath stretches to fit it: he breathes in as the snore starts (frame 2), out as its snore out
     // starts (frame 4), and the next breath waits until it has ended. (No recordings: the made snore.)
@@ -276,11 +293,14 @@
         loop: true,
         onFrame: (f) => {
           if (f === 2 || f === 6) {
-            aloud = this.loud > 0;
+            aloud = this.loud > 0 && !CQ.audio.speaking(); // (never over a voice: asked 2026-11-09)
             rec = aloud && recs.length ? recs[this.snoreN++ % recs.length] : null;
             breath[1] = rec ? Math.round((rec.out * 1000 * 600) / 1400) : 600; // frames 2 and 3 span the
             breath[2] = rec ? Math.round((rec.out * 1000 * 800) / 1400) : 800; // time to its snore out
-            if (aloud) CQ.audio.play(rec ? rec.cue : "grumble.snoreIn", { volume: this.loudVol });
+            if (aloud) {
+              CQ.audio.play(rec ? rec.cue : "grumble.snoreIn", { volume: this.loudVol });
+              this.snoreEnd = performance.now() + (rec ? rec.len * 1000 : 2600);
+            }
             const h = this.head();
             CQ.fx.zzz(CQ.world.fx, h.x, h.y, aloud && this.loudVol > 1.3);
           }
@@ -297,23 +317,40 @@
         },
       });
     }
-    // n snores out loud from his next breath (2 by default). Ignored while he is snoring already, or
-    // if he snored only a moment ago, so a level's start and a line about him never add up; force:
-    // a moment that is all about him (his introduction) snores anyway.
+    // n snores out loud (1 by default: asked 2026-11-09, "only 1 snore"), starting with a new breath
+    // at once. Ignored while he is snoring already, or if he snored only a moment ago, so a level's start
+    // and a line about him never add up; force: a moment that is all about him snores anyway.
     snore(n, vol, force) {
       if (this.loud > 0 || (!force && performance.now() - this.heardAt < 9000)) return;
-      this.loud = n || 2;
+      this.loud = n || 1;
       this.loudVol = vol || 1;
+      if (this.state === "sleep") this.sleep(); // a fresh breath: the snore comes in a moment
+    }
+    // Resolves once he is quiet: no snore waiting and the last one ended. Every voice line waits for
+    // this, so no voice is ever mixed with a snore (asked 2026-11-09: "snore voice should not come when
+    // question template voice come… only 1 snore then question template voice come").
+    quiet() {
+      const t0 = performance.now();
+      return new Promise((res) => {
+        const tick = () => {
+          const waiting = this.state === "sleep" && this.loud > 0;
+          if ((waiting || performance.now() < this.snoreEnd) && performance.now() - t0 < 9000) setTimeout(tick, 80);
+          else res();
+        };
+        tick();
+      });
     }
     // Quiet again at once (a new chapter, a restart).
     hush() {
       this.loud = 0;
       this.heardAt = -1e9;
+      this.snoreEnd = 0;
     }
     // A near miss: one eye opens, he mumbles, and goes back to sleep.
     async stir() {
       if (this.state !== "sleep") return;
       this.state = "stir";
+      this.loud = 0; // (awake: no snore waiting)
       CQ.audio.play("grumble.mumble");
       const h = this.head();
       CQ.comic(CONTENT.grumble.stir, h, { color: "purple", size: 70 });
@@ -326,6 +363,7 @@
     async stirHold() {
       if (this.state !== "sleep") return;
       this.state = "stir";
+      this.loud = 0; // (awake: no snore waiting)
       CQ.audio.play("grumble.mumble");
       const h = this.head();
       CQ.comic(CONTENT.grumble.stir, h, { color: "purple", size: 70 });
@@ -343,6 +381,7 @@
       const gen = CQ.gen;
       const stale = () => gen !== CQ.gen; // the level was restarted: stop quietly
       this.state = "awake-ing";
+      this.loud = 0; // (awake: no snore waiting)
       this.sprite.stop();
       CQ.audio.play("grumble.mumble");
       await this.sprite.play("grumble_wake", [1, 2, 3, 4, 5, 6, 7, 8], 105);
@@ -406,6 +445,7 @@
       CQ.comic("Zzz…", h, { color: "purple", size: 54 });
       CQ.bubble.flash(CONTENT.grumble.tap, h, { who: "grumble" });
       this.state = "stir";
+      this.loud = 0; // (awake: no snore waiting)
       this.sprite.play("grumble_wake", [1, 2, 3, 3, 3, 2, 1], 220).then(() => {
         if (this.state === "stir") this.sleep();
       });
@@ -858,6 +898,7 @@
     // recording, or it didn't play), so the line isn't lost.
     async say(text, opts) {
       opts = opts || {};
+      if (CQ.grumble) await CQ.grumble.quiet(); // never over a snore: it ends first
       const prev = this.poseName;
       const talkPose = this.held ? "holdTalk" : "talk";
       if (!opts.keepPose) this.pose(talkPose);

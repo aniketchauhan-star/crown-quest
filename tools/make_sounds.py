@@ -7,6 +7,9 @@
   `audio` section of js/content.js (Grumble's breathing follows each sound: js/world.js, sleep).
 - art/audio/monkey laugh.mp3 -> assets/audio/zippy-win-laugh.mp3: Zippy's laugh when he wins a crown,
   its first 5.6 s (the long tail of chuckles faded out from 4.8 s), levelled to -16 LUFS.
+- art/audio/wood ring.mp3 -> assets/audio/alarm-wood-ring.mp3: the treasure room's alarm when the balance
+  tips (a wrong swap, and the intro's "what if" cloud): its one wooden strike, struck twice 0.42 s apart
+  (RING! RING!), levelled to -17 LUFS.
 
 Run from the project folder:  python3 tools/make_sounds.py
 """
@@ -92,9 +95,23 @@ def laugh():
     make(SRC / "monkey laugh.mp3", OUT / "zippy-win-laugh.mp3", 0.0, 5.6, -16.0, fade_from=4.8)
 
 
+def alarm():
+    src = SRC / "wood ring.mp3"
+    one = OUT / "_strike.wav"
+    two = OUT / "_rings.wav"
+    # the strike, from just before it to the end of its ring (the rest of the file is silence)
+    run(["ffmpeg", "-v", "error", "-y", "-ss", "0.08", "-t", "0.72", "-i", str(src), "-af", "afade=t=out:st=0.6:d=0.12", "-ac", "1", "-ar", "44100", str(one)])
+    # struck twice, 0.42 s apart
+    run(["ffmpeg", "-v", "error", "-y", "-i", str(one), "-i", str(one), "-filter_complex", "[1]adelay=420|420[b];[0][b]amix=inputs=2:duration=longest:normalize=0", str(two)])
+    make(two, OUT / "alarm-wood-ring.mp3", 0.0, 1.14, -17.0)
+    one.unlink()
+    two.unlink()
+
+
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     t = snores()
     laugh()
+    alarm()
     print("snores:", json.dumps(t))
     sys.exit(0)

@@ -43,8 +43,9 @@
         if (veil) await R.when(CQ.veil.cover());
         for (let i = start; i < ORDER.length; i++) {
           const id = ORDER[i];
-          // a level won (he is wearing its crown) or a new room: Zippy swings off and the screen fades;
-          // the next part is set up behind the fade, and he sneaks back into it
+          // a level won (he is wearing its crown) or a new room: Zippy swings off to the left and the light
+          // closes in on the tree and sleeping Grumble (no fade to dark: asked 2026-11-09); the next part
+          // is set up in the dimmed rest of the scene, and he peeks out and swings back into it
           const change = i > start && (SCENE_OF[ORDER[i - 1]] !== SCENE_OF[id] || CQ.zippy.wearing);
           if (i > start) await R.hold(CQ.PACE.between); // a moment before the next part (or before he swings off)
           if (change) await outro();
@@ -53,8 +54,8 @@
           CQ.nav.show(true); // the screens list and replay, top left
           CQ.nav.setCurrent(id);
           CQ.store.set("progress", { cp: id });
-          resetScene(id, { animate: change });
-          if (i === start && SNORE_AT.includes(id)) CQ.grumble.snore(2); // a level begins: he snores twice
+          resetScene(id, { animate: change, keepSpot: change });
+          if (i === start && SNORE_AT.includes(id)) CQ.grumble.snore(1); // a level begins: he snores once
           if (veil && i === start) CQ.veil.reveal();
           if (change) await arrive();
           const res = await STEPS[id]();
@@ -99,7 +100,7 @@
     CQ.gen++;
     CQ.stopTweens();
     CQ.audio.stopSpeech();
-    CQ.ui.reset();
+    CQ.ui.reset({ keepSpot: opts.keepSpot });
     CQ.notebook.hideNow();
     document.querySelectorAll(".activity").forEach((e) => e.remove());
     CQ.world.drag.querySelectorAll(".wlabel, .ledge, .ledge-bar, .flyer").forEach((e) => e.remove());
@@ -191,38 +192,50 @@
     CQ.audio.play("zippy.whee");
     setTimeout(() => CQ.audio.play("slide.up"), 300);
     await R.when(z.swingAway());
-    await R.when(CQ.veil.cover(700));
+    // no fade to dark (asked 2026-11-09: "no need to come screen of transition"): the light closes in on
+    // the tree and sleeping Grumble, the rest of the scene dims and blurs, and the next level is set up
+    // there, unseen, while Zippy peeks out (arrive)
+    await R.when(spotTree());
   }
-  // The next level is ready behind the fade. The screen fades in on the sleeping Grumble, Zippy's head
-  // peeks out from behind the tree (is Grumble still asleep?), and he swings back in on his vine.
+  // the spotlight on the tree trunk (where Zippy peeks out) and sleeping Grumble; the background with the
+  // tree and the peek, and Grumble, stay sharp
+  function spotTree() {
+    return CQ.spot.on({ x: 300, y: 640 }, 360, [CQ.world.decor, CQ.world.grumbleLayer]);
+  }
+  // The next level is ready in the dimmed scene. Under the spotlight Zippy's head peeks out from behind
+  // the tree (is Grumble still asleep?) and blinks at him, then the light opens up as he swings back in
+  // on his vine, and the new level is simply there.
   async function arrive() {
     const z = CQ.zippy;
     CQ.flow.arriving = true;
     try {
       z.offstage();
-      CQ.veil.reveal(900);
-      await R.wait(1100);
-      await sneakBack();
+      await R.wait(500);
+      await sneakBack({ lift: true });
       z.pose("idle");
     } finally {
       CQ.flow.arriving = false;
     }
   }
-  // Zippy's smiling head leans out from behind the tree trunk ("hmm?"), ducks back, and he swings in.
-  // opts.comic: words to pop up beside his head; opts.pose and opts.sound: how he swings in.
+  // Zippy's smiling head leans out from behind the tree trunk ("hmm?"), blinks at Grumble twice with a
+  // funny "bwip-bwip" (asked 2026-11-09), ducks back, and he swings in. opts.comic: words to pop up
+  // beside his head; opts.pose and opts.sound: how he swings in; opts.lift: the spotlight opens up then.
   async function sneakBack(opts) {
     opts = opts || {};
     const z = CQ.zippy;
-    CQ.grumble.snore(2); // is he still asleep? Two snores say yes
+    CQ.grumble.snore(1); // is he still asleep? A snore says yes
     await R.when(CQ.peek.out(700));
     CQ.audio.play("zippy.hmm");
     if (opts.comic) {
       const pc = CQ.peek.center();
       CQ.comic(opts.comic, { x: pc.x + 150, y: pc.y - 95 }, { color: "yellow", size: 56, dur: 1500 });
     }
-    await R.wait(opts.comic ? 1500 : 1100);
+    await R.wait(900);
+    await R.when(CQ.peek.blink(2));
+    await R.wait(opts.comic ? 700 : 500);
     // he's snoring! back behind the tree... and here comes Zippy
     await R.when(CQ.peek.back(380));
+    if (opts.lift) CQ.spot.off();
     await R.wait(380);
     z.pose(opts.pose || "swing");
     CQ.audio.play(opts.sound || "zippy.whee");
@@ -333,6 +346,9 @@
   }
 
   // ------------------------------------------------------------------ the swap
+  // the view during the swap: a little closer, on Zippy and the balance (its left pan, where the crown
+  // is, a little left of the middle; his vine and Grumble stay in the picture)
+  const SWAP_VIEW = { x: 990, y: 530, z: 1.18 };
   // Zippy swings over with the bar held out in both fists and stops with it just above the crown. He
   // lets go (the bar drops into the crown's place) as the crown jumps up into his hands: he lifts it up
   // in both hands, or, when the balance is about to tip, clutches it in fright.
@@ -344,6 +360,10 @@
     CQ.caption.hide();
     const crown = b.find("left", (it) => it.type === "crown" && !it.ghost);
     const target = b.itemCenter(crown);
+    // the view comes a little closer to Zippy and the balance for the swap (asked 2026-11-09: "when
+    // monkey change the crown then slightly zoom to the monkey and balance"), and goes back out as he
+    // swings home, so what happens next (he wins, or the alarm wakes Grumble) is seen in full
+    CQ.camera.to(SWAP_VIEW.x, SWAP_VIEW.y, SWAP_VIEW.z, 750);
     z.pose("reachBar"); // leaning down with the bar held out below him
     CQ.audio.play("zippy.whee", { volume: 0.6 });
     // he swings over until the bar, as he puts it down, is just above the crown (a big crown is taller)
@@ -393,8 +413,9 @@
     }
     const d = b.evaluate();
     CQ.track("answer", { level: CQ.flow.current, swap: v, correct: d === 0 });
-    await R.wait(150);
-    // he swings back with the crown, so the child can watch the balance
+    await R.wait(d === 0 ? 450 : 250); // (a moment close up: he lifts it high, or uh-oh)
+    // he swings back with the crown, so the child can watch the balance, and the view goes back out
+    CQ.camera.to(960, 540, 1, d === 0 ? 900 : 650);
     await R.when(z.home(d === 0 ? 620 : 460));
     if (d === 0) z.pose("ooh");
     return { d, barItem };
@@ -452,7 +473,7 @@
     CQ.fx.confetti(CQ.world.fx, 700, 420, 44);
     CQ.audio.play("confetti");
     await R.wait(Math.max(0, ((C().audio && C().audio.winLaugh) || 1.2) * 1000 - 500));
-    g.snore(2, 1.8, true); // "Sleep tight, Grumble!" (a moment about him: even if he snored a moment ago)
+    g.snore(1, 1.8, true); // "Sleep tight, Grumble!" (a moment about him: even if he snored a moment ago); the line waits for it
     await R.when(z.say(C().zippy.sleepTight, { keepPose: true }));
     z.pose("idle");
     CQ.track("level_complete", { level: CQ.hud.crowns });
@@ -514,18 +535,17 @@
           b.evaluate();
           await home;
           if (gen !== CQ.gen) return;
-          // ...and he swings away!
+          // ...and he swings away to the left!
           z.pose("hide");
           CQ.audio.play("slide.up");
           await z.swingAway();
         },
-        beforeSleep: () => CQ.veil.cover(700), // a little later...
       })
     );
-    await R.wait(350);
-    CQ.veil.reveal(900);
-    await R.wait(1200);
-    // only his smiling head leans out from behind the tree: is Grumble asleep? Then he swings back in.
+    // no fade (asked 2026-11-09): Grumble has gone back to sleep in plain view; a moment later only
+    // Zippy's smiling head leans out from behind the tree: is he asleep? He blinks at him, then swings
+    // back in.
+    await R.wait(900);
     await sneakBack({ comic: "Hmm?", pose: "cheeky", sound: "slide.down", giggle: true });
     z.pose("idle"); // and straight on to the hint
   }
@@ -540,7 +560,7 @@
     CQ.world.dark.style.opacity = 0.92;
     CQ.screen.shade("dark", 2);
     CQ.camera.set(600, 400, 1.3); // the corner Zippy drops into
-    g.snore(2, 1.2); // Grumble's snoring is heard in the dark, then the jungle fades in
+    g.snore(1, 1.2); // Grumble's snoring is heard in the dark, then the jungle fades in
     await R.wait(1300);
     CQ.world.darkness(0, 1400);
     await R.wait(800);
@@ -569,7 +589,7 @@
     // Grumble guards the treasure. Luckily, he's asleep!
     await R.when(CQ.camera.to(300, 760, 1.65, 1300));
     g.hush();
-    g.snore(2, 2.2, true); // Grumble guards the treasure. Luckily, he's asleep!
+    g.snore(1, 2.2, true); // Grumble guards the treasure. Luckily, he's asleep! (the line waits for it)
     CQ.spot.on(() => g.center(), 430, CQ.world.grumbleLayer); // the same spotlight as Zippy's
     await R.wait(450);
     const gb = CQ.nameBurst(C().names.grumble, C().names.grumbleTag, 1250, 400, "purple");
@@ -640,7 +660,7 @@
     const b = CQ.balance;
     b.counting = true;
     if (key === "L1") look(barEls, { pad: 20 }); // which bar? these!
-    if (key === "L3") CQ.grumble.snore(2); // One more crown. Grumble is still asleep!
+    if (key === "L3") CQ.grumble.snore(1); // One more crown. Grumble is still asleep!
     for (let i = 0; i < L.intro.length; i++) await say(L.intro[i], { advance: i < L.intro.length - 1 ? "auto" : "none" });
     // Level 1: the hand shows how with the right bar, the crown's mass (review, 2026-11-07: "for the
     // first time when we are explaining what to do, do it with the correct answer, 5")

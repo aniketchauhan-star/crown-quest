@@ -19,6 +19,7 @@
  *   CQAudio.speak(text, opts)      -> Promise<{spoken}>; opts { who, line, onStart }
  *                                  line: the text on screen (finds its clip);
  *                                  onStart({ clip, secs, rate }) once the voice starts
+ *   CQAudio.speaking()            -> true while a voice line is being spoken
  *   CQAudio.stopSpeech()
  *   CQAudio.cues                   array of every cue name
  *   CQAudio._renderCueOffline(cue, opts)    test hook -> {peak, rms, duration}
@@ -513,6 +514,17 @@
     return D;
   });
 
+  cue('zippy.blink', function (ctx, dest, t, o) { // a funny double blink, "bwip-bwip" (peeking at Grumble)
+    var p = o.pitch;
+    function bwip(t0) {
+      var g = G(ctx, 0, dest);
+      env(g.gain, t0, [[0, 0], [0.004, 0.32], [0.05, 0.24], [0.1, 0]]);
+      glide(O(ctx, 'triangle', 1250 * p, t0, t0 + 0.11, g).frequency, t0, [[0, 1250 * p], [0.05, 2300 * p], [0.1, 1800 * p]]);
+    }
+    bwip(t);
+    bwip(t + 0.3);
+    return 0.42;
+  });
   cue('zippy.hmm', function (ctx, dest, t, o) { // curious closed-mouth "hmm... mm?" (peeking at Grumble)
     var p = o.pitch;
     function hum(t0, d, f0, f1, amp) {
@@ -1806,6 +1818,8 @@
     ambience: guard('ambience', ambience),
     duck: guard('duck', duck),
     speak: speak,
+    // true while a voice line is being spoken (a recording or the device voice)
+    speaking: function () { return !!curJob; },
     stopSpeech: guard('stopSpeech', stopSpeech),
     cues: Object.keys(CUES),
     // 'running' once sound can play ('suspended' until the first tap on most browsers; 'none' before init)

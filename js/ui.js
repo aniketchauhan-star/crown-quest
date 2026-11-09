@@ -185,14 +185,16 @@
       this.skip = button("pill skip hidden", `${C().ui.skip} ⏭`, C().ui.skip, uiLayer, () => CQ.flow && CQ.flow.skipIntro());
     },
     // Remove every transient piece of UI (used when a level or chapter starts).
-    reset() {
+    // opts.keepSpot: the spotlight stays on (a new level set up while Zippy peeks: js/flow.js, outro)
+    reset(opts) {
+      const keepSpot = !!(opts && opts.keepSpot);
       CQ.caption.hide(true);
       CQ.next.clear();
       CQ.swapBtn.hide(true);
       CQ.bubble.hide(true);
-      CQ.spot.off(true);
+      if (!keepSpot) CQ.spot.off(true);
       CQ.focus.off(true);
-      CQ.soft.clear();
+      CQ.soft.clear(keepSpot ? "spot" : null);
       CQ.hand.stop();
       CQ.checkPanel.hide(true);
       CQ.eqBoard.hide(true);
@@ -489,6 +491,9 @@
   //   opts.quiet: a prompt brought back after a hint is shown again but not said again
   CQ.say = async function (id, opts) {
     opts = opts || {};
+    // never over a snore: if Grumble is snoring (or about to), his snore ends first, then the line and
+    // its voice come (asked 2026-11-09: "do not mix the voice")
+    if (!opts.quiet && CQ.grumble) await CQ.run.when(CQ.grumble.quiet());
     const text = opts.text || CQ.T(id, opts.vars);
     CQ.caption.set(text, { id, who: opts.who, quiet: opts.quiet });
     const line = CQ.caption.line;
@@ -757,7 +762,7 @@
     on(target, r, layer) {
       this.get = typeof target === "function" ? target : () => target;
       this.el.classList.remove("hidden");
-      CQ.soft.set("spot", layer ? [layer] : []);
+      CQ.soft.set("spot", Array.isArray(layer) ? layer : layer ? [layer] : []); // (the layers kept sharp)
       if (!this.tick) this.tick = CQ.ticker.add(() => this.apply());
       const r0 = 1400;
       return CQ.tween(650, (k) => (this.r = CQ.lerp(r0, r, k)), CQ.ease.out, "spot");
@@ -790,9 +795,9 @@
       CQ.screen.shade("soft:" + owner, keep === false ? false : shade != null ? shade : keep.length ? 1 : 2);
       this.apply();
     },
-    clear() {
-      this.owners.forEach((keep, owner) => CQ.screen.shade("soft:" + owner, false));
-      this.owners.clear();
+    clear(except) {
+      this.owners.forEach((keep, owner) => owner !== except && CQ.screen.shade("soft:" + owner, false));
+      [...this.owners.keys()].forEach((owner) => owner !== except && this.owners.delete(owner));
       this.apply();
     },
     apply() {
