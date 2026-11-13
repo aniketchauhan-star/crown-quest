@@ -8,7 +8,7 @@ A 16:9 browser game that teaches **linear equations in one variable** (Class 8, 
 - **On a classroom network or website:** upload the whole folder as it is, then open `index.html`.
 - Works on laptops, Chromebooks, iPads, Android tablets and phones, with touch, mouse or keyboard. It was tested in Chrome and Safari's engine; Edge uses Chrome's engine. Phones and tablets need to be held sideways.
 - **Any screen:** the game keeps its 16:9 picture and fits it to the screen. A screen close to 16:9 (most laptops and browser windows) is filled edge to edge, with no frame round the game: a sliver of at most 1.5% a side, where nothing sits, is cut off. On a screen of another shape, the game's jungle carries on, blurred, in the bands at the sides or the top and bottom (`assets/bg/band.webp`). When the game fades to dark, the bands go dark with it, in the same colour, and the game's edge melts into them, so there is no line between them. On a phone or tablet, Play makes the game fill the whole screen and holds it sideways (Android, iPad). On an iPhone, add the game to the home screen (Share → Add to Home Screen): it then opens full screen (`manifest.webmanifest`).
-- **Quick to load:** the pictures are WebP (4.8 MB in all), and the title screen appears as soon as its own pictures are in (0.6 MB). The rest load behind it, shown by a slim golden bar at its foot; if Play is tapped sooner, it waits for them. The voice clips load quietly during play.
+- **Quick to load:** the pictures are WebP (4.1 MB in all; the characters' sheets at quality 80 since 2026-11-13, the rest at 88), and the title screen appears as soon as its own pictures are in (0.6 MB). The rest load behind it, shown by a slim golden bar at its foot; if Play is tapped sooner, it waits for them. The voice clips (5.6 MB in all, at 24 kbps) load quietly during play. The whole game (`index.html`, `styles.css`, `js/`, `assets/`) is about 11 MB.
 - **Smooth on slow devices:** on a device with little memory or few cores, or if the game runs below about 40 frames a second, it switches to a light mode. There is no blur behind "look here" moments (the fade stays) and no idle motion in the background.
 
 **The title screen** is the start screen as it was drawn, with only its characters coming in, in a 5-second opening like a film, with sound:
@@ -196,7 +196,16 @@ If you change the words of a line in `js/content.js`, its recording no longer ma
 
 ## Replace the artwork
 
-All the original pictures are in **`art/`**, by kind:
+**`art/` is not in this folder any more** (removed on 2026-11-13 to keep the folder small: the game never loads it, only the tools below read it). It is kept in the git history and on GitHub. To work on the artwork again, bring it back first:
+
+```
+git fetch --unshallow            # (this folder keeps only the latest version of the history)
+git checkout f4b01c4 -- art      # f4b01c4: the last version with art/ in it
+```
+
+or download the `art` folder from GitHub at that commit (https://github.com/aniketchauhan-star/crown-quest/tree/f4b01c4/art).
+
+The original pictures were in **`art/`**, by kind:
 
 ```
 art/zippy/        Zippy's sheets: hold crown, hold crown and up, winning monkey, fail monkey,
@@ -295,8 +304,8 @@ assets/vo/          the voice-over: one Ogg Opus clip per line (see docs/VOICEOV
 assets/audio/       the recorded sound effects: Grumble's snores, Zippy's win laugh, the alarm (made by tools/make_sounds.py)
 assets/elements/    the pieces cut from art/ui/elements.png (generated)
 manifest.webmanifest      lets a phone or tablet open the game full screen from its home screen
-art/                the original pictures (see "Replace the artwork")
-art/background/     the background: the sheet, pieces, layers, the tools that make them, and a preview page
+(art/                the original pictures: taken out of the folder on 2026-11-13, kept in the git history;
+                    see "Replace the artwork" to bring it back)
 docs/VOICEOVER.md         how the voice-over was made, how the game plays it, how to remake a line
 docs/prompts/             the prompts that made the art sheets (ChatGPT-*.md) and the game's first build prompt
 tools/prepare_assets.py   rebuilds assets/ from the original PNGs in art/

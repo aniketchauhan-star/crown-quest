@@ -1,0 +1,4 @@
+# Mac and editor clutter: never part of the game
+.DS_Store
+__pycache__/
+*.pyc

@@ -222,6 +222,12 @@
     }
   }
   CQ.CancelError = CancelError;
+  // A step of a chapter left behind when the chapter changes (the menu, Next, a restart) ends with a
+  // CancelError. That is the plan, not a fault: when nothing was waiting for that step any more (a line
+  // still being said, a reveal on its way), it is not reported as an error.
+  window.addEventListener("unhandledrejection", (e) => {
+    if (e.reason instanceof CancelError) e.preventDefault();
+  });
   function makeToken() {
     const t = { cancelled: false, fns: new Set() };
     t.cancel = () => {
