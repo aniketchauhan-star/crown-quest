@@ -374,7 +374,7 @@
           Promise.all([
             document.fonts.load('800 40px "Baloo 2"'),
             document.fonts.load('600 40px "Baloo 2"'),
-            document.fonts.load('italic 700 40px "Noto Serif"'),
+            document.fonts.load('italic 400 40px "Swifty Math"', "x"), // the x of the equations
           ]),
           CQ.sleep(2500),
         ]);

@@ -39,6 +39,7 @@
       const veil = this.started && !opts.noVeil; // a chapter jump or a restart mid-game: dip softly to dark and back
       this.started = true;
       let start = ORDER.indexOf(cp);
+      this.handOver = null;
       try {
         if (veil) await R.when(CQ.veil.cover());
         for (let i = start; i < ORDER.length; i++) {
@@ -47,6 +48,10 @@
           // closes in on the tree and sleeping Grumble (no fade to dark: asked 2026-11-09); the next part
           // is set up in the dimmed rest of the scene, and he peeks out and swings back into it
           const change = i > start && (SCENE_OF[ORDER[i - 1]] !== SCENE_OF[id] || CQ.zippy.wearing);
+          // the step before left its screen for this one to take over as it is (Level 4's formula screen,
+          // into the label activity: runL4a), rather than it being set up afresh
+          const carry = i > start && !change && this.handOver === id;
+          this.handOver = null;
           if (i > start) await R.hold(CQ.PACE.between); // a moment before the next part (or before he swings off)
           if (change) await outro();
           this.current = id;
@@ -54,7 +59,7 @@
           CQ.nav.show(true); // the screens list and replay, top left
           CQ.nav.setCurrent(id);
           CQ.store.set("progress", { cp: id });
-          resetScene(id, { animate: change, keepSpot: change });
+          resetScene(id, { animate: change, keepSpot: change, carry });
           if (i === start && SNORE_AT.includes(id)) CQ.grumble.snore(1); // a level begins: he snores once
           if (veil && i === start) CQ.veil.reveal();
           if (change) await arrive();
@@ -95,16 +100,20 @@
   };
 
   // ------------------------------------------------------------------ scene reset for a checkpoint
+  // opts.carry: the screen the step before left is taken over as it is (Level 4's formula screen, into the
+  // label activity: the camera, the dark and the balance stay as they are, and nothing shows in between)
   function resetScene(cp, opts) {
     opts = opts || {};
+    const carry = !!opts.carry;
     CQ.gen++;
     CQ.stopTweens();
     CQ.audio.stopSpeech();
-    CQ.ui.reset({ keepSpot: opts.keepSpot });
-    CQ.notebook.hideNow();
+    CQ.ui.reset({ keepSpot: opts.keepSpot, keepSoft: carry ? "notebook" : null });
+    if (!carry) CQ.notebook.hideNow();
     document.querySelectorAll(".activity").forEach((e) => e.remove());
     CQ.world.drag.querySelectorAll(".wlabel, .ledge, .ledge-bar, .flyer").forEach((e) => e.remove());
-    CQ.camera.set(960, 540, 1);
+    if (!carry) CQ.camera.set(960, 540, 1);
+    CQ.world.balanceLayer.style.opacity = ""; // (the label activity fades it out while it is on)
     CQ.world.dark.style.opacity = 0;
     CQ.screen.shade("dark", false);
     CQ.Give.disable();
@@ -113,6 +122,7 @@
     CQ.dropRing.hide();
     CQ.peek.hide();
     CQ.zippy.reset();
+    if (carry) CQ.zippy.setVisible(false); // (unseen under the formula screen's dark)
     CQ.grumble.hush();
     CQ.grumble.squash.style.transform = "";
     CQ.grumble.sleep();
@@ -124,7 +134,7 @@
     CQ.audio.music(intro ? "title" : "game");
     CQ.audio.ambience(true);
     const lv = LV()[SCENE_OF[cp]];
-    CQ.balance.setup(lv);
+    if (!carry) CQ.balance.setup(lv); // (handed over, it is already set up, in sight)
     // a new level's crown, coins and gold bars are simply there when it begins (set up behind the fade):
     // nothing pops in by magic
     CQ.bars.setup(lv.bars);
@@ -146,7 +156,9 @@
   // When the voice of the line (text) gets to str: the question bar types with a recorded voice; a line
   // with no recording yet (or with the voice off) shows whole at once, so the time a voice takes to get
   // there is guessed from where str is in the line. At once if the line doesn't have str; at the latest
-  // after 15 s.
+  // after 15 s. A line its voice has typed to the end has said all of it: words at the very end of a line
+  // (So, x = 15) come as it ends. (They used to wait for the guess as well, the typing being over before
+  // they could be seen typed: up to 3 s late.)
   function untilSaid(text, str) {
     return new Promise((res) => {
       const at = String(text).indexOf(str);
@@ -156,7 +168,8 @@
       const tick = () => {
         const cap = CQ.caption;
         const here = cap.text === text;
-        if ((here && cap.chars && cap.reached(str)) || (here && !cap.chars && performance.now() - t0 > guess) || performance.now() - t0 > 15000) return res();
+        const typedAll = here && !cap.chars && cap.typing === cap.line;
+        if ((here && cap.chars && cap.reached(str)) || typedAll || (here && !cap.chars && performance.now() - t0 > guess) || performance.now() - t0 > 15000) return res();
         setTimeout(tick, 60);
       };
       tick();
@@ -245,8 +258,35 @@
   function glowCrown(on) {
     CQ.balance.glowItems("left", (it) => it.type === "crown", on);
   }
-  // "Look here!" (CQ.focus): the rest of the screen fades back while a line is about one thing.
-  // look(what) moves the bright window there (it glides over from the last thing); look(null) ends it.
+  // A number in a row of the working (CQ.eqBoard) lit gold, with its sign when it is added on the left
+  // (side "left": "+ 8" in x + 8; "right": the 8 in 8 + 15, its first number). Returns the lit span.
+  function lightTerm(row, side, n, eb) {
+    const host = row && row.querySelector(side === "left" ? ".eb-l" : ".eb-r");
+    if (!host) return null;
+    const chars = [...host.querySelectorAll(".wch")];
+    const digits = String(n).split("");
+    for (let i = 0; i + digits.length <= chars.length; i++) {
+      if (!digits.every((d, j) => chars[i + j].textContent === d)) continue;
+      const before = chars[i - 1];
+      const after = chars[i + digits.length];
+      if (before && /\d/.test(before.textContent)) continue; // (part of a bigger number)
+      if (after && /\d/.test(after.textContent)) continue;
+      let first = chars[i];
+      if (side === "left") {
+        // with its + (and the space between)
+        let k = i - 1;
+        while (k >= 0 && chars[k].textContent === " ") k--;
+        if (k >= 0 && chars[k].textContent === "+") first = chars[k];
+      }
+      const last = chars[i + digits.length - 1];
+      if (first.parentNode !== last.parentNode) return null;
+      return eb.light(first, last, "x-lit");
+    }
+    return null;
+  }
+  // "Look here!" (CQ.focus): what a line is about glows softly, and the rest of the scene fades back a
+  // little and blurs, the whole balance staying bright. look(what) moves the glow there; look(null)
+  // ends it.
   function look(what, opts) {
     if (!what) return CQ.focus.off();
     CQ.focus.on(what, opts);
@@ -323,7 +363,7 @@
             say("swap-tap-swap", { advance: "none" });
             setTimeout(() => {
               if (!CQ.swapBtn.cb) return; // already tapped
-              look(CQ.swapBtn.el, { still: true, pad: 18 }); // measured once it has popped in
+              look(CQ.swapBtn.el); // once it has popped in
               CQ.focus.offAfter(5000);
               CQ.hand.tapAt(CQ.centerOf(CQ.swapBtn.el));
             }, 500);
@@ -630,7 +670,7 @@
     coin.el.classList.add("demo-pop");
     CQ.audio.play("coin.clink", { index: 3 });
     const unit = worldLabel(C().ui.unit, ccoin.x + 140, ccoin.y - 90, "unit-tag");
-    look([coin.el, unit], { pad: 30 });
+    look([coin.el, unit]);
     await say("intro-6", { advance: "auto", pause: 700 });
     look(null);
     coin.el.classList.remove("demo-pop");
@@ -659,7 +699,7 @@
     const L = LV()[key];
     const b = CQ.balance;
     b.counting = true;
-    if (key === "L1") look(barEls, { pad: 20 }); // which bar? these!
+    if (key === "L1") look(barEls); // which bar? these!
     if (key === "L3") CQ.grumble.snore(1); // One more crown. Grumble is still asleep!
     for (let i = 0; i < L.intro.length; i++) await say(L.intro[i], { advance: i < L.intro.length - 1 ? "auto" : "none" });
     // Level 1: the hand shows how with the right bar, the crown's mass (review, 2026-11-07: "for the
@@ -705,18 +745,39 @@
   }
 
   // ------------------------------------------------------------------ LEVEL 4: the mystery crown
+  // The view while Level 4's scene is talked through (review, 2026-11-13: "Centre the balance in the
+  // learning area. It currently sits towards the right, leaving a large gap on the left"): it glides in
+  // until the balance stands in the middle, a little bigger (its art spans x 726–1445, y 311–840 at 1:
+  // on screen x 529–1392, y 197–832), between the question bar and the x + 2 = 7 strip under it; Zippy
+  // and Grumble stay at the left, in the faded scene.
+  const LEARN_VIEW = { x: 1085, y: 597, z: 1.2 };
   async function runL4a() {
     const z = CQ.zippy;
     const b = CQ.balance;
     z.pose("curious");
+    CQ.camera.to(LEARN_VIEW.x, LEARN_VIEW.y, LEARN_VIEW.z, 1100);
     b.glowItems("left", (it) => it.type === "coin", true);
-    look(panEls("left"));
+    look(() => b.items.left.filter((it) => it.type === "coin").map((it) => it.el)); // (the two coins glow)
     await say("l4-1");
     b.clearGlow();
+    // "The crown and these two coins together balance seven coins." (review, 2026-11-13: "Highlight each
+    // pan separately, in sync with the VO. First the crown and two coins, then the seven coins. Finally,
+    // show both pans clearly together."): the crown and its two coins glow as the line begins, the seven
+    // coins (only) on "seven", and a moment after the line is said, both pans' things together, for a
+    // while before the next line.
+    const l42 = CQ.T("l4-2");
     b.glowItems("left");
+    look(panEls("left"));
+    const said2 = say("l4-2", { hold: 2200 });
+    await R.when(untilSaid(l42, "seven"));
+    b.clearGlow();
     b.glowItems("right");
+    look(panEls("right"));
+    await R.when(untilSaid(l42, "coins."));
+    await R.wait(700);
+    b.glowItems("left");
     look(bothPans);
-    await say("l4-2");
+    await said2;
     b.clearGlow();
     glowCrown(true);
     z.pose("idle");
@@ -724,63 +785,123 @@
     const cc = b.itemCenter(crown);
     look([crown.el]);
     await say("l4-3");
-    const q = worldLabel("?", cc.x, cc.y - 120, "qmark");
+    // A small ? just above the crown, over its left side (review, 2026-11-13: "Make the question mark
+    // smaller and position it just above the crown without covering the rope"): the pan's left rope
+    // comes down onto the middle of the crown's top, so the ? stands just left of it. (It was a big ?
+    // over the middle, on the rope.)
+    const q = worldLabel("?", cc.x - 33, cc.y - 75, "qmark");
     look([crown.el, q]);
     await say("l4-4");
     removeLabel(q);
     glowCrown(false);
+    // x + 2 is one label under the left pan, built up with the voice (review, 2026-11-13: "Reveal x with
+    // the crown, then + 2 with the two coins, synced to VO… place x + 2 below the left pan"): its x
+    // comes on "Let's call the crown's mass x.", under the crown; its + 2 stays hidden (in its place, so
+    // nothing moves when it comes) until the two coins are named.
     const under = b.ends.left.y + CQ.BAL.PAN_BOTTOM * CQ.BAL.S + 50; // just below the left pan
-    let lx = worldLabel('<i class="v">x</i>', cc.x, under, "xlabel");
+    const lx = worldLabel(`<span class="xl-x">${CQ.rich("x")}</span> <span class="xl-rest">${CQ.rich("+ 2")}</span>`, b.ends.left.x, under, "xlabel wide");
+    const lxX = lx.querySelector(".xl-x");
+    const lxRest = lx.querySelector(".xl-rest");
+    lxRest.style.opacity = "0";
     look([crown.el, lx]);
     await say("l4-5");
-    removeLabel(lx);
-    lx = worldLabel(CQ.rich("x + 2"), b.ends.left.x, under, "xlabel wide");
-    const lx2 = lx;
-    b.glowItems("left");
-    look(() => panEls("left")().concat(lx2));
-    await say("l4-6");
+    // "The crown and two coins have a total mass of x + 2.": on "crown" the crown glows and its x lights
+    // up with it; on "two coins" the two coins glow (the crown resting) and + 2 comes in beside the x,
+    // under them; on "total mass" the crown and the coins glow together, under them x + 2.
+    const l46 = CQ.T("l4-6");
+    const coinEls = () => b.items.left.filter((it) => it.type === "coin").map((it) => it.el);
+    const said6 = say("l4-6");
+    await R.when(untilSaid(l46, "crown"));
+    CQ.anim(lxX, [{ transform: "scale(1)" }, { transform: "scale(1.25)", offset: 0.4 }, { transform: "scale(1)" }], { duration: 650, easing: "ease-out", keep: false });
+    await R.when(untilSaid(l46, "two coins"));
+    look(() => coinEls().concat(lx));
+    lxRest.style.opacity = "";
+    CQ.anim(lxRest, [{ opacity: 0, transform: "translateX(-14px)" }, { opacity: 1, transform: "translateX(0)" }], { duration: 450, easing: CQ.EASE.out, keep: false });
+    CQ.audio.play("ui.pop");
+    await R.when(untilSaid(l46, "total mass"));
+    look(() => panEls("left")().concat(lx));
+    await said6;
     b.clearGlow();
     const r7 = worldLabel("7", b.ends.right.x, under, "xlabel seven");
     b.glowItems("right");
     look(() => panEls("right")().concat(r7));
     await say("l4-7");
     b.clearGlow();
-    // key moment: the scene turns into the equation
-    const strip = CQ.el("div", "eq-strip", CQ.ui.layer, `<span class="es a">${CQ.rich("x + 2")}</span><span class="es b">=</span><span class="es c">7</span>`);
+    // key moment: the scene turns into the equation (review, 2026-11-13: "Animate x + 2 and 7 from beneath
+    // their pans into the equation, then reveal =. Briefly highlight the level beam with = to connect
+    // equal mass to equality… Keep the forest background visible, matching previous screens… Remove the
+    // large glowing rectangle"): in the same light fade as the lines before (it used to go dark, with a
+    // gold frame round the balance), x + 2 flies from under the left pan into its place under the
+    // balance, then 7 from under the right pan into its place; then = comes in between them as the level
+    // beam glows (and its hub flashes green: level). The words stand dark, with a soft white glow, like
+    // the labels they came from.
+    const st = (id, html) => `<span class="st" data-id="${id}">${html}</span>`; // each sign by itself (it glides on alone: below)
+    const strip = CQ.el("div", "eq-strip", CQ.ui.layer, `<span class="es a">${st("x", CQ.rich("x"))} ${st("plus", "+")} ${st("two", "2")}</span><span class="es b">${st("eq", "=")}</span><span class="es c">${st("seven", "7")}</span>`);
+    strip.style.left = CQ.camera.toScreen({ x: CQ.L.BX, y: 0 }).x + "px"; // under the balance, where the view put it
     await R.wait(30);
-    look(strip, { text: true });
+    look(strip); // (nothing glows meanwhile: the words come in)
     const slots = ["a", "b", "c"].map((k) => strip.querySelector(".es." + k));
     const targets = slots.map((s) => CQ.centerOf(s));
-    const srcs = [CQ.centerOf(lx), CQ.camera.toScreen({ x: CQ.L.BX, y: CQ.L.PIVOT_Y }), CQ.centerOf(r7)];
-    const pieces = [CQ.rich("x + 2"), "=", "7"];
-    lx.style.opacity = 0;
-    r7.style.opacity = 0;
-    for (let i = 0; i < 3; i++) {
-      const f = CQ.el("div", "piece " + ["a", "b", "c"][i], null, pieces[i]);
+    // a flying piece starts at its label's size and lands at the strip's (it is drawn at .piece's 90 px)
+    const px = (e) => parseFloat(getComputedStyle(e).fontSize);
+    const k0 = (px(lx) * CQ.camera.z) / 90;
+    const k1 = px(strip) / 90;
+    const flyIn = async (i, label) => {
+      const from = CQ.centerOf(label);
+      const f = CQ.el("div", "piece " + ["a", "b", "c"][i], null, [CQ.rich("x + 2"), "=", "7"][i]);
+      label.style.opacity = 0;
       CQ.audio.play("ui.swoosh");
-      await R.when(CQ.fly(CQ.ui.layer, f, srcs[i], targets[i], { duration: 650, arc: -140, scaleTo: 1.5 }));
+      await R.when(CQ.fly(CQ.ui.layer, f, from, targets[i], { duration: 700, arc: -110, scaleFrom: k0, scaleTo: k1 }));
       slots[i].classList.add("in");
       CQ.audio.play("ui.pop");
-    }
+    };
+    await flyIn(0, lx); // x + 2, from under the left pan
+    await R.wait(300);
+    await flyIn(2, r7); // 7, from under the right pan
     lx.remove();
     r7.remove();
+    await R.wait(400);
+    // =, with the level beam
+    b.beam.classList.add("eq-lit");
+    b.flashEmblem();
+    slots[1].classList.add("in");
     CQ.fx.sparkle(CQ.ui.layer, targets[1].x, targets[1].y, 12, 200);
     CQ.audio.play("correct");
+    setTimeout(() => b.beam.classList.remove("eq-lit"), 1800);
+    await R.wait(700);
     await say("l4-8", { hold: 2600 }); // key moment: the scene became an equation
-    // straight on into the formula screen, in the same dark (it never lifts in between): the strip
-    // fades, the view glides to the balance at the right, and x + 2 = 7 is written in at the left
-    await R.when(CQ.anim(strip, [{ opacity: 1 }, { opacity: 0 }], { duration: 450, essential: true }));
-    strip.remove();
+    b.beam.classList.remove("eq-lit");
+    // Straight on into the formula screen, with no jump (review, 2026-11-13: "Animate the balance moving
+    // left and the equation moving right to avoid a sudden layout jump"): as the view glides until the
+    // balance stands at the left, x + 2 = 7 glides from under it to its place at the right, each sign to
+    // its own place, growing to the formula screen's size and turning bright as its dark comes in (before
+    // the light fade goes). There the formula screen's own equation takes over from it.
     const opening = CQ.notebook.open();
-    look(null); // the look's dark hands over to the formula screen's
+    look(null); // the look's fade hands over to the formula screen's dark
     b.setSign("x + 2 = 7"); // (for screen readers: nothing is shown over the balance)
+    const place = CQ.notebook.placeOf(true);
+    const grow = place.size / parseFloat(getComputedStyle(strip).fontSize);
+    strip.classList.add("to-board");
+    strip.querySelectorAll(".st").forEach((g) => {
+      const c = CQ.centerOf(g);
+      const t = place.at[g.dataset.id];
+      CQ.anim(g, [{ transform: "translate(0px, 0px) scale(1)" }, { transform: `translate(${t.x - c.x}px, ${t.y - c.y}px) scale(${grow})` }], { duration: 1400, easing: CQ.EASE.inOut, essential: true });
+    });
     await R.when(opening);
-    await CQ.notebook.run(CQ.NB_WORDS, { lower: true });
-    await R.when(CQ.notebook.close());
+    await CQ.notebook.run(CQ.NB_WORDS, { lower: true, landed: strip });
+    // The formula screen stays as it is, for the label activity to take over ("Now, can you spot these
+    // parts in another equation?": the balance fades out and 4x + 3 = 19 comes to the middle; runL4c),
+    // with no glide back to the scene in between (review, 2026-11-13).
+    CQ.flow.handOver = "L4c";
   }
   async function runL4c() {
     await CQ.activityLabel();
+    // the formula screen comes in as the board fades, the balance coming back (the activity faded it
+    // out); when it was kept open under the activity (from Level 4's: runL4a), it is already there
+    const kept = CQ.notebook.isOpen;
+    CQ.balanceTo(1, 900);
     await R.when(CQ.notebook.open());
+    if (kept) await R.wait(1100); // (the board fades over it meanwhile)
     await CQ.notebook.run(CQ.NB_LINEAR, { lower: true });
     await R.when(CQ.notebook.close());
   }
@@ -816,9 +937,9 @@
       rhs: (given && given.rhs) || [a, v, bb].filter((x, i, arr) => arr.indexOf(x) === i).concat(bb + 1).slice(0, 3).sort((x, y) => x - y),
     };
   }
-  // v goes in for x (flying from Zippy's hands, or from the crown), each side is worked out (by the
-  // child), then LHS and RHS are compared.
-  // o: { from, line, find, rhsGiven, calc, notLines, yesLines }  (line ids from content.js)
+  // v goes in for x (flying from Zippy's hands, or from the crown), each side is worked out by the child,
+  // one at a time, then the two are said, a line each, and compared (review, 2026-11-13).
+  // o: { from, line, find, rhsGiven, yesLines }  (line ids from content.js)
   async function checkRoutine(L, v, o) {
     o = o || {};
     const cp = CQ.checkPanel;
@@ -833,27 +954,37 @@
     b.clearCounts();
     CQ.bars.setVisible(false);
     if (z.held && z.held.type === "bar") z.pose("barThink"); // he looks at the bar while it is checked
-    // Like the formula screen: the view glides until the balance stands at the right, bright, with the
-    // rest dark, and the check is worked at the left, one row at a time, the equation itself kept in
-    // sight at the top. The frame on the balance follows it: the crown (x), the left pan (LHS), the
-    // right pan (RHS); then the balance shows the totals (review, 2026-11-08).
+    // A pan's things lit softly in its side's colour (the left teal, like LHS; the right orange, like RHS),
+    // the other pan's not (null: neither). No glow round the pan itself (review, 2026-11-13: "Replace the
+    // large glowing box with a soft highlight on the seven coins"; "Use soft glows around the coins,
+    // without large boxes").
+    const lights = (side) =>
+      ["left", "right"].forEach((sd) => b.items[sd].forEach((it) => it.el.classList.toggle(sd === "left" ? "glow-lhs" : "glow-rhs", sd === side)));
+    // Like the formula screen: the view glides until the balance stands at the left, bright, with the
+    // rest dark, and the check is worked at the right, one row at a time, the equation itself kept in
+    // sight at the top.
     await R.when(cp.open());
     CQ.frameBalance("crown");
     await R.when(cp.show({ k, a, b: bb, rhsGiven: o.rhsGiven }));
-    // "Replace x with 4": the value comes out of the crown (x is the crown's mass) into x = 4, and on the
-    // balance the crown makes way for four unit coins beside the coins there, all of them then gathered
-    // into one group (a gold bar of the value, where a bar lies beside the crown), while it is said. The
-    // balance stays level for now.
+    // "Try x = 4" comes in under the equation as the line is said, the value flying into it out of the
+    // crown (x is the crown's mass) or from Zippy's bar; on the balance the crown makes way for four unit
+    // coins, a group of their own beside the three coins there (a gold bar of the value, where a bar lies
+    // beside the crown); then the balance tips the way the pans now weigh, the heavier pan lower (review,
+    // 2026-11-13: "Show four replacement coins and three additional coins as distinct groups. The balance
+    // should tilt with the nine-coin pan lower once the trial is shown").
     const line = o.line ? say(o.line, { vars, advance: "auto", pause: 0 }) : null;
     if (line) line.catch(() => {}); // (a chapter jump during the flight cancels both: no stray error)
     const crown = b.items.left.find((it) => it.type === "crown" && !it.ghost) || b.items.left.find((it) => it.type === "crown");
     const from = o.from || (crown ? b.itemCenter(crown) : z.holdPoint());
     await R.when(Promise.all([cp.substitute(v, from), CQ.xPan.put(v)]));
+    CQ.focus.off();
+    b.evaluate();
     if (line) await line;
-    // the left side: the left pan, and LHS: 4 + 3 = ? as "Find the value of each side" is said
-    CQ.frameBalance("left");
+    // The left side on its own: "Find the value of the left-hand side.", the left pan's things lit, and
+    // LHS = 4 + 3 = □ (same review: "Only LHS is being asked here").
     const ch = chipsFor(L, v);
-    if (o.find) say(o.find, { vars, advance: "none" });
+    lights("left");
+    say(o.find || "check-find-lhs", { vars, advance: "none" });
     await R.when(cp.lhsRow());
     await cp.fill("lhs", ch.lhs, s, (m) => {
       if (k > 1) return say("hint-lhs-k", { vars, advance: "none" });
@@ -862,19 +993,28 @@
       say("hint-lhs", { vars: Object.assign({ seq: seq.join(", ") }, vars), advance: "none" });
       if (m >= 2 && L.left) b.autoCount("left", v).catch(() => {});
     });
-    if (o.calc) await say(o.calc, { vars, advance: "auto" });
-    // then the right side: the right pan, and RHS: 9 = ?
-    CQ.frameBalance("right");
+    // Then the right side, under it: the right pan's things lit, and RHS = □ (or RHS = 23, given), its box
+    // under the 4.
+    lights("right");
+    if (!o.rhsGiven) say("check-find-rhs", { vars, advance: "none" });
     await R.when(cp.side());
     if (!o.rhsGiven) await cp.fill("rhs", ch.rhs, bb, () => say("hint-rhs", { advance: "none" }));
     await R.wait(350);
-    // The two compared, as the voice says so ("They're different" / "Both sides equal"): 7 ≠ 9 (or 9 = 9)
-    // comes in, and the balance shows the totals: it tips, the heavier side lower (7 < 9: the right pan),
-    // or stays level, its hub flashing. The conclusion is only said, in the question bar ("The sides
-    // aren't equal, so 4 is not a solution."): nothing is written under the comparison (review,
-    // 2026-11-08). No frame round both pans.
+    // What each side equals, a line each, and what that means (same review: "1. 'The left-hand side equals
+    // 7.' Highlight LHS: 4 + 3 = 7 and the seven coins together. 2. 'The right-hand side equals 9.' Fade
+    // the previous highlight. Highlight RHS: [9] and the nine coins. 3. 'They're different, so 4 is not a
+    // solution.' Fade the coin highlights. Reveal 7 ≠ 9, then highlight the trial x = 4 as the conclusion
+    // appears"): 7 ≠ 9 (or 9 = 9, the hub flashing) comes in on "different" (or "equal"), and "4 is not a
+    // solution." is written in under it as the voice says "solution", the try lit with it.
     const eq = s === bb;
-    CQ.focus.off();
+    lights("left");
+    cp.lightSide("lhs");
+    await say("check-lhs-is", { vars });
+    lights("right");
+    cp.lightSide("rhs");
+    await say("check-rhs-is", { vars });
+    lights(null);
+    cp.lightSide(null);
     let compared = null;
     const compareNow = () => {
       if (!compared) {
@@ -884,16 +1024,25 @@
       }
       return compared;
     };
-    const lines = eq ? o.yesLines || [] : o.notLines || ["check-not", "check-not-so"];
+    let concluded = null;
+    const conclude = () => concluded || (concluded = R.when(cp.verdict(CQ.fmt(eq ? C().ui.isSolution : C().ui.notSolution, { v: CQ.num(v) }), eq)));
+    const lines = eq ? o.yesLines || [] : ["check-not"];
     for (let i = 0; i < lines.length; i++) {
+      const text = CQ.T(lines[i], vars);
       const said = say(lines[i], { vars });
       if (i === 0) {
-        await R.when(untilSaid(CQ.T(lines[i], vars), eq ? "equal" : "different"));
-        compareNow();
+        await R.when(untilSaid(text, eq ? "equal" : "different"));
+        await compareNow();
+        if (text.indexOf("solution") >= 0) {
+          await R.when(untilSaid(text, "solution"));
+          conclude();
+        }
       }
       await said;
     }
     await compareNow();
+    await conclude();
+    await R.wait(700);
     b.clearCounts();
     // the crown back on its pan before the view goes back to the scene
     await R.when(CQ.xPan.restore());
@@ -946,7 +1095,7 @@
       await R.when(z.say(CQ.fmt(i ? C().zippy.tryNext : C().zippy.tryN, { v })));
       say("l5-give", { vars: { v }, advance: "none" });
       await giveBar([v], { glow: true });
-      const ok = await checkRoutine(L, v, { line: "check-replace", find: "check-find", yesLines: ["l5-yes"] });
+      const ok = await checkRoutine(L, v, { line: "check-replace", yesLines: ["l5-yes"] });
       if (ok) return swapAfterCheck(v);
     }
   }
@@ -966,8 +1115,8 @@
       // the same check whichever bar it is, the right one first too: the child works out each side (review,
       // 2026-11-08: "Do not automatically fill in 10 for the LHS… Compare both sides only after the learner
       // completes these steps")
-      if (misses === 0) ok = await checkRoutine(L, v, { line: S.firstTry, find: S.find, yesLines: [v === L.crown ? S.firstRight : S.success] });
-      else ok = await checkRoutine(L, v, { line: S.nextTry, find: "check-find", yesLines: [S.success] });
+      if (misses === 0) ok = await checkRoutine(L, v, { line: S.firstTry, yesLines: [v === L.crown ? S.firstRight : S.success] });
+      else ok = await checkRoutine(L, v, { line: S.nextTry, yesLines: [S.success] });
       if (ok) return swapAfterCheck(v);
       misses++;
       CQ.track("hint_shown", { level: L.n, tier: misses });
@@ -995,15 +1144,24 @@
     };
     return { left: mk("left"), right: mk("right") };
   }
-  // Values tried for x, quickly, on the balance (Level 8: review, 2026-11-08), with no child input and
-  // no verdicts: for each, the crown (or the bar before) makes way for a gold bar of the value beside the
-  // a bar, "v + a = sum" shows by the balance, and the balance tips the way the totals say, further the
-  // further apart they are (20 is nearer 23 than 18 is). Then the crown is back and the balance level.
-  async function tryValues(values, a, total) {
+  // Values tried for x on the balance (Level 8: review, 2026-11-13), with no child input, each with its
+  // line ("Let's try x = 10.", "How about x = 12?"): the crown, or the bar tried before (only the trial
+  // weight changes), makes way for a gold bar of the value, which glows, the scene softly dimmed; by the
+  // balance, on a card, 10 + 8 = 18 comes in, its 10 lit like the bar; then the balance tips the way the
+  // totals say (the right pan lower, by less as they near: 20 is nearer 23 than 18 is) as 18 ≠ 23 comes in
+  // under it. As the next line starts, the try before shrinks into a small record at the top of the card.
+  // Then the after line ("Trying different values could take a while."): the last try joins the records,
+  // and the crown is back and the balance level, both records still in sight ("Keep small records of both
+  // unsuccessful trials visible"). Returns the card (it goes as the working opens).
+  async function tryValues(tries, a, total, after) {
     const b = CQ.balance;
     let cur = b.items.left.find((it) => it.type === "crown" && !it.ghost);
-    if (!cur) return;
-    let label = null;
+    if (!cur) return null;
+    const card = CQ.el("div", "wlabel trials", CQ.world.drag);
+    CQ.pos(card, CQ.L.BX + 560, 470);
+    const recs = CQ.el("div", "tr-recs", card);
+    const now = CQ.el("div", "tr-now", card);
+    card.style.opacity = "0";
     const swapIn = async (spec) => {
       await R.when(CQ.anim(cur.el, [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(0.5)" }], { duration: 300, easing: CQ.EASE.in, essential: true }));
       cur = b.replaceItem(cur, spec);
@@ -1011,32 +1169,60 @@
       CQ.anim(cur.el, [{ opacity: 0, transform: "scale(0.5)" }, { opacity: 1, transform: "scale(1)" }], { duration: 360, easing: CQ.EASE.back, keep: false });
       CQ.audio.play("ui.pop", { volume: 0.6 });
     };
-    for (const v of values) {
-      await swapIn({ type: "bar", value: v, slot: "main" });
-      const sum = `${v} + ${a} = ${v + a}`;
-      if (!label) {
-        label = CQ.el("div", "wlabel trial", CQ.world.drag, CQ.rich(sum));
-        CQ.pos(label, CQ.L.BX + 560, 470); // beside the balance, at its right
-      } else label.innerHTML = CQ.rich(sum);
-      CQ.anim(label, [{ transform: "translate(-50%,-50%) scale(.4)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], { duration: 380, easing: CQ.EASE.back, keep: false });
-      await R.wait(450);
-      const d = total - (v + a);
-      b.target = Math.sign(d) * Math.min(16, 4 + 2 * Math.abs(d)); // the right pan lower, by less as they near
+    // the try on the card becomes a small record line at its top: 10 + 8 = 18, then 18 ≠ 23 in red
+    const toRecord = async () => {
+      if (!now.dataset.rec) return;
+      await R.when(CQ.anim(now, [{ opacity: 1 }, { opacity: 0 }], { duration: 280, essential: true }));
+      const r = CQ.el("div", "tr-rec", recs, now.dataset.rec);
+      now.innerHTML = "";
+      delete now.dataset.rec;
+      now.style.opacity = "";
+      CQ.anim(r, [{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 380, easing: CQ.EASE.out, keep: false });
+    };
+    for (const t of tries) {
+      const said = say(t.line, { advance: "auto", pause: 300 });
+      await toRecord();
+      await swapIn({ type: "bar", value: t.v, slot: "main" });
+      look(() => (cur && cur.type === "bar" ? [cur.el] : []));
+      const sum = t.v + a;
+      now.dataset.rec = `<span>${CQ.rich(`${t.v} + ${a} = ${sum}`)}</span><span class="no">${CQ.rich(`${sum} ≠ ${total}`)}</span>`;
+      now.innerHTML = `<div class="tr-calc"><span class="tv">${CQ.num(t.v)}</span> + ${a} = ${sum}</div><div class="tr-cmp">${CQ.rich(`${sum} ≠ ${total}`)}</div>`;
+      const cmp = now.querySelector(".tr-cmp");
+      cmp.style.opacity = "0";
+      if (card.style.opacity === "0") {
+        card.style.opacity = "";
+        CQ.anim(card, [{ transform: "translate(-50%,-50%) scale(.5)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], { duration: 420, easing: CQ.EASE.back, keep: false });
+      } else CQ.anim(now.firstElementChild, [{ opacity: 0, transform: "scale(.7)" }, { opacity: 1, transform: "scale(1)" }], { duration: 380, easing: CQ.EASE.back, keep: false });
+      CQ.audio.play("ui.pop", { volume: 0.5 });
+      await R.wait(1100);
+      // the balance tips the way the totals say as 18 ≠ 23 comes in
+      const d = total - sum;
+      b.target = Math.sign(d) * Math.min(16, 4 + 2 * Math.abs(d));
       b.setEmblem(d === 0);
       CQ.audio.play("balance.creak");
       b.pendingClang = true;
-      await R.wait(2300); // a moment to read it
+      cmp.style.opacity = "";
+      CQ.anim(cmp, [{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 420, easing: CQ.EASE.out, keep: false });
+      await said;
+      await R.wait(1300); // a moment to read it
     }
-    // back as it was: the crown, and the balance level
-    removeLabel(label);
+    // "Trying different values could take a while.": the last try joins the records; the crown is back,
+    // and the balance level
+    const said = say(after, { advance: "auto" });
+    look([]);
+    await toRecord();
     await swapIn({ type: "crown", slot: "main" });
     b.evaluate();
-    await R.wait(1100);
+    await said;
+    return card;
   }
-  // A bar on a pan cracks into smaller bars (e.g. 23 into 8 and 15). Returns the new pan items.
+  // A bar on a pan cracks into smaller bars (e.g. 23 into 8 and 15). Returns the new pan items. The parts
+  // come out of the bar: they start together where it lay and slide apart to their places (review,
+  // 2026-11-13: "Animate the weight splitting as 23 becomes 8+15").
   async function splitBar(side, it, parts) {
     const b = CQ.balance;
     const c = b.itemCenter(it);
+    const was = { x: it.x, y: it.y };
     it.el.classList.add("glow", "cracking");
     await R.wait(700);
     CQ.audio.play("bar.crack");
@@ -1044,8 +1230,11 @@
     const at = b.items[side].indexOf(it);
     b.removeItem(it);
     const made = parts.map((p, i) => b.addItem(side, { type: "bar", value: p }, at + i));
-    made.forEach((m) => CQ.anim(m.el, [{ transform: "scale(.6)" }, { transform: "scale(1)" }], { duration: 420, easing: CQ.EASE.back, keep: false }));
+    made.forEach((m) =>
+      CQ.anim(m.el, [{ transform: `translate(${was.x - m.x}px, ${was.y - m.y}px) scale(.85)` }, { transform: "translate(0px, 0px) scale(1)" }], { duration: 760, easing: CQ.EASE.out, keep: false })
+    );
     b.evaluate();
+    await R.wait(760);
     return made;
   }
   // The child takes a bar of value v off each pan, one at a time, with the working in view (Level 8:
@@ -1218,55 +1407,77 @@
     b.setSign("x + 8 = 23");
     z.pose("curious");
     await say("l8-1", { advance: "auto" });
-    // "The crown and 8 units balance 23 units." (review, 2026-11-08): the view comes a little closer, so
-    // the numbers on the bars read easily, and the parts light up as the voice says them: the crown and
-    // the 8 bar together, then the 23 bar. No box round both pans; the balance stays level. (The view
-    // stays closer until the working opens.)
+    // "The crown and 8 units balance 23 units." (review, 2026-11-13): the view comes a little closer, so
+    // the numbers on the bars read easily, and the scene behind is softly dimmed while it is explained
+    // (until the working opens); the parts light up as the voice says them: the crown and the 8 bar
+    // together, then the level beam, briefly, on "balance", then the 23 bar. (Grumble's sleepy Zs don't
+    // float up over the dimmed scene: no stray Z under Zippy.)
     await R.when(CQ.camera.to(CQ.L.BX, 560, 1.15, 900));
     const l82 = CQ.T("l8-2");
     const saying = say("l8-2");
-    await R.when(untilSaid(l82, "The crown and 8 units"));
-    b.glowItems("left");
-    await R.when(untilSaid(l82, "balance 23"));
-    b.glowItems("left", null, false);
-    b.glowItems("right");
+    const leftEls = () => b.items.left.filter((it) => !it.ghost).map((it) => it.el);
+    const rightEls = () => b.items.right.filter((it) => !it.ghost).map((it) => it.el);
+    await R.when(untilSaid(l82, "The crown and 8"));
+    look(leftEls);
+    await R.when(untilSaid(l82, "balance"));
+    look([]);
+    b.beam.classList.add("glow-eq");
+    b.flashEmblem();
+    await R.when(untilSaid(l82, "23 units"));
+    b.beam.classList.remove("glow-eq");
+    look(rightEls);
     await saying;
-    b.clearGlow();
     z.pose("idle");
-    // Trying values first, quickly, on the balance (review, 2026-11-08): "Let's try different values of
-    // x." The crown makes way for a 10 bar (10 + 8 = 18: the balance tips, the right pan lower), then a
-    // 12 bar (12 + 8 = 20: the beam comes nearer to level), then the crown is back and the balance level.
-    // Then "Trying different values could take a while." (No "I know!": every line is in the question
-    // bar.)
-    await say("l8-try", { advance: "auto" });
-    await tryValues([10, 12], 8, 23);
-    await say("l8-3", { advance: "auto" });
-    // The working, like the formula screen (CQ.eqBoard): as "Let's find the mass of the crown directly"
-    // is said, the view glides until the balance stands at the right, the crown gently lit, and
-    // x + 8 = 23 is written in at the left.
+    // Trying values first, on the balance, each with its line (review, 2026-11-13): "Let's try x = 10."
+    // (10 + 8 = 18, then 18 ≠ 23: the balance tips, the right pan lower), "How about x = 12?" (only the
+    // trial weight changes: 12 + 8 = 20, then 20 ≠ 23: it tips a little less), then "Trying different
+    // values could take a while.": the crown is back and the balance level, the two tries kept by it as
+    // small records.
+    const trials = await tryValues(
+      [
+        { v: 10, line: "l8-try" },
+        { v: 12, line: "l8-try2" },
+      ],
+      8,
+      23,
+      "l8-3"
+    );
+    // "Can we find the crown's mass without guessing?" (same review: "Highlight the crown, then move into
+    // removing equal mass from both sides"): the crown lights up, the records go, and the view glides
+    // until the balance stands at the left, x + 8 = 23 written in at the right (the working, like the
+    // formula screen: CQ.eqBoard).
     b.setSign(null);
-    glowCrown(true);
+    look(crownEls);
     const l84 = say("l8-4", { advance: "auto" });
+    if (trials) CQ.anim(trials, [{ opacity: 1 }, { opacity: 0 }], { duration: 500, essential: true }).then(() => trials.remove());
     await R.when(eb.open());
     await R.when(eb.show("x + 8 = 23"));
     await l84;
-    glowCrown(false);
-    // "First, split 23 into 8 and 15": the 23 bar lights up and splits into an 8 bar and a 15 bar on its
-    // pan, while x + 8 = 8 + 15 is written in under x + 8 = 23 (its = under the other, 8 + 15 lit). The
-    // balance stays level: splitting a bar doesn't change its mass.
+    look(null);
+    // "We can split 23 units into 8 and 15." (same review: "Introduce the split first… Animate the weight
+    // splitting as 23 becomes 8+15"): the 23 bar lights up and splits, an 8 bar and a 15 bar sliding apart
+    // out of it, while x + 8 = 8 + 15 is written in under x + 8 = 23 (its = under the other, 8 + 15 lit).
+    // The balance stays level: splitting a bar doesn't change its mass.
     const l85 = say("l8-5");
     look(panEls("right"));
     await Promise.all([splitBar("right", b.items.right[0], [8, 15]), R.when(eb.set("x + 8 = ##8 + 15##"))]);
     await l85;
-    // There are 8 units beside the crown…
-    b.glowItems("left", (it) => it.type === "bar");
+    // "There are 8 units beside the crown…" (same review: "Match the highlight to the VO. Highlight the 8
+    // beside the crown and +8 on the LHS, rather than 8+15"): 8 + 15 goes back to plain, and the 8 bar on
+    // the left pan lights up with + 8 in x + 8.
+    const row = eb.el.lastElementChild;
+    const unmark = row.querySelector(".mark-new");
+    if (unmark) unmark.classList.add("unmark");
+    const lhs8 = lightTerm(row, "left", 8, eb);
     look(leftBarEls);
     await say("l8-6");
-    // …so remove 8 from both sides. (Both 8 bars glow: no box round both pans.)
-    b.glowItems("right", (it) => it.value === 8);
-    look(null);
+    // "Let's remove 8 units from both sides." (same review: "Highlight both 8-unit weights and both
+    // matching 8s in the equation"): the 8 bar on each pan, and + 8 at the left with the 8 at the right.
+    const rhs8 = lightTerm(row, "right", 8, eb);
+    look(() => leftBarEls().concat(b.items.right.filter((it) => it.value === 8 && !it.ghost).map((it) => it.el)));
     await say("l8-7");
-    b.clearGlow();
+    look(null);
+    [lhs8, rhs8].forEach((e) => e && e.classList.remove("x-lit"));
     // The child takes them off right here, one side at a time, with the working in view (review,
     // 2026-11-08: "Keep this interaction on the previous screen… The learner performs the action, and
     // the equation updates alongside it"; it used to go back to the whole scene, where one drag took
@@ -1310,14 +1521,14 @@
     await putBack(trays, 8, 23);
     b.setSign("x + 8 = 23");
     const crown = b.find("left", (it) => it.type === "crown");
-    await checkRoutine(L, 15, { from: b.itemCenter(crown), rhsGiven: true, line: "l8-11", find: "check-find-lhs", calc: "l8-12", yesLines: ["l8-13"] });
+    await checkRoutine(L, 15, { from: b.itemCenter(crown), rhsGiven: true, line: "l8-11", yesLines: ["l8-13"] });
     // The swap: only a checked value gets the SWAP button.
     await say("l8-14", { advance: "auto" });
     say("l8-give", { advance: "none" });
     for (;;) {
       const v = await giveBar(L.bars.filter((x) => CQ.bars.get(x).state !== "tried"));
       if (v !== 15) {
-        await checkRoutine(L, v, { line: "check-lets", find: "check-find-lhs", rhsGiven: true });
+        await checkRoutine(L, v, { line: "check-lets", rhsGiven: true });
         say("l8-give", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
         continue;
       }
@@ -1380,24 +1591,29 @@
     xx.classList.remove("x-lit");
     glowCrown(false);
     xs.forEach(removeLabel);
-    // First, let's remove these 4 units.
-    b.glowItems("left", (it) => it.type === "bar");
-    look(leftBarEls);
-    eb.set("2x <<+ 4>> = 18", { same: true }); // the same step: these 4 units marked
-    await say("l9-3");
-    b.clearGlow();
-    // Split 18 into 4 and 14: the 18 bar splits on its pan while 2x + 4 = 4 + 14 is written, 4 + 14 lit
-    // (as in Level 8).
+    // As in Level 8 (review, 2026-11-13: "Do the same feedback for the rest of the file"): the split
+    // first, "We can split 18 units into 4 and 14.", the 18 bar splitting on its pan, a 4 bar and a 14 bar
+    // sliding apart out of it, while 2x + 4 = 4 + 14 is written, 4 + 14 lit.
     const said4 = say("l9-4");
+    eb.el.querySelectorAll(".mark-new").forEach((e) => e.classList.add("unmark")); // (2x was the last step: plain again, the highlight goes with the voice)
     look(panEls("right"));
     await Promise.all([splitBar("right", b.items.right[0], [4, 14]), R.when(eb.set("2x + 4 = ##4 + 14##"))]);
     await said4;
-    // Remove 4 from both sides. (Both 4 bars glow: no box round both pans.)
-    look(null);
-    b.glowItems("left", (it) => it.type === "bar");
-    b.glowItems("right", (it) => it.value === 4);
+    // "There are 4 units beside the crowns…": 4 + 14 back to plain, and the 4 bar on the left pan lit
+    // with + 4 in 2x + 4 (the highlight matches the voice).
+    const row9 = eb.el.lastElementChild;
+    const unmark9 = row9.querySelector(".mark-new");
+    if (unmark9) unmark9.classList.add("unmark");
+    const lit4l = lightTerm(row9, "left", 4, eb);
+    look(leftBarEls);
+    await say("l9-3");
+    // "Let's remove 4 units from both sides.": the 4 bar on each pan, and + 4 at the left with the 4 at
+    // the right.
+    const lit4r = lightTerm(row9, "right", 4, eb);
+    look(() => leftBarEls().concat(b.items.right.filter((it) => it.value === 4 && !it.ghost).map((it) => it.el)));
     await say("l9-5");
-    b.clearGlow();
+    look(null);
+    [lit4l, lit4r].forEach((e) => e && e.classList.remove("x-lit"));
     // The child takes them off right here, one side at a time, with the working in view, as in Level 8
     // (review, 2026-11-08: "Keep the whole solving sequence on the same learning screen"; it used to go
     // back to the whole scene, where one drag took both off): two small trays under the pans, "Drag a 4
@@ -1486,14 +1702,14 @@
     // x.
     await putBack(ledges, 4, 18);
     b.setSign("2x + 4 = 18");
-    await checkRoutine(L, 7, { from: b.itemCenter(crowns[0]), rhsGiven: true, line: "l9-9", find: "check-find-lhs", calc: "l9-calc", yesLines: ["l9-10"] });
+    await checkRoutine(L, 7, { from: b.itemCenter(crowns[0]), rhsGiven: true, line: "l9-9", yesLines: ["l9-10"] });
     // Two swaps, one 7 bar for each crown.
     say("l9-give", { advance: "none" });
     let swapped = 0;
     while (swapped < 2) {
       const v = await giveBar(L.bars.filter((x) => CQ.bars.list.some((bar) => bar.value === x && bar.state === "idle")));
       if (v !== 7) {
-        await checkRoutine(L, v, { line: "check-lets", find: "check-find-lhs", rhsGiven: true });
+        await checkRoutine(L, v, { line: "check-lets", rhsGiven: true });
         say(swapped ? "l9-give2" : "l9-give", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
         continue;
       }

@@ -4,7 +4,7 @@ Every line the game shows in its caption bar, and every line Zippy says in his s
 
 | | |
 |---|---|
-| Clips | `assets/vo/vo001.ogg` … one file per line, Ogg Opus, 32 kbps, mono: 315 clips, 34 minutes, 7.8 MB |
+| Clips | `assets/vo/vo001.ogg` … one file per line, Ogg Opus, 32 kbps, mono: 302 clips, 32.5 minutes, 7.6 MB (49 lines are waiting for the studio: below) |
 | Script | `tools/vo_script.json`: each line as shown, as spoken, and the Devanagari the voice was given |
 | Map | `js/vo_lines.js` (generated): line as shown → [clip, seconds] |
 | Player | `js/voice.js` (finds and loads clips), played by `js/audio.js`, typed out by the caption in `js/ui.js` |
@@ -47,6 +47,33 @@ Before a clip goes into the game, its Devanagari (logged from the studio) is che
 The sound itself is checked too (ffmpeg's `silencedetect`). A take with a pause of a second or more in the middle of a sentence, or a pause after almost every word, is made again with the same spoken form; the next take is normally fine.
 
 A flagged line gets a corrected spoken form if it needs one, and is made again. Made again this way: vo007 and vo016 (Zippy read as "Jippy"), vo039 (और), vo161 (two 2-second pauses), vo188 and vo310 (word-by-word delivery).
+
+## Waiting for a recording
+
+Four of Level 4's formula-screen lines were reworded on 2026-11-13 at the review's request:
+
+- **vo030** "Let's find x so Zippy can make the swap." (it was "Hmm… let's find the value of x so Zippy can make the swap."), spoken `Let's find x so ज़िप्पी can make the swap.`
+- **vo031** "Here, x represents the crown's mass. We need to find its value." (it was "Here, x represents the crown's mass — the value we want to find."), spoken the same.
+- **vo032** "Here, x is the variable. Its value is unknown.", spoken the same: the second half of "A variable is a symbol used to represent a value. Here, our variable is x, and its value is unknown.", which became two lines. Its first half, "A variable is a symbol that represents a value.", is the recap's line and already has a clip (vo063), which the game finds by its words.
+- **vo035** "Adding x and 2 gives the algebraic expression x + 2." (it was "Joining x and 2 with addition gives the algebraic expression x + 2."), spoken `Adding x and two gives the algebraic expression x plus two.`
+
+Six lines of the label activity (Level 4c) and the formula screen after it, new on 2026-11-13 at the review's request, spoken as shown:
+- **vo316** "Now, can you spot these parts in another equation?" (from the formula screen into the activity);
+- **vo317** "Drag each label to the matching box." (its instruction; it was "Drag each label to the correct box.", which had no clip either);
+- **vo318** "Not quite. x represents the unknown value. It is the variable." and **vo319** "The complete statement is an equation." (said while the game puts Variable and Equation in after a wrong label; they were "Look at x. It represents the unknown value." and "The whole statement, 4x + 3 = 19, is the equation.", which had no clips either);
+- **vo320** "Now, label the left-hand side and right-hand side." (into the second pair, and its instruction);
+- **vo321** "Let's return to the crown's equation." (from the activity back to the formula screen and x + 2 = 7).
+
+More of the review of 2026-11-13, later that day, spoken as shown with the numbers in words (each spoken form is in `tools/vo_script.json`):
+- Level 4's linear equation (4c): **vo052** "The power of x is 1." and **vo322** "We usually leave the 1 unwritten." (they were one line, "When we write x, its power is 1. We usually leave the 1 unwritten."); **vo054** "This is called a linear equation in one variable." (it was "So, it is a linear equation in one variable.").
+- Level 4's try (4g), a side at a time: **vo071** "The left-hand side equals 6." (it was "The left side equals 6, and the right side equals 7. They're different, so 4 is not a solution."), **vo323** "The right-hand side equals 7.", **vo324** "They're different, so 4 is not a solution.", **vo325** "The left-hand side equals 7." ("Both sides equal 7." keeps its clip, vo074).
+- The check in Levels 5 to 9, a side at a time: **vo134** "Find the value of the left-hand side." (it was "…of the left side."), **vo326** "Now find the value of the right-hand side.", and for each value a child can try, "The left-hand side equals …", "The right-hand side equals …" and "They're different, so … is not a solution." (**vo327** to **vo348**). ("Find the value of each side." (vo084), "15 + 8 = 23." (vo136) and "2 × 7 + 4 = 18." (vo159) are no longer said.)
+- Level 8: **vo349** "Let's try x = 10." and **vo350** "How about x = 12?" (they replace "Let's try different values of x.", which had no clip); **vo351** "Can we find the crown's mass without guessing?" (it replaces "Let's find the mass of the crown directly.", which had no clip); **vo126** "We can split 23 units into 8 and 15." (it was "First, split 23 into 8 and 15."); **vo128** "Let's remove 8 units from both sides." (it was "To keep the balance level, we must remove 8 units from both sides.").
+- Level 9, in a new order: **vo151** "We can split 18 units into 4 and 14." (it was "Split 18 into 4 and 14."), then **vo150** "There are 4 units beside the crowns. Let's see how we can remove them." (it was "First, let's remove these 4 units.", before the split), then **vo152** "Let's remove 4 units from both sides." (it was "Remove 4 from both sides.").
+
+The activity's LHS and RHS lines for a wrong label ("Look to the left of the equal sign. 4x + 3 is the left-hand side." and "Look to the right of the equal sign. 19 is the right-hand side.", from the review of 2026-11-07) are not in the script yet, so they are read by the device voice too.
+
+The studio could not make them that day: every try ended in "Exceeded monthly Gemini API spending cap" (a 402 billing error on the studio's own Gemini account; the lines after vo317 came later that day and were not tried), so until they are made the device voice reads these lines (and what waits for their words comes about when a voice would say them: `onCue` in js/activities.js, and `cueIn` in its label activity). To make one: the studio's *Single Generation* tab, Language Hindi, Voice Female Teacher (Standard), Format .MP3, the file name (`vo030`, `vo031`, `vo032`, `vo035`, `vo052`, `vo054`, `vo071`, `vo126`, `vo128`, `vo134`, `vo150` to `vo152`, `vo316` to `vo351`; `python3 tools/vo_build.py` lists them all) and its spoken form as the text; put the MP3s in a zip and run `python3 tools/vo_build.py that.zip`, then check their pauses as above.
 
 ## The rate limit
 
@@ -123,12 +150,12 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo027 | The crown and two coins have a total mass of x + 2. | The crown and two coins have a total mass of x plus two. | द क्राउन एंड टू कॉइन्स हैव ए टोटल मास ऑफ एक्स प्लस टू। | 5.9 |
 | vo028 | They balance 7 units on the other side. | They balance seven units on the other side. | दे बैलेंस सेवन यूनिट्स ऑन द अदर साइड। | 3.3 |
 | vo029 | So, we can write x + 2 = 7. | So, we can write x plus two equals seven. | सो, वी कैन राइट एक्स प्लस टू इक्वल्स सेवन। | 4.2 |
-| vo030 | Hmm… let's find the value of x so Zippy can make the swap. | Hmm... let's find the value of x so ज़िप्पी can make the swap. | हम्म... लेट्स फाइंड द वैल्यू ऑफ एक्स सो ज़िप्पी कैन मेक द स्वाप. | 5.5 |
-| vo031 | Here, x represents the crown's mass — the value we want to find. | Here, x represents the crown's mass, the value we want to find. | हियर, एक्स रिप्रेजेंट्स द क्राउन्स मास, द वैल्यू वी वांट टू फाइंड। | 5.3 |
-| vo032 | A variable is a symbol used to represent a value. Here, our variable is x, and its value is unknown. | = | ए वेरिएबल इज़ ए सिम्बल यूज़्ड टू रिप्रेजेंट ए वैल्यू। हियर, आवर वेरिएबल इज़ एक्स, एंड इट्स वैल्यू इज़ अननोन। | 8.4 |
+| vo030 | Let's find x so Zippy can make the swap. | Let's find x so ज़िप्पी can make the swap. |  | no clip yet |
+| vo031 | Here, x represents the crown's mass. We need to find its value. | = |  | no clip yet |
+| vo032 | Here, x is the variable. Its value is unknown. | = |  | no clip yet |
 | vo033 | Now look at x + 2. It represents the total mass of the crown and the two coins. | Now look at x plus two. It represents the total mass of the crown and the two coins. | नाउ लुक एट एक्स प्लस टू। इट रिप्रेजेंट्स द टोटल मास ऑफ द क्राउन एंड द टू कॉइन्स। | 6.5 |
 | vo034 | Here x is a variable, and 2 is a constant. We add them together. | Here x is a variable, and two is a constant. We add them together. | हीयर एक्स इज ए वैरिएबल, एंड टू इज ए कांस्टेंट। वी ऐड देम टुगेदर। | 6.2 |
-| vo035 | Joining x and 2 with addition gives the algebraic expression x + 2. | Joining x and two with addition gives the algebraic expression x plus two. | जॉइनिंग एक्स एंड टू विद एडीशन गिव्स द अलजेब्राइक एक्सप्रेशन एक्स प्लस टू। | 7.0 |
+| vo035 | Adding x and 2 gives the algebraic expression x + 2. | Adding x and two gives the algebraic expression x plus two. |  | no clip yet |
 | vo036 | The balance shows that x + 2 equals 7. | The balance shows that x plus two equals seven. | द बैलेंस शोज दैट एक्स प्लस टू इक्वल्स सेवन। | 4.1 |
 | vo037 | A statement that says two expressions have equal values is called an equation. | = | ए स्टेटमेंट दैट सेज़ टू एक्सप्रेशन्स हैव इक्वल वैल्यूज़ इज़ कॉल्ड एन इक्वेशन। | 6.2 |
 | vo038 | The expression to the left of the equals sign is called the left-hand side, or LHS. | The expression to the left of the equals sign is called the left-hand side, or L H S. | द एक्सप्रेशन टू द लेफ्ट ऑफ़ द इक्वल्स साइन इज़ कॉल्ड द लेफ्ट हैंड साइड, ऑर एल एच एस। | 7.2 |
@@ -145,9 +172,9 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo049 | This bracket covers the whole statement with =. That's the equation. | This bracket covers the whole statement with the equals sign. That's the equation. | दिस ब्रैकेट कवर्स द होल स्टेटमेंट विद द इक्वल्स साइन। दैट्स द इक्वेशन। | 5.8 |
 | vo050 | Brilliant! You labelled every part. | = | ब्रिलियंट! यू लेबल्ड एव्री पार्ट. | 3.3 |
 | vo051 | This equation has one variable: x. | = | दिस इक्वेशन हैज़ वन वेरिएबल: एक्स। | 3.9 |
-| vo052 | When we write x, its power is 1. We usually leave the 1 unwritten. | When we write x, its power is one. We usually leave the one unwritten. | वेन वी राइट एक्स, इट्स पावर इज़ वन। वी यूजुअली लीव द वन अनरिटन। | 6.0 |
+| vo052 | The power of x is 1. | The power of x is one. |  | no clip yet |
 | vo053 | This equation has one variable, and its highest power is 1. | This equation has one variable, and its highest power is one. | दिस इक्वेशन हैज वन वेरिएबल, एंड इट्स हाईएस्ट पावर इज वन। | 5.0 |
-| vo054 | So, it is a linear equation in one variable. | = | सो, इट इज़ ए लीनियर इक्वेशन इन वन वेरिएबल। | 3.7 |
+| vo054 | This is called a linear equation in one variable. | = |  | no clip yet |
 | vo055 | Drop each equation into the correct box. | = | ड्रॉप ईच इक्वेशन इनटू द करेक्ट बॉक्स। | 3.7 |
 | vo056 | Correct! The highest power of x is 1. | Correct! The highest power of x is one. | करेक्ट! द हाइएस्ट पावर ऑफ एक्स इज वन। | 3.8 |
 | vo057 | Correct! The highest power of x is 2. | Correct! The highest power of x is two. | करेक्ट! द हाइएस्ट पावर ऑफ एक्स इज टू। | 3.5 |
@@ -164,7 +191,7 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo068 | We need a value of x that makes both sides equal. | = | वी नीड ए वैल्यू ऑफ एक्स दैट मेक्स बोथ साइड्स इक्वल। | 4.4 |
 | vo069 | Let's check 4. Replace x with 4 and find the value of each side. | Let's check four. Replace x with four and find the value of each side. | लेट्स चेक फोर। रिप्लेस एक्स विथ फोर एंड फाइंड द वैल्यू ऑफ़ ईच साइड। | 5.7 |
 | vo070 | Tap the 4 bar. | Tap the four bar. | टैप द फोर बार। | 2.3 |
-| vo071 | The left side equals 6, and the right side equals 7. They're different, so 4 is not a solution. | The left side equals six, and the right side equals seven. They're different, so four is not a solution. | द लेफ्ट साइड इक्वल्स सिक्स, एंड द राइट साइड इक्वल्स सेवन। दे आर डिफरेंट, सो फोर इज नॉट अ सोल्यूशन। | 7.9 |
+| vo071 | The left-hand side equals 6. | The left-hand side equals six. |  | no clip yet |
 | vo072 | Now, let's check 5. Replace x with 5 and find the value of each side. | Now, let's check five. Replace x with five and find the value of each side. | नाउ, लेट्स चेक फाइव। रिप्लेस एक्स विद फाइव एंड फाइंड द वैल्यू ऑफ ईच साइड। | 6.6 |
 | vo073 | Tap the 5 bar. | Tap the five bar. | टैप द फाइव बार। | 2.3 |
 | vo074 | Both sides equal 7. | Both sides equal seven. | बोथ साइड्स इक्वल सेवन। | 2.7 |
@@ -219,15 +246,15 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo123 | We could try different values again. But that might take a while. | = | वी कुड ट्राई डिफरेंट वैल्यूज अगेन। बट दैट माइट टेक अ व्हाइल। | 4.7 |
 | vo124 (Zippy) | I know! | = | आई नो! | 1.5 |
 | vo125 | Let's find the crown's mass directly. | = | लेट्स फाइंड द क्राउन्स मास डाइरेक्टली। | 3.4 |
-| vo126 | First, split 23 into 8 and 15. | First, split twenty-three into eight and fifteen. | फर्स्ट, स्प्लिट ट्वेंटी थ्री इंटू एट एंड फिफ्टीन। | 4.4 |
+| vo126 | We can split 23 units into 8 and 15. | We can split twenty-three units into eight and fifteen. |  | no clip yet |
 | vo127 | There are 8 units beside the crown. Let's see how we can remove them. | There are eight units beside the crown. Let's see how we can remove them. | देयर आर एइट यूनिट्स बिसाइड द क्राउन। लेट्स सी हाउ वी कैन रिमूव देम। | 5.2 |
-| vo128 | To keep the balance level, we must remove 8 units from both sides. | To keep the balance level, we must remove eight units from both sides. | टू कीप द बैलेंस लेवल, वी मस्ट रिमूव एट यूनिट्स फ्रॉम बोथ साइड्स। | 5.3 |
+| vo128 | Let's remove 8 units from both sides. | Let's remove eight units from both sides. |  | no clip yet |
 | vo129 | Remove 8 from both sides to keep the balance level. | Remove eight from both sides to keep the balance level. | रिमूव ऐट फ्रॉम बोथ साइड्स टू कीप द बैलेंस लेवल। | 4.3 |
 | vo130 | Drag an 8 bar off the balance. | Drag an eight bar off the balance. | ड्रैग एन एट बार ऑफ़ द बैलेंस। | 3.1 |
 | vo131 | Now the crown balances 15 units. So, x = 15. | Now the crown balances fifteen units. So, x equals fifteen. | नाउ द क्राउन बैलेंसिस फिफ्टीन यूनिट्स. सो, एक्स ईक्वल्स फिफ्टीन. | 5.5 |
 | vo132 | Before Zippy swaps, let's check the answer in the original equation. | Before ज़िप्पी swaps, let's check the answer in the original equation. | बिफोर ज़िप्पी स्वैप्स, लेट्स चेक द आंसर इन द ओरिजिनल इक्वेशन। | 4.9 |
 | vo133 | Replace x with 15. | Replace x with fifteen. | रिप्लेस एक्स विद फिफ्टीन। | 2.9 |
-| vo134 | Find the value of the left side. | = | फाइंड द वैल्यू ऑफ़ द लेफ्ट साइड। | 2.6 |
+| vo134 | Find the value of the left-hand side. | = |  | no clip yet |
 | vo135 | Add: 15 + 8. Count on from 15: 16, 17, 18, 19, 20, 21, 22, 23. | Add: fifteen plus eight. Count on from fifteen: sixteen, seventeen, eighteen, nineteen, twenty, twenty-one, twenty-two, twenty-three. | ऐड: फिफ्टीन प्लस एइट. काउंट ऑन फ्रॉम फिफ्टीन: सिक्सटीन, सेवेंटीन, एटीन, नाइंटीन, ट्वेंटी, ट्वेंटी वन, ट्वेंटी टू, ट्वेंटी थ्री. | 13.3 |
 | vo136 | 15 + 8 = 23. | Fifteen plus eight equals twenty-three. | फिफ्टीन प्लस एट इक्वल्स ट्वेंटी-थ्री | 3.5 |
 | vo137 | Both sides equal 23. So, 15 is the solution. | Both sides equal twenty-three. So, fifteen is the solution. | बोथ साइड्स इक्वल ट्वेंटी-थ्री। सो, फिफ्टीन इज द सलूशन। | 4.8 |
@@ -243,9 +270,9 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo147 | Zippy spots two matching crowns! | ज़िप्पी spots two matching crowns! | ज़िप्पी स्पॉट्स टू मैचिंग क्राउन्स! | 3.2 |
 | vo148 | Each crown has the same mass, x. | = | ईच क्राउन हैज द सेम मास, एक्स। | 3.5 |
 | vo149 | Two lots of x make 2x. | Two lots of x make two x. | टू लॉट्स ऑफ़ एक्स मेक टू एक्स। | 2.8 |
-| vo150 | First, let's remove these 4 units. | First, let's remove these four units. | फर्स्ट, लेट्स रिमूव दीज़ फोर यूनिट्स। | 3.3 |
-| vo151 | Split 18 into 4 and 14. | Split eighteen into four and fourteen. | स्प्लिट एटीन इनटू फोर एंड फोर्टीन। | 4.1 |
-| vo152 | Remove 4 from both sides. | Remove four from both sides. | रिमूव फोर फ्रॉम बोथ साइड्स. | 2.7 |
+| vo150 | There are 4 units beside the crowns. Let's see how we can remove them. | There are four units beside the crowns. Let's see how we can remove them. |  | no clip yet |
+| vo151 | We can split 18 units into 4 and 14. | We can split eighteen units into four and fourteen. |  | no clip yet |
+| vo152 | Let's remove 4 units from both sides. | Let's remove four units from both sides. |  | no clip yet |
 | vo153 | Drag a 4 bar off the balance. | Drag a four bar off the balance. | ड्रैग ए फोर बार ऑफ द बैलेंस। | 3.0 |
 | vo154 | We need the mass of one crown. | = | वी नीड द मास ऑफ़ वन क्राउन। | 2.8 |
 | vo155 | There are two identical crowns, so divide both sides by 2. | There are two identical crowns, so divide both sides by two. | देर आर टू आइडेंटिकल क्राउन्स, सो डिवाइड बोथ साइड्स बाय टू. | 5.0 |
@@ -409,4 +436,40 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo313 | Great work! You solved every equation. | = | ग्रेट वर्क! यू सॉल्व्ड एवरी इक्वेशन। | 3.8 |
 | vo314 | Quest complete! Zippy collected all 10 crowns — and Grumble is still snoring! | Quest complete! ज़िप्पी collected all ten crowns, and Grumble is still snoring! | क्वेस्ट कंप्लीट! ज़िप्पी कलेक्टेड ऑल टेन क्राउन्स, एंड ग्रंबल इज़ स्टिल स्नोरिंग! | 7.4 |
 | vo315 | Here's what you learned on your quest. | = | हियर्स वॉट यू लर्न्ड ऑन योर क्वेस्ट। | 2.7 |
+| vo316 | Now, can you spot these parts in another equation? | = |  | no clip yet |
+| vo317 | Drag each label to the matching box. | = |  | no clip yet |
+| vo318 | Not quite. x represents the unknown value. It is the variable. | = |  | no clip yet |
+| vo319 | The complete statement is an equation. | = |  | no clip yet |
+| vo320 | Now, label the left-hand side and right-hand side. | = |  | no clip yet |
+| vo321 | Let's return to the crown's equation. | = |  | no clip yet |
+| vo322 | We usually leave the 1 unwritten. | We usually leave the one unwritten. |  | no clip yet |
+| vo323 | The right-hand side equals 7. | The right-hand side equals seven. |  | no clip yet |
+| vo324 | They're different, so 4 is not a solution. | They're different, so four is not a solution. |  | no clip yet |
+| vo325 | The left-hand side equals 7. | The left-hand side equals seven. |  | no clip yet |
+| vo326 | Now find the value of the right-hand side. | = |  | no clip yet |
+| vo327 | The left-hand side equals 9. | The left-hand side equals nine. |  | no clip yet |
+| vo328 | The right-hand side equals 9. | The right-hand side equals nine. |  | no clip yet |
+| vo329 | They're different, so 5 is not a solution. | They're different, so five is not a solution. |  | no clip yet |
+| vo330 | The left-hand side equals 12. | The left-hand side equals twelve. |  | no clip yet |
+| vo331 | They're different, so 8 is not a solution. | They're different, so eight is not a solution. |  | no clip yet |
+| vo332 | The left-hand side equals 11. | The left-hand side equals eleven. |  | no clip yet |
+| vo333 | The right-hand side equals 11. | The right-hand side equals eleven. |  | no clip yet |
+| vo334 | They're different, so 10 is not a solution. | They're different, so ten is not a solution. |  | no clip yet |
+| vo335 | The left-hand side equals 10. | The left-hand side equals ten. |  | no clip yet |
+| vo336 | The left-hand side equals 14. | The left-hand side equals fourteen. |  | no clip yet |
+| vo337 | They're different, so 12 is not a solution. | They're different, so twelve is not a solution. |  | no clip yet |
+| vo338 | The right-hand side equals 10. | The right-hand side equals ten. |  | no clip yet |
+| vo339 | The left-hand side equals 23. | The left-hand side equals twenty-three. |  | no clip yet |
+| vo340 | The left-hand side equals 31. | The left-hand side equals thirty-one. |  | no clip yet |
+| vo341 | They're different, so 23 is not a solution. | They're different, so twenty-three is not a solution. |  | no clip yet |
+| vo342 | The left-hand side equals 39. | The left-hand side equals thirty-nine. |  | no clip yet |
+| vo343 | They're different, so 31 is not a solution. | They're different, so thirty-one is not a solution. |  | no clip yet |
+| vo344 | The right-hand side equals 23. | The right-hand side equals twenty-three. |  | no clip yet |
+| vo345 | The left-hand side equals 18. | The left-hand side equals eighteen. |  | no clip yet |
+| vo346 | The left-hand side equals 22. | The left-hand side equals twenty-two. |  | no clip yet |
+| vo347 | They're different, so 9 is not a solution. | They're different, so nine is not a solution. |  | no clip yet |
+| vo348 | The right-hand side equals 18. | The right-hand side equals eighteen. |  | no clip yet |
+| vo349 | Let's try x = 10. | Let's try x equals ten. |  | no clip yet |
+| vo350 | How about x = 12? | How about x equals twelve? |  | no clip yet |
+| vo351 | Can we find the crown's mass without guessing? | = |  | no clip yet |
 <!-- /vo-table -->

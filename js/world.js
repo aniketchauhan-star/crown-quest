@@ -28,8 +28,10 @@
       this.zippyLayer = CQ.el("div", "layer zippy-layer", root);
       this.fx = CQ.el("div", "layer fx-layer", root);
       this.drag = CQ.el("div", "layer drag-layer", root);
-      // the darks under the bright balance: "home" for a look at the words under it (CQ.focus, text),
-      // "aside" for the formula screen (Balance.present); one fades into the other when they hand over
+      // the darks under the bright balance: "look" for a look-here moment (CQ.focus: a light fade),
+      // "home" for a look at the words under it (CQ.focus, text), "aside" for the formula screen
+      // (Balance.present); one fades into the other when they hand over
+      this.shadeLook = CQ.el("div", "world-shade look", root);
       this.shadeHome = CQ.el("div", "world-shade home", root);
       this.shadeAside = CQ.el("div", "world-shade aside", root);
       this.dark = CQ.el("div", "world-dark", root); // the intro fades in from dark
@@ -75,8 +77,9 @@
   }
   // Past the scene's right edge, its mirror image: still copies of its layers, flipped, so it carries on
   // there with no seam. It is only built when a side view looks past the edge (CQ.ASIDE.free: the
-  // balance at the left of the screen, as from 2026-11-07 to 11-08), and there it is blurred and dark,
-  // under the maths. (The clouds, the tree and its branch are nowhere near that edge.)
+  // balance at the left of the screen, as from 2026-11-07 to 11-08 and again since 11-13), and there it
+  // is blurred and dark, under the maths. (The clouds, the tree and its branch are nowhere near that
+  // edge.)
   function mirrorBackground(layer) {
     (window.BG_LAYERS || []).forEach((ly) => {
       if (["drift", "crown", "branch"].includes(ly.anim)) return;
@@ -301,8 +304,9 @@
               CQ.audio.play(rec ? rec.cue : "grumble.snoreIn", { volume: this.loudVol });
               this.snoreEnd = performance.now() + (rec ? rec.len * 1000 : 2600);
             }
-            const h = this.head();
-            CQ.fx.zzz(CQ.world.fx, h.x, h.y, aloud && this.loudVol > 1.3);
+            // (no Z floats up from his head any more: a lone Z under Zippy read as a stray letter, review,
+            // 2026-11-13, twice: "Remove the stray 'Z' beneath Zippy". His closed eyes, his breathing and
+            // his snore say he is asleep. CQ.fx.zzz is still there.)
           }
           if (f === 4 || f === 8) {
             breath[3] = rec ? Math.max(900, Math.round((rec.len - rec.out) * 1000) + 150) : 900; // until it ends
@@ -1419,7 +1423,12 @@
       const extra = rest.filter((it) => it.slot !== "main" && it.slot !== "subst");
       const coins = extra.filter((it) => it.type === "coin");
       const bars = extra.filter((it) => it.type === "bar");
-      const pileW = (n) => Math.min(2, n) * cw - (cw - L.COIN_W); // coins two to a row
+      // The coins put in for x and the coins beside them are two groups, well apart, so 4 + 3 can be seen
+      // on the pan (review, 2026-11-13: "Show four replacement coins and three additional coins as distinct
+      // groups"): the coins of each a little closer together, the gap between them wider.
+      const two = subst.length > 0 && coins.length > 0;
+      const step = two ? L.COIN_W - 5 : cw;
+      const pileW = (n) => Math.min(2, n) * step - (step - L.COIN_W); // coins two to a row
       let extraW = 0;
       if (coins.length) extraW = pileW(coins.length);
       if (bars.length) extraW = Math.max(extraW, bars[0].w);
@@ -1427,7 +1436,7 @@
       // its place, then what lies beside them
       const MAIN_GAP = -10;
       const mainW = main.reduce((w, m) => w + m.w, 0) + Math.max(0, main.length - 1) * MAIN_GAP + (subst.length ? pileW(subst.length) : 0);
-      const gap = mainW && extraW ? 8 : 0;
+      const gap = mainW && extraW ? (two ? 30 : 8) : 0;
       let x0 = -(mainW + gap + extraW) / 2;
       let mx = x0;
       main.forEach((m) => {
@@ -1437,14 +1446,14 @@
       subst.forEach((c, i) => {
         const row = Math.floor(i / 2);
         const inRow = Math.min(2, subst.length - row * 2);
-        res.set(c, { x: x0 + (pileW(subst.length) - pileW(inRow)) / 2 + (i % 2) * cw + L.COIN_W / 2, y: -row * BAL.COIN_ROW, z: 3 + row });
+        res.set(c, { x: x0 + (pileW(subst.length) - pileW(inRow)) / 2 + (i % 2) * step + L.COIN_W / 2, y: -row * BAL.COIN_ROW, z: 3 + row });
       });
       x0 += mainW + gap;
       coins.forEach((c, i) => {
         const row = Math.floor(i / 2);
         const inRow = Math.min(2, coins.length - row * 2);
-        const rowW = inRow * cw - (cw - L.COIN_W);
-        res.set(c, { x: x0 + (extraW - rowW) / 2 + (i % 2) * cw + L.COIN_W / 2, y: -row * BAL.COIN_ROW, z: 3 + row });
+        const rowW = inRow * step - (step - L.COIN_W);
+        res.set(c, { x: x0 + (extraW - rowW) / 2 + (i % 2) * step + L.COIN_W / 2, y: -row * BAL.COIN_ROW, z: 3 + row });
       });
       bars.forEach((b, i) => res.set(b, { x: x0 + extraW / 2, y: -i * 64, z: 3 + i }));
       return items.map((it) => res.get(it));
@@ -1518,7 +1527,7 @@
       CQ.fx.ring(this.layer, L.BX, L.PIVOT_Y, this.level ? "#2BB673" : "#C8473B"); // with the balance, wherever it stands
     }
     // The formula screen: the balance stays bright and sharp in its place while the rest of the scene
-    // goes dark, darkest at the left where the maths is written (styles.css, #world.presenting; the view
+    // goes dark, darkest at the right where the maths is written (styles.css, #world.presenting; the view
     // glides to it in CQ.notebook). false brings the scene back. instant: at once (a chapter jump).
     present(on, instant) {
       const root = CQ.world.root;

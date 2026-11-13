@@ -175,7 +175,7 @@
       CQ.swapBtn.build(uiLayer);
       CQ.bubble.build(uiLayer);
       CQ.spot.build(overlay);
-      CQ.focus.build(overlay);
+      CQ.focus.build();
       CQ.hand.build(uiLayer);
       CQ.checkPanel.build(uiLayer);
       CQ.eqBoard.build(uiLayer);
@@ -185,7 +185,8 @@
       this.skip = button("pill skip hidden", `${C().ui.skip} ⏭`, C().ui.skip, uiLayer, () => CQ.flow && CQ.flow.skipIntro());
     },
     // Remove every transient piece of UI (used when a level or chapter starts).
-    // opts.keepSpot: the spotlight stays on (a new level set up while Zippy peeks: js/flow.js, outro)
+    // opts.keepSpot: the spotlight stays on (a new level set up while Zippy peeks: js/flow.js, outro);
+    // opts.keepSoft: a blur that stays too (the formula screen's, handed over: js/flow.js, resetScene)
     reset(opts) {
       const keepSpot = !!(opts && opts.keepSpot);
       CQ.caption.hide(true);
@@ -194,7 +195,7 @@
       CQ.bubble.hide(true);
       if (!keepSpot) CQ.spot.off(true);
       CQ.focus.off(true);
-      CQ.soft.clear(keepSpot ? "spot" : null);
+      CQ.soft.clear([keepSpot ? "spot" : null, opts && opts.keepSoft].filter(Boolean));
       CQ.hand.stop();
       CQ.checkPanel.hide(true);
       CQ.eqBoard.hide(true);
@@ -795,9 +796,11 @@
       CQ.screen.shade("soft:" + owner, keep === false ? false : shade != null ? shade : keep.length ? 1 : 2);
       this.apply();
     },
+    // every owner but except (one owner or a list of them)
     clear(except) {
-      this.owners.forEach((keep, owner) => owner !== except && CQ.screen.shade("soft:" + owner, false));
-      [...this.owners.keys()].forEach((owner) => owner !== except && this.owners.delete(owner));
+      const kept = [].concat(except || []);
+      this.owners.forEach((keep, owner) => !kept.includes(owner) && CQ.screen.shade("soft:" + owner, false));
+      [...this.owners.keys()].forEach((owner) => !kept.includes(owner) && this.owners.delete(owner));
       this.apply();
     },
     apply() {
@@ -814,103 +817,77 @@
   };
 
   // ------------------------------------------------------------------ focus: "look here!"
-  // At a key teaching moment the rest of the screen fades back to dark (and blurs) and one thing stays
-  // bright, in a soft window with a gold ring. target: an element, a list of elements, a stage rect { x0, y0, x1, y1 },
-  // or a function returning one of those (it is asked again every frame, so the window follows the
-  // balance tipping or a new pan item). A new target while it is on: the window glides over to it.
-  // Taps go through, so the child can still act. opts: { pad, radius, still (measure once), quiet,
-  // ring: false (no gold ring) }. dimAll() fades everything back, with no window.
-  // Under the dark fade the scene's own layers blur (CQ.soft): the balance, the labels on it and the
-  // layer of whatever is looked at stay sharp; the background, Grumble and Zippy blur (unless looked at).
-  // UI pieces (caption, panels, buttons) sit above it and stay bright.
+  // At a key teaching moment what the line is about glows softly, and the rest of the scene fades back a
+  // little and blurs (review, 2026-11-13: "Remove the cyan-filled rectangle. A soft glow around the
+  // relevant objects would fit the wooden, forest theme better… Keep the full balance visible…
+  // Reduce the background dimming slightly"; until then a window with a gold ring went round it, the
+  // lake showing through it, and the rest of the balance was in the dark). No window, no frame: the fade
+  // is in the world (.world-shade.look), under the balance, the labels on it, sparkles and the layer of
+  // whatever is looked at, which stay above it, bright and sharp (#world.looking in styles.css); each
+  // thing looked at glows (.looked: a coin, a crown, a gold bar, a button, or the whole balance); the
+  // rest of the scene blurs (CQ.soft). On a formula screen, the check or a side view, which have a
+  // dark of their own, only the glow comes.
+  // target: an element, a list of elements, or a function returning one of those (asked again every
+  // frame, so whatever comes onto a pan meanwhile glows too). A new target while it is on: the glow
+  // moves over to it. Taps go through, so the child can still act. opts: { quiet (no sound), text }.
+  // opts.text: a look at words and numbers under the balance (the x + 2 = 7 strip): the whole scene
+  // goes dark but for the balance, which stays bright and sharp in its place, and the words turn bright
+  // and flat on the dark (styles.css, .lit). dimAll(): everything fades back and blurs, nothing kept.
+  // UI pieces (caption, panels, buttons) sit above it all and stay bright.
   CQ.focus = {
-    build(overlay) {
-      this.el = CQ.el("div", "focus hidden", overlay);
-      this.hole = CQ.el("div", "focus-hole", this.el);
-      this.ring = CQ.el("div", "focus-ring", this.el);
+    build() {
       this.tok = 0;
-      this.get = null;
+      this.active = false;
+      this.get = null; // what glows
       this.tick = null;
-      this.shown = null;
+      this.glowing = new Set();
+      this.raised = [];
     },
-    rect(target) {
+    els(target) {
       if (typeof target === "function") target = target();
-      if (!target) return null;
-      if (target.x0 != null) return target;
-      let r = null;
-      (Array.isArray(target) ? target : [target]).forEach((e) => {
-        if (!e || !e.isConnected) return;
-        const b = e.getBoundingClientRect();
-        if (!b.width || !b.height) return;
-        const a = CQ.stage.toStage(b.left, b.top);
-        const c = CQ.stage.toStage(b.right, b.bottom);
-        r = r ? { x0: Math.min(r.x0, a.x), y0: Math.min(r.y0, a.y), x1: Math.max(r.x1, c.x), y1: Math.max(r.y1, c.y) } : { x0: a.x, y0: a.y, x1: c.x, y1: c.y };
-      });
-      return r;
+      return (Array.isArray(target) ? target : [target]).filter((e) => e && e.isConnected);
     },
+    // the glow follows the target: what joins it starts to glow, what leaves it stops
     apply() {
-      const r = this.get && this.get();
-      if (!r) return;
-      const p = this.pad;
-      let box = { x: r.x0 - p, y: r.y0 - p, w: r.x1 - r.x0 + 2 * p, h: r.y1 - r.y0 + 2 * p };
-      if (this.from) {
-        const k = CQ.ease.inOut(Math.min(1, (performance.now() - this.t0) / 550));
-        const f = this.from;
-        box = { x: CQ.lerp(f.x, box.x, k), y: CQ.lerp(f.y, box.y, k), w: CQ.lerp(f.w, box.w, k), h: CQ.lerp(f.h, box.h, k) };
-        if (k >= 1) this.from = null;
-      }
-      this.shown = box;
-      const rad = Math.min(this.radius, box.w / 2, box.h / 2) + "px";
-      [this.hole, this.ring].forEach((e) => {
-        CQ.box(e, box.x, box.y, box.w, box.h);
-        e.style.borderRadius = rad;
-      });
+      const now = new Set(this.get ? this.els(this.get) : []);
+      this.glowing.forEach((e) => now.has(e) || e.classList.remove("looked"));
+      now.forEach((e) => e.classList.add("looked"));
+      this.glowing = now;
     },
-    // The world layers that stay sharp: the balance, the labels and flights over it, sparkles, and the
-    // layer of each thing looked at (Grumble, Zippy, the gold bars…).
-    sharpLayers(target) {
-      const w = CQ.world;
-      const keep = [w.balanceLayer, w.drag, w.fx];
-      const t = typeof target === "function" ? target() : target;
-      (Array.isArray(t) ? t : [t]).forEach((e) => {
-        const l = e && e.closest ? e.closest(".layer") : null;
-        if (l && l.parentNode === w.root && !keep.includes(l)) keep.push(l);
-      });
-      return keep;
+    // the world layers of the things looked at go above the fade too (the gold bars, Zippy…)
+    raise(layers) {
+      this.raised.forEach((l) => layers.includes(l) || l.classList.remove("lift"));
+      layers.forEach((l) => l.classList.add("lift"));
+      this.raised = layers;
     },
     on(target, opts) {
       opts = opts || {};
       const t = ++this.tok;
-      const wasOn = !this.el.classList.contains("hidden") && !!this.shown;
-      // opts.text: a look at words and numbers under the balance (the check, the equation board): the
-      // whole scene goes dark but for the balance, which stays bright and sharp in its place, and the
-      // words turn bright and flat (styles.css, .lit). The gold frame goes round the balance's beam and
-      // pans, what the words are about (no window: on the dark, a window round the words would show the
-      // floor behind them, like a pale panel).
+      const w = CQ.world;
+      const wasOn = this.active;
       const lit = !!opts.text;
-      const frame = lit ? () => [...CQ.world.balanceLayer.querySelectorAll(".bal-beam, .bal-hub, .bal-hanger, .bal-plate, .pan-item")] : target;
-      if (opts.still) {
-        const r = this.rect(frame);
-        this.get = () => r;
-      } else this.get = () => this.rect(frame);
-      this.pad = lit ? 18 : opts.pad != null ? opts.pad : 24;
-      this.radius = lit ? 26 : opts.radius != null ? opts.radius : 44;
+      const all = !!opts.blurAll;
+      this.active = true;
+      this.get = lit || all ? null : target;
+      const keep = all ? [] : lit ? [w.balanceLayer] : [w.balanceLayer, w.drag, w.fx]; // the layers kept sharp
+      const own = [];
+      if (this.get)
+        this.els(target).forEach((e) => {
+          const l = e.closest ? e.closest(".layer") : null;
+          if (l && l.parentNode === w.root && !keep.includes(l)) own.push(l);
+        });
+      this.raise(own);
+      w.root.classList.toggle("looking", !lit);
+      w.root.classList.toggle("look-all", all);
       this.lit(lit);
-      this.hole.style.visibility = lit ? "hidden" : "";
-      this.ring.style.display = opts.ring === false && !lit ? "none" : "";
-      this.from = wasOn ? this.shown : null; // glide from where the window is now
-      this.t0 = performance.now();
-      this.el.classList.remove("hidden");
-      if (lit) CQ.soft.set("focus", [CQ.world.balanceLayer], 2);
-      else CQ.soft.set("focus", opts.blurAll ? [] : this.sharpLayers(target));
+      CQ.soft.set("focus", keep.concat(own), lit ? 2 : 1);
       this.apply();
-      if (!this.tick) this.tick = CQ.ticker.add(() => this.apply());
-      if (!wasOn) {
-        if (!opts.quiet) CQ.audio.play("focus.in", { volume: 0.6 });
-        CQ.anim(this.ring, [{ opacity: 0, transform: "scale(1.15)" }, { opacity: 1, transform: "scale(1)" }], { duration: 650, easing: CQ.EASE.out, keep: false });
+      if (this.get && !this.tick) this.tick = CQ.ticker.add(() => this.apply());
+      if (!this.get && this.tick) {
+        this.tick();
+        this.tick = null;
       }
-      const from = parseFloat(getComputedStyle(this.el).opacity) || 0;
-      CQ.anim(this.el, [{ opacity: wasOn ? from : 0 }, { opacity: 1 }], { duration: 550, essential: true });
+      if (!wasOn && !opts.quiet) CQ.audio.play("focus.in", { volume: 0.6 });
       return t;
     },
     lit(on) {
@@ -918,30 +895,29 @@
       document.body.classList.toggle("lit", on);
     },
     dimAll(opts) {
-      return this.on({ x0: -99, y0: -99, x1: -98, y1: -98 }, Object.assign({ pad: 0, ring: false, blurAll: true }, opts));
+      return this.on(null, Object.assign({ blurAll: true }, opts));
     },
     // Turn it off in ms (unless something else was focused meanwhile).
     offAfter(ms) {
       const t = this.tok;
       setTimeout(() => t === this.tok && this.off(), ms);
     },
+    // The glow stops, and the scene sharpens and brightens again (styles.css: the fade takes 0.7 s; the
+    // promise waits for it).
     off(now) {
-      const t = ++this.tok;
-      CQ.soft.set("focus", false); // the scene sharpens as the ring fades
+      ++this.tok;
+      const was = this.active;
+      this.active = false;
+      CQ.soft.set("focus", false);
       this.lit(false);
-      const done = () => {
-        if (t !== this.tok) return;
-        this.el.classList.add("hidden");
-        if (this.tick) this.tick();
-        this.tick = null;
-        this.get = null;
-        this.shown = null;
-      };
-      if (now || this.el.classList.contains("hidden")) {
-        done();
-        return Promise.resolve();
-      }
-      return CQ.anim(this.el, [{ opacity: parseFloat(getComputedStyle(this.el).opacity) || 1 }, { opacity: 0 }], { duration: 500, essential: true }).then(done);
+      const root = CQ.world && CQ.world.root;
+      if (root) root.classList.remove("looking", "look-all");
+      this.raise([]);
+      if (this.tick) this.tick();
+      this.tick = null;
+      this.get = null;
+      this.apply();
+      return now || !was ? Promise.resolve() : CQ.sleep(700);
     },
   };
 
@@ -1441,7 +1417,7 @@
 
   // ------------------------------------------------------------------ Check panel (substitute, find each side, compare)
   // The check is shown like the formula screen (asked 2026-11-05): the view glides until the balance
-  // stands at the right, bright, with the rest of the scene dark (Zippy, holding the bar, waits unseen),
+  // stands at the left, bright, with the rest of the scene dark (Zippy, holding the bar, waits unseen),
   // and the check is worked at the right, big, one row under another, each piece coming in by itself.
   // Pieces appear one at a time (styles.css: body.checking).
   // (each piece by itself: it has faded in before the next one starts)
@@ -1464,7 +1440,7 @@
       this.cmp = CQ.el("div", "cp-compare", this.el);
       this.isOpen = false;
     },
-    // The view glides: the balance to the right, the rest dark, the check at the left (CQ.ASIDE).
+    // The view glides: the balance to the left, the rest dark, the check at the right (CQ.ASIDE).
     // (close: back to the whole scene.)
     async open() {
       if (this.isOpen) return;
@@ -1493,21 +1469,27 @@
       await CQ.camera.to(960, 540, 1, 1300);
     },
     // eq = { k, a, b, rhsGiven }: the equation k·x + a = b (k is 1 except for Level 9's two crowns).
-    // The check, one row under another (review, 2026-11-08): the equation itself at the top, kept in
-    // sight; x = 4 (the value put in for x); LHS: 4 + 3 = ?, when the left side is worked out; RHS: 9 = ?,
-    // when the right side is (or RHS: 23, when it is given); then the two compared.
+    // The check, one row under another (review, 2026-11-13): the equation itself at the top, kept in
+    // sight; "Try x = 4", the value tried for x, clearly a try ("'Try x = 4' so it is clearly a trial
+    // value"); LHS = 4 + 3 = □, when the left side is worked out; RHS = □ under it, when the right side is
+    // (or RHS = 23, when it is given); then the two compared, and what it means.
     async show(eq) {
       this.eq = eq;
       const k = eq.k || 1;
       this.el.classList.remove("hidden");
       this.eqRow.innerHTML = CQ.rich(`${k > 1 ? k : ""}x + ${eq.a} = ${eq.b}`);
-      this.xRow.innerHTML = `<i class="v">x</i><span class="op">=</span><span class="xslot"></span>`;
-      // each side in three parts (its name, its expression, = and its value), the two sides lined up
-      // on their = signs (review, 2026-11-08: "Align the LHS and RHS calculations")
-      this.lhs.innerHTML = `<span class="lab">LHS:</span><span class="ex">${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a}</span></span><span class="eqv"><span class="op">=</span><button type="button" class="blank" data-k="lhs" aria-label="Left-hand side value">?</button></span>`;
+      this.xRow.className = "cp-x";
+      this.xRow.innerHTML = `<span class="try">${C().ui.tryWord}</span><i class="v">x</i><span class="op">=</span><span class="xslot"></span>`;
+      // each side: its name, =, then the rest (its expression, = and its value; or only its value), the two
+      // sides' first = signs one under the other, so the right side's box stands under the 4 (same review:
+      // "After the answer, reveal RHS = □ directly below, with the first equals signs aligned", "place a
+      // single input box directly after RHS:, aligned beneath the 4 in the LHS row"; it was RHS: 9 = ?)
+      this.lhs.className = "cp-side lhs";
+      this.rhs.className = "cp-side rhs";
+      this.lhs.innerHTML = `<span class="lab">LHS</span><span class="op e1">=</span><span class="rest"><span class="ex">${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a}</span></span><span class="eqv"><span class="op">=</span><button type="button" class="blank" data-k="lhs" aria-label="Left-hand side value">?</button></span></span>`;
       this.rhs.innerHTML = eq.rhsGiven
-        ? `<span class="lab">RHS:</span><span class="ex"><span class="op">${CQ.num(eq.b)}</span></span><span class="eqv"></span>`
-        : `<span class="lab">RHS:</span><span class="ex"><span class="op">${CQ.num(eq.b)}</span></span><span class="eqv"><span class="op">=</span><button type="button" class="blank" data-k="rhs" aria-label="Right-hand side value">?</button></span>`;
+        ? `<span class="lab">RHS</span><span class="op e1">=</span><span class="rest"><span class="ex"><span class="op">${CQ.num(eq.b)}</span></span></span>`
+        : `<span class="lab">RHS</span><span class="op e1">=</span><span class="rest"><span class="eqv"><button type="button" class="blank" data-k="rhs" aria-label="Right-hand side value">?</button></span></span>`;
       this.cmp.innerHTML = "";
       this.cmp.className = "cp-compare";
       const old = this.el.querySelector(":scope > .cp-picker");
@@ -1520,9 +1502,9 @@
       await comeUp([this.eqRow]);
       await CQ.run.wait(200);
     },
-    // a side's pieces, one by one (its name, the parts of its expression, =, its value)
+    // a side's pieces, one by one (its name, =, the parts of its expression, =, its value)
     pieces(side) {
-      return [...side.querySelectorAll(":scope > .lab, :scope > .ex > *, :scope > .eqv > *")];
+      return [...side.querySelectorAll(":scope > .lab, :scope > .e1, :scope > .rest > .ex > *, :scope > .rest > .eqv > *")];
     },
     // The left side comes in, piece by piece (with the value already in for x).
     async lhsRow() {
@@ -1580,29 +1562,38 @@
     fill(k, options, correct, onMiss) {
       return CQ.pickNumber(this.blank(k), this.el, options, correct, onMiss);
     },
-    // LHS = RHS or LHS ≠ RHS, and under it what that means ("4 is not a solution").
-    // One piece at a time: the left value, the sign, the right value; then what it means, written in.
-    async compare(l, r, verdict) {
+    // LHS = RHS or LHS ≠ RHS: one piece at a time, the left value, the sign, the right value.
+    async compare(l, r) {
       const eq = l === r;
-      this.cmp.innerHTML =
-        `<div class="cp-cmp-row"><span class="cv lhs">${CQ.num(l)}</span><span class="csym ${eq ? "ok" : "no"}">${eq ? "=" : '<span class="neq">=</span>'}</span><span class="cv rhs">${CQ.num(r)}</span></div>` +
-        (verdict ? `<div class="cp-verdict">${CQ.rich(verdict)}</div>` : "");
+      this.cmp.innerHTML = `<div class="cp-cmp-row"><span class="cv lhs">${CQ.num(l)}</span><span class="csym ${eq ? "ok" : "no"}">${eq ? "=" : '<span class="neq">=</span>'}</span><span class="cv rhs">${CQ.num(r)}</span></div>`;
       this.cmp.className = "cp-compare " + (eq ? "ok" : "no");
-      const v = this.cmp.querySelector(".cp-verdict");
-      if (v) v.style.opacity = "0";
       await comeUp([...this.cmp.querySelectorAll(".cp-cmp-row > span")], 520);
       CQ.audio.play(eq ? "balance.level" : "tryagain");
-      if (v) {
-        v.style.opacity = "";
-        await CQ.run.wait(CQ.writeIn ? CQ.writeIn(v, 60, 38) : 0);
-      }
       return eq;
+    },
+    // What it means, written in under the comparison ("4 is not a solution."), smaller, and the value
+    // tried lit with it (review, 2026-11-13: "Reveal 7 ≠ 9, then highlight the trial x = 4 as the
+    // conclusion appears"; "End with '7 ≠ 9. So, 4 is not a solution.'")
+    async verdict(text, ok) {
+      const v = CQ.el("div", "cp-verdict", this.cmp, CQ.rich(text));
+      this.xRow.classList.add(ok ? "lit-ok" : "lit-no");
+      await CQ.run.wait(CQ.writeIn ? CQ.writeIn(v, 60, 38) : 0);
+    },
+    // The side the voice is saying the value of glows in its colour; the other side's glow fades, the
+    // row itself staying as it is, in full view ("The left-hand side equals 7" with LHS = 4 + 3 = 7 lit;
+    // "The right-hand side equals 9" with RHS = 9 lit: review, 2026-11-13, "Fade the previous
+    // highlight"); null: neither lit.
+    lightSide(which) {
+      [
+        ["lhs", this.lhs],
+        ["rhs", this.rhs],
+      ].forEach(([k, el]) => el.classList.toggle("lit", which === k));
     },
   };
 
   // ------------------------------------------------------------------ equation board (Levels 8 and 9)
   // The working of Levels 8 and 9, shown like the formula screen (asked 2026-11-05): the view glides
-  // until the balance stands at the right, bright, and the steps are written at the left, one row under
+  // until the balance stands at the left, bright, and the steps are written at the right, one row under
   // another, each one written in; the earlier rows fade back a little. The child takes bars off with the
   // working in view, and each − 8 (− 4) is written as its bar comes off (set's hold, then reveal:
   // review, 2026-11-08).
@@ -1619,7 +1610,7 @@
       CQ.soft.set("solve", [CQ.world.balanceLayer, CQ.world.drag], 2);
       CQ.balance.present(true);
       CQ.audio.play("focus.in");
-      const A = CQ.ASIDE; // the balance at the right, the working at the left
+      const A = CQ.ASIDE; // the balance at the left, the working at the right
       await CQ.camera.to(A.x, A.y, A.z, 1400, null, A.free);
       if (!this.isOpen) return;
       CQ.zippy.setVisible(false); // already unseen under the dark
