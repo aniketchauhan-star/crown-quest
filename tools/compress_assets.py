@@ -7,7 +7,11 @@ WebP, and the game is pointed at the WebP:
 - pictures with transparency (sprite sheets, props, interface pieces, background layers): quality 88,
   with their transparency kept exactly;
 - fully opaque pictures (the start screen): quality 85.
-Side by side, the WebP looks the same as the PNG, at about a quarter of its size. If a WebP comes out
+Side by side, the WebP looks the same as the PNG, at about a quarter of its size. (On 2026-11-13 the
+characters' big sprite sheets and a few background layers were saved again at quality 80 to make the
+folder smaller: they measured 0.985-0.999 SSIM against quality 88, i.e. the same to the eye. The
+interface pieces, the balance, the title's logo, crown and Grumble stayed at 88, where the difference
+could show.) If a WebP comes out
 bigger than its original (it can, for a tiny picture), the original is kept.
 
 Needs cwebp (brew install webp). tools/prepare_assets.py runs this at its end; it can also be run on its

@@ -5,7 +5,7 @@ Build the game's voice lines from the TTS studio's zip files (see docs/VOICEOVER
 Run from anywhere:   python3 tools/vo_build.py [voiceovers_batch.zip ...]
 
 What it does
-- Every voNNN.mp3 in the zip(s) becomes assets/vo/voNNN.ogg: Ogg Opus, 32 kbps, mono. With several
+- Every voNNN.mp3 in the zip(s) becomes assets/vo/voNNN.ogg: Ogg Opus, 24 kbps, mono. With several
   zips, a later one wins, so a zip of re-made lines can go last. It uses ffmpeg when that is
   installed, and otherwise macOS's own afconvert (its Opus packets are copied into an Ogg file).
 - Rebuilds js/vo_lines.js from tools/vo_script.json: { "<line as shown>": ["voNNN", seconds] }.
@@ -30,7 +30,7 @@ SCRIPT = os.path.join(ROOT, "tools", "vo_script.json")
 VO_DIR = os.path.join(ROOT, "assets", "vo")
 MAP = os.path.join(ROOT, "js", "vo_lines.js")
 DOC = os.path.join(ROOT, "docs", "VOICEOVER.md")
-BITRATE = 32000
+BITRATE = 24000  # (speech: 24 kbps Opus is clear and a quarter smaller than 32: 2026-11-13)
 
 
 # --------------------------------------------------------------------------- Ogg pages
@@ -151,7 +151,7 @@ def mp3_rate(path):
 def convert(mp3, ogg):
     if shutil.which("ffmpeg"):
         subprocess.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", mp3, "-ac", "1", "-c:a", "libopus",
-                        "-b:a", "32k", "-map_metadata", "-1", ogg], check=True)
+                        "-b:a", "%dk" % (BITRATE // 1000), "-application", "voip", "-map_metadata", "-1", ogg], check=True)
         return
     if not shutil.which("afconvert"):
         sys.exit("Needs ffmpeg (https://ffmpeg.org) or macOS (afconvert) to make Ogg Opus files.")

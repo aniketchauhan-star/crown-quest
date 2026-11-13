@@ -4,7 +4,7 @@ Every line the game shows in its caption bar, and every line Zippy says in his s
 
 | | |
 |---|---|
-| Clips | `assets/vo/vo001.ogg` … one file per line, Ogg Opus, 32 kbps, mono: 302 clips, 32.5 minutes, 7.6 MB (49 lines are waiting for the studio: below) |
+| Clips | `assets/vo/vo001.ogg` … one file per line, Ogg Opus, 24 kbps, mono: 269 clips, 30.2 minutes, 5.6 MB (49 lines are waiting for the studio: below). On 2026-11-13 every clip was re-encoded from 32 to 24 kbps (speech stays clear; the folder had to be smaller), and the 33 clips of lines the game no longer says were removed with their script entries. |
 | Script | `tools/vo_script.json`: each line as shown, as spoken, and the Devanagari the voice was given |
 | Map | `js/vo_lines.js` (generated): line as shown → [clip, seconds] |
 | Player | `js/voice.js` (finds and loads clips), played by `js/audio.js`, typed out by the caption in `js/ui.js` |
@@ -67,7 +67,7 @@ Six lines of the label activity (Level 4c) and the formula screen after it, new 
 More of the review of 2026-11-13, later that day, spoken as shown with the numbers in words (each spoken form is in `tools/vo_script.json`):
 - Level 4's linear equation (4c): **vo052** "The power of x is 1." and **vo322** "We usually leave the 1 unwritten." (they were one line, "When we write x, its power is 1. We usually leave the 1 unwritten."); **vo054** "This is called a linear equation in one variable." (it was "So, it is a linear equation in one variable.").
 - Level 4's try (4g), a side at a time: **vo071** "The left-hand side equals 6." (it was "The left side equals 6, and the right side equals 7. They're different, so 4 is not a solution."), **vo323** "The right-hand side equals 7.", **vo324** "They're different, so 4 is not a solution.", **vo325** "The left-hand side equals 7." ("Both sides equal 7." keeps its clip, vo074).
-- The check in Levels 5 to 9, a side at a time: **vo134** "Find the value of the left-hand side." (it was "…of the left side."), **vo326** "Now find the value of the right-hand side.", and for each value a child can try, "The left-hand side equals …", "The right-hand side equals …" and "They're different, so … is not a solution." (**vo327** to **vo348**). ("Find the value of each side." (vo084), "15 + 8 = 23." (vo136) and "2 × 7 + 4 = 18." (vo159) are no longer said.)
+- The check in Levels 5 to 9, a side at a time: **vo134** "Find the value of the left-hand side." (it was "…of the left side."), **vo326** "Now find the value of the right-hand side.", and for each value a child can try, "The left-hand side equals …", "The right-hand side equals …" and "They're different, so … is not a solution." (**vo327** to **vo348**). ("Find the value of each side.", "15 + 8 = 23." and "2 × 7 + 4 = 18." are no longer said; their clips were removed.)
 - Level 8: **vo349** "Let's try x = 10." and **vo350** "How about x = 12?" (they replace "Let's try different values of x.", which had no clip); **vo351** "Can we find the crown's mass without guessing?" (it replaces "Let's find the mass of the crown directly.", which had no clip); **vo126** "We can split 23 units into 8 and 15." (it was "First, split 23 into 8 and 15."); **vo128** "Let's remove 8 units from both sides." (it was "To keep the balance level, we must remove 8 units from both sides.").
 - Level 9, in a new order: **vo151** "We can split 18 units into 4 and 14." (it was "Split 18 into 4 and 14."), then **vo150** "There are 4 units beside the crowns. Let's see how we can remove them." (it was "First, let's remove these 4 units.", before the split), then **vo152** "Let's remove 4 units from both sides." (it was "Remove 4 from both sides.").
 
@@ -85,10 +85,10 @@ In practice: on a quiet morning, 40 lines took about 5 minutes with no failures,
 
 ## Conversion
 
-`tools/vo_build.py` turns the studio's MP3s into Ogg Opus, 32 kbps, mono:
+`tools/vo_build.py` turns the studio's MP3s into Ogg Opus, 24 kbps, mono (Opus's speech mode):
 
-- with ffmpeg: `ffmpeg -i voNNN.mp3 -ac 1 -c:a libopus -b:a 32k voNNN.ogg`;
-- without ffmpeg, on any Mac: `afconvert -f caff -d opus -b 32000` makes the Opus packets, and the tool copies them into an Ogg file (RFC 7845) without re-encoding. Ogg Opus counts at 48 kHz even though the clips are 24 kHz, so the tool scales the timing (and the encoder's start-up delay) by 2. The last page ends on the last real sample, so the encoder's padding is cut off.
+- with ffmpeg: `ffmpeg -i voNNN.mp3 -ac 1 -c:a libopus -b:a 24k -application voip voNNN.ogg`;
+- without ffmpeg, on any Mac: `afconvert -f caff -d opus -b 24000` makes the Opus packets, and the tool copies them into an Ogg file (RFC 7845) without re-encoding. Ogg Opus counts at 48 kHz even though the clips are 24 kHz, so the tool scales the timing (and the encoder's start-up delay) by 2. The last page ends on the last real sample, so the encoder's padding is cut off.
 
 The tool reads each clip's length from the file itself, writes `js/vo_lines.js`, deletes anything in `assets/vo/` that no line uses, rewrites the table below and lists any line that has no clip yet.
 
@@ -160,24 +160,11 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo037 | A statement that says two expressions have equal values is called an equation. | = | ए स्टेटमेंट दैट सेज़ टू एक्सप्रेशन्स हैव इक्वल वैल्यूज़ इज़ कॉल्ड एन इक्वेशन। | 6.2 |
 | vo038 | The expression to the left of the equals sign is called the left-hand side, or LHS. | The expression to the left of the equals sign is called the left-hand side, or L H S. | द एक्सप्रेशन टू द लेफ्ट ऑफ़ द इक्वल्स साइन इज़ कॉल्ड द लेफ्ट हैंड साइड, ऑर एल एच एस। | 7.2 |
 | vo039 | The expression to the right of the equals sign is called the right-hand side, or RHS. | The expression to the right of the equals sign is called the right-hand side, ऑर R H S. | दी एक्सप्रेशन टू दी राइट ऑफ दी ईक्वल्स साइन इज़ कॉल्ड दी राइट-हैंड साइड, ऑर आर एच एस। | 6.4 |
-| vo040 | Label the parts of the equation. | = | लेबल द पार्ट्स ऑफ द इक्वेशन। | 2.6 |
-| vo041 | Yes! x is the variable. | = | यस! एक्स इज़ द वेरिएबल। | 2.8 |
-| vo042 | Yes! 4x + 3 is the LHS. | Yes! Four x plus three is the L H S. | येस! फोर एक्स प्लस थ्री इज द एल एच एस। | 4.4 |
-| vo043 | Yes! 19 is the RHS. | Yes! Nineteen is the R H S. | येस! नाइन्टीन इज द आर एच एस। | 3.7 |
-| vo044 | Yes! The whole statement is an equation. | = | येस! द होल स्टेटमेंट इज़ एन इक्वेशन. | 3.7 |
-| vo045 | Look where the line points. | = | लुक व्हेअर द लाइन पॉइंट्स। | 2.4 |
-| vo046 | This line points to x, the symbol for an unknown value. That's the variable. | = | दिस लाइन पॉइंट्स टू एक्स, द सिम्बल फॉर एन अननोन वैल्यू। दैट्स द वेरिएबल। | 6.0 |
-| vo047 | This bracket is left of =. That's the LHS. | This bracket is left of the equals sign. That's the L H S. | दिस ब्रैकेट इज लेफ्ट ऑफ़ द ईक्वल्स साइन। दैट्स द एल एच एस। | 5.0 |
-| vo048 | This bracket is right of =. That's the RHS. | This bracket is right of the equals sign. That's the R H S. | दिस ब्रैकेट इज़ राइट ऑफ़ द इक्वल्स साइन. दैट्स द आर एच एस. | 5.1 |
-| vo049 | This bracket covers the whole statement with =. That's the equation. | This bracket covers the whole statement with the equals sign. That's the equation. | दिस ब्रैकेट कवर्स द होल स्टेटमेंट विद द इक्वल्स साइन। दैट्स द इक्वेशन। | 5.8 |
 | vo050 | Brilliant! You labelled every part. | = | ब्रिलियंट! यू लेबल्ड एव्री पार्ट. | 3.3 |
 | vo051 | This equation has one variable: x. | = | दिस इक्वेशन हैज़ वन वेरिएबल: एक्स। | 3.9 |
 | vo052 | The power of x is 1. | The power of x is one. |  | no clip yet |
 | vo053 | This equation has one variable, and its highest power is 1. | This equation has one variable, and its highest power is one. | दिस इक्वेशन हैज वन वेरिएबल, एंड इट्स हाईएस्ट पावर इज वन। | 5.0 |
 | vo054 | This is called a linear equation in one variable. | = |  | no clip yet |
-| vo055 | Drop each equation into the correct box. | = | ड्रॉप ईच इक्वेशन इनटू द करेक्ट बॉक्स। | 3.7 |
-| vo056 | Correct! The highest power of x is 1. | Correct! The highest power of x is one. | करेक्ट! द हाइएस्ट पावर ऑफ एक्स इज वन। | 3.8 |
-| vo057 | Correct! The highest power of x is 2. | Correct! The highest power of x is two. | करेक्ट! द हाइएस्ट पावर ऑफ एक्स इज टू। | 3.5 |
 | vo058 | Check the highest power of x. | = | चेक द हायेस्ट पावर ऑफ एक्स। | 2.7 |
 | vo059 | The highest power of x is 1, so this equation is linear. | The highest power of x is one, so this equation is linear. | द हाइऐस्ट पावर ऑफ एक्स इज़ वन, सो दिस इक्वेशन इज़ लीनियर। | 4.9 |
 | vo060 | The highest power of x is 2, so this equation is nonlinear. | The highest power of x is two, so this equation is nonlinear. | द हाइयेस्ट पावर ऑफ एक्स इज टू सो दिस इक्वेशन इज नॉन-लीनियर। | 5.4 |
@@ -190,31 +177,23 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo067 | Now let's find the crown's mass. | = | नाउ लेट्स फाइंड द क्राउन्स मास। | 2.9 |
 | vo068 | We need a value of x that makes both sides equal. | = | वी नीड ए वैल्यू ऑफ एक्स दैट मेक्स बोथ साइड्स इक्वल। | 4.4 |
 | vo069 | Let's check 4. Replace x with 4 and find the value of each side. | Let's check four. Replace x with four and find the value of each side. | लेट्स चेक फोर। रिप्लेस एक्स विथ फोर एंड फाइंड द वैल्यू ऑफ़ ईच साइड। | 5.7 |
-| vo070 | Tap the 4 bar. | Tap the four bar. | टैप द फोर बार। | 2.3 |
 | vo071 | The left-hand side equals 6. | The left-hand side equals six. |  | no clip yet |
 | vo072 | Now, let's check 5. Replace x with 5 and find the value of each side. | Now, let's check five. Replace x with five and find the value of each side. | नाउ, लेट्स चेक फाइव। रिप्लेस एक्स विद फाइव एंड फाइंड द वैल्यू ऑफ ईच साइड। | 6.6 |
-| vo073 | Tap the 5 bar. | Tap the five bar. | टैप द फाइव बार। | 2.3 |
 | vo074 | Both sides equal 7. | Both sides equal seven. | बोथ साइड्स इक्वल सेवन। | 2.7 |
 | vo075 | A value that makes an equation true is called its solution. So, 5 is the solution. | A value that makes an equation true is called its solution. So, five is the solution. | ए वैल्यू दैट मेक्स एन इक्वेशन ट्रू इज़ कॉल्ड इट्स सोल्यूशन। सो, फाइव इज़ द सोल्यूशन। | 7.2 |
 | vo076 | The crown's mass is 5 units. Zippy can use the 5-unit bar! | The crown's mass is five units. ज़िप्पी can use the five-unit bar! | द क्राउन्स मास इज फाइव यूनिट्स। ज़िप्पी कैन यूज़ द फाइव-यूनिट बार! | 6.3 |
 | vo077 | Now Zippy can swap. Tap Swap! | Now ज़िप्पी can swap. Tap Swap! | नाउ ज़िप्पी कैन स्वैप. टैप स्वैप! | 4.0 |
-| vo078 (Zippy) | That works! | = | दैट वर्क्स! | 1.5 |
-| vo079 | Another crown, with 3 coins beside it. So, x + 3 = 9. | Another crown, with three coins beside it. So, x plus three equals nine. | अनदर क्राउन, विद थ्री कॉइन्स बिसाइड इट। सो, एक्स प्लस थ्री इक्वल्स नाइन। | 7.1 |
-| vo080 | Smart treasure hunters check before they swap! | = | स्मार्ट ट्रेजर हंटर्स चेक बिफोर दे स्वैप! | 3.5 |
 | vo081 (Zippy) | Let's try 4. | Let's try four. | लेट्स ट्राई फोर। | 1.9 |
 | vo082 | Give the 4 bar to Zippy. | Give the four bar to ज़िप्पी. | गिव द फोर बार टू ज़िप्पी। | 2.2 |
 | vo083 | Replace x with 4. | Replace x with four. | रिप्लेस एक्स विद फोर। | 3.0 |
-| vo084 | Find the value of each side. | = | फाइंड द वैल्यू ऑफ ईच साइड। | 3.0 |
 | vo085 | Add: 4 + 3. Count on from 4: 5, 6, 7. | Add: four plus three. Count on from four: five, six, seven. | ऐड: फोर प्लस थ्री। काउंट ऑन फ्रॉम फोर: फाइव, सिक्स, सेवन। | 8.8 |
 | vo086 | RHS is the number on the right of =. | R H S is the number on the right of the equals sign. | आर एच एस इज़ द नंबर ऑन द राइट ऑफ द इक्वल्स साइन। | 4.0 |
 | vo087 (Zippy) | Phew! Good thing we checked. | = | फ़्यू! गुड थिंग वी चेक्ड। | 2.6 |
-| vo088 | The left side equals 7, and the right side equals 9. They're different, so 4 doesn't work. | The left side equals seven, and the right side equals nine. They're different, so four doesn't work. | द लेफ्ट साइड इक्वल्स सेवन, एंड द राइट साइड इक्वल्स नाइन। देअर डिफरेंट, सो फोर डजंट वर्क। | 7.5 |
 | vo089 (Zippy) | Now, let's try 6. | Now, let's try six. | नाउ, लेट्स ट्राई सिक्स। | 2.6 |
 | vo090 | Give the 6 bar to Zippy. | Give the six bar to ज़िप्पी. | गिव द सिक्स बार टू ज़िप्पी. | 2.4 |
 | vo091 | Replace x with 6. | Replace x with six. | रिप्लेस एक्स विद सिक्स। | 3.1 |
 | vo092 | Add: 6 + 3. Count on from 6: 7, 8, 9. | Add: six plus three. Count on from six: seven, eight, nine. | ऐड: सिक्स प्लस थ्री। काउंट ऑन फ्रॉम सिक्स: सेवन, एट, नाइन। | 7.6 |
 | vo093 | Both sides equal 9. So, 6 is the solution. Zippy can use the 6-unit bar! | Both sides equal nine. So, six is the solution. ज़िप्पी can use the six-unit bar! | बोथ साइड्स इक्वल नाइन। सो, सिक्स इज द सोल्यूशन। ज़िप्पी कैन यूज़ द सिक्स-यूनिट बार! | 7.7 |
-| vo094 | Another crown, with 4 coins beside it. So, x + 4 = 11. | Another crown, with four coins beside it. So, x plus four equals eleven. | अनदर क्राउन, विद फोर कॉइन्स बिसाइड इट। सो, एक्स प्लस फोर इक्वल्स इलेवन। | 6.6 |
 | vo095 | Choose a value for x. Check whether both sides are equal. | = | चूज़ अ वैल्यू फॉर एक्स। चेक वेदर बोथ साइड्स आर इक्वल। | 4.5 |
 | vo096 | Both sides equal 11. So, 7 is the solution. | Both sides equal eleven. So, seven is the solution. | बोथ साइड्स इक्वल इलेवन। सो, सेवन इज द सलूशन। | 5.3 |
 | vo097 | Let's check 5. | Let's check five. | लेट्स चेक फाइव। | 1.7 |
@@ -242,21 +221,14 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo119 | Add: 8 + 2. Count on from 8: 9, 10. | Add: eight plus two. Count on from eight: nine, ten. | ऐड: एट प्लस टू। काउंट ऑन फ्रॉम एट: नाइन, टेन। | 6.5 |
 | vo120 | Now, let's check 12. | Now, let's check twelve. | नाउ, लेट्स चेक ट्वेल्व। | 2.7 |
 | vo121 | Zippy spots another crown! | ज़िप्पी spots another crown! | ज़िप्पी स्पॉट्स अनदर क्राउन! | 3.2 |
-| vo122 | This crown and an 8-unit bar together balance 23 units. | This crown and an eight-unit bar together balance twenty-three units. | दिस क्राउन एंड एन एट-यूनिट बार टुगेदर बैलेंस ट्वेंटी-थ्री यूनिट्स। | 5.5 |
-| vo123 | We could try different values again. But that might take a while. | = | वी कुड ट्राई डिफरेंट वैल्यूज अगेन। बट दैट माइट टेक अ व्हाइल। | 4.7 |
-| vo124 (Zippy) | I know! | = | आई नो! | 1.5 |
-| vo125 | Let's find the crown's mass directly. | = | लेट्स फाइंड द क्राउन्स मास डाइरेक्टली। | 3.4 |
 | vo126 | We can split 23 units into 8 and 15. | We can split twenty-three units into eight and fifteen. |  | no clip yet |
 | vo127 | There are 8 units beside the crown. Let's see how we can remove them. | There are eight units beside the crown. Let's see how we can remove them. | देयर आर एइट यूनिट्स बिसाइड द क्राउन। लेट्स सी हाउ वी कैन रिमूव देम। | 5.2 |
 | vo128 | Let's remove 8 units from both sides. | Let's remove eight units from both sides. |  | no clip yet |
-| vo129 | Remove 8 from both sides to keep the balance level. | Remove eight from both sides to keep the balance level. | रिमूव ऐट फ्रॉम बोथ साइड्स टू कीप द बैलेंस लेवल। | 4.3 |
-| vo130 | Drag an 8 bar off the balance. | Drag an eight bar off the balance. | ड्रैग एन एट बार ऑफ़ द बैलेंस। | 3.1 |
 | vo131 | Now the crown balances 15 units. So, x = 15. | Now the crown balances fifteen units. So, x equals fifteen. | नाउ द क्राउन बैलेंसिस फिफ्टीन यूनिट्स. सो, एक्स ईक्वल्स फिफ्टीन. | 5.5 |
 | vo132 | Before Zippy swaps, let's check the answer in the original equation. | Before ज़िप्पी swaps, let's check the answer in the original equation. | बिफोर ज़िप्पी स्वैप्स, लेट्स चेक द आंसर इन द ओरिजिनल इक्वेशन। | 4.9 |
 | vo133 | Replace x with 15. | Replace x with fifteen. | रिप्लेस एक्स विद फिफ्टीन। | 2.9 |
 | vo134 | Find the value of the left-hand side. | = |  | no clip yet |
 | vo135 | Add: 15 + 8. Count on from 15: 16, 17, 18, 19, 20, 21, 22, 23. | Add: fifteen plus eight. Count on from fifteen: sixteen, seventeen, eighteen, nineteen, twenty, twenty-one, twenty-two, twenty-three. | ऐड: फिफ्टीन प्लस एइट. काउंट ऑन फ्रॉम फिफ्टीन: सिक्सटीन, सेवेंटीन, एटीन, नाइंटीन, ट्वेंटी, ट्वेंटी वन, ट्वेंटी टू, ट्वेंटी थ्री. | 13.3 |
-| vo136 | 15 + 8 = 23. | Fifteen plus eight equals twenty-three. | फिफ्टीन प्लस एट इक्वल्स ट्वेंटी-थ्री | 3.5 |
 | vo137 | Both sides equal 23. So, 15 is the solution. | Both sides equal twenty-three. So, fifteen is the solution. | बोथ साइड्स इक्वल ट्वेंटी-थ्री। सो, फिफ्टीन इज द सलूशन। | 4.8 |
 | vo138 | The crown's mass is 15 units. Zippy can use the 15-unit bar! | The crown's mass is fifteen units. ज़िप्पी can use the fifteen-unit bar! | द क्राउन्स मास इज़ फिफ्टीन यूनिट्स। ज़िप्पी कैन यूज़ द फिफ्टीन यूनिट बार! | 5.9 |
 | vo139 | Give the 15 bar to Zippy, then tap Swap. | Give the fifteen bar to ज़िप्पी, then tap Swap. | गिव द फिफ्टीन बार टू ज़िप्पी, देन टैप स्वैप। | 3.9 |
@@ -267,19 +239,14 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo144 | Add: 31 + 8. Count on from 31: 32, 33, 34, 35, 36, 37, 38, 39. | Add: thirty-one plus eight. Count on from thirty-one: thirty-two, thirty-three, thirty-four, thirty-five, thirty-six, thirty-seven, thirty-eight, thirty-nine. | ऐड: थर्टी-वन प्लस ऐट। काउंट ऑन फ्रॉम थर्टी-वन: थर्टी-टू, थर्टी-थ्री, थर्टी-फोर, थर्टी-फाइव, थर्टी-सिक्स, थर्टी-सेवन, थर्टी-ऐट, थर्टी-नाइन। | 14.8 |
 | vo145 | The left side equals 39, and the right side equals 23. They're different, so 31 is not a solution. | The left side equals thirty-nine, and the right side equals twenty-three. They're different, so thirty-one is not a solution. | द लेफ्ट साइड इक्वल्स थर्टी नाइन, एंड द राइट साइड इक्वल्स ट्वेंटी थ्री। देआर डिफरेंट, सो थर्टी वन इज नॉट अ सॉल्यूशन। | 8.7 |
 | vo146 | That works! Zippy collects the crown, and Grumble stays asleep. | That works! ज़िप्पी collects the crown, and Grumble stays asleep. | दैट वर्क्स! ज़िप्पी कलेक्ट्स द क्राउन, एंड ग्रंबल स्टेज़ अस्लीप। | 5.2 |
-| vo147 | Zippy spots two matching crowns! | ज़िप्पी spots two matching crowns! | ज़िप्पी स्पॉट्स टू मैचिंग क्राउन्स! | 3.2 |
 | vo148 | Each crown has the same mass, x. | = | ईच क्राउन हैज द सेम मास, एक्स। | 3.5 |
 | vo149 | Two lots of x make 2x. | Two lots of x make two x. | टू लॉट्स ऑफ़ एक्स मेक टू एक्स। | 2.8 |
 | vo150 | There are 4 units beside the crowns. Let's see how we can remove them. | There are four units beside the crowns. Let's see how we can remove them. |  | no clip yet |
 | vo151 | We can split 18 units into 4 and 14. | We can split eighteen units into four and fourteen. |  | no clip yet |
 | vo152 | Let's remove 4 units from both sides. | Let's remove four units from both sides. |  | no clip yet |
-| vo153 | Drag a 4 bar off the balance. | Drag a four bar off the balance. | ड्रैग ए फोर बार ऑफ द बैलेंस। | 3.0 |
 | vo154 | We need the mass of one crown. | = | वी नीड द मास ऑफ़ वन क्राउन। | 2.8 |
-| vo155 | There are two identical crowns, so divide both sides by 2. | There are two identical crowns, so divide both sides by two. | देर आर टू आइडेंटिकल क्राउन्स, सो डिवाइड बोथ साइड्स बाय टू. | 5.0 |
-| vo156 | One crown has a mass of 7 units. | One crown has a mass of seven units. | वन क्राउन हैज ए मास ऑफ सेवन यूनिट्स। | 3.6 |
 | vo157 | Let's check. Put 7 in place of x. | Let's check. Put seven in place of x. | लेट्स चेक। पुट सेवन इन प्लेस ऑफ़ एक्स। | 3.3 |
 | vo158 | 2 × 7 = 14. Then add 4. | Two times seven equals fourteen. Then add four. | टू टाइम्स सेवन ईक्वल्स फोर्टीन. देन ऐड फोर. | 4.2 |
-| vo159 | 2 × 7 + 4 = 18. | Two times seven, plus four, equals eighteen. | टू टाइम्स सेवन, प्लस फोर, इक्वल्स एटीन। | 5.7 |
 | vo160 | Both sides equal 18! Zippy can make the swap. | Both sides equal eighteen! ज़िप्पी can make the swap. | बोथ साइड्स इक्वल एटीन! ज़िप्पी कैन मेक द स्वैप। | 4.3 |
 | vo161 | Give a 7 bar to Zippy, then tap Swap. | Give a seven bar to ज़िप्पी, then tap Swap. | गिव अ सेवन बार टू ज़िप्पी, देन टैप स्वैप। | 3.2 |
 | vo162 | Let's check 9. | Let's check nine. | लेट्स चेक नाइन। | 2.5 |

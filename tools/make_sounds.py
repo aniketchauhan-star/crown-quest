@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Makes the game's recorded sound effects from the recordings in art/audio/ (needs ffmpeg).
+(art/ was taken out of the folder on 2026-11-13 to keep it small: bring it back first, README.md,
+"Replace the artwork".)
 
 - art/audio/snore.mp3 -> assets/audio/grumble-snore-1.mp3 ... (one file per snore): the recording is
   cut on its silences into its snores, each a snore in, a pause and a snore out, and each is levelled

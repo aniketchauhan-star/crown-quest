@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 Prepare game assets from the designer's original PNGs in art/ (pure Python, no dependencies).
+(art/ was taken out of the folder on 2026-11-13 to keep it small: bring it back first, README.md,
+"Replace the artwork".)
 
 Run from anywhere:   python3 tools/prepare_assets.py
 
