@@ -55,26 +55,41 @@ window.CONTENT = {
     "l4-6": "The crown and two coins have a total mass of x + 2.",
     "l4-7": "They balance 7 units on the other side.",
     "l4-8": "So, we can write x + 2 = 7.",
-    "l4-9": "Hmm… let's find the value of x so Zippy can make the swap.",
-    "l4-10": "Here, x represents the crown's mass — the value we want to find.",
-    "l4-11": "A variable is a symbol used to represent a value. Here, our variable is x, and its value is unknown.",
+    "l4-9": "Let's find x so Zippy can make the swap.", // (shorter: review, 2026-11-13; it was "Hmm… let's find the value of x so…")
+    "l4-10": "Here, x represents the crown's mass. We need to find its value.", // (review, 2026-11-13; it was "…mass — the value we want to find.")
+    // a variable, in two lines (review, 2026-11-13: "Split the VO across two screens"; it was one line, "A
+    // variable is a symbol used to represent a value. Here, our variable is x, and its value is unknown.")
+    "l4-11": "A variable is a symbol that represents a value.",
+    "l4-11b": "Here, x is the variable. Its value is unknown.",
     "l4-12": "Now look at x + 2. It represents the total mass of the crown and the two coins.",
     "l4-13": "Here x is a variable, and 2 is a constant. We add them together.",
-    "l4-14": "Joining x and 2 with addition gives the algebraic expression x + 2.",
+    "l4-14": "Adding x and 2 gives the algebraic expression x + 2.", // (review, 2026-11-13; it was "Joining x and 2 with addition gives…")
     "l4-15": "The balance shows that x + 2 equals 7.",
     "l4-16": "A statement that says two expressions have equal values is called an equation.",
     "l4-17": "The expression to the left of the equals sign is called the left-hand side, or LHS.",
     "l4-18": "The expression to the right of the equals sign is called the right-hand side, or RHS.",
+    // back from the label activity to the formula screen (review, 2026-11-13: "Add a transition")
+    "l4-19a": "Let's return to the crown's equation.",
     "l4-19": "This equation has one variable: x.",
-    "l4-20": "When we write x, its power is 1. We usually leave the 1 unwritten.",
+    // x's power in two lines (review, 2026-11-13: "Split it into two screens"; it was "When we write x, its
+    // power is 1. We usually leave the 1 unwritten.")
+    "l4-20": "The power of x is 1.",
+    "l4-20b": "We usually leave the 1 unwritten.",
     "l4-21": "This equation has one variable, and its highest power is 1.",
-    "l4-22": "So, it is a linear equation in one variable.",
+    "l4-22": "This is called a linear equation in one variable.", // (review, 2026-11-13; it was "So, it is a linear equation in one variable.")
     "l4-23": "Now let's find the crown's mass.",
     "l4-24": "We need a value of x that makes both sides equal.",
     "l4-25": "Let's check 4. Replace x with 4 and find the value of each side.",
-    "l4-26": "The left side equals 6, and the right side equals 7. They're different, so 4 is not a solution.",
+    // a side at a time, then what it means (review, 2026-11-13: "Screen 1: 'The left-hand side equals 6.'
+    // Screen 2: 'The right-hand side equals 7.' Screen 3: 'They're different, so 4 is not a solution.'"; it
+    // was one line), and the same for 5
+    "l4-26": "The left-hand side equals 6.",
+    "l4-26b": "The right-hand side equals 7.",
+    "l4-26c": "They're different, so 4 is not a solution.",
     "l4-27": "Now, let's check 5. Replace x with 5 and find the value of each side.",
-    "l4-28": "Both sides equal 7.",
+    "l4-28": "The left-hand side equals 7.",
+    "l4-28b": "The right-hand side equals 7.",
+    "l4-28c": "Both sides equal 7.",
     "l4-29": "A value that makes an equation true is called its solution. So, 5 is the solution.",
     "l4-30": "The crown's mass is 5 units. Zippy can use the 5-unit bar!",
     "l4-give": "Drag the 5 bar to Zippy, then tap Swap.", // (x = 5 is known: review, 2026-11-08)
@@ -82,20 +97,25 @@ window.CONTENT = {
     // Levels 5–9: check before you swap.  {v} = value tried, {s} = the left side's value, {b} = the right side
     "l5-give": "Give the {v} bar to Zippy.",
     "check-replace": "Replace x with {v}.",
-    "check-find": "Find the value of each side.",
-    "check-find-lhs": "Find the value of the left side.",
+    // a side at a time (review, 2026-11-13: "Change the instruction to 'Find the value of the left-hand
+    // side.' Only LHS is being asked here"; it was "Find the value of each side.")
+    "check-find-lhs": "Find the value of the left-hand side.",
+    "check-find-rhs": "Now find the value of the right-hand side.",
     "l5-yes": "Both sides equal {b}. So, {v} is the solution. Zippy can use the {v}-unit bar!",
     "check-now-swap": "Now Zippy can swap. Tap Swap!",
     "check-lets": "Let's check {v}.",
     "check-next": "Now, let's check {v}.",
-    // a value that doesn't work: the comparison comes in on "They're different", and the conclusion is its
-    // own line, only in the question bar (review, 2026-11-08)
-    "check-not": "The left side equals {s}, and the right side equals {b}. They're different.",
-    "check-not-so": "The sides aren't equal, so {v} is not a solution.",
+    // Once both sides are worked out, a line each, then what it means (review, 2026-11-13: "1. 'The
+    // left-hand side equals 7.' 2. 'The right-hand side equals 9.' 3. 'They're different, so 4 is not a
+    // solution.'"; it was "The left side equals 7, and the right side equals 9. They're different." and
+    // "The sides aren't equal, so 4 is not a solution."). A value that works ends with its level's line
+    // (l5-yes, l6-right…).
+    "check-lhs-is": "The left-hand side equals {s}.",
+    "check-rhs-is": "The right-hand side equals {b}.",
+    "check-not": "They're different, so {v} is not a solution.",
     "check-try-another": "Try another value.",
     "l6-prompt": "Choose a value for x. Check whether both sides are equal.",
     "l6-right": "Both sides equal {b}. So, {v} is the solution.",
-    "l6-find": "Replace x with {v} and find the value of each side.",
     "l6-success": "Both sides equal {b}. Zippy can use the {v}-unit bar!",
     "l7-prompt": "Another crown and two coins balance ten coins. Which value of x makes both sides equal?",
     "l7-support": "Replace x with your chosen value. Then compare the two sides.",
@@ -107,18 +127,19 @@ window.CONTENT = {
     // Level 8: the smart way
     "l8-1": "Zippy spots another crown!",
     "l8-2": "The crown and 8 units balance 23 units.", // (review, 2026-11-08)
-    "l8-try": "Let's try different values of x.", // (review, 2026-11-08: two quick tries on the balance)
+    // two tries on the balance, a line each (review, 2026-11-13; it was "Let's try different values of x.")
+    "l8-try": "Let's try x = 10.",
+    "l8-try2": "How about x = 12?",
     "l8-3": "Trying different values could take a while.",
-    "l8-4": "Let's find the mass of the crown directly.",
-    "l8-5": "First, split 23 into 8 and 15.",
+    "l8-4": "Can we find the crown's mass without guessing?", // (review, 2026-11-13; it was "Let's find the mass of the crown directly.")
+    "l8-5": "We can split 23 units into 8 and 15.", // (review, 2026-11-13; it was "First, split 23 into 8 and 15.")
     "l8-6": "There are 8 units beside the crown. Let's see how we can remove them.",
-    "l8-7": "To keep the balance level, we must remove 8 units from both sides.",
+    "l8-7": "Let's remove 8 units from both sides.", // (review, 2026-11-13; it was "To keep the balance level, we must remove 8 units from both sides.")
     "l8-8-drag": "Drag an 8 bar off each side of the balance.", // (review, 2026-11-08: one side at a time)
     "l8-other": "Now remove 8 from the other side.",
     "l8-9": "Now the crown balances 15 units. So, x = 15.",
     "l8-10": "Before Zippy swaps, let's check the answer in the original equation.",
     "l8-11": "Replace x with 15.",
-    "l8-12": "15 + 8 = 23.",
     "l8-13": "Both sides equal 23. So, 15 is the solution.",
     "l8-14": "The crown's mass is 15 units. Zippy can use the 15-unit bar!",
     "l8-give": "Give the 15 bar to Zippy, then tap Swap.",
@@ -127,9 +148,12 @@ window.CONTENT = {
     // Level 9: two matching crowns
     "l9-1": "Each crown has the same mass, x.",
     "l9-2": "Two lots of x make 2x.",
-    "l9-3": "First, let's remove these 4 units.",
-    "l9-4": "Split 18 into 4 and 14.",
-    "l9-5": "Remove 4 from both sides.",
+    // as in Level 8 (review, 2026-11-13): the split first, then the 4 units beside the crowns, then
+    // removing 4 from both sides (they were "First, let's remove these 4 units.", before the split, "Split
+    // 18 into 4 and 14." and "Remove 4 from both sides.")
+    "l9-4": "We can split 18 units into 4 and 14.",
+    "l9-3": "There are 4 units beside the crowns. Let's see how we can remove them.",
+    "l9-5": "Let's remove 4 units from both sides.",
     "l9-5-drag": "Drag a 4 bar off each side of the balance.", // (review, 2026-11-08: as in Level 8)
     "l9-other": "Now remove 4 from the other side.",
     "l9-two": "The two crowns balance 14 units.", // (review, 2026-11-08)
@@ -137,7 +161,6 @@ window.CONTENT = {
     "l9-7": "Divide both sides into two equal groups.", // (review, 2026-11-08)
     "l9-8": "Each crown has a mass of 7 units. So, x = 7.", // (review, 2026-11-08)
     "l9-9": "Let's check. Put 7 in place of x.",
-    "l9-calc": "2 × 7 + 4 = 18.",
     "l9-10": "Both sides equal 18! Zippy can make the swap.",
     "l9-give": "Give a 7 bar to Zippy, then tap Swap.",
     "l9-give2": "One more crown! Give the other 7 bar to Zippy.",
@@ -168,6 +191,10 @@ window.CONTENT = {
   },
 
   ui: {
+    tryWord: "Try", // the check's "Try x = 4" (review, 2026-11-13)
+    // what a check shows it means, under the comparison (written, not said)
+    notSolution: "{v} is not a solution.",
+    isSolution: "{v} is the solution.",
     back: "Back",
     next: "Next",
     swap: "SWAP",
@@ -246,7 +273,7 @@ window.CONTENT = {
     L6: {
       n: 6, kind: "independent", crown: 7, left: 4, right: [4, 4, 3], bars: [5, 8, 7],
       intro: [],
-      say: { prompt: "l6-prompt", firstRight: "l6-right", firstTry: "check-lets", find: "l6-find", nextTry: "check-next", success: "l6-success" },
+      say: { prompt: "l6-prompt", firstRight: "l6-right", firstTry: "check-lets", nextTry: "check-next", success: "l6-success" },
       chips: {
         8: { lhs: [11, 12, 13], rhs: [4, 8, 11] },
         5: { lhs: [8, 9, 10], rhs: [4, 5, 11] },
@@ -256,7 +283,7 @@ window.CONTENT = {
     L7: {
       n: 7, kind: "independent", crown: 8, left: 2, right: [4, 4, 2], bars: [10, 8, 12],
       intro: [],
-      say: { prompt: "l7-prompt", firstRight: "l7-success", firstTry: null, find: "l7-support", nextTry: "check-next", success: "l7-success" },
+      say: { prompt: "l7-prompt", firstRight: "l7-success", firstTry: "l7-support", nextTry: "check-next", success: "l7-success" },
       chips: {
         10: { lhs: [11, 12, 13], rhs: [2, 10, 12] },
         12: { lhs: [13, 14, 15], rhs: [2, 10, 12] },
@@ -277,18 +304,39 @@ window.CONTENT = {
   label: {
     // (the question bar says it; there is no heading on the board: review, 2026-11-07. The labels come
     // in two pairs, Variable and Equation, then LHS and RHS: js/activities.js, activityLabel)
-    title: "Drag each label to the correct box.",
+    // from Level 4's formula screen into the activity (review, 2026-11-13: the balance fades out and
+    // 4x + 3 = 19 comes to the middle meanwhile)
+    bridge: "Now, can you spot these parts in another equation?",
+    title: "Drag each label to the matching box.", // (review, 2026-11-13; it was "…to the correct box.")
+    // into the second pair, and its instruction in the question bar while the child places LHS and RHS
+    // (review, 2026-11-13: "Add the transition: 'Now, label the left-hand side and right-hand side.'");
+    // the LHS box comes in on the first words here, the RHS box on the second
+    pair2: "Now, label the left-hand side and right-hand side.",
+    pair2Cue: { LHS: "the left", RHS: "and right" },
     // (a right label: no words, only a success sound and a green border: review, 2026-11-07)
-    // A wrong label in a box: straight to what that box names, each in its own words (review,
-    // 2026-11-07: "Use different openings, or go straight to the explanation"). From the second miss
-    // on a box, the right label also glows.
+    // A wrong label in a box: it shakes and goes back, and the pair's two labels are put in for the
+    // child, one after the other, each with its line, while the part it names lights up (review,
+    // 2026-11-13, on the Variable box: "Not quite. x represents the unknown value. It is the variable.
+    // Briefly shake the incorrect label. Highlight only lowercase x. Move Variable into the box pointing
+    // to x. If Equation is also incorrect, highlight the full statement and place its label with: 'The
+    // complete statement is an equation.'"). A wrong label in one box of a pair is always the other's,
+    // so both get put in. LHS and RHS are put in the same way, with their lines from the review of
+    // 2026-11-07 ("Use different openings, or go straight to the explanation").
     miss: {
-      Variable: "Look at x. It represents the unknown value.",
-      Equation: "The whole statement, 4x + 3 = 19, is the equation.",
+      Variable: "Not quite. x represents the unknown value. It is the variable.",
+      Equation: "The complete statement is an equation.",
       LHS: "Look to the left of the equal sign. 4x + 3 is the left-hand side.",
       RHS: "Look to the right of the equal sign. 19 is the right-hand side.",
     },
-    done: "Brilliant! You labelled every part.",
+    // in each of those lines, the words on which the part lights up (look) and on which the label sets
+    // off for its box (go), landing as the line names it
+    missCue: {
+      Variable: { look: "quite. x", go: "It is the" },
+      Equation: { look: "The complete", go: "is an" },
+      LHS: { look: "the left of", go: "4x + 3 is" },
+      RHS: { look: "the right of", go: "19 is" },
+    },
+    done: "Brilliant! You labelled every part.", // (only when the child put every label in)
   },
 
   // Activity: sort linear / nonlinear
@@ -470,7 +518,8 @@ window.CONTENT = {
       { cue: "grumble.snore5", out: 3.33, len: 4.37 },
       { cue: "grumble.snore6", out: 3.26, len: 4.53 },
     ],
-    // Zippy's win laugh lasts this long (s); his next line waits for it
-    winLaugh: 5.6,
+    // Zippy's win laugh lasts this long (s); his next line waits for it (shorter since review 2026-11-13:
+    // "reduce the timing of Zippy's laugh"; it was 5.6)
+    winLaugh: 2.77,
   },
 };
