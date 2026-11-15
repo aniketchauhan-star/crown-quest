@@ -193,8 +193,10 @@ window.CONTENT = {
   ui: {
     tryWord: "Try", // the check's "Try x = 4" (review, 2026-11-13)
     // what a check shows it means, under the comparison (written, not said)
-    notSolution: "{v} is not a solution.",
-    isSolution: "{v} is the solution.",
+    // (review, 2026-11-13, on the check: "End with '7 ≠ 9. So, 4 is not a solution.'"; Level 4's try on
+    // the formula screen keeps its own shorter "4 is not a solution.", as its note asks)
+    notSolution: "So, {v} is not a solution.",
+    isSolution: "So, {v} is the solution.",
     back: "Back",
     next: "Next",
     swap: "SWAP",
