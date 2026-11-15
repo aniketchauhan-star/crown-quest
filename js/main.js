@@ -128,6 +128,14 @@
       root.addEventListener("pointerdown", (e) => {
         if (this.playing && !e.target.closest(".start-btn")) this.finish();
       });
+      // Enter or Space does the same, then presses the play button (the keyboard's way in)
+      this.onKey = (e) => {
+        if ((e.key !== "Enter" && e.key !== " ") || this.going || (CQ.pauser && CQ.pauser.count)) return;
+        e.preventDefault();
+        if (this.playing) this.finish();
+        else if (!this.startBtn.classList.contains("t-hidden")) this.startBtn.click();
+      };
+      window.addEventListener("keydown", this.onKey);
       root.classList.add("t-waiting"); // before the opening: the characters wait, unseen, in the dark
     },
     // While the rest of the pictures load behind the title, a slim golden bar at its foot fills up.
@@ -319,6 +327,7 @@
     async go(cp, opts) {
       if (this.going) return;
       this.going = true;
+      window.removeEventListener("keydown", this.onKey);
       if (opts && opts.reset) ["progress", "practiceAt", "swapDemoSeen", "blankDemoSeen"].forEach((k) => CQ.store.remove(k));
       CQ.audio.init();
       CQ.settings.apply();
@@ -401,34 +410,24 @@
       CQ.title.finish();
       return CQ.title.go(linkCp() || "intro");
     }
-    // The opening has sound, and most browsers only let sound start after a tap. So unless it can play
-    // already, the loading screen ends on the play button, and the opening starts on its tap.
-    if (soundAllowed()) {
-      CQ.audio.init();
-      open();
-      return CQ.title.play();
-    }
-    loading.classList.add("gate");
-    const go = CQ.el("button", "lb-go", loading, `<img src="${IMAGES.startButton.src}" alt="" draggable="false">`);
-    go.type = "button";
-    go.setAttribute("aria-label", C().title.start);
-    const start = () => {
-      if (!loading.classList.contains("gate")) return;
-      loading.classList.remove("gate");
-      CQ.audio.init(); // inside the tap: sound may start now
-      CQ.screen.fullscreen(); // phones and tablets: the whole screen, held sideways
-      CQ.audio.play("ui.tap");
+    // Straight into the start screen and its opening, out of the dark of the loading screen (asked
+    // 2026-11-15: "fir load screen come then start screen come please fix this"; there used to be a screen
+    // with only a play button in between, which a tap had to start the opening's sound). Most browsers only
+    // let sound start after a tap: where they let it start now, the opening has its sounds; otherwise it
+    // plays without them, and the sound begins with the first tap, the play button's. (In a tab opened in
+    // the background, the opening waits until the tab is shown.)
+    const begin = () => {
+      if (soundAllowed()) CQ.audio.init();
       open();
       CQ.title.play();
     };
-    loading.addEventListener("click", start); // anywhere on it
-    const key = (e) => {
-      if (e.key !== "Enter" && e.key !== " ") return;
-      document.removeEventListener("keydown", key);
-      e.preventDefault();
-      start();
+    if (!document.hidden) return begin();
+    const shown = () => {
+      if (document.hidden) return;
+      document.removeEventListener("visibilitychange", shown);
+      begin();
     };
-    document.addEventListener("keydown", key); // or Enter / Space
+    document.addEventListener("visibilitychange", shown);
   }
   // Can sound start without a tap? (A quick, silent try with a throwaway audio context.)
   function soundAllowed() {

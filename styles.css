@@ -3797,31 +3797,6 @@ html.lite .t-shaft {
 html.lite #title .t-drift {
   animation: none;
 }
-/* the loading screen ends on the play button when sound needs a tap to start (js/main.js) */
-.lb-go {
-  display: none;
-}
-#loading.gate {
-  cursor: pointer;
-  background: radial-gradient(circle at 50% 45%, #154869, #050f18);
-}
-#loading.gate .lb-box {
-  display: none;
-}
-#loading.gate .lb-go {
-  display: block;
-  width: 420px;
-  padding: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  animation: tPulse 1.3s ease-in-out infinite;
-}
-.lb-go img {
-  display: block;
-  width: 100%;
-  filter: drop-shadow(0 18px 18px rgba(0, 0, 0, 0.5));
-}
 .title-load {
   position: absolute; /* at the foot of the title while the rest of the pictures load (no words) */
   left: 1000px;
@@ -3844,13 +3819,17 @@ html.lite #title .t-drift {
   background: linear-gradient(#ffe27a, #f0a01c);
   transition: width 0.3s;
 }
+/* The loading screen is nearly black, like the dark the start screen's opening rises out of, so one
+   leads straight into the other (asked 2026-11-15: no separate screen before the start screen). Its
+   coin, words and bar only show if loading takes more than a moment (a slow connection): a quick load
+   shows nothing but the dark. */
 #loading {
   position: absolute;
   inset: 0;
   z-index: 60;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 50% 45%, #145564, #072a33);
+  background: radial-gradient(circle at 50% 45%, #0d2a33, #000);
   transition: opacity 0.5s;
 }
 #loading.done {
@@ -3860,6 +3839,15 @@ html.lite #title .t-drift {
 .lb-box {
   width: 900px;
   text-align: center;
+  animation: lbIn 0.4s ease-out 0.8s both;
+}
+@keyframes lbIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .lb-coin {
   width: 120px;
@@ -4480,7 +4468,6 @@ html.lite #viewport::before {
 /* ---------------------------------------------------------------- reduced motion */
 html.reduced-motion .bg-scene *,
 html.reduced-motion #title *,
-html.reduced-motion #loading .lb-go,
 html.reduced-motion .bar-slot .gbar,
 html.reduced-motion .nameburst.purple .nb-word,
 html.reduced-motion .tower-crown,
