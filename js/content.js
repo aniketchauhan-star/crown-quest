@@ -316,14 +316,15 @@ window.CONTENT = {
     pair2: "Now, label the left-hand side and right-hand side.",
     pair2Cue: { LHS: "the left", RHS: "and right" },
     // (a right label: no words, only a success sound and a green border: review, 2026-11-07)
-    // A wrong label in a box: it shakes and goes back, and the pair's two labels are put in for the
-    // child, one after the other, each with its line, while the part it names lights up (review,
-    // 2026-11-13, on the Variable box: "Not quite. x represents the unknown value. It is the variable.
-    // Briefly shake the incorrect label. Highlight only lowercase x. Move Variable into the box pointing
-    // to x. If Equation is also incorrect, highlight the full statement and place its label with: 'The
-    // complete statement is an equation.'"). A wrong label in one box of a pair is always the other's,
-    // so both get put in. LHS and RHS are put in the same way, with their lines from the review of
-    // 2026-11-07 ("Use different openings, or go straight to the explanation").
+    // A wrong label in a box: it shakes and goes back, and then that label, and only that one, is put in
+    // its own box for the child, with its line, while the part it names lights up (review, 2026-11-13:
+    // "Not quite. x represents the unknown value. It is the variable. Briefly shake the incorrect label.
+    // Highlight only lowercase x. Move Variable into the box pointing to x. If Equation is also
+    // incorrect, highlight the full statement and place its label with: 'The complete statement is an
+    // equation.'"). The pair's other label is left for the child (review, 2026-11-16: "I only got the
+    // variable wrong and the equation's explanation came too… the hint should follow what we got
+    // wrong"). LHS and RHS work the same way, with their lines from the review of 2026-11-07 ("Use
+    // different openings, or go straight to the explanation").
     miss: {
       Variable: "Not quite. x represents the unknown value. It is the variable.",
       Equation: "The complete statement is an equation.",
@@ -367,11 +368,12 @@ window.CONTENT = {
     eq: "x + 4 = 9",
     labels: { variable: "Variable", equation: "Equation", lhs: "Left-hand side (LHS)", rhs: "Right-hand side (RHS)" },
     panels: [
-      // cue: the words that name the panel's new label (it comes in, its part lit, as they are said)
+      // cue: the words that name the panel's new label (it comes in, its part lit, as they are said);
+      // look: words before them on which its part lights up already ("to the left of the equals sign")
       { id: "recap-1", text: "A variable is a symbol that represents a value.", show: ["variable"], cue: "A variable" },
       { id: "recap-2", text: "An equation states that two expressions have equal values.", show: ["variable", "equation"], cue: "An equation" },
-      { id: "recap-3", text: "The expression to the left of the equals sign is the left-hand side.", show: ["variable", "equation", "lhs"], cue: "the left-hand side" },
-      { id: "recap-4", text: "The expression to the right of the equals sign is the right-hand side.", show: ["variable", "equation", "lhs", "rhs"], cue: "the right-hand side" },
+      { id: "recap-3", text: "The expression to the left of the equals sign is the left-hand side.", show: ["variable", "equation", "lhs"], look: "to the left", cue: "the left-hand" },
+      { id: "recap-4", text: "The expression to the right of the equals sign is the right-hand side.", show: ["variable", "equation", "lhs", "rhs"], look: "to the right", cue: "the right-hand" },
     ],
   },
 

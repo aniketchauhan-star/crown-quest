@@ -90,7 +90,26 @@ In practice: on a quiet morning, 40 lines took about 5 minutes with no failures,
 - with ffmpeg: `ffmpeg -i voNNN.mp3 -ac 1 -c:a libopus -b:a 24k -application voip voNNN.ogg`;
 - without ffmpeg, on any Mac: `afconvert -f caff -d opus -b 24000` makes the Opus packets, and the tool copies them into an Ogg file (RFC 7845) without re-encoding. Ogg Opus counts at 48 kHz even though the clips are 24 kHz, so the tool scales the timing (and the encoder's start-up delay) by 2. The last page ends on the last real sample, so the encoder's padding is cut off.
 
-The tool reads each clip's length from the file itself, writes `js/vo_lines.js`, deletes anything in `assets/vo/` that no line uses, rewrites the table below and lists any line that has no clip yet.
+The tool reads each clip's length from the file itself, works out when each word of its line is said (see "Word timings" below), writes `js/vo_lines.js`, deletes anything in `assets/vo/` that no line uses, rewrites the table below and lists any line that has no clip yet.
+
+## Word timings
+
+So that whatever a line names comes in on screen as the voice says it ("when the VO says 7, 7 should appear": review, 2026-11-16), the game knows when each word of every recorded line is said. `js/vo_lines.js` holds them, per line: `[clip, seconds, [start, end, start, end, …]]`, one start and end (in seconds into the clip) per word of the line as it is shown, split at spaces ("x + 2 = 7" is five words).
+
+`tools/vo_timing.py` works them out, and `tools/vo_build.py` runs it by itself. Results are kept in `tools/vo_timing.json` (by clip, with the clip's size and line), so only new or re-made clips are worked out again.
+
+- **Best: an offline speech recogniser.** [Vosk](https://alphacephei.com/vosk/) hears each clip and says when each word starts and ends, to a few hundredths of a second; its words are then matched to the line's (numbers as words, "LHS" as L H S, "=" as equals…). All 269 clips were timed this way on 2026-11-16 (`"how": "heard"` in `tools/vo_timing.json`). To time new clips the same way, once:
+
+  ```sh
+  python3 -m venv ~/.cache/crown-quest/venv && ~/.cache/crown-quest/venv/bin/pip install vosk
+  mkdir -p ~/.cache/crown-quest/vosk && cd ~/.cache/crown-quest/vosk
+  curl -LO https://alphacephei.com/vosk/models/vosk-model-small-en-in-0.4.zip && unzip vosk-model-small-en-in-0.4.zip
+  curl -LO https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip && unzip vosk-model-small-en-us-0.15.zip
+  ```
+
+  then, after `tools/vo_build.py`: `~/.cache/crown-quest/venv/bin/python tools/vo_timing.py` and `python3 tools/vo_build.py` again (it writes the new timings into `js/vo_lines.js`). (`VOSK_MODELS=dir1:dir2` points it at models kept elsewhere.)
+- **Without it** the tool cuts each clip by its loudness alone (the pauses at full stops and commas, the dips between words, and how long each word should take by its syllables): good to about half a second (`"how": "loudness"`).
+- **To check a clip by eye:** `python3 tools/vo_timing.py vo038` prints its loudness with a mark where each word starts.
 
 **Older Safari versions** (older iPads and Macs that have not been updated) cannot play Ogg Opus. The game checks (`canPlayType('audio/ogg; codecs="opus"')`), and on those it reads every line with the device's own voice, as it did before it had recordings. No other file format is shipped. Chrome and the Safari engine on an up-to-date Mac both play the clips (tested).
 
@@ -98,7 +117,9 @@ The tool reads each clip's length from the file itself, writes `js/vo_lines.js`,
 
 - **Found by the text on screen.** `CQ.say` (the caption) and `Zippy.say` (his bubble) pass the exact line they show. `js/vo_lines.js` gives its clip and length. A line without a clip is read by the device voice.
 - **One audio element.** Every line plays on the same `<audio>` element. The Play button unlocks it (it plays muted, then pauses), because tablets only play sound that a tap started.
-- **The words appear as they are said.** A recorded line types itself into the caption, letter by letter, at the voice's pace: each letter takes max(16, (seconds − 0.35) × 1000 ÷ letters) ms, so the last letter appears just as the voice says the last word. Its layout and size are set before it types, so nothing jumps. Tapping the words shows the whole line at once, and the voice carries on.
+- **The words appear as they are said.** A recorded line types itself into the caption word by word, each word as the voice says it (its word timings, above, against the clip's own clock), its letters coming in over the time the word takes. Its layout and size are set before it types, so nothing jumps. Tapping the words shows the whole line at once, and the voice carries on.
+- **Things come on their words.** Whatever a line names waits for the voice to get to it: `CQ.caption.when(line, words)` (js/ui.js) resolves as the voice begins the last of those words (0.08 s ahead, so it has a moment to come in). The formula screen's cues, the check, Levels 8–9's working, the label activity and the recap all use it.
+- **Lines with no recording yet** are read by the device voice, which says which word it is on (its word "boundary" events): the caption types along with it and the cues follow it the same way. A device voice that doesn't say where it is is followed by how long its words should take (their syllables), at a speed learnt from the lines it has read. With the voice off, things come about when a voice would have said them.
 - **The story waits for the voice.** The game moves on by itself (there is no "tap to continue"). It waits until the line has been heard, then gives a moment to look. If a clip stalls, the game waits at most its remaining length plus 0.6 seconds. The Next button still skips to the next line at once and stops the voice.
 - **Stopping.** A new line stops the one before it. So does a chapter jump, a restart, the Next button, hiding the page, or switching Voice off in the menu (Esc).
 - **Not said twice.** In Levels 8 and 9, when a wrong bar has been checked, the "Give the … bar to Zippy" instruction comes back on screen without being said again. If the child then does nothing for 8 seconds, it is said again as a reminder, like every reminder in the game.

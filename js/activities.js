@@ -275,6 +275,7 @@
     render(s) {
       const sig = JSON.stringify(s);
       if (this.shown && this.shown.sig === sig) return this.content.querySelector(".eqn");
+      this.renders = (this.renders || 0) + 1; // (cues of a beat drawn before don't act on this one)
       const c = this.content;
       c.innerHTML = "";
       CQ.balance.glowSides(false); // (a beat's pans glow only in that beat)
@@ -323,6 +324,14 @@
         t.className = start;
         waits.forEach((k) => this.onCue(s.cue[k], sig, () => t.classList.add(k)));
       });
+      // s.fade = { cue, ids }: those signs fade back a little as the voice gets to the word (the side
+      // before, as the other side is introduced: review, 2026-11-16, "jab RHS ki baat hoti toh LHS thda
+      // fade ho skta hai")
+      if (s.fade)
+        s.fade.ids.forEach((id) => {
+          toks[id] = (toks[id] || "") + " faded";
+          this.onCue(s.fade.cue, sig, () => tok(id).classList.add("faded"));
+        });
       // s.cue.hlOut: the word on which the highlight goes off again (x lit for "one variable", then only its
       // power 1 for "highest power"); the next beat starts from x plain
       if (s.cue && s.cue.hlOut)
@@ -420,9 +429,17 @@
             void el.offsetWidth;
             el.className = now;
           }
-          rowCls[key] = el.className;
-          // r.lit = { cue, cls }: it lights up on a word (the try, as what it means is said)
+          rowCls[key] = el.className + (r.lit ? " " + r.lit.cls : "");
+          // r.lit = { cue, cls }: it lights up on a word (the try, as what it means is said; the side
+          // before, faded a little as the voice moves on to the other side)
           if (r.lit) this.onCue(r.lit.cue, sig, () => el.classList.add(r.lit.cls));
+          // r.write = [{ text, cue }]: a new row is written in by hand, part by part, each part as the
+          // voice says its word (LHS on "left-hand side", 4 + 2 straight after, = on "equals", 6 on "6")
+          if (r.write && !before.keys.has(key)) {
+            el.dataset.writes = "1";
+            const n = this.renders;
+            CQ.writeOut(el, r.write, this.lineText, r.each || 75, () => this.renders === n).catch(() => {});
+          }
         });
       }
       // a tag hangs under its part on a straight line that starts with a dot on the part (or on the
@@ -489,9 +506,17 @@
         start = 450;
       } else if (!this.shown) {
         const signs = eqn.querySelectorAll(".tok");
-        signs.forEach((t, i) =>
-          CQ.anim(t, [{ opacity: 0, translate: "0 14px" }, { opacity: 1, translate: "0 0" }], { duration: 480, delay: 120 + i * 190, easing: CQ.EASE.out, keep: false })
-        );
+        const writeEq = () =>
+          signs.forEach((t, i) => {
+            t.style.opacity = "";
+            CQ.anim(t, [{ opacity: 0, translate: "0 14px" }, { opacity: 1, translate: "0 0" }], { duration: 480, delay: 120 + i * 190, easing: CQ.EASE.out, keep: false });
+          });
+        // s.cue.eqn: the equation is written in as the voice gets to that word ("Let's return to the
+        // crown's equation.")
+        if (s.cue && s.cue.eqn) {
+          signs.forEach((t) => (t.style.opacity = "0"));
+          this.onCue(s.cue.eqn, sig, writeEq);
+        } else writeEq();
         start = 120 + signs.length * 190 + 300;
       }
       // First the frame goes round the part of the balance the line is about (the rest of it fades);
@@ -508,6 +533,7 @@
       c.querySelectorAll("[data-key]").forEach((el) => {
         const key = el.dataset.key;
         if (before.keys.has(key)) return;
+        if (el.dataset.writes) return; // (a row that writes itself in, with the voice)
         if (!groups.has(key)) groups.set(key, []);
         groups.get(key).push(el);
       });
@@ -531,7 +557,7 @@
             if (key.startsWith("tag:")) {
               els.forEach((el) => (el.style.visibility = ""));
               CQ.audio.play("ui.pop", { volume: 0.55 });
-              this.drawTag(els, 0);
+              this.drawTag(els, 0, true); // (quickly: its word lands while the voice is saying it)
               els.forEach((el) => el.lights && this.lightTag(el.lights));
               return;
             }
@@ -597,6 +623,28 @@
       (s.steps || []).forEach((st) => (st.cue ? this.onCue(st.cue, sig, () => runStep(st)) : runStep(st)));
       return eqn;
     },
+    // The rows worked out under the equation fade away (a new try begins).
+    async clearRows() {
+      const rows = this.content.querySelector(".nb-rows");
+      if (!rows || !rows.children.length) return;
+      await CQ.run.when(CQ.anim(rows, [{ opacity: 1 }, { opacity: 0 }], { duration: 420, easing: CQ.EASE.in, essential: true }));
+    },
+    // What happens on the balance before a beat's line is said (b.before): the value tried is put in for
+    // x (sub: the crown makes way for that many coins, beside the coins there), then the balance tips the
+    // way the pans now weigh (tilt), its hub flashing when they are equal (flash); a moment to see it.
+    // (Level 4's try, once both sides have been worked out: review, 2026-11-16, "jab LHS and RHS nikal le
+    // tb crown ko replace kro and balance tilt kro".)
+    async before(o) {
+      if (o.sub != null) {
+        await CQ.run.when(this.substitute(o.sub));
+        await CQ.run.wait(250);
+      }
+      if (o.tilt) {
+        const d = CQ.balance.evaluate();
+        if (d === 0 && o.flash) CQ.balance.flashEmblem();
+        await CQ.run.wait(d === 0 ? 900 : 1500);
+      }
+    },
     // A value put in for x on the balance, and the crown put back (CQ.xPan, below).
     substitute(v) {
       return CQ.xPan.put(v);
@@ -631,25 +679,14 @@
     sideGlow(side) {
       CQ.balance.items[side].forEach((it) => it.el.classList.add(side === "left" ? "glow-lhs" : "glow-rhs"));
     },
-    // fn when the voice gets to str in this beat's line (the question bar types with a recorded voice).
-    // A line shown whole (no recording yet, or the voice off) has no letters to follow: then about when a
-    // voice would have said it (15 letters a second from the line's start), so a label still comes with
-    // its words (review, 2026-11-13: "Reveal Algebraic expression when the VO names it"); at the latest
-    // after 15 s.
+    // fn when the voice gets to str in this beat's line, as it begins its last word (CQ.caption.when:
+    // the question bar follows the voice word by word; a line with no voice, about when a voice would
+    // have got there), as long as the beat is still the one on screen.
     onCue(str, sig, fn) {
-      const line = this.lineText;
-      const at = String(line || "").indexOf(str);
-      const guess = at < 0 ? 0 : (at + str.length) * 65;
-      const t0 = performance.now();
-      const tick = () => {
-        if (!this.shown || this.shown.sig !== sig) return;
-        const cap = CQ.caption;
-        const here = cap.text === line;
-        const typedAll = here && !cap.chars && cap.typing === cap.line; // its voice has typed it all
-        if ((here && cap.chars && cap.reached(str)) || typedAll || (here && !cap.chars && performance.now() - t0 > guess) || performance.now() - t0 > 15000) return fn();
-        setTimeout(tick, 60);
-      };
-      setTimeout(tick, 60);
+      const r = this.renders;
+      CQ.caption.when(this.lineText, str).then(() => {
+        if (this.renders === r && this.shown && this.shown.sig === sig) fn();
+      });
     },
     // Copies of things on the left pan fly over to their places on the formula screen (each picture in
     // fliers says which thing it is: "crown", "coin:0"…), one after another, starting at ms.
@@ -680,19 +717,20 @@
     },
     // A tag comes in as it would be drawn: its bracket, the dot on its part and the line drawn down from
     // it, then the word written in. Returns when it is done (ms from now).
-    drawTag(els, at) {
+    drawTag(els, at, quick) {
       const br = els.find((e) => e.classList.contains("under-bracket"));
       const line = els.find((e) => e.classList.contains("tag-line"));
       const tag = els.find((e) => e.classList.contains("tag"));
+      const k = quick ? 0.5 : 1; // (a tag that comes on its word is drawn in half the time)
       let t = at;
       if (br) {
-        CQ.anim(br, [{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: t, easing: CQ.EASE.out, keep: false });
-        t += 280;
+        CQ.anim(br, [{ opacity: 0 }, { opacity: 1 }], { duration: 320 * k, delay: t, easing: CQ.EASE.out, keep: false });
+        t += 280 * k;
       }
       if (line) {
-        CQ.anim(line, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, delay: t, keep: false });
-        CQ.anim(line, [{ clipPath: "inset(-10px -10px calc(100% - 8px) -10px)" }, { clipPath: "inset(-10px -10px -10px -10px)" }], { duration: 440, delay: t + 120, easing: CQ.EASE.out, keep: false });
-        t += 560;
+        CQ.anim(line, [{ opacity: 0 }, { opacity: 1 }], { duration: 160 * k, delay: t, keep: false });
+        CQ.anim(line, [{ clipPath: "inset(-10px -10px calc(100% - 8px) -10px)" }, { clipPath: "inset(-10px -10px -10px -10px)" }], { duration: 440 * k, delay: t + 120 * k, easing: CQ.EASE.out, keep: false });
+        t += 560 * k;
       }
       if (tag) {
         CQ.anim(tag, [{ opacity: 0, scale: "0.85" }, { opacity: 1, scale: "1" }], { duration: 280, delay: t, easing: CQ.EASE.out, keep: false });
@@ -740,7 +778,9 @@
       while (i < beats.length) {
         const b = beats[i];
         this.lineText = CQ.T(b.id); // what the line says (things can wait for a word of it)
+        if (b.clear) await this.clearRows(); // (the working so far fades away first)
         this.render(b.s);
+        if (b.before) await this.before(b.before);
         if (b.gem && !CQ.gems.have.has(b.gem)) CQ.gems.collect(b.gem);
         const r = await CQ.say(b.id, { back: i > 0 });
         i += r === "back" ? -1 : 1;
@@ -750,7 +790,8 @@
   };
 
   CQ.NB_WORDS = [
-    { id: "l4-9", s: { bal: "crown" } },
+    // x and its crown light up as the voice says "find x" (review, 2026-11-16: things come with their words)
+    { id: "l4-9", s: { hl: ["x"], bal: "crown", cue: { hl: "find x", bal: "find x" } } },
     // x and its crown light up together, in the same soft gold, and no little crown stands over x
     // (review, 2026-11-13: "Highlight x and the crown together with a soft gold glow. Remove the extra
     // crown above x to reduce clutter"; s.crown is no longer used on these lines)
@@ -768,7 +809,7 @@
     // x + 2 lights up together with the crown and the two coins, all in the same soft gold, and no copy
     // of them stands over the equation (review, 2026-11-13: "Highlight x + 2 together with the crown and
     // two coins. Remove the duplicate crown and coins above the equation"; s.mini is no longer used)
-    { id: "l4-12", s: { hl: ["x", "plus", "two"], bal: "left" } },
+    { id: "l4-12", s: { hl: ["x", "plus", "two"], bal: "left", cue: { hl: "at x", bal: "at x" } } },
     // each label comes in as the voice names it (variable, constant, addition), lighting its sign in its
     // colour and what it stands for on the balance: the crown for x, then the two coins for 2, then both
     // as "We add them together" is said (review, 2026-11-13)
@@ -787,7 +828,7 @@
     // the Algebraic expression label come in as the voice names it (review, 2026-11-13: "Highlight x + 2
     // and the crown with two coins together. Keep the bracket under x + 2 only. Reveal Algebraic
     // expression when the VO names it")
-    { id: "l4-14", s: { hl: ["x", "plus", "two"], bal: "left", tags: [{ ids: LHS, text: "Algebraic expression", color: "expr", bracket: true, cue: "the algebraic expression" }] }, gem: "expression" },
+    { id: "l4-14", s: { hl: ["x", "plus", "two"], bal: "left", tags: [{ ids: LHS, text: "Algebraic expression", color: "expr", bracket: true, cue: "the algebraic" }] }, gem: "expression" },
     // the level beam and = light up together, in gold, as the voice says "equals" (review, 2026-11-13:
     // "Highlight the level beam and = together when the VO says 'equals'"; the whole balance used to
     // glow, and = to pulse, from the start of the line)
@@ -808,7 +849,7 @@
       s: {
         lhs: true,
         cue: { lhs: "to the left" },
-        tags: [{ ids: LHS, text: "Left-hand side (LHS)", color: "lhs", box: true, boxCue: "to the left", cue: "the left-hand side" }],
+        tags: [{ ids: LHS, text: "Left-hand side (LHS)", color: "lhs", box: true, boxCue: "to the left", cue: "called the left-hand" }],
       },
       gem: "lhs",
     },
@@ -820,7 +861,7 @@
         cue: { rhs: "to the right" },
         tags: [
           { ids: LHS, text: "Left-hand side (LHS)", color: "lhs", box: true, fade: "to the right" },
-          { ids: "seven", text: "Right-hand side (RHS)", color: "rhs", box: true, row: 1, boxCue: "to the right", cue: "the right-hand side" },
+          { ids: "seven", text: "Right-hand side (RHS)", color: "rhs", box: true, row: 1, boxCue: "to the right", cue: "called the right-hand" },
         ],
       },
       gem: "rhs",
@@ -829,8 +870,23 @@
   // Trying values for x, like the PPT's slides 24–26: each side worked out for 4 (they differ, so 4 is
   // not a solution) and for 5 (both sides equal 7, so 5 is the solution). The equation stays at the top
   // all along, like on a board; the working goes under it.
+  // Each row of the working is written in by hand as the voice says it, every number as it is said
+  // (review, 2026-11-16: "animation se dikhao likhte hue: LHS: 4 + 2 = 6", "ekdum appear kyu horha hai",
+  // "jab VO bole 7 tb 7 aana chahie"): "Try x =" on "check", its 4 on "4"; LHS on "left-hand", 4 + 2
+  // straight after, = on "equals", 6 on "6". The side the voice is on lights up with its pan and its part
+  // of the equation, and the side before fades a little ("jab RHS ki baat hoti toh LHS thda fade ho skta
+  // hai"). The crown is only replaced, and the balance only tips, once both sides have been worked out
+  // ("jab LHS and RHS nikal le tb crown ko replace kro and balance tilt kro"): before the line that says
+  // what it means, the crown makes way for 4 coins beside the 2 (4 + 2 on the pan) and the balance tips,
+  // the seven-coin pan lower; then 6 ≠ 7 on "different" and "4 is not a solution.", its 4 on "4". The
+  // same for 5, where the balance stays level and its hub flashes.
+  const tryRow = (v, lit) => ({ t: `Try x = ${v}`, cls: "try", lit });
+  const tryWrite = (v) => ({ t: `Try x = ${v}`, cls: "try", write: [{ cue: "check", text: "Try x =" }, { cue: `${v}.`, text: String(v) }] });
+  const lhsWrite = (v, s) => ({ t: `LHS = ${v} + 2 = ${s}`, cls: "side lit lhs", write: [{ cue: "left-hand", text: "LHS =" }, { text: `${v} + 2` }, { cue: "equals", text: "=" }, { cue: `${s}.`, text: String(s) }] });
+  const rhsWrite = { t: "RHS = 7", cls: "side lit rhs", write: [{ cue: "right-hand", text: "RHS =" }, { cue: "7.", text: "7" }] };
   CQ.NB_TRY = [
-    { id: "l4-23", s: { bal: "crown" } },
+    // the crown lights up as the voice names it
+    { id: "l4-23", s: { bal: "crown", cue: { bal: "crown's" } } },
     // No floating crown over x and no big frame round both pans (review, 2026-11-07): on "a value of x",
     // x and the crown on the left pan light up; on "makes both sides equal", x + 2 and 7 light up
     // together, each with its own pan (teal, orange). The balance is level: the equality we want.
@@ -847,72 +903,78 @@
         ],
       },
     },
-    // Trying 4, then 5 (review, 2026-11-13: "Don't leave 4 + 2 = 7 displayed as true. Show the original
-    // x + 2 = 7, then 'Try x = 4' and the calculations below… Reveal sequentially: LHS = 4 + 2 = 6 → RHS = 7
-    // → 6 ≠ 7. Tilt the balance as the unequal values appear… Reduce the oversized conclusion to '4 is not
-    // a solution.'… Do the same x = 5"). x + 2 = 7 stays as it is at the top, and the working goes under
-    // it: "Try x = 4" as the voice says "check 4", and on the balance the crown makes way for four unit
-    // coins beside the two there as it says "Replace x with 4" (the balance held level). Then a line for
-    // each side: its row comes in on its words, lit in its colour, with its pan's things (the left ones
-    // gathering into one group of six as "equals 6" is said), the side before back to plain, in full view
-    // ("Keep the previous calculation visible"); then 6 ≠ 7 on
-    // "different", the balance tipping (the seven-coin pan lower), and "4 is not a solution." under it,
-    // smaller, the try lit with it. The sides' first = signs stand one under the other.
-    { id: "l4-25", s: { rows: [{ t: "Try x = 4", cls: "try", cue: "check 4" }], steps: [{ cue: "Replace x with 4", sub: 4 }] } },
+    // "Let's check 4. Replace x with 4…": Try x = 4 written under the equation (its 4 as "4" is said); x
+    // lights up as "Replace x" is said (the x that gets the 4), until "find the value"
+    { id: "l4-25", s: { hl: ["x"], cue: { hl: "Replace x", hlOut: "find the" }, rows: [tryWrite(4)], steps: [{ restore: true }] } },
+    // "The left-hand side equals 6.": LHS = 4 + 2 = 6 written as it is said; x + 2 and the left pan's things
+    // (the crown and its two coins) light up teal on "left-hand"
     {
       id: "l4-26",
-      s: {
-        rows: [{ t: "Try x = 4", cls: "try" }, { t: "LHS = 4 + 2 = 6", cls: "side lit lhs", cue: "left-hand side" }],
-        steps: [{ sub: 4 }, { side: "left" }, { cue: "equals 6", gather: true }],
-      },
+      s: { lhs: true, cue: { lhs: "left-hand" }, rows: [tryRow(4), lhsWrite(4, 6)], steps: [{ restore: true }, { cue: "left-hand", side: "left" }] },
     },
+    // "The right-hand side equals 7.": RHS = 7 written as it is said; 7 and the right pan's coins light up
+    // orange on "right-hand", while the left side (its row, x + 2, its pan) fades back a little
     {
       id: "l4-26b",
       s: {
-        rows: [{ t: "Try x = 4", cls: "try" }, { t: "LHS = 4 + 2 = 6", cls: "side" }, { t: "RHS = 7", cls: "side lit rhs", cue: "right-hand side" }],
-        steps: [{ sub: 4 }, { side: "right" }],
+        lhs: true,
+        rhs: true,
+        cue: { rhs: "right-hand" },
+        fade: { cue: "right-hand", ids: LHS },
+        rows: [tryRow(4), { t: "LHS = 4 + 2 = 6", cls: "side", lit: { cue: "right-hand", cls: "faded" } }, rhsWrite],
+        steps: [{ restore: true }, { cue: "right-hand", side: "right" }],
       },
     },
+    // both sides worked out: the crown makes way for 4 coins, and the balance tips; then "They're
+    // different, so 4 is not a solution."
     {
       id: "l4-26c",
+      before: { sub: 4, tilt: true },
       s: {
         rows: [
-          { t: "Try x = 4", cls: "try", lit: { cue: "not a solution", cls: "lit-no" } },
+          tryRow(4, { cue: "so 4", cls: "lit-no" }),
           { t: "LHS = 4 + 2 = 6", cls: "side" },
           { t: "RHS = 7", cls: "side" },
-          { t: "6 ≠ 7", cls: "big no", cue: "different" },
-          { t: "4 is not a solution.", cls: "no verdict", cue: "not a solution" },
+          { t: "6 ≠ 7", cls: "big no", write: [{ cue: "different", text: "6 ≠ 7" }], each: 150 },
+          { t: "4 is not a solution.", cls: "no verdict", write: [{ cue: "so 4", text: "4" }, { text: "is not a solution." }], each: 55 },
         ],
-        steps: [{ sub: 4 }, { cue: "different", tilt: true }],
       },
     },
-    { id: "l4-27", s: { rows: [{ t: "Try x = 5", cls: "try", cue: "check 5" }], steps: [{ restore: true }, { cue: "Replace x with 5", sub: 5 }] } },
+    // "Now, let's check 5…": the 4 coins go and the crown is back (level again), the working for 4 is
+    // cleared, and Try x = 5 is written (its 5 as "5" is said)
+    { id: "l4-27", clear: true, s: { hl: ["x"], cue: { hl: "Replace x", hlOut: "find the" }, rows: [tryWrite(5)], steps: [{ restore: true }] } },
     {
       id: "l4-28",
-      s: {
-        rows: [{ t: "Try x = 5", cls: "try" }, { t: "LHS = 5 + 2 = 7", cls: "side lit lhs", cue: "left-hand side" }],
-        steps: [{ sub: 5 }, { side: "left" }, { cue: "equals 7", gather: true }],
-      },
+      s: { lhs: true, cue: { lhs: "left-hand" }, rows: [tryRow(5), lhsWrite(5, 7)], steps: [{ restore: true }, { cue: "left-hand", side: "left" }] },
     },
     {
       id: "l4-28b",
       s: {
-        rows: [{ t: "Try x = 5", cls: "try" }, { t: "LHS = 5 + 2 = 7", cls: "side" }, { t: "RHS = 7", cls: "side lit rhs", cue: "right-hand side" }],
-        steps: [{ sub: 5 }, { side: "right" }],
+        lhs: true,
+        rhs: true,
+        cue: { rhs: "right-hand" },
+        fade: { cue: "right-hand", ids: LHS },
+        rows: [tryRow(5), { t: "LHS = 5 + 2 = 7", cls: "side", lit: { cue: "right-hand", cls: "faded" } }, rhsWrite],
+        steps: [{ restore: true }, { cue: "right-hand", side: "right" }],
       },
     },
+    // both sides worked out: the crown makes way for 5 coins, and the balance stays level (its hub
+    // flashes); then "Both sides equal 7.", 7 = 7 as "7" is said
     {
       id: "l4-28c",
+      before: { sub: 5, tilt: true, flash: true },
       s: {
         rows: [
-          { t: "Try x = 5", cls: "try", lit: { cue: "equal 7", cls: "lit-ok" } },
+          tryRow(5, { cue: "7.", cls: "lit-ok" }),
           { t: "LHS = 5 + 2 = 7", cls: "side" },
           { t: "RHS = 7", cls: "side" },
-          { t: "7 = 7", cls: "big ok", cue: "equal 7" },
+          { t: "7 = 7", cls: "big ok", write: [{ cue: "7.", text: "7 = 7" }], each: 150 },
         ],
-        steps: [{ sub: 5 }, { cue: "equal 7", tilt: true, flash: true }],
+        steps: [{ cue: "7.", flash: true }],
       },
     },
+    // "…So, 5 is the solution.": x = 5 written as it is said (its 5 on "5"), and its name under it on "the
+    // solution"
     {
       id: "l4-29",
       s: {
@@ -921,8 +983,8 @@
           { t: "LHS = 5 + 2 = 7", cls: "side" },
           { t: "RHS = 7", cls: "side" },
           { t: "7 = 7", cls: "big ok" },
-          { t: "x = 5", cls: "sol", cue: "So, 5" }, // the 5 comes when the voice says it
-          { t: "Solution", cls: "sol-name", cue: "So, 5" },
+          { t: "x = 5", cls: "sol", write: [{ cue: "So,", text: "x =" }, { cue: "So, 5", text: "5" }], each: 110 },
+          { t: "Solution", cls: "sol-name", cue: "the solution." },
         ],
         steps: [{ sub: 5 }],
       },
@@ -941,7 +1003,7 @@
   // variable" (same review: "Highlight lowercase x and the crown together"; the crown used to light as
   // the line began, x only on its word).
   CQ.NB_LINEAR = [
-    { id: "l4-19a", s: {} },
+    { id: "l4-19a", s: { cue: { eqn: "the crown's" } } },
     { id: "l4-19", s: { hl: ["x"], bal: "crown", cue: { hl: "one variable", bal: "one variable" } } },
     // x's power, in two lines, with nothing on the balance lit (review, 2026-11-13: "Split it into two
     // screens… Remove the extra crown icon and crown highlight. The focus here is the power, so keep the
@@ -958,7 +1020,7 @@
     // balance and the dashed equation box"). The 1 fades as the line begins.
     {
       id: "l4-22",
-      s: { power: { in: "highest power", out: "This is" }, tags: [{ ids: EQ_X2.map((t) => t.id), text: "Linear equation in one variable", color: "lin", bracket: true, cue: "a linear equation" }] },
+      s: { power: { in: "highest power", out: "This is" }, tags: [{ ids: EQ_X2.map((t) => t.id), text: "Linear equation in one variable", color: "lin", bracket: true, cue: "a linear" }] },
       gem: "linear",
     },
   ];
@@ -1274,30 +1336,9 @@
         }
       },
     };
-    // When the voice of a line (sp = { line, said }) gets to str: the question bar types with a recorded
-    // voice; a line with no recording yet is shown whole, so about when a voice would get there, 15
-    // letters a second from when the line came on (as the formula screen's cues). Or when the line is over
-    // (skipped with → or Next); at the latest after 15 s.
-    const cueIn = (sp, str) =>
-      CQ.run.when(
-        Promise.race([
-          sp.said,
-          new Promise((res) => {
-            const at = sp.line.indexOf(str);
-            const guess = at < 0 ? 0 : (at + str.length) * 65;
-            const w0 = performance.now();
-            const tick = () => {
-              const cap = CQ.caption;
-              const here = cap.text === sp.line;
-              if (here && sp.on == null) sp.on = performance.now(); // (the line came on)
-              const typedAll = here && !cap.chars && cap.typing === cap.line;
-              if ((here && cap.chars && cap.reached(str)) || typedAll || (here && !cap.chars && performance.now() - sp.on > guess) || performance.now() - w0 > 15000) return res();
-              setTimeout(tick, 60);
-            };
-            tick();
-          }),
-        ])
-      );
+    // When the voice of a line (sp = { line, said }) gets to str (CQ.caption.when), or when the line is
+    // over (skipped with → or Next).
+    const cueIn = (sp, str) => CQ.run.when(Promise.race([sp.said, CQ.caption.when(sp.line, str)]));
     // The game takes a label to its box: it lifts off its place under the boxes, glides over and settles
     // in. Variable's box is over the equation: it rises first, then goes across, so it never covers the x
     // it is about (lit meanwhile).
@@ -1320,14 +1361,19 @@
         const to = getComputedStyle(e).textShadow;
         if (from !== to) CQ.anim(e, [{ textShadow: from }, { textShadow: to }], { duration: 600, easing: "ease-out", keep: false });
       });
-    // A wrong label in a box (review, 2026-11-13): it shakes where it was put and goes back to its place;
-    // then the pair's labels are put in for the child, one after the other, each with its line from
-    // c.miss. As the line gets to the part, the part lights up in the label's colour (x, and only x, in
-    // gold; the whole statement with a green glow; 4x + 3; 19), and as it says what the part is, the label
-    // glides up into its box. A wrong label in one box of a pair is always the other box's, so the two are
-    // put in. Then Next is back.
+    // A wrong label in a box: it shakes where it was put and goes back to its place; then that label, and
+    // only that one, is explained and put in its own box for the child, with its line from c.miss: as the
+    // line gets to the part, the part lights up in the label's colour (x, and only x, in gold; the whole
+    // statement with a green glow; 4x + 3; 19), and as it says what the part is, the label glides up into
+    // its box. The pair's other label stays where it is, for the child to put in (review, 2026-11-16: "ab
+    // yha maine bs variable glat kiya and apne aap equation ka bhi explanation aa gya...aisa ni hona
+    // chahie...hint will be accordingly jo humne glat kiya"; from 2026-11-13 both labels of the pair were
+    // put in, each with its line). The instruction comes back in the question bar (shown, not said
+    // again), and Next waits until the pair is in.
     const putIn = async (wrong) => {
       const k = pair;
+      const name = wrong.label;
+      const t = target(name);
       fixed[k] = true;
       ctl.busy = true;
       selected = null;
@@ -1341,28 +1387,26 @@
       CQ.audio.play("bar.return");
       await CQ.run.when(wrong.goHome());
       await CQ.run.when(bringing); // (both labels of the pair are under the boxes)
-      for (const name of PAIRS[k]) {
-        const t = target(name);
-        const ch = chips.find((x) => x.label === name && !x.placed);
-        if (!ch || t.done) continue;
-        const last = PAIRS[k].every((n) => n === name || target(n).done);
+      if (t && !t.done && !wrong.placed) {
         const line = c.miss[name];
         const cue = c.missCue[name];
-        const sp = { line, said: CQ.say("", { text: line, advance: last ? "hold" : "auto", pause: 300 }) };
+        const sp = { line, said: CQ.say("", { text: line, advance: "auto", pause: 300 }) };
         await cueIn(sp, cue.look);
         const ids = name === "Equation" ? all : parts[name];
         const cls = "look-" + (colors[name] || "eq");
         ids.forEach((id) => tok(id).classList.add(cls));
         await cueIn(sp, cue.go);
-        await glideIn(ch, t);
-        place(ch, t);
+        await glideIn(wrong, t);
+        place(wrong, t);
         CQ.audio.play("ui.pop");
         setTimeout(() => unlook(ids, cls), 1100); // (its own light is on by then)
-        if (last) CQ.next.showNext(true); // the correction is complete: Next is back (review, 2026-11-13)
         await CQ.run.when(sp.said);
       }
       ctl.busy = false;
-      pairDone[k]();
+      if (PAIRS[k].every((n) => target(n).done)) return pairDone[k]();
+      // the other label is the child's to put in: the instruction again, and the hand when nothing happens
+      CQ.say("", { text: ask[k], advance: "none", quiet: true });
+      CQ.idle.arm(hint, 9000);
     };
     // A pair's boxes come in one at a time, the way they would be drawn (its bracket, the line drawn out
     // from its part, the empty box), each as its line names it when cues are given ({ sp, LHS, RHS });
@@ -1442,16 +1486,23 @@
     hideAll([...Object.values(braces), ...Object.values(leads), ...targets]);
     // The equation comes in: from where x + 2 = 7 stood, at its size, as that one fades, and glides to its
     // place in the middle; from the menu, it rises in at its place.
+    // (it comes as the voice says "another equation": review, 2026-11-16, things come with their words)
+    const another = CQ.run.when(Promise.race([bridge, CQ.caption.when(c.bridge, "another")]));
     if (fromAt) {
       const cur = CQ.centerOf(eqn);
       const from = { translate: `${fromAt.x - cur.x}px ${fromAt.y - cur.y}px`, scale: String(fromSize / parseFloat(getComputedStyle(eqn).fontSize)) };
       eqn.style.transformOrigin = "0 50%"; // (its middle, after its own -50% shift: it grows and shrinks about it)
       Object.assign(eqn.style, from);
-      await CQ.run.wait(700);
+      eqn.style.opacity = "0";
+      await another;
+      eqn.style.opacity = "";
+      CQ.anim(eqn, [{ opacity: 0 }, { opacity: 1 }], { duration: 320, keep: false });
+      CQ.audio.play("ui.pop", { volume: 0.5 });
+      await CQ.run.wait(300);
       await CQ.run.when(CQ.anim(eqn, [from, { translate: "0px 0px", scale: "1" }], { duration: 1000, easing: CQ.EASE.inOut, essential: true }));
     } else {
       hideAll([eqn]);
-      await CQ.run.wait(400);
+      await another;
       comeIn(eqn, "rise", 600);
     }
     await bridge;
@@ -1637,22 +1688,26 @@
     // placeholders; then the tray, and its cards one by one.
     const allSlots = [...bins.linear.slots, ...bins.nonlinear.slots, ...traySlots];
     hideAll([bins.linear, bins.nonlinear, tray, ...allSlots, ...cards]);
+    // as the voice says them (review, 2026-11-16: things come with their words): the cards in their tray
+    // on "each equation", the two panels on "the correct box"
     const said = CQ.say("", { text: c.title, advance: "auto", pause: 100 });
-    await CQ.run.wait(300);
-    for (const bin of [bins.linear, bins.nonlinear]) {
-      comeIn(bin, "pop", 360);
-      await CQ.run.wait(writeIn(bin.querySelector(".bin-head"), 300, 45) + 100);
-      for (const sl of bin.slots) {
-        comeIn(sl, "rise", 300);
-        await CQ.run.wait(120);
-      }
-    }
+    const onWord = (cue) => CQ.run.when(Promise.race([said, CQ.caption.when(c.title, cue)]));
+    await onWord("each equation");
     comeIn(tray, "rise", 360);
     traySlots.forEach((sl) => comeIn(sl, "rise", 300));
-    await CQ.run.wait(250);
+    await CQ.run.wait(200);
     for (const cd of cards) {
       comeIn(cd, "rise", 360);
-      await CQ.run.wait(160);
+      await CQ.run.wait(140);
+    }
+    await onWord("the correct");
+    for (const bin of [bins.linear, bins.nonlinear]) {
+      comeIn(bin, "pop", 360);
+      await CQ.run.wait(writeIn(bin.querySelector(".bin-head"), 250, 40) + 80);
+      for (const sl of bin.slots) {
+        comeIn(sl, "rise", 300);
+        await CQ.run.wait(100);
+      }
     }
     await said;
     showHow(cards[0]);
@@ -1814,6 +1869,60 @@
     return (at || 0) + chars.length * each;
   }
   CQ.writeIn = writeIn;
+  // Letters of el written in one after another, as if by hand, part by part, each part as the voice of
+  // the line says its word (review, 2026-11-16: "animation se dikhao likhte hue: LHS: 4 + 2 = 6", and
+  // "when the VO says 7, 7 should appear"): parts = [{ text, cue }] in order, their letters (spaces
+  // aside) the letters of el; a part with no cue follows straight on from the one before. each: ms per
+  // letter. alive(): false once el's screen has moved on (it stops). Resolves when all is written.
+  CQ.writeOut = async function (el, parts, line, each, alive) {
+    each = each || 70;
+    const chars = [];
+    const walk = (node) =>
+      Array.from(node.childNodes).forEach((c) => {
+        if (c.nodeType === 1) return walk(c);
+        if (c.nodeType !== 3) return;
+        const frag = document.createDocumentFragment();
+        for (const ch of c.textContent) {
+          const sp = document.createElement("span");
+          sp.className = "wch";
+          sp.textContent = ch;
+          frag.appendChild(sp);
+          chars.push(sp);
+        }
+        c.replaceWith(frag);
+      });
+    walk(el);
+    el.classList.add("writing");
+    el.style.visibility = "hidden"; // (a row with a box round it: the box too, until its first part)
+    const ok = () => el.isConnected && (!alive || alive());
+    // each part's letters (with the spaces before them)
+    let k = 0;
+    const groups = parts.map((p, i) => {
+      const n = String(p.text).replace(/\s+/g, "").length;
+      const g = [];
+      let got = 0;
+      while (k < chars.length && (got < n || (i === parts.length - 1 && k < chars.length))) {
+        if (!/\s/.test(chars[k].textContent)) got++;
+        g.push(chars[k++]);
+      }
+      return g;
+    });
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i].cue) await CQ.caption.when(line, parts[i].cue);
+      if (!ok()) return;
+      if (i === 0) {
+        el.style.visibility = "";
+        CQ.anim(el, [{ opacity: 0 }, { opacity: 1 }], { duration: 180, keep: false });
+      }
+      if (i === 0 || parts[i].cue) CQ.audio.play("ui.pop", { volume: 0.45 });
+      for (const ch of groups[i]) {
+        if (!ok()) return;
+        ch.classList.add("on");
+        if (!/\s/.test(ch.textContent)) await CQ.sleep(each);
+      }
+    }
+    el.classList.remove("writing");
+  };
   // One step at a time, so a child can follow: something comes into view (fade + a little rise, or a
   // pop), and the steps wait for each other (CQ.run.wait stops while the menu is open).
   const showStep = (el, how, ms) => {
@@ -1866,18 +1975,8 @@
     CQ.pos(card, MID.x - S * (eqn.offsetLeft + eqn.offsetWidth / 2), MID.y - S * (eqn.offsetTop + eqn.offsetHeight / 2));
     await CQ.say("recap-0", { text: c.title + ".", advance: "auto", pause: 200 });
     const W = (ms) => CQ.run.wait(ms);
-    // When the voice gets to str in the line text (the question bar types with it); at the latest
-    // after 15 s.
-    const untilSaid = (text, str) =>
-      new Promise((res) => {
-        const t0 = performance.now();
-        const tick = () => {
-          const cap = CQ.caption;
-          if ((cap.text === text && cap.reached(str)) || performance.now() - t0 > 15000) return res();
-          setTimeout(tick, 60);
-        };
-        tick();
-      });
+    // When the voice gets to str in the line text (CQ.caption.when).
+    const untilSaid = (text, str) => CQ.caption.when(text, str);
     // The labels before the one being named fade back, so the new one has the focus (review, 2026-11-13:
     // "LHS: Fade earlier labels", "RHS: Fade the LHS highlight"): its bracket, line and word.
     const fadeBack = (names) => parts.filter((p) => names.includes(p.name)).forEach((p) => [p.brace, p.lead, p.tag].forEach((e) => e && e.classList.add("settled")));
@@ -1885,10 +1984,19 @@
     // A part, as the voice names it: it lights up (x gold, then the whole equation green, x + 4 teal, 9
     // orange: recapLabels), the labels before it fading back, then the dot on it and the line drawn out to
     // its label, and the word written in.
-    const nameIt = async (part, text, cue) => {
+    // (look: the words on which the part lights up, the labels before it fading back, when they come
+    // before its name: "The expression to the left of the equals sign…")
+    const nameIt = async (part, text, cue, lookCue) => {
+      if (lookCue) {
+        await CQ.run.when(untilSaid(text, lookCue));
+        fadeBack(BEFORE[part.name] || []);
+        part.light();
+      }
       await CQ.run.when(untilSaid(text, cue));
-      fadeBack(BEFORE[part.name] || []);
-      part.light();
+      if (!lookCue) {
+        fadeBack(BEFORE[part.name] || []);
+        part.light();
+      }
       if (part.brace) await showStep(part.brace, "rise", 360);
       part.lead.style.opacity = "";
       part.lead.classList.add("on");
@@ -1906,7 +2014,7 @@
     // then its parts, one line each: the variable, the equation, the LHS, the RHS
     for (let i = 0; i < c.panels.length; i++) {
       const P = c.panels[i];
-      await Promise.all([nameIt(parts[i], P.text, P.cue), CQ.say(P.id, { text: P.text })]);
+      await Promise.all([nameIt(parts[i], P.text, P.cue, P.look), CQ.say(P.id, { text: P.text })]);
     }
     // the whole summary on the one equation, for a good look, all four labels clear again (review,
     // 2026-11-07: "At the end, retain the single equation with all four labels clearly spaced"), x + 4
@@ -2021,19 +2129,37 @@
       oneByOne([...pad.children], 70, delay || 0);
     }
     // One thing at a time, each by itself: every line of the step, and the two sides of an LHS/RHS
-    // pair one after the other; then the keypad, key by key.
-    const render = (html, withPad) => {
+    // pair one after the other; then the keypad, key by key. line: the line said meanwhile; a part with
+    // data-cue waits until its voice gets to those words (review, 2026-11-16: "jab VO bole 7 tb 7 aana
+    // chahie"; "11 ≠ 17" and "Let's find x step by step." used to come seconds before they were said).
+    let shown = 0; // (counts screens: a reveal still under way for the screen before stops)
+    const render = (html, withPad, line) => {
       body.classList.toggle("with-pad", !!withPad);
       main.innerHTML = html;
       const parts = [];
       [...main.children].forEach((el) => (el.classList.contains("pr-sides") ? parts.push(...el.children) : parts.push(el)));
-      oneByOne(parts, 560);
-      if (withPad) showPad(parts.length * 560 + 250);
-      else pad.classList.add("hidden");
+      if (!withPad) pad.classList.add("hidden");
+      const n = ++shown;
+      if (!line || !parts.some((el) => el.dataset.cue)) {
+        oneByOne(parts, 560);
+        if (withPad) showPad(parts.length * 560 + 250);
+        return;
+      }
+      parts.forEach((el) => (el.style.opacity = "0"));
+      (async () => {
+        for (const el of parts) {
+          if (el.dataset.cue) await CQ.caption.when(line, el.dataset.cue);
+          if (n !== shown) return;
+          oneByOne([el], 0);
+          await CQ.sleep(el.dataset.cue ? 250 : 560);
+        }
+        if (n === shown && withPad) showPad(250);
+      })();
     };
     const R = CQ.rich;
-    const sides = (lhs, rhs) =>
-      `<div class="pr-sides"><div class="pr-side lhs"><b>LHS:</b> ${lhs}</div><div class="pr-side rhs"><b>RHS:</b> ${rhs}</div></div>`;
+    // the two sides, each coming as the voice names it (cues: [lhs cue, rhs cue])
+    const sides = (lhs, rhs, cues) =>
+      `<div class="pr-sides"><div class="pr-side lhs"${cues ? ` data-cue="${cues[0]}"` : ""}><b>LHS:</b> ${lhs}</div><div class="pr-side rhs"${cues ? ` data-cue="${cues[1]}"` : ""}><b>RHS:</b> ${rhs}</div></div>`;
     const typeRow = (prompt) => `<div class="pr-ans">${R(prompt)} <span class="pr-input empty">?</span></div>`;
     const markInput = (ok) => {
       const el = main.querySelector(".pr-input");
@@ -2093,14 +2219,17 @@
         markInput(true);
         CQ.audio.play("correct");
         await CQ.run.wait(500);
+        const rightLine = T(P.lines.right, { r: CQ.num(p.rhs), x: CQ.num(p.x) });
         render(
           `<div class="pr-eq sm">${R(p.eq)}</div><div class="pr-x ok">${R("x = " + CQ.num(p.x))}</div>` +
-            sides(R(w.text), CQ.num(p.rhs)) +
-            `<div class="pr-banner ok">✓ ${R(T(W.bothEqual, { r: CQ.num(p.rhs) }))}</div>`
+            sides(R(w.text), CQ.num(p.rhs), ["Both sides", "Both sides"]) +
+            `<div class="pr-banner ok" data-cue="equal ${CQ.num(p.rhs)}">✓ ${R(T(W.bothEqual, { r: CQ.num(p.rhs) }))}</div>`,
+          false,
+          rightLine
         );
         CQ.fx.confetti(CQ.ui.layer, 1150, 420, 26);
         CQ.audio.play("confetti");
-        await CQ.say("", { text: T(P.lines.right, { r: CQ.num(p.rhs), x: CQ.num(p.x) }) });
+        await CQ.say("", { text: rightLine });
         return;
       }
       // 3) wrong: why it doesn't work
@@ -2108,13 +2237,16 @@
       markInput(false);
       CQ.audio.play("tryagain");
       await CQ.run.wait(500);
+      const wrongLine = T(P.lines.wrong, { l: CQ.num(w.value), r: CQ.num(p.rhs), a: CQ.num(a) });
       render(
         `<div class="pr-x no">${R(W.yourAnswer + " x = " + CQ.num(a))}</div><div class="pr-eq sm">${R(p.eq)}</div>` +
-          sides(R(w.text), CQ.num(p.rhs)) +
-          `<div class="pr-banner no">${R(CQ.num(w.value) + " ≠ " + CQ.num(p.rhs))}</div>` +
-          `<div class="pr-note">${R(W.stepByStep)}</div>`
+          sides(R(w.text), CQ.num(p.rhs), ["The left side", "the right side"]) +
+          `<div class="pr-banner no" data-cue="different">${R(CQ.num(w.value) + " ≠ " + CQ.num(p.rhs))}</div>` +
+          `<div class="pr-note" data-cue="step by step">${R(W.stepByStep)}</div>`,
+        false,
+        wrongLine
       );
-      await CQ.say("", { text: T(P.lines.wrong, { l: CQ.num(w.value), r: CQ.num(p.rhs), a: CQ.num(a) }) });
+      await CQ.say("", { text: wrongLine });
       // 4–5) undo each operation on both sides
       for (const st of p.steps) {
         let html = "";
@@ -2150,8 +2282,8 @@
           continue;
         }
         if (st.kind === "act") {
-          html += `<div class="pr-choices"></div>`;
-          render(html);
+          html += `<div class="pr-choices" data-cue="Tap the button"></div>`;
+          render(html, false, st.say);
           CQ.say("", { text: st.say, advance: "none" });
           const box = main.querySelector(".pr-choices");
           const btn = button("btn-wood pr-act glow", R(st.button), st.button, box, () => {});
@@ -2165,22 +2297,25 @@
           await CQ.run.wait(500);
           continue;
         }
-        // type the result
+        // type the result (the box to type in comes as the voice asks for it: "What is…")
         (st.lines || []).forEach((l) => (html += `<div class="pr-line">${R(l)}</div>`));
-        html += typeRow(st.prompt);
-        render(html, true);
+        html += typeRow(st.prompt).replace('<div class="pr-ans">', `<div class="pr-ans"${/What is/.test(st.say) ? ' data-cue="What is"' : ""}>`);
+        render(html, true, st.say);
         CQ.say("", { text: st.say, advance: "none" });
         await typeUntil(st.answer, st.expr);
         await CQ.run.wait(700);
       }
       // 6) check in the original equation
       const w2 = workLHS(p.lhs, p.x);
+      const checkLine = T(P.lines.check, { x: CQ.num(p.x) });
       render(
-        `<div class="pr-eq sm">${R(p.eq)}</div><div class="pr-x">${R("x = " + CQ.num(p.x))}</div>` +
+        `<div class="pr-eq sm">${R(p.eq)}</div><div class="pr-x" data-cue="Put ${CQ.num(p.x)}">${R("x = " + CQ.num(p.x))}</div>` +
           sides(`${R(p.check.lhs)} = <button type="button" class="blank" data-k="lhs" aria-label="Left-hand side value">?</button>`, CQ.num(p.rhs)) +
-          `<div class="pr-banner ok hidden"></div>`
+          `<div class="pr-banner ok hidden"></div>`,
+        false,
+        checkLine
       );
-      CQ.say("", { text: T(P.lines.check, { x: CQ.num(p.x) }), advance: "none" });
+      CQ.say("", { text: checkLine, advance: "none" });
       await CQ.pickNumber(main.querySelector(".blank"), main, p.check.options, w2.value, () =>
         CQ.say("", { text: T(P.lines.checkAgain, { expr: p.check.lhs }), advance: "none" })
       );

@@ -253,15 +253,152 @@
   };
 
 
+  // ------------------------------------------------------------------ when the voice says each word
+  // How long the words of a line take to say, roughly: their syllables as they are said ("7" is
+  // "seven", "LHS" is "L H S", "=" is "equals"), about a fifth of a second each, and a pause after a full
+  // stop or a comma. For a line read by the device voice when it doesn't say where it is, and for a line
+  // shown without a voice. (The recordings have their own word timings: tools/vo_timing.py, which works
+  // them out the same way when it has to guess.) The device voice's own speed is learnt as it speaks.
+  CQ.voiceTime = {
+    unit: 0.2, // s per unit
+    ones: "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split(" "),
+    tens: "_ _ twenty thirty forty fifty sixty seventy eighty ninety".split(" "),
+    numberWords(n) {
+      n = Math.round(Math.abs(n));
+      if (n < 20) return [this.ones[n]];
+      if (n < 100) return [this.tens[Math.floor(n / 10)]].concat(n % 10 ? [this.ones[n % 10]] : []);
+      return ["hundred", "and", "more"];
+    },
+    spoken(word) {
+      const SYM = { "+": ["plus"], "=": ["equals"], "−": ["minus"], "-": ["minus"], "×": ["times"], "÷": ["divided", "by"], "≠": ["is", "not", "equal", "to"], "—": [], "–": [], "…": [] };
+      const out = [];
+      String(word)
+        .replace(/\[\[|\]\]|\{\{|\}\}|<<|>>|##/g, " ")
+        .replace(/\|/g, " divided by ")
+        .replace(/\^2|²/g, " squared")
+        .trim()
+        .split(/\s+/)
+        .forEach((part) => {
+          const core = part.replace(/^[.,!?;:"“”'’()]+|[.,!?;:"“”'’()]+$/g, "");
+          if (!core) return;
+          if (SYM[core]) return out.push(...SYM[core]);
+          if (/^[lr]hs$/i.test(core)) return out.push("l", "h", "s");
+          const m = core.match(/^([−-]?)(\d+(?:\.\d+)?)(x?)(?:-(\w+))?$/);
+          if (m) {
+            if (m[1]) out.push("negative");
+            out.push(...this.numberWords(parseFloat(m[2])));
+            if (m[3]) out.push("x");
+            if (m[4]) out.push(m[4]);
+            return;
+          }
+          out.push(...core.split(/[-–(]/).filter(Boolean));
+        });
+      return out;
+    },
+    syllables(t) {
+      let w = String(t).toLowerCase().replace(/[^a-z]/g, "");
+      if (!w) return 0;
+      const SPECIAL = { zippy: 2, grumble: 2, every: 2, equals: 2, equal: 2, equation: 3, variable: 4, value: 2, values: 2, one: 1, seven: 2, eleven: 3, linear: 3, nonlinear: 4, solution: 3 };
+      if (SPECIAL[w]) return SPECIAL[w];
+      if (w.length <= 3) return 1;
+      w = w.replace(/(?:[^laeiouy]es|[^laeiouy]ed|[^laeiouy]e)$/, "").replace(/^y/, "");
+      return Math.max(1, (w.match(/[aeiouy]{1,2}/g) || []).length);
+    },
+    weight(word) {
+      const toks = this.spoken(word);
+      if (!toks.length) return 0.15;
+      return toks.reduce((w, t) => {
+        if (t.length === 1 && t !== "a") return w + 1.35; // letters said one by one (x, L H S)
+        if (/^(a|an|the|of|to|is|it|and|or|in|on|at|as)$/i.test(t)) return w + 0.75;
+        return w + 0.45 + this.syllables(t);
+      }, 0);
+    },
+    pauseAfter(word) {
+      if (/[.!?…]["”’)]?$/.test(word)) return 0.35;
+      if (/[,;:—–]$/.test(word) || word === "—") return 0.18;
+      return 0;
+    },
+    // when each word of the line starts, s from when the voice starts (and .end: when it is all said)
+    plan(text) {
+      const out = [];
+      let t = 0;
+      String(text)
+        .trim()
+        .split(/\s+/)
+        .forEach((w) => {
+          out.push(t);
+          t += this.weight(w) * this.unit + this.pauseAfter(w);
+        });
+      out.end = t;
+      return out;
+    },
+    // the device voice took secs to say text: its speed, learnt a little at a time
+    learn(text, secs) {
+      const words = String(text).trim().split(/\s+/);
+      const units = words.reduce((u, w) => u + this.weight(w), 0);
+      const pauses = words.reduce((p, w) => p + this.pauseAfter(w), 0);
+      if (!(units > 3) || !(secs > 0.5)) return;
+      const u = (secs - pauses) / units;
+      this.unit = CQ.clamp(0.7 * this.unit + 0.3 * u, 0.12, 0.4);
+    },
+  };
+  // The words of a line: where each starts and ends in it (split at spaces, as its timings are).
+  function wordsOf(text) {
+    const out = [];
+    const re = /\S+/g;
+    let m;
+    while ((m = re.exec(String(text)))) out.push({ a: m.index, b: m.index + m[0].length });
+    return out;
+  }
+  // The word of the line at a letter (a space: the word after it).
+  function wordAt(words, i) {
+    for (let k = 0; k < words.length; k++) if (i < words[k].b) return k;
+    return words.length - 1;
+  }
+  // The device voice reads the line its own way (CQ.speakable: "x + 2" as "x plus 2", "LHS" as "L H S"):
+  // for a letter of what it reads, the word of the line it belongs to (the two lined up, letter by letter).
+  function spokenToShown(shown, spoken) {
+    const a = String(shown);
+    const b = String(spoken);
+    const n = a.length;
+    const m = b.length;
+    const L = [];
+    for (let i = 0; i <= n; i++) L.push(new Uint16Array(m + 1));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = a[i] === b[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    const map = new Int32Array(m).fill(-1);
+    for (let i = 0, j = 0; i < n && j < m; ) {
+      if (a[i] === b[j]) {
+        map[j] = i;
+        i++;
+        j++;
+      } else if (L[i + 1][j] >= L[i][j + 1]) i++;
+      else j++;
+    }
+    const words = wordsOf(a);
+    return (k) => {
+      k = CQ.clamp(k | 0, 0, Math.max(0, m - 1));
+      if (map[k] >= 0) return wordAt(words, map[k]);
+      let p = k - 1;
+      while (p >= 0 && map[p] < 0) p--;
+      if (p < 0) return 0;
+      const d = map[p];
+      return /\s/.test(a[d]) ? wordAt(words, d + 1) : wordAt(words, d);
+    };
+  }
+
   // ------------------------------------------------------------------ caption + narration
-  // A recorded line (js/voice.js) types itself out at the pace of its voice, so the words appear as
-  // they are said; a tap on the words shows the whole line at once (the voice carries on). A line
-  // without a recording shows at once, as before.
+  // A line types itself out as it is said, word by word, each word as the voice says it: a recorded line
+  // by when each of its words is said in its clip (js/vo_lines.js, from tools/vo_timing.py), a line read
+  // by the device voice by the words the voice says it has got to (or, if it doesn't say, by how long its
+  // words take). A tap on the words shows the whole line at once (the voice carries on). A line with no
+  // voice shows at once. Whatever a line names can come in on screen as the voice says it: when(text,
+  // str) (review, 2026-11-16: "when the VO says 7, 7 should appear").
   // The question bar shows the whole line at once (review, 2026-11-07: "One text in the instruction
   // panel should not be split into two screens"; from 2026-11-05 it showed one row at a time). A line
   // too long for one row is cut, at whole words, into rows (as even as they can be, broken after a full
-  // stop or comma where one is near), shown one under the other, and the bar grows to fit them. A
-  // recorded line types itself out with its voice, row after row. Every row is the same size.
+  // stop or comma where one is near), shown one under the other, and the bar grows to fit them. Every
+  // row is the same size.
+  const LEAD = 0.08; // s: a word counts as said this much before its sound begins (what it names has a moment to come in)
   CQ.caption = {
     build(ui) {
       this.el = CQ.el("div", "caption hidden", ui);
@@ -283,6 +420,12 @@
       this.chars = null; // the line's letters while they wait to be typed
       this.typing = 0; // the line whose voice has started typing it
       this.pass = 0; // counts replays, so only a replay's own voice types the line
+      // how far the voice has got: "wait" (it hasn't started), "voice" (it is saying the line: heard is
+      // the last word it has got to), "whole" (no voice: the line is simply shown), "done" (all said)
+      this.mode = "whole";
+      this.heard = -1;
+      this.words = [];
+      this.shownAt = 0;
     },
     set(text, opts) {
       this.text = text;
@@ -293,10 +436,22 @@
       this.el.classList.remove("hidden");
       this.rows = this.split(text);
       this.sr.textContent = CQ.speakable(text);
-      // a recorded line waits for its voice to start; if it never does, the line is shown in full
-      const voiced = !this.opts.quiet && CQ.audio.isEnabled("voice") && window.CQVoice && CQVoice.lookup(text);
+      this.words = wordsOf(text);
+      this.heard = -1;
+      this.shownAt = performance.now();
+      // a line with a voice (its recording, or the device's) waits for it to start; if it never does, the
+      // line is shown in full
+      const voiceOn = !this.opts.quiet && CQ.audio.isEnabled("voice");
+      const voiced = voiceOn && ((window.CQVoice && CQVoice.lookup(text)) || ("speechSynthesis" in window && window.SpeechSynthesisUtterance));
+      this.mode = voiced ? "wait" : "whole";
       this.render(!!voiced);
-      if (voiced) setTimeout(() => this.typing !== n && this.reveal(n), 3500);
+      if (voiced)
+        setTimeout(() => {
+          if (this.typing === n || n !== this.line) return;
+          this.mode = "whole"; // (no voice after all: as if shown without one, from now)
+          this.shownAt = performance.now();
+          this.reveal(n);
+        }, 3500);
       CQ.anim(this.el, [{ transform: "translateY(-12px)", opacity: 0.2 }, { transform: "translateY(0)", opacity: 1 }], {
         duration: 420,
         easing: CQ.EASE.out,
@@ -381,8 +536,11 @@
       this.chars = typed ? this.hideLetters() : null;
     },
     // Each letter of the line in its own span, hidden until it is typed: the rows keep their final layout.
+    // The letters of each word are kept together (wordChars[k]: word k's letters, with the space before it),
+    // to come in as that word is said.
     hideLetters() {
       const chars = [];
+      const groups = [[]];
       const walk = (node) =>
         Array.from(node.childNodes).forEach((c) => {
           if (c.nodeType === 1) return walk(c);
@@ -394,43 +552,194 @@
             s.textContent = ch;
             frag.appendChild(s);
             chars.push(s);
+            const g = groups[groups.length - 1];
+            if (/\s/.test(ch)) {
+              if (g.some((x) => !/\s/.test(x.textContent))) groups.push([s]);
+              else g.push(s);
+            } else g.push(s);
           }
           c.replaceWith(frag);
         });
-      walk(this.txt);
+      Array.from(this.txt.querySelectorAll(".cap-row")).forEach((row, i) => {
+        if (i > 0 && groups[groups.length - 1].length) groups.push([]); // a new row: a new word
+        walk(row);
+      });
+      const filled = groups.filter((g) => g.some((x) => !/\s/.test(x.textContent)));
+      // (one group of letters per word of the line; if the rich text ever splits them otherwise, the
+      // letters are shared out over the words by their place in the line instead)
+      if (filled.length === this.words.length) this.wordChars = filled;
+      else {
+        const per = this.words.map(() => []);
+        chars.forEach((c, i) => per[Math.min(per.length - 1, Math.floor((i / Math.max(1, chars.length)) * per.length))].push(c));
+        this.wordChars = per;
+      }
       return chars;
     },
-    // For CQ.say: when line n's voice starts, { clip, secs, rate } types its letters at the voice's
-    // pace (finishing just before the voice does), row after row; a voice without a clip shows the line
-    // in full. (pass: a replay's own voice, see replay.)
+    // For CQ.say: when line n's voice starts, the line types itself out with it, word by word: a recording
+    // ({ clip, secs, rate, words, now }) by when each word is said in it, the device voice ({ synth }) by
+    // the words it says it has got to; with no voice ({ clip: false }) it is shown in full. (pass: a
+    // replay's own voice, see replay.)
     voiced(n, pass) {
       return (v) => {
-        if (n !== this.line || !this.chars) return;
-        if (!v || !v.clip) return this.reveal(n, pass);
-        this.typing = n;
-        const chars = this.chars;
-        const ms = Math.max(16, ((v.secs - 0.35) * 1000) / chars.length) / (v.rate || 1);
-        const t0 = performance.now();
-        let shown = 0;
-        const step = (now) => {
-          if (n !== this.line || this.chars !== chars) return; // shown in full, or replaced by another line
-          const upto = Math.min(chars.length, Math.floor((now - t0) / ms) + 1); // letters the voice has reached
-          while (shown < upto) chars[shown++].classList.add("on");
-          if (shown < chars.length) requestAnimationFrame(step);
-          else this.reveal(n, pass);
-        };
-        requestAnimationFrame(step);
+        if (n !== this.line) return;
+        if (!v || (!v.clip && !v.synth)) {
+          if (pass === undefined) {
+            this.mode = "whole";
+            this.shownAt = performance.now();
+          }
+          return this.reveal(n, pass);
+        }
+        if (v.clip) return this.typeClip(n, pass, v);
+        return this.typeSynth(n, pass, v.synth);
       };
     },
-    // Has the line got as far as str? For a line typed with its voice: the voice is saying it now (the
-    // letters typed so far); otherwise: it is on screen. (For things that appear on a word.)
+    // the line's letters up to word k (each word's coming in over part of the time it takes to say)
+    showUpTo(chars, k, frac) {
+      const W = this.wordChars || [];
+      for (let i = 0; i <= Math.min(k, W.length - 1); i++) {
+        const g = W[i];
+        const upto = i < k ? g.length : Math.max(1, Math.ceil(g.length * CQ.clamp(frac, 0, 1)));
+        for (let j = 0; j < upto; j++) g[j].classList.add("on");
+      }
+    },
+    typeClip(n, pass, v) {
+      this.typing = n;
+      if (pass === undefined) this.mode = "voice";
+      const chars = this.chars; // (null: shown in full already, by a tap; the voice is still followed)
+      const W = v.words && v.words.length === 2 * this.words.length ? v.words : null;
+      const rate = v.rate || 1;
+      const t0 = performance.now();
+      // where the voice is in its clip (s): the clip's own clock, or the time since it started
+      const clock = () => {
+        const wall = ((performance.now() - t0) / 1000) * rate;
+        const t = v.now ? v.now() : NaN;
+        if (t === Infinity) return Infinity;
+        return t > 0 ? t : wall > 0.25 ? wall : 0;
+      };
+      const per = Math.max(0.016, (v.secs - 0.35) / Math.max(1, String(this.text).length)); // (no word timings: the letters at an even pace)
+      const step = () => {
+        if (n !== this.line) return;
+        const T = clock() + LEAD;
+        let k = -1;
+        if (W) {
+          while (k + 1 < this.words.length && T >= W[2 * (k + 1)]) k++;
+        } else k = T === Infinity ? this.words.length - 1 : Math.min(this.words.length - 1, wordAt(this.words, Math.floor(T / per)));
+        if (k > this.heard) this.heard = k; // (a replay's voice too: what waits for a word comes as it says it)
+        if (chars && this.chars === chars && k >= 0) {
+          const frac = W && k < this.words.length ? (T - W[2 * k]) / Math.max(0.12, W[2 * k + 1] - W[2 * k]) : 1;
+          this.showUpTo(chars, k, frac);
+        }
+        const done = T === Infinity || (W ? T >= W[W.length - 1] + 0.1 : k >= this.words.length - 1);
+        if (done) {
+          if (pass === undefined) this.heard = this.words.length - 1;
+          return this.reveal(n, pass);
+        }
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    },
+    typeSynth(n, pass, synth) {
+      const toShown = spokenToShown(this.text, synth.text);
+      const plan = CQ.voiceTime.plan(this.text);
+      const text = this.text;
+      let start = 0;
+      let over = false; // its voice has ended
+      let byWords = false; // the voice says where it is
+      const at = []; // when each word was reached (performance.now)
+      const reach = (k) => {
+        k = Math.min(k, this.words.length - 1);
+        for (let i = 0; i <= k; i++) if (at[i] == null) at[i] = performance.now();
+        if (k > this.heard) this.heard = k;
+      };
+      const step = () => {
+        if (n !== this.line || !start) return;
+        const now = performance.now();
+        // the device voice doesn't say which word it is on (some don't): by how long its words take
+        if (!byWords) {
+          const T = (now - start) / 1000 + LEAD;
+          let k = -1;
+          while (k + 1 < plan.length && T >= plan[k + 1]) k++;
+          if (k >= 0) reach(k);
+        }
+        const chars = this.chars;
+        if (chars && at.length) {
+          const k = at.length - 1;
+          const dur = Math.max(0.12, (plan[k + 1] != null ? plan[k + 1] : plan.end) - plan[k]);
+          this.showUpTo(chars, k, (now - at[k]) / 1000 / dur);
+        }
+        if (!over) requestAnimationFrame(step);
+      };
+      const begin = () => {
+        if (start) return;
+        start = performance.now();
+        this.typing = n;
+        if (pass === undefined) this.mode = "voice";
+        requestAnimationFrame(step);
+      };
+      synth.on((ev) => {
+        if (n !== this.line) return;
+        if (ev.type === "start") begin();
+        else if (ev.type === "word") {
+          begin();
+          byWords = true;
+          reach(toShown(ev.charIndex));
+        } else if (ev.type === "end") {
+          over = true;
+          if (start && pass === undefined) CQ.voiceTime.learn(text, (performance.now() - start) / 1000);
+        }
+      });
+    },
+    // How far the voice has got in the line on screen: the last word it has said (−1: none yet).
+    saidUpTo() {
+      if (this.mode === "done") return Infinity;
+      if (this.mode === "whole") {
+        // no voice: about where a voice would be by now
+        const plan = CQ.voiceTime.plan(this.text || "");
+        const T = (performance.now() - this.shownAt) / 1000 + LEAD;
+        let k = -1;
+        while (k + 1 < plan.length && T >= plan[k + 1]) k++;
+        return k;
+      }
+      return this.heard;
+    },
+    // Has the voice got as far as str in the line on screen (to its last word)? For things that appear on
+    // a word: when(), below.
     reached(str) {
       if (!this.text) return false;
-      const rows = Array.from(this.txt.querySelectorAll(".cap-row"));
-      const said = this.chars
-        ? rows.map((r) => Array.from(r.querySelectorAll(".ch.on"), (c) => c.textContent).join("")).join(" ")
-        : rows.map((r) => r.textContent).join(" ");
-      return said.includes(str);
+      const at = this.text.indexOf(str);
+      if (at < 0) return false;
+      return this.saidUpTo() >= wordAt(this.words, at + str.replace(/\s+$/, "").length - 1);
+    },
+    // Resolves when the voice of the line `text` gets to str (as it begins its last word), with that line
+    // on screen (the one there now, or the next to come); or once the line has gone (skipped on); or after
+    // 15 s at the latest. At once if the line doesn't have str.
+    when(text, str) {
+      text = String(text);
+      const at = str ? text.indexOf(str) : -1;
+      if (at < 0) return Promise.resolve();
+      const target = wordAt(wordsOf(text), at + String(str).replace(/\s+$/, "").length - 1);
+      const from = this.line;
+      const t0 = performance.now();
+      return new Promise((res) => {
+        let seen = false;
+        const check = () => {
+          const here = this.text === text && this.line >= from;
+          if (here) seen = true;
+          if ((here && this.saidUpTo() >= target) || (seen && !here) || performance.now() - t0 > 15000) return res();
+          setTimeout(check, 25);
+        };
+        check();
+      });
+    },
+    // Line n's voice has ended (or was cut short): it has all been said, and is shown in full. (Not when
+    // its voice never started (the device has no voice after all): then things come about when a voice
+    // would have said them, as for a line with no voice. Not when a replay cut it short: the replay's
+    // voice carries on, and what waits for a word comes as it says it.)
+    ended(n) {
+      if (n !== this.line || this.busy) return;
+      if (this.mode === "wait" && this.typing !== n) this.mode = "whole";
+      else if (this.mode !== "whole") this.mode = "done";
+      this.reveal(n);
     },
     // Line n (or the line on screen) is done typing: its voice has ended, or the child tapped it, or
     // the voice never started. The whole line is shown.
@@ -447,6 +756,8 @@
       this.chars = null;
       this.replays++;
       this.busy = false;
+      this.mode = "whole";
+      this.heard = -1;
       if (now || this.el.classList.contains("hidden")) {
         this.el.classList.add("hidden");
         return;
@@ -468,7 +779,10 @@
       this.render(true);
       CQ.audio.speak(CQ.speakable(this.text), { who: this.opts.who || "narrator", line: this.text, onStart: this.voiced(line, pass) }).then(() => {
         this.reveal(line, pass);
-        if (n === this.replays) this.busy = false;
+        if (n === this.replays) {
+          this.busy = false;
+          if (line === this.line && this.mode !== "whole") this.mode = "done"; // all said now
+        }
       });
     },
   };
@@ -502,7 +816,7 @@
     const speech = opts.quiet
       ? Promise.resolve({ spoken: false })
       : CQ.audio.speak(CQ.speakable(text), { who: opts.who || "narrator", line: text, onStart: CQ.caption.voiced(line) });
-    speech.then(() => CQ.caption.reveal(line)); // however the voice ended, the whole line is on screen
+    speech.then(() => CQ.caption.ended(line)); // however the voice ended, it has all been said, and the whole line is on screen
     const advance = opts.advance || "hold";
     if (advance === "none") return null;
     const words = text.split(/\s+/).length;
@@ -1429,6 +1743,31 @@
       await CQ.run.wait(gap || 460);
     }
   };
+  // Pieces of the check written in one after another, as if by hand, as the voice gets to cue in line
+  // (at once with no cue): words letter by letter, a box (the value of x, a blank) popping in. each: ms
+  // per letter. (Review, 2026-11-16: "animation se dikhao likhte hue", "ekdum appear kyu horha hai".)
+  async function writePieces(els, line, cue, each) {
+    each = each || 70;
+    els.forEach((e) => (e.style.opacity = "0"));
+    if (cue && line) await CQ.run.when(CQ.caption.when(line, cue));
+    CQ.audio.play("ui.pop", { volume: 0.55 });
+    for (const e of els) {
+      e.style.opacity = "";
+      if (e.matches(".xslot, .blank, .cv")) {
+        CQ.anim(e, [{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1)" }], { duration: 260, easing: CQ.EASE.back, keep: false });
+        await CQ.run.wait(e.matches(".cv") ? each * 2 : 180);
+      } else await CQ.run.wait(CQ.writeIn(e, 0, each) + 30);
+    }
+  }
+  // the words of a line up to where it says the number v ("Replace x with 4": "Replace x with 4"), for
+  // CQ.caption.when; null if it doesn't say it
+  function numberCue(line, v) {
+    if (!line) return null;
+    const n = String(CQ.num(v)).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const m = new RegExp("(^|[^\\d.])" + n + "(?![\\d])").exec(line);
+    return m ? line.slice(0, m.index + m[0].length) : null;
+  }
+  CQ.numberCue = numberCue;
   CQ.checkPanel = {
     build(ui) {
       this.el = CQ.el("div", "check-panel hidden", ui);
@@ -1506,16 +1845,15 @@
     pieces(side) {
       return [...side.querySelectorAll(":scope > .lab, :scope > .e1, :scope > .rest > .ex > *, :scope > .rest > .eqv > *")];
     },
-    // The left side comes in, piece by piece (with the value already in for x).
-    async lhsRow() {
-      CQ.audio.play("ui.pop", { volume: 0.7 });
-      await comeUp(this.pieces(this.lhs));
+    // The left side is written in as the voice names it (line: the line being said; cue: its words,
+    // "left-hand"), with the value already in for x.
+    async lhsRow(line, cue) {
+      await writePieces(this.pieces(this.lhs), line, cue);
       await CQ.run.wait(200);
     },
-    // The right side comes in, piece by piece.
-    async side() {
-      CQ.audio.play("ui.pop", { volume: 0.7 });
-      await comeUp(this.pieces(this.rhs));
+    // The right side, the same way ("right-hand"; or straight on, when it is given).
+    async side(line, cue) {
+      await writePieces(this.pieces(this.rhs), line, cue);
       await CQ.run.wait(250);
     },
     hide(now) {
@@ -1537,19 +1875,20 @@
     blank(k) {
       return this.el.querySelector(`.blank[data-k="${k}"]`);
     },
-    // x = …: the row comes in, and the value flies (from Zippy's hands, or from the crown) into its
-    // box; the left side's x takes the value too (it shows when the left side comes in).
-    async substitute(v, fromWorld) {
-      const parts = [...this.xRow.children];
-      parts.forEach((e) => (e.style.opacity = "0"));
+    // Try x = …: written in, then the value flies (from Zippy's hands, or out of the crown) into its box
+    // as the voice says it (line: the line being said; at once if it doesn't say the value); the left
+    // side's x takes the value too (it shows when the left side is written).
+    async substitute(v, fromWorld, line) {
       this.xRow.style.opacity = "";
-      await comeUp(parts);
+      await writePieces([...this.xRow.children], null, null);
+      const cue = numberCue(line, v);
+      if (cue) await CQ.run.when(CQ.caption.when(line, cue));
       const slot = this.xRow.querySelector(".xslot");
       const to = CQ.centerOf(slot);
       const from = fromWorld ? CQ.camera.toScreen(fromWorld) : to;
       const chip = CQ.el("div", "num-chip", null, CQ.num(v));
       CQ.audio.play("ui.swoosh");
-      await CQ.fly(CQ.ui.layer, chip, from, to, { duration: 900, arc: -180 });
+      await CQ.fly(CQ.ui.layer, chip, from, to, { duration: 700, arc: -160 });
       slot.innerHTML = `<span class="subbed">${CQ.num(v)}</span>`;
       this.lhs.querySelector(".xslot").innerHTML = `<span class="subbed">${CQ.num(v)}</span>`;
       CQ.audio.play("ui.pop");
@@ -1562,32 +1901,49 @@
     fill(k, options, correct, onMiss) {
       return CQ.pickNumber(this.blank(k), this.el, options, correct, onMiss);
     },
-    // LHS = RHS or LHS ≠ RHS: one piece at a time, the left value, the sign, the right value.
+    // LHS = RHS or LHS ≠ RHS, written in quickly, the left value, the sign, the right value (as the voice
+    // says "different" or "equal").
     async compare(l, r) {
       const eq = l === r;
       this.cmp.innerHTML = `<div class="cp-cmp-row"><span class="cv lhs">${CQ.num(l)}</span><span class="csym ${eq ? "ok" : "no"}">${eq ? "=" : '<span class="neq">=</span>'}</span><span class="cv rhs">${CQ.num(r)}</span></div>`;
       this.cmp.className = "cp-compare " + (eq ? "ok" : "no");
-      await comeUp([...this.cmp.querySelectorAll(".cp-cmp-row > span")], 520);
+      await writePieces([...this.cmp.querySelectorAll(".cp-cmp-row > span")], null, null, 130);
       CQ.audio.play(eq ? "balance.level" : "tryagain");
       return eq;
     },
-    // What it means, written in under the comparison ("4 is not a solution."), smaller, and the value
-    // tried lit with it (review, 2026-11-13: "Reveal 7 ≠ 9, then highlight the trial x = 4 as the
-    // conclusion appears"; "End with '7 ≠ 9. So, 4 is not a solution.'")
-    async verdict(text, ok) {
-      const v = CQ.el("div", "cp-verdict", this.cmp, CQ.rich(text));
-      this.xRow.classList.add(ok ? "lit-ok" : "lit-no");
-      await CQ.run.wait(CQ.writeIn ? CQ.writeIn(v, 60, 38) : 0);
+    // What it means, written in under the comparison ("So, 4 is not a solution."), smaller, its value as
+    // the voice says it (line), and the value tried lit with it (review, 2026-11-13: "Reveal 7 ≠ 9, then
+    // highlight the trial x = 4 as the conclusion appears"; "End with '7 ≠ 9. So, 4 is not a solution.'")
+    async verdict(text, ok, line, v) {
+      const el = CQ.el("div", "cp-verdict", this.cmp, CQ.rich(text));
+      const n = String(CQ.num(v));
+      const at = text.indexOf(n);
+      const cue = numberCue(line, v);
+      const parts = at > 0 ? [{ text: text.slice(0, at) }, { text: n, cue }, { text: text.slice(at + n.length) }] : [{ text }];
+      const lit = () => this.xRow.classList.add(ok ? "lit-ok" : "lit-no");
+      if (cue) CQ.caption.when(line, cue).then(lit);
+      else lit();
+      await CQ.run.when(CQ.writeOut(el, parts.filter((p) => p.text.trim()), line, 55));
     },
     // The side the voice is saying the value of glows in its colour; the other side's glow fades, the
-    // row itself staying as it is, in full view ("The left-hand side equals 7" with LHS = 4 + 3 = 7 lit;
-    // "The right-hand side equals 9" with RHS = 9 lit: review, 2026-11-13, "Fade the previous
-    // highlight"); null: neither lit.
+    // row itself staying as it is, in full view ("The left-hand side equals 7" with LHS = 4 + 3 = 7 lit:
+    // review, 2026-11-13, "Fade the previous highlight"); and as the right side is talked about, the left
+    // side's row fades back a little (review, 2026-11-16: "jab RHS ki baat hoti toh LHS thda fade ho skta
+    // hai"); null: neither lit, both in full.
     lightSide(which) {
       [
         ["lhs", this.lhs],
         ["rhs", this.rhs],
-      ].forEach(([k, el]) => el.classList.toggle("lit", which === k));
+      ].forEach(([k, el]) => {
+        el.classList.toggle("lit", which === k);
+        el.classList.toggle("faded", which === "rhs" && k === "lhs");
+      });
+    },
+    // A side's value, as the voice says it: it swells a moment (it was worked out a moment ago).
+    sayValue(k) {
+      const side = k === "lhs" ? this.lhs : this.rhs;
+      const v = side.querySelector(".eqv .blank") || side.querySelector(".rest .ex > :last-child");
+      if (v) CQ.anim(v, [{ transform: "scale(1)" }, { transform: "scale(1.22)", offset: 0.35 }, { transform: "scale(1)" }], { duration: 650, easing: "ease-out", keep: false });
     },
   };
 
@@ -1678,6 +2034,9 @@
         return CQ.sleep(480);
       }
       const each = opts.each || 55;
+      // opts.parts = [{ text, cue }] with opts.line: the row is written part by part, each part as the
+      // voice of the line says its word (review, 2026-11-16: "jab VO bole 7 tb 7 aana chahie")
+      if (opts.parts && CQ.writeOut) return CQ.writeOut(row, opts.parts, opts.line, each + 15);
       const took = CQ.writeIn ? CQ.writeIn(row, 0, each) : 0;
       if (opts.onWrite) {
         const [sel, fn] = opts.onWrite;
