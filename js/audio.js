@@ -18,7 +18,10 @@
  *   CQAudio.duck(on)               music bus to 20 %
  *   CQAudio.speak(text, opts)      -> Promise<{spoken}>; opts { who, line, onStart }
  *                                  line: the text on screen (finds its clip);
- *                                  onStart({ clip, secs, rate }) once the voice starts
+ *                                  onStart({ clip, secs, rate, words, now }) once a recording starts
+ *                                  (now(): where it is, s); a line read by the device voice gets
+ *                                  onStart({ clip: false, synth }) as it is queued: synth.on(fn) hears
+ *                                  fn({ type: 'start' | 'word' | 'end', charIndex }) as it is spoken
  *   CQAudio.speaking()            -> true while a voice line is being spoken
  *   CQAudio.stopSpeech()
  *   CQAudio.cues                   array of every cue name
@@ -1574,9 +1577,11 @@
     u.volume = 1;
     if (!bestVoice) refreshVoices();
     if (bestVoice) { u.voice = bestVoice; u.lang = bestVoice.lang; } else u.lang = 'en-IN';
-    u.onstart = function () { job.started = true; };
-    u.onend = function () { job.finish(true); };
-    u.onerror = function () { job.finish(false); };
+    var hub = job.hub;
+    u.onstart = function () { job.started = true; if (hub) hub.emit({ type: 'start' }); };
+    u.onboundary = function (e) { if (hub && (!e || !e.name || e.name === 'word')) hub.emit({ type: 'word', charIndex: e ? e.charIndex : 0 }); };
+    u.onend = function () { if (hub) hub.emit({ type: 'end' }); job.finish(true); };
+    u.onerror = function () { if (hub) hub.emit({ type: 'end' }); job.finish(false); };
     job.utter = u; // keep a reference: Chrome drops 'end' for garbage-collected utterances
     // safety net: 'end' sometimes never fires
     var words = text.split(' ').length;
@@ -1622,7 +1627,7 @@
       job.started = true;
       var left = Math.max(0, clip.secs - (el.currentTime || 0)) / VO.rate;
       job.timers.push(setTimeout(function () { job.finish(true); }, left * 1000 + 600));
-      job.told({ clip: true, secs: clip.secs, rate: VO.rate });
+      job.told({ clip: true, secs: clip.secs, rate: VO.rate, words: clip.words, now: function () { return el.src === mySrc ? el.currentTime || 0 : Infinity; } });
     };
     job.timers.push(setTimeout(fb, 3000)); // stalled load
     try {
@@ -1660,7 +1665,13 @@
     };
     curJob = job;
     setSpeechDuck(true);
-    var synthInstead = function () { told({ clip: false }); speakSynth(job, text, who); };
+    var synthInstead = function () {
+      // the device voice: whoever cares hears when it starts, each word it says, and when it ends
+      var fns = [];
+      job.hub = { text: text, on: function (fn) { fns.push(fn); }, emit: function (ev) { for (var i = 0; i < fns.length; i++) { try { fns[i](ev); } catch (e) { warnOnce('voice event failed', e); } } } };
+      told({ clip: false, synth: job.hub });
+      speakSynth(job, text, who);
+    };
     if (clip) speakClip(job, clip, synthInstead);
     else synthInstead();
   }

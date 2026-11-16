@@ -7,7 +7,8 @@
  * the clips; a line without a clip, or a browser that can't play Ogg Opus (older Safari and iPads),
  * uses the device's own voice, as the game did before it had recordings.
  *
- *   CQVoice.lookup(text)  -> { id, secs, src } or null
+ *   CQVoice.lookup(text)  -> { id, secs, src, words } or null (words: when each word of the line, split
+ *                            at spaces, starts and ends in the clip, in s: [start, end, start, end…])
  *   CQVoice.on()          -> true when recordings are in use
  *   CQVoice.element()     -> the one <audio> element every line plays on
  *   CQVoice.rate          -> playback speed: 1, or ?vospeed=2 (0.5–4) to check the lines quickly
@@ -44,7 +45,7 @@
     var map = lines(), key = String(text);
     if (!Object.prototype.hasOwnProperty.call(map, key)) return null;
     var e = map[key];
-    return { id: e[0], secs: e[1], src: blobs[e[0]] || DIR + e[0] + '.ogg' };
+    return { id: e[0], secs: e[1], src: blobs[e[0]] || DIR + e[0] + '.ogg', words: e[2] || null };
   }
   function element() {
     if (!el && typeof win.Audio === 'function') {

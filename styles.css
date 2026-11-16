@@ -1162,7 +1162,11 @@ html[data-shade] .stage-edge::after {
   position: absolute;
   left: 470px; /* clear of Zippy's tail at the left, and of the Next button at the right */
   top: 18px;
-  width: 1100px; /* one row at a time (js/ui.js cuts a long line into rows that each fit) */
+  /* as wide as there is room for (up to 40 px from the Next button), so that a line that can be one row
+     is one row (review, 2026-11-16, on "This equation has one variable, / and its highest power is 1.":
+     "text aise ni aana chahie next line mei..same line mei aa skta hai"; it was 1100 px, and lines of
+     920–1000 px went onto two rows). js/ui.js cuts a longer line into rows that each fit. */
+  width: 1190px;
   min-height: 120px;
   display: flex;
   align-items: center;
@@ -2107,7 +2111,7 @@ html.reduced-motion .hand-ring.b {
   display: inline-block;
   padding: 0 0.14em;
   border-radius: 0.16em;
-  transition: color 0.5s ease, background-color 0.5s ease, box-shadow 0.5s ease, text-shadow 0.5s ease;
+  transition: color 0.5s ease, background-color 0.5s ease, box-shadow 0.5s ease, text-shadow 0.5s ease, opacity 0.6s ease;
 }
 .tok.hl {
   background: #ffd84d;
@@ -2495,19 +2499,23 @@ html.reduced-motion .hand-ring.b {
 }
 /* a side brought in before, faded back (still in sight, its label kept) while the side being introduced
    has the focus (Level 4's RHS line: review, 2026-11-13, "Keep the LHS label visible but fade its
-   highlight so RHS gets the focus"; a tag's fade in js/activities.js): its box, line and label at half
-   strength, its signs from their bright colour to a pale tint of it */
+   highlight so RHS gets the focus"; a tag's fade in js/activities.js). Really faded (review, 2026-11-16:
+   "jab RHS ki baat hoti toh LHS thda fade ho skta hai": its signs used to turn a pale tint of their
+   colour, which on the dark looked brighter, not fainter): its box, line and label at a third, its signs
+   (and a row worked out for it) at a little under half, in their own colour */
 .notebook :is(.grp-box.tag-box, .tag-line, .tag, .under-bracket) {
   transition: opacity 0.6s ease;
 }
 .notebook :is(.grp-box.tag-box, .tag-line, .tag, .under-bracket).faded {
-  opacity: 0.5;
+  opacity: 0.32;
 }
-.notebook .tok.lhs.faded {
-  color: #c7f3e9;
+.notebook .tok.faded {
+  opacity: 0.42;
+  text-shadow: none;
 }
-.notebook .tok.rhs.faded {
-  color: #ffe7bc;
+.notebook .nb-row.faded {
+  opacity: 0.45;
+  text-shadow: none;
 }
 /* The dark over the scene: in the world, over the scene and the characters but under the balance, which
    stays bright and sharp in its own place (Balance.present in js/world.js, CQ.focus's text looks). Round
@@ -2709,7 +2717,12 @@ body.checking .cp-side .rest {
    row staying in full view (review, 2026-11-13: "Fade the previous highlight") */
 body.checking .cp-side > *,
 body.checking .cp-side .blank {
-  transition: text-shadow 0.5s ease, box-shadow 0.5s ease;
+  transition: text-shadow 0.5s ease, box-shadow 0.5s ease, opacity 0.6s ease;
+}
+/* the left side, faded back a little while the right side is talked about (review, 2026-11-16: "jab RHS
+   ki baat hoti toh LHS thda fade ho skta hai") */
+body.checking .cp-side.faded > * {
+  opacity: 0.45;
 }
 body.checking .cp-side.lit > * {
   text-shadow: 0 0 16px currentColor;
@@ -4278,7 +4291,8 @@ html.lite #title .t-drift {
 /* the recap's LHS once RHS is named: a pale tint of its teal (review, 2026-11-13: "RHS: Fade the LHS
    highlight"), like the formula screen's */
 .activity .tok.glow-lhs.faded {
-  color: #c7f3e9;
+  opacity: 0.42;
+  text-shadow: none;
 }
 /* labels done with, faded back so the new one stands out (review, 2026-11-13): the label activity's first
    pair once LHS and RHS come in ("Fade the completed Variable and Equation labels"), the recap's earlier
