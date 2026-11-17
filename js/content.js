@@ -216,12 +216,39 @@ window.CONTENT = {
     chapters: "Chapters",
     screens: "All the screens", // the list in the top left corner (read by screen readers)
     replay: "Play this screen again",
-    restartQ: "Start this level again?",
-    yes: "Yes",
-    no: "No",
     playAgain: "Play again",
     unit: "1 unit",
-    // what the check panel shows under LHS ≠ RHS or LHS = RHS ({v} = the value tried)
+    // the two sides, as they are written in the working (the check, Level 4's try, practice)
+    lhs: "LHS",
+    rhs: "RHS",
+    // read by screen readers only (not shown): the speaker in the question bar, the gold bars ({v} = the
+    // bar's number; {side} = left or right), the boxes to fill in and the keypad's keys
+    hearAgain: "Hear it again",
+    goldBar: "Gold bar {v}",
+    goldBarTried: "Gold bar {v}, already tried",
+    goldBarOff: "Gold bar {v} on the {side} pan: take it off the balance",
+    sides: { left: "left", right: "right" },
+    lhsValue: "Left-hand side value",
+    rhsValue: "Right-hand side value",
+    emptyBox: "Empty label box",
+    keys: { "⌫": "Delete", "−": "Minus", ".": "Point" },
+  },
+
+  // The words written on Level 4's formula screen, each as the voice names its part (js/activities.js:
+  // NB_WORDS, NB_TRY, NB_LINEAR)
+  formula: {
+    variable: "Variable", // under x, on "Here, x is the variable."
+    variableWord: "variable", // on "Here x is a variable, and 2 is a constant. We add them together."
+    constant: "constant",
+    addition: "addition",
+    expression: "Algebraic expression",
+    equation: "Equation",
+    lhs: "Left-hand side (LHS)",
+    rhs: "Right-hand side (RHS)",
+    linear: "Linear equation in one variable",
+    solution: "Solution",
+    // the try's verdict, written under 6 ≠ 7 (the checks of Levels 5–9 say "So, …": ui.notSolution)
+    notSolution: "{v} is not a solution.",
   },
 
   // Every screen of the quest, in order: the list in the top left corner jumps to any of them (and
@@ -315,6 +342,8 @@ window.CONTENT = {
     // the LHS box comes in on the first words here, the RHS box on the second
     pair2: "Now, label the left-hand side and right-hand side.",
     pair2Cue: { LHS: "the left", RHS: "and right" },
+    // the four labels, as written on their tiles (the keys are the game's own names for them)
+    names: { Variable: "Variable", Equation: "Equation", LHS: "LHS", RHS: "RHS" },
     // (a right label: no words, only a success sound and a green border: review, 2026-11-07)
     // A wrong label in a box: it shakes and goes back, and then that label, and only that one, is put in
     // its own box for the child, with its line, while the part it names lights up (review, 2026-11-13:

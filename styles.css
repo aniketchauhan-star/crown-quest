@@ -43,6 +43,16 @@
   --math: "Swifty Math", Cambria, "Times New Roman", serif;
   /* text on the scene has no panel behind it: a soft white glow keeps it clear on any background */
   --halo: 0 0 3px #fff, 0 0 8px rgba(255, 255, 255, 0.95), 0 0 20px rgba(255, 255, 255, 0.9);
+  /* The maths standing on the scene itself (the labels under the pans, "1 unit", Level 4's x + 2 = 7 under
+     the balance): bright letters in a dark outline, in the formula screens' own colours, so they read
+     on the bright jungle and on its faded, blurred look alike (review, 2026-11-17: dark letters in a
+     white glow, and the dark orange 7 and green =, were lost on the faded scene). The outline is in em,
+     so it keeps its weight at every size. */
+  --scene-ink: #fffaf0;
+  --scene-rhs: #ffc35c;
+  --scene-ok: #74f0ac;
+  --scene-same: #8fc2ff;
+  --scene-line: 0.065em 0 0 #0d2229, -0.065em 0 0 #0d2229, 0 0.065em 0 #0d2229, 0 -0.065em 0 #0d2229, 0.046em 0.046em 0 #0d2229, -0.046em 0.046em 0 #0d2229, 0.046em -0.046em 0 #0d2229, -0.046em -0.046em 0 #0d2229, 0 0.1em 0.14em rgba(0, 0, 0, 0.5);
   /* one fixed look (the temple at night), the same in light and dark mode */
   color-scheme: dark;
 }
@@ -128,6 +138,9 @@ html[data-shade="2"] #viewport::after {
 html[data-shade="3"] #viewport::after {
   background: #0b2f39; /* the dip to dark between chapters (CQ.veil) */
   opacity: 1;
+}
+html[data-shade="4"] #viewport::after {
+  opacity: 1; /* fully dark: the play button has taken the start screen away (CQ.title.absorb) */
 }
 /* Where the stage meets a band, the stage's edge melts into the band's colour over a short distance,
    under the question bar and buttons: the game and the band join with no line between them. */
@@ -938,8 +951,8 @@ html[data-shade] .stage-edge::after {
 }
 .wlabel.xlabel {
   font: 800 84px/1.1 var(--font);
-  color: var(--ink);
-  text-shadow: var(--halo);
+  color: var(--scene-ink);
+  text-shadow: var(--scene-line);
 }
 /* Level 4's x + 2 under the left pan, built with the voice: x, then + 2 (js/flow.js, runL4a) */
 .wlabel .xl-x,
@@ -953,21 +966,21 @@ html[data-shade] .stage-edge::after {
   line-height: 0;
 }
 .wlabel.xlabel.seven {
-  color: var(--rhs);
+  color: var(--scene-rhs);
 }
 .wlabel.xlabel.small {
   font-size: 54px;
 }
 .wlabel.xlabel.half {
   font-size: 60px;
-  color: var(--same);
+  color: var(--scene-same);
 }
 .wlabel.unit-tag,
 .wlabel.coins-tag,
 .wlabel.split-tag {
   font: 800 46px/1 var(--font);
-  color: var(--ink);
-  text-shadow: var(--halo);
+  color: var(--scene-ink);
+  text-shadow: var(--scene-line);
 }
 .mini-coins img {
   width: 34px;
@@ -1350,9 +1363,12 @@ html[data-shade] .stage-edge::after {
 /* The scene's layers go soft (blurred) behind a look-here moment, a formula screen, an activity or a
    character's introduction (CQ.soft in js/ui.js), under the dark fade. The background is drawn a touch
    larger while it is blurred, so its blurred edge never shows; its idle motion rests meanwhile. A layer
-   lifted over the fade (below: a look-here moment) stays over it until the fade has gone. */
+   lifted over the fade (below: a look-here moment) stays over it until the fade has gone. All the
+   lifted layers come down at the same moment as the balance (0.9 s), so nothing that is in front of it
+   drops behind it in between (asked 2026-11-17: the crown jumping into Zippy's hands went behind the
+   balance; the gold bars, labels and sparkles came down 0.1 s before it too). */
 #world > .layer {
-  transition: filter 0.5s ease, transform 0.5s ease, z-index 0s 0.8s;
+  transition: filter 0.5s ease, transform 0.5s ease, z-index 0s 0.9s;
 }
 #world > .layer.soft {
   filter: blur(8px);
@@ -1462,9 +1478,11 @@ html[data-shade] .stage-edge::after {
   top: 73px;
   transform: translateX(-50%) scale(0.3);
   font: 800 44px/1 var(--font);
-  color: #fff3b0;
+  /* a warm alarm red in a dark brown outline all round: the pale yellow it was hardly showed on the
+     cloud's white (2026-11-17) */
+  color: #ff5a2a;
   white-space: nowrap;
-  text-shadow: 3px 3px 0 #8a4b00, -3px 3px 0 #8a4b00, 3px -3px 0 #8a4b00, -3px -3px 0 #8a4b00;
+  text-shadow: 3.5px 0 0 #5e2500, -3.5px 0 0 #5e2500, 0 3.5px 0 #5e2500, 0 -3.5px 0 #5e2500, 2.5px 2.5px 0 #5e2500, -2.5px 2.5px 0 #5e2500, 2.5px -2.5px 0 #5e2500, -2.5px -2.5px 0 #5e2500;
   opacity: 0;
   transition: opacity 0.2s, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   z-index: 3;
@@ -1733,14 +1751,6 @@ html.reduced-motion .hand-ring.b {
   font: 600 24px/1.1 var(--font);
   color: #5e6b70;
 }
-.confirm-panel {
-  text-align: center;
-}
-.confirm-row {
-  display: flex;
-  justify-content: center;
-  gap: 30px;
-}
 
 /* ---------------------------------------------------------------- check panel + equation board */
 /* The check, under the balance, as plain text (no panel): the two sides worked out, then compared. */
@@ -1981,8 +1991,8 @@ html.reduced-motion .hand-ring.b {
   gap: 36px;
   align-items: center;
   font: 800 120px/1.1 var(--font);
-  color: var(--ink);
-  text-shadow: var(--halo);
+  color: var(--scene-ink);
+  text-shadow: var(--scene-line);
   z-index: 6;
   pointer-events: none;
 }
@@ -1994,10 +2004,11 @@ html.reduced-motion .hand-ring.b {
   animation: popIn 0.35s;
 }
 .eq-strip .es.b {
-  color: var(--ok);
+  color: var(--scene-ok);
 }
-/* each sign by itself, so each can glide on to its own place on the formula screen; on the way it turns
-   bright and flat, like the formula screen's maths, as the dark comes in (js/flow.js, runL4a) */
+/* each sign by itself, so each can glide on to its own place on the formula screen; on the way its
+   outline goes and = turns cream, flat like the formula screen's maths, as the dark comes in (js/flow.js,
+   runL4a) */
 .eq-strip .st {
   display: inline-block;
 }
@@ -2037,13 +2048,13 @@ html.reduced-motion .hand-ring.b {
 }
 .piece {
   font: 800 90px/1 var(--font);
-  color: var(--ink);
+  color: var(--scene-ink);
   white-space: nowrap;
   z-index: 70;
-  text-shadow: 0 0 16px #fff, 0 0 30px #fff;
+  text-shadow: var(--scene-line);
 }
 .piece.b {
-  color: var(--ok);
+  color: var(--scene-ok);
 }
 
 /* ---------------------------------------------------------------- the formula screen */
@@ -2898,7 +2909,20 @@ body.solving .eb-row.final {
 }
 /* nothing drifts across the maths meanwhile (Grumble's sleepy Zzz rest) */
 #world > .fx-layer {
-  transition: filter 0.5s ease, opacity 0.5s ease, z-index 0s 0.8s;
+  transition: filter 0.5s ease, opacity 0.5s ease, z-index 0s 0.9s;
+}
+/* Zippy takes the crown (js/flow.js, swapOnPan; Zippy.front in js/world.js): he, what he carries (the
+   crown jumping up into his hands, the bar dropping onto the pan) and the sparkles round him stay in
+   front of the balance all the way, also while the balance is still lifted over a look that has just
+   ended (asked 2026-11-17: "when monkey stole the crown… he is behind the balance and crown also go
+   behind the balance"). The three keep their own order (DOM order at the same z-index). */
+#world.zippy-front > :is(.zippy-layer, .drag-layer) {
+  z-index: 11;
+  transition: filter 0.5s ease, transform 0.5s ease, z-index 0s;
+}
+#world.zippy-front > .fx-layer {
+  z-index: 11;
+  transition: filter 0.5s ease, opacity 0.5s ease, z-index 0s;
 }
 #world.presenting > .fx-layer {
   opacity: 0;
@@ -3062,9 +3086,10 @@ body.solving .eb-row.final {
   cursor: default;
   box-shadow: none;
 }
-/* a sorted nonlinear card shows its power 2 in orange (no "power 1" / "power 2" badges: asked 2026-11-05) */
+/* a sorted nonlinear card shows its power 2 in orange (no "power 1" / "power 2" badges: asked 2026-11-05),
+   a deep orange that stands out on the cream card (2026-11-17) */
 .eq-card.show-2 sup {
-  color: var(--rhs);
+  color: #a35d00;
 }
 .bin {
   position: absolute; /* an open drop zone: a coloured dashed edge and its name, no panel */
@@ -3572,6 +3597,16 @@ body.solving .eb-row.final {
   width: 100%;
   height: 100%;
 }
+/* Zippy's grip: the vine in front of his palm, under his curled fingers (placed in js/main.js). In the
+   opening it waits until he has caught the vine, then shows in a blink */
+.t-piece .t-grip {
+  position: absolute;
+  transition: opacity 0.15s ease-out;
+}
+#title.t-opening:not(.t-caught) .t-grip {
+  opacity: 0;
+  transition: none;
+}
 .t-bay {
   position: absolute;
   inset: 0; /* Grumble's doorway: he is seen only above the ledge (its clip is set in js/main.js) */
@@ -3788,7 +3823,7 @@ body.solving .eb-row.final {
   opacity: 0;
   pointer-events: none;
 }
-#title.t-idle .start-btn:not(.waiting) {
+#title.t-idle .start-btn:not(.waiting):not(.t-going) {
   animation: tPulse 1.3s ease-in-out infinite;
 }
 @keyframes tPulse {
@@ -3802,6 +3837,77 @@ body.solving .eb-row.final {
 }
 .start-btn.waiting img {
   filter: saturate(0.6) brightness(0.92) drop-shadow(0 16px 16px rgba(0, 0, 0, 0.5));
+}
+/* Play: the button absorbs the title (CQ.title.go and absorb in js/main.js). As it spins away its
+   shadow is drawn by the button, not by its turning picture, so the shadow stays below it. */
+.start-btn.t-going {
+  z-index: 62; /* over the dark coming in (and over the title's sparkles, z-index 60) */
+  filter: drop-shadow(0 16px 16px rgba(0, 0, 0, 0.5));
+}
+.start-btn.t-going img {
+  filter: none;
+}
+.start-btn.t-going.waiting img {
+  filter: saturate(0.6) brightness(0.92);
+}
+#title.t-leaving {
+  pointer-events: none;
+}
+/* under the button: the dark coming in from the edges (a soft hole round the button, closing in as it
+   is scaled down), then the last of the light going (.t-dusk), the glow the button gathers, rings of
+   light closing in; over it: the golden motes and leaves it draws in, and its last glint. Each sits on
+   its centre (left, top: set in js/main.js). */
+.t-absorb {
+  position: absolute;
+  inset: 0;
+  z-index: 61; /* (under the button) */
+  pointer-events: none;
+}
+.t-absorb.over {
+  z-index: 63;
+}
+.t-absorb > * {
+  position: absolute;
+}
+.t-drain {
+  background: radial-gradient(circle closest-side, rgba(5, 16, 24, 0) 20%, rgba(5, 16, 24, 0.5) 32%, rgba(5, 16, 24, 0.86) 46%, rgba(5, 16, 24, 0.93) 62%);
+}
+.t-dusk {
+  inset: 0;
+  opacity: 0;
+  background: rgb(5, 16, 24); /* the colour of the game's dark fades and of the bands round the stage */
+}
+.t-halo {
+  width: 760px;
+  height: 760px;
+  margin: -380px 0 0 -380px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 240, 190, 0.9) 0%, rgba(255, 214, 110, 0.62) 28%, rgba(255, 180, 60, 0.3) 44%, rgba(255, 160, 40, 0.1) 58%, rgba(255, 150, 40, 0) 70%);
+}
+.t-suck {
+  width: 300px;
+  height: 300px;
+  margin: -150px 0 0 -150px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 228, 150, 0.9);
+  box-shadow: 0 0 22px rgba(255, 200, 90, 0.55), inset 0 0 14px rgba(255, 200, 90, 0.4);
+}
+.t-mote {
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffbe0 0%, #ffe066 42%, rgba(255, 216, 77, 0) 74%);
+  box-shadow: 0 0 16px 6px rgba(255, 216, 77, 0.5);
+}
+.t-absorb .t-leaf {
+  margin: -10px 0 0 -17px;
+}
+.t-wink {
+  width: 98px;
+  height: 110px;
+  margin: -55px 0 0 -49px;
+  background: url(assets/elements/sparkle.webp) center / contain no-repeat;
 }
 html.lite .t-fly,
 html.lite .t-shaft {
@@ -4448,6 +4554,16 @@ html.lite #title .t-drift {
   background: rgba(255, 195, 92, 0.12);
   border-color: rgba(255, 195, 92, 0.55);
 }
+/* the number in its white box is written in its side's dark colour, the box's edge keeps the bright one
+   (the bright teal and orange of the row hardly showed on the white: 2026-11-17) */
+.activity .pr-side.lhs .blank {
+  color: var(--lhs);
+  border-color: #5ee6dc;
+}
+.activity .pr-side.rhs .blank {
+  color: #a35d00;
+  border-color: #ffc35c;
+}
 .activity .pr-banner.no {
   color: #ff8f80;
   background: rgba(255, 143, 128, 0.14);
@@ -4576,4 +4692,114 @@ html.reduced-motion .bar-slot.looked .gbar {
 .eq-board .v {
   display: inline-block;
   line-height: 1;
+}
+
+/* ---------------------------------------------------------------- an answer, right or wrong
+   Every answer looks the same wherever it is given (CQ.answer in js/ui.js; the learning-section skill,
+   "the activity"): wrong, the control shakes its head and goes red for a beat; right, it turns green for
+   a moment, with a tick drawn on its corner, one swell and a small burst of sparkles. */
+.answer-tick {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  pointer-events: none;
+  z-index: 61; /* over the sparkles */
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+}
+.answer-tick svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.answer-tick circle {
+  fill: #2bb673;
+  stroke: #fff;
+  stroke-width: 3;
+}
+.answer-tick path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 33; /* (drawn in by its dash: js/ui.js, CQ.answer.tick) */
+}
+/* the number tiles of the checks and practice: a wrong one glows red for a beat, then stays struck out
+   (greyed, its number red: .chip.wrong) and can't be picked again */
+.chip {
+  transition: filter 0.3s ease;
+}
+.chip.wrong.is-wrong {
+  filter: saturate(0.25) brightness(0.92) drop-shadow(0 0 14px rgba(255, 90, 80, 0.95)) drop-shadow(0 5px 3px rgba(0, 0, 0, 0.3));
+}
+.chip:disabled {
+  cursor: default;
+}
+/* a number right in its box: green for a moment, then its side's colour again */
+#stage .blank.filled {
+  transition: color 0.35s ease, box-shadow 0.35s ease, text-shadow 0.5s ease, opacity 0.6s ease;
+}
+#stage .blank.filled.is-right {
+  color: var(--ok);
+  box-shadow: 0 0 0 6px rgba(63, 210, 126, 0.55), 0 0 22px rgba(63, 210, 126, 0.6);
+}
+/* practice: the two choices and the one-button steps */
+.btn-wood.pr-choice,
+.btn-wood.pr-act {
+  transition: transform 0.12s, opacity 0.3s ease, filter 0.3s ease;
+}
+.btn-wood.pr-choice.is-wrong {
+  filter: drop-shadow(0 0 16px rgba(255, 90, 80, 0.95)) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
+}
+.btn-wood.pr-act.is-right {
+  filter: drop-shadow(0 0 16px rgba(43, 182, 115, 0.95)) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
+}
+/* the label activity: a wrong label red for a beat as it shakes its head; a right one's box rings green */
+.activity.label-act .label-chip {
+  transition: border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+}
+.activity.label-act .label-chip.is-wrong:not(.placed) {
+  border-color: #e5484d;
+  background: linear-gradient(#ffece8, #ffd3cc);
+  color: #8f1d14;
+  box-shadow: 0 0 0 6px rgba(229, 72, 77, 0.4), 0 6px 0 #8b4f24;
+}
+.activity.label-act .drop-box {
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.35s ease;
+}
+.activity.label-act .drop-box.ok.is-right {
+  box-shadow: 0 0 0 7px rgba(63, 210, 126, 0.45), 0 0 28px rgba(63, 210, 126, 0.6);
+}
+/* the sort: a wrong card red for a beat as it shakes its head (then back to the tray); a right one green
+   for a moment in its panel, then its panel's colour */
+.activity .eq-card {
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, color 0.35s ease;
+}
+.activity .eq-card.is-wrong {
+  border-color: #e5484d;
+  background: #ffe3df;
+  color: #8f1d14;
+  box-shadow: 0 0 0 6px rgba(229, 72, 77, 0.4), 0 6px 0 rgba(0, 0, 0, 0.3);
+}
+.activity .eq-card.placed.is-right {
+  border-color: #3fd27e;
+  box-shadow: 0 0 0 6px rgba(63, 210, 126, 0.45), 0 0 24px rgba(63, 210, 126, 0.5);
+}
+
+/* ---------------------------------------------------------------- reduced motion: nothing loops
+   (the learning-section skill: "prefers-reduced-motion… stops the demonstrations; the board must still
+   read right standing still"). Every endless glow here goes from its plain look to its lit one, so it
+   plays once and holds there, lit and still: a breathing blank, a pulsing tile, a glowing pan, bar or x.
+   Anything else that would repeat plays once. (The scene's idle motion and the title stop altogether:
+   above. The hand's demonstrations stand still too: js/ui.js, CQ.hand.) */
+html.reduced-motion *,
+html.reduced-motion *::before,
+html.reduced-motion *::after {
+  animation-iteration-count: 1 !important;
+  animation-fill-mode: both !important;
+}
+html.reduced-motion .thought.tip .ms-alarm {
+  animation: none !important; /* (the alarm in the "what if" cloud: still, not ringing) */
 }

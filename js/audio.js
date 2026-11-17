@@ -883,6 +883,29 @@
     return 1.25;
   });
 
+  // The play button absorbs the title (CQ.title.absorb in js/main.js): a rush of air drawn in, rising and
+  // swirling faster and faster like water down a drain, cut off by a round "gulp" as the button vanishes
+  // into its own centre, and a last glint. GULP is when the button has gone: TL.gone in js/main.js.
+  cue('title.absorb', function (ctx, dest, t, o) {
+    var p = o.pitch, GULP = 0.845, e = t + GULP + 0.03;
+    var g = G(ctx, 0, dest); // the air drawn in
+    env(g.gain, t, [[0, 0], [0.25, 0.14], [0.62, 0.4], [GULP - 0.02, 0.58], [GULP + 0.015, 0]]);
+    var bp = F(ctx, 'bandpass', 380 * p, 1.3, g);
+    glide(bp.frequency, t, [[0, 380 * p], [GULP, 2600 * p]]);
+    N(ctx, t, e, bp);
+    var wg = G(ctx, 0, dest); // the swirl: a soft whistle rising, its wobble speeding up
+    env(wg.gain, t, [[0, 0], [0.3, 0.045], [GULP - 0.03, 0.11], [GULP + 0.01, 0]]);
+    var w = O(ctx, 'sine', 300 * p, t, e, wg);
+    glide(w.frequency, t, [[0, 300 * p], [GULP, 1150 * p]]);
+    var lfo = O(ctx, 'sine', 5, t, e, null);
+    glide(lfo.frequency, t, [[0, 5], [GULP, 22]]);
+    lfo.connect(G(ctx, 40 * p, w.frequency));
+    blip(ctx, dest, t + GULP, 'sine', 620 * p, 150 * p, 0.12, 0.5, 0.004, 0.2); // the gulp: a round "bloop"...
+    blip(ctx, dest, t + GULP, 'sine', 140 * p, 55 * p, 0.14, 0.42, 0.004, 0.22); // ...with a soft thump under it
+    blip(ctx, dest, t + GULP + 0.07, 'sine', 2637 * p, 2637 * p, 0, 0.07, 0.002, 0.3); // the last glint
+    return GULP + 0.42;
+  });
+
   cue('dust.puff', function (ctx, dest, t, o) { // soft "poof"
     var p = o.pitch, g = G(ctx, 0, dest);
     env(g.gain, t, [[0, 0], [0.02, 0.65], [0.08, 0.38], [0.28, 0]]);
@@ -1208,7 +1231,10 @@
       volume: clamp(num(opts.volume, 1), 0, 2),
       pitch: clamp(num(opts.pitch, 1), 0.25, 4),
       index: Math.round(clamp(num(opts.index, 0), -12, 24)),
-      rnd: rng(seed)
+      rnd: rng(seed),
+      // how long ago (s) the sound should have begun: it is played from that point on, so it keeps in
+      // step with an animation that began a moment before it could be started (made sounds only)
+      ago: clamp(num(opts.ago, 0), 0, 1)
     };
   }
 
@@ -1243,7 +1269,7 @@
     var v = { cue: name, gain: vg, c: null, done: false };
     list.push(v);
     try {
-      v.c = collect(function () { return fn(ctx, vg, now + 0.005, o); }, function () { finishVoice(v); });
+      v.c = collect(function () { return fn(ctx, vg, now + 0.005 - o.ago, o); }, function () { finishVoice(v); });
     } catch (e) {
       finishVoice(v);
       throw e;
@@ -1518,13 +1544,18 @@
     if (NOVELTY.test(n)) s -= 10;
     return s;
   }
-  function pickVoice(list) { // en-IN, else en-GB, else en-US, else any English, else default
+  // The recorded lines are one woman's voice (the studio's Female Teacher), so a line with no clip
+  // yet is read by a woman's device voice too when the device has one (voices carry no gender: by name).
+  var WOMAN = /\b(female|woman|tara|isha|veena|heera|neerja|kalpana|swara|samantha|karen|moira|tessa|fiona|serena|kate|victoria|allison|ava|susan|zoe|nicky|flo|sandy|shelley|zira|hazel|aria|jenny|libby|sonia|natasha|clara|emily|michelle)\b/i;
+  function pickVoice(list) { return pickIn(list, true) || pickIn(list, false); }
+  function pickIn(list, woman) { // en-IN, else en-GB, else en-US, else any English, else default
     var prefs = ['en-in', 'en-gb', 'en-us', 'en'];
     for (var i = 0; i < prefs.length; i++) {
       var best = null, bs = -1e9;
       for (var j = 0; j < list.length; j++) {
         var l = langOf(list[j]);
         if (i < 3 ? l !== prefs[i] : l.indexOf('en') !== 0) continue;
+        if (woman && !WOMAN.test(String(list[j].name || ''))) continue;
         var sc = voiceScore(list[j]);
         if (sc > bs) { bs = sc; best = list[j]; }
       }

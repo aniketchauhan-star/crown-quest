@@ -40,7 +40,6 @@
     if (parent) parent.appendChild(e);
     return e;
   };
-  CQ.qs = (s, r) => (r || document).querySelector(s);
   CQ.pos = (e, x, y) => {
     e.style.left = x + "px";
     e.style.top = y + "px";
@@ -241,7 +240,7 @@
   CQ.sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   // Every step of the story awaits through CQ.run, so jumping to another chapter (or restarting a
   // level) cancels whatever was running cleanly instead of leaving it half-finished.
-  // While paused (menu, Word Treasure or a confirm is open) the story holds at its next step.
+  // While paused (menu or Word Treasure open) the story holds at its next step.
   CQ.run = {
     token: makeToken(),
     gate: null,
@@ -551,19 +550,48 @@
   })();
 
   // ------------------------------------------------------------------ camera (moves the World layer)
+  // A move of the view is an animation of the World's transform that the browser runs by itself, on the
+  // graphics card (asked 2026-11-17, with a screen recording in which the scene flashed dark in patches
+  // as the view glided into the formula screen): it draws the scene once, sharp at the move's largest
+  // zoom, and only moves and zooms that picture. It used to set the transform from the script at every
+  // step, so the browser drew the whole scene (blurred, on a big screen) again for every frame, and
+  // couldn't keep up. (The browser makes #world a layer of its own only while a move runs, and draws it
+  // afresh, sharp, when the move is over: a lasting will-change on #world would keep the zoom it was
+  // first drawn at, so the zoomed-in views would look a little soft.) x, y and z still follow the move
+  // step by step (a tween on the same curve), for whatever asks where the view is meanwhile (toScreen,
+  // toWorld). A move with an easing that has no CSS twin is stepped as before.
+  const CSS_EASE = new Map([
+    [CQ.ease.linear, "linear"],
+    [CQ.ease.in, "cubic-bezier(0.32, 0, 0.67, 0)"],
+    [CQ.ease.out, "cubic-bezier(0.33, 1, 0.68, 1)"],
+    [CQ.ease.inOut, "cubic-bezier(0.65, 0, 0.35, 1)"],
+    [CQ.ease.sine, "cubic-bezier(0.37, 0, 0.63, 1)"],
+  ]);
   CQ.camera = {
     x: 0,
     y: 0,
     z: 1,
     el: null,
     shakeEl: null,
+    move: null, // the move under way (the browser's animation of it)
     init(worldEl, shakeEl) {
       this.el = worldEl;
       this.shakeEl = shakeEl;
       this.apply();
     },
+    css(v) {
+      return `translate(${v.x}px, ${v.y}px) scale(${v.z})`;
+    },
     apply() {
-      if (this.el) this.el.style.transform = `translate(${this.x}px, ${this.y}px) scale(${this.z})`;
+      if (this.el && !this.move) this.el.style.transform = this.css(this);
+    },
+    // The move under way stops where the view is now (a new move, a jump or a chapter change takes over).
+    halt() {
+      const m = this.move;
+      if (!m) return;
+      this.move = null;
+      this.apply(); // (the view where the move had got to, before its animation goes: no jump)
+      m.cancel();
     },
     // The view centred on (fx, fy) at zoom z, kept inside the scene, unless free: then it may look past
     // the scene's right edge, where the scene carries on in a mirror image (CQ.ASIDE; js/world.js,
@@ -574,6 +602,8 @@
       return { x, y, z };
     },
     set(fx, fy, z) {
+      this.halt();
+      CQ.stopTween("camera");
       Object.assign(this, this.frame(fx, fy, z));
       this.apply();
     },
@@ -581,17 +611,39 @@
       const a = { x: this.x, y: this.y, z: this.z };
       const b = this.frame(fx, fy, z, free);
       if (CQ.motion.reduced) dur = Math.min(dur || 0, 300);
+      ease = ease || CQ.ease.inOut;
+      this.halt();
+      let m = null;
+      const curve = CSS_EASE.get(ease);
+      if (dur > 0 && curve && this.el && this.el.animate) {
+        try {
+          // (fill forwards: it holds the end until the end is written into the style, below)
+          m = this.el.animate([{ transform: this.css(a) }, { transform: this.css(b) }], { duration: dur, easing: curve, fill: "forwards" });
+        } catch (e) {
+          m = null;
+        }
+        this.move = m;
+      }
       return CQ.tween(
         dur,
         (k) => {
           this.x = a.x + (b.x - a.x) * k;
           this.y = a.y + (b.y - a.y) * k;
           this.z = a.z + (b.z - a.z) * k;
-          this.apply();
+          this.apply(); // (only without an animation of its own)
         },
-        ease || CQ.ease.inOut,
+        ease,
         "camera"
-      );
+      ).then((done) => {
+        // ended, or stopped (CQ.stopTweens on a chapter change): the view stays where it has got to, now
+        // in the style, and the animation goes (a new move has already taken its own over: halt)
+        if (m && this.move === m) {
+          this.move = null;
+          this.apply();
+          m.cancel();
+        }
+        return done;
+      });
     },
     reset(dur) {
       return this.to(W / 2, H / 2, 1, dur || 0);

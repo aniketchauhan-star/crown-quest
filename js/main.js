@@ -34,10 +34,21 @@
   const K = () => CQ.W / IMAGES.tPlate.w; // background px -> stage px
   const st = (x, y) => ({ x: x * K(), y: y * K() });
   // On the background (title background.png, in its px):
-  const ZIPPY_HAND = { x: 452, y: 118 }; // his fist on the vine: he swings from it
+  const ZIPPY_HAND = { x: 416, y: 155 }; // where his fist holds the vine (its middle, under his curled fingers): he swings from it
   const GRUMBLE_FRONT = [[840, 686], [1234, 686], [1238, 664], [1252, 654], [1290, 648], [1340, 645]]; // the ledge and the pedestal's corner in front of him (left to right)
   const FIRES = [[646, 748, 1.0], [995, 630, 1.3]]; // the glowing doorways (where, and how big)
   const PLAY_AT = { x: 1000, y: 905, w: 320 }; // the play button's centre on the stage, and its width
+  const DISC = { x: 0.4875, y: 0.504 }; // the middle of its wooden disc, across and down its picture (a touch left of the picture's middle)
+  // Play: when each part of the absorb happens (ms after the button springs back up from the press; see go)
+  const TL = {
+    up: 170, // the button has sprung up, glowing
+    wind: 290, // it has wound back a little, ready to spin
+    gone: 850, // it has spun away into its own centre (the sound's "gulp": GULP in js/audio.js, 'title.absorb')
+    drain: 760, // the dark has come in from the edges to the button
+    dusk: 520, // the rest of the light goes, over duskFor ms: then the screen is dark, and the game begins under it
+    duskFor: 420,
+    wink: 830, // the last glint
+  };
   const SIGN_Z = 110; // the title sign stands this far in front of the wall
 
   CQ.title = {
@@ -84,6 +95,14 @@
       this.grumble = put("tGrumble", "t-grumble", this.grumbleBay);
       this.crown = put("tCrown", "t-crown", this.card);
       this.zippy = put("tZippy", "t-zippy", this.card);
+      // his grip: the bit of the vine that lies in front of his palm, under his curled fingers, so his fist
+      // is closed round the vine (asked 2026-11-17). Its own picture (tools/make_title.swift, GRIP), shown
+      // once he has caught the vine (x, y: its top-left on the Zippy picture)
+      const g = IMAGES.tZippyGrip;
+      if (g) {
+        const k = (IMAGES.tZippy.s || 1) * K();
+        CQ.box(CQ.img("tZippyGrip", "t-grip", this.zippy), g.x * k, g.y * k, g.w * k, g.h * k);
+      }
       const hand = st(ZIPPY_HAND.x - IMAGES.tZippy.x, ZIPPY_HAND.y - IMAGES.tZippy.y); // (in the piece, as shown)
       this.zippy.style.transformOrigin = `${hand.x.toFixed(1)}px ${hand.y.toFixed(1)}px`;
       // the fireflies drift in the air in front of the wall, and the sign stands a little in front of it
@@ -136,6 +155,7 @@
         else if (!this.startBtn.classList.contains("t-hidden")) this.startBtn.click();
       };
       window.addEventListener("keydown", this.onKey);
+      root.classList.remove("t-caught");
       root.classList.add("t-waiting"); // before the opening: the characters wait, unseen, in the dark
     },
     // While the rest of the pictures load behind the title, a slim golden bar at its foot fills up.
@@ -187,6 +207,7 @@
       ], { duration: 1500, delay: 600, easing: "linear" });
       at(650, () => sfx("zippy.whee"));
       at(1500, () => {
+        this.root.classList.add("t-caught"); // his fist closes round the vine
         sfx("bar.pick", { volume: 0.6 }); // the vine caught
         CQ.fx.sparkle(this.fx, st(ZIPPY_HAND.x, ZIPPY_HAND.y).x, st(ZIPPY_HAND.x, ZIPPY_HAND.y).y, 6, 40);
       });
@@ -323,7 +344,15 @@
         CQ.fx.sparkle(this.fx, c.x + CQ.rand(-90, 90), c.y, 3, 40); // the crown glints
       }, 1500);
     },
-    // opts.reset: forget saved progress and which hints have been seen (a brand new game)
+    // The play button starts the game: it is pressed in, then it ABSORBS the title (asked 2026-11-17:
+    // "when i click on the play button then its absorb then smoothly transition to the game screen").
+    // It springs up glowing while the light of the scene is drawn into it (golden motes and leaves
+    // spiral in, rings of light close in, the dark comes in from the edges), winds back a little, then
+    // spins away into its own centre with a soft "gulp" and a last glint. The screen is then dark: the
+    // dark the game's first scene starts from (Grumble snoring in the night). The game begins under that
+    // dark and the title melts away into it, so there is no cut and no bright flash on the way.
+    // (Only transform and opacity move, each on the browser's clock; with Reduced motion the title only
+    // fades into that dark.) opts.reset: forget saved progress and which hints have been seen.
     async go(cp, opts) {
       if (this.going) return;
       this.going = true;
@@ -332,32 +361,192 @@
       CQ.audio.init();
       CQ.settings.apply();
       CQ.screen.fullscreen(); // phones and tablets: the whole screen, held sideways
-      CQ.audio.play("name.burst");
+      const b = this.startBtn;
+      const s = scaleOf(b); // (where its pulse has it now, so the press starts there, without a jump)
+      b.style.transformOrigin = b.firstChild.style.transformOrigin = `${DISC.x * 100}% ${DISC.y * 100}%`; // it turns and shrinks about its disc's middle
+      b.classList.add("t-going"); // (its pulse stops)
+      CQ.audio.play("ui.tap"); // the wooden "tok" of the press
+      if (!CQ.motion.reduced) await CQ.anim(b, [{ transform: `scale(${s})` }, { transform: "scale(.86)" }], { duration: 130, easing: CQ.EASE.out, essential: true });
       if (CQ.ready) {
         // the rest of the pictures are still on their way: the play button waits, gently, until they are in
-        this.startBtn.classList.add("waiting");
+        b.classList.add("waiting");
+        if (!CQ.motion.reduced) CQ.anim(b, [{ transform: "scale(.86)" }, { transform: "scale(1)" }], { duration: 300, easing: CQ.EASE.out, essential: true });
         await CQ.ready;
-        this.startBtn.classList.remove("waiting");
+        b.classList.remove("waiting");
       }
-      CQ.anim(this.startBtn, [{ transform: "scale(1)" }, { transform: "scale(.85, 1.1)" }, { transform: "scale(1.1, .9)" }], { duration: 260, essential: true });
-      await CQ.sleep(240);
-      CQ.audio.play("ui.swoosh");
-      // the title closes in a circle onto the play button
-      const c = CQ.centerOf(this.startBtn) || { x: CQ.W / 2, y: CQ.H * 0.85 };
-      const at = `${((c.x / CQ.W) * 100).toFixed(1)}% ${((c.y / CQ.H) * 100).toFixed(1)}%`;
-      await CQ.anim(this.root, [{ clipPath: `circle(150% at ${at})` }, { clipPath: `circle(0% at ${at})` }], {
-        duration: 850,
-        easing: CQ.EASE.in,
-        essential: true,
+      await this.absorb(); // ...until the screen is dark
+      // under the dark the game begins (and the bands round the stage show its jungle from now on)...
+      document.documentElement.classList.remove("on-title");
+      CQ.flow.chapter(cp, { noVeil: true });
+      await CQ.sleep(90); // (its first picture is drawn)
+      // ...and the title melts away into it (the bands round the stage with it)
+      this.root.classList.add("t-leaving"); // (taps go to the game now)
+      CQ.screen.shade("title", false);
+      await CQ.anim(this.root, [{ opacity: 1 }, { opacity: 0 }], { duration: 520, easing: CQ.EASE.inOut, essential: true });
+      this.close();
+    },
+    // The absorb (see go). Resolves once the screen is dark.
+    absorb() {
+      const root = this.root;
+      const b = this.startBtn;
+      const P = this.playPoint();
+      const anims = (this.absorbAnims = []);
+      const run = (el, kf, o) => {
+        const a = el.animate(kf, Object.assign({ fill: "both", easing: "linear" }, o));
+        anims.push(a);
+        return a;
+      };
+      // under the button: the dark coming in, the glow it gathers, the rings closing in; over it: what it
+      // draws in, and its last glint
+      const under = CQ.el("div", "t-absorb");
+      const over = CQ.el("div", "t-absorb over");
+      root.insertBefore(under, b);
+      b.after(over);
+      this.absorbLayers = [under, over];
+      clearInterval(this.sparkle); // (the crown's glints stop)
+      // the dark it ends in, the game's own dark colour (with Reduced motion the title only fades into
+      // it, button and all); the bands round the stage go as dark as the stage, step by step
+      const dusk = CQ.el("div", "t-dusk", CQ.motion.reduced ? over : null);
+      if (CQ.motion.reduced) {
+        CQ.screen.shade("title", 4);
+        return run(dusk, [{ opacity: 0 }, { opacity: 1 }], { duration: 350, easing: "ease-in-out" }).finished;
+      }
+      CQ.screen.shade("title", 1);
+      this.timers.push(setTimeout(() => this.absorbLayers && CQ.screen.shade("title", 4), TL.dusk));
+      const lite = document.documentElement.classList.contains("lite");
+      // the dark comes in from the edges, a soft hole round the button closing in on it (the hole's edge
+      // is 60 px out per unit of scale: from past the farthest corner to just round the button)
+      const drain = CQ.box(CQ.el("div", "t-drain", under), P.x - 300, P.y - 300, 600, 600);
+      run(drain, [{ transform: "scale(23)" }, { transform: "scale(3.4)" }], { duration: TL.drain, easing: "cubic-bezier(.4,0,.25,1)" });
+      under.appendChild(dusk);
+      const dark = run(dusk, [{ opacity: 0 }, { opacity: 1 }], { delay: TL.dusk, duration: TL.duskFor, easing: "ease-in-out" });
+      // the glow the button gathers as it springs up, which goes into it with it
+      const halo = CQ.pos(CQ.el("div", "t-halo", under), P.x, P.y);
+      run(halo, [
+        { transform: "scale(.5)", opacity: 0, easing: "cubic-bezier(.3,.8,.4,1)" },
+        { transform: "scale(1)", opacity: 1, offset: 0.26 },
+        { transform: "scale(1.02)", opacity: 1, offset: 0.29, easing: "cubic-bezier(.55,.085,.68,.53)" },
+        { transform: "scale(.06)", opacity: 0.95, offset: 0.85 },
+        { transform: "scale(0)", opacity: 0 },
+      ], { duration: TL.gone / 0.85 });
+      // rings of light closing in on it, one after another
+      [140, 300, 460].forEach((d) => {
+        const r = CQ.pos(CQ.el("div", "t-suck", under), P.x, P.y);
+        run(r, [
+          { transform: "scale(2.3)", opacity: 0 },
+          { transform: "scale(1.5)", opacity: 0.85, offset: 0.35 },
+          { transform: "scale(.22)", opacity: 0 },
+        ], { delay: d, duration: 520, easing: "cubic-bezier(.55,.085,.68,.53)" });
       });
+      // the button: up (glowing), a little wind back, then it spins away into its own centre, faster and
+      // faster (it shrinks; its picture turns, so its shadow stays below it: styles.css)
+      const up = TL.up / TL.gone;
+      const wind = TL.wind / TL.gone;
+      const spin = run(b, [
+        { transform: `scale(${scaleOf(b)})`, easing: "cubic-bezier(.3,.8,.4,1)" },
+        { transform: "scale(1.13)", offset: up, easing: "ease-in-out" },
+        { transform: "scale(1.06)", offset: wind, easing: "cubic-bezier(.55,.085,.68,.53)" },
+        { transform: "scale(0)" },
+      ], { duration: TL.gone });
+      run(b.firstChild, [
+        { transform: "rotate(0deg)" },
+        { transform: "rotate(0deg)", offset: up, easing: "ease-in-out" },
+        { transform: "rotate(-10deg)", offset: wind, easing: "cubic-bezier(.55,.055,.675,.19)" },
+        { transform: "rotate(360deg)" },
+      ], { duration: TL.gone });
+      run(b, [{ opacity: 1 }, { opacity: 1, offset: 0.93 }, { opacity: 0 }], { duration: TL.gone });
+      // its sound keeps in step with the button (an animation can begin a frame or two after it is made,
+      // so the sound begins with it, from as far as it has got), and the "gulp" comes as it has gone
+      spin.ready.then(() => CQ.audio.play("title.absorb", { volume: 0.9, ago: Math.max(0, spin.currentTime || 0) / 1000 }), () => {});
+      // the light of the scene drawn into it: golden motes from all round it, and a few leaves from the
+      // jungle above, spiralling in faster and faster (each starts inside the stage, where it is seen)
+      const edge = (a) => {
+        const c = Math.cos(a);
+        const sn = Math.sin(a);
+        const tx = c > 1e-6 ? (CQ.W - P.x) / c : c < -1e-6 ? -P.x / c : Infinity;
+        const ty = sn > 1e-6 ? (CQ.H - P.y) / sn : sn < -1e-6 ? -P.y / sn : Infinity;
+        return Math.min(tx, ty);
+      };
+      // (a mote is a streak of light pointing the way it goes, longer the faster it goes; a leaf tumbles)
+      const N = 12;
+      const spiral = (cls, o) => {
+        const el = CQ.pos(CQ.el("div", cls, over), P.x, P.y);
+        const pts = [];
+        for (let i = 0; i <= N; i++) {
+          const u = i / N;
+          const r = o.r * (1 - Math.pow(u, 2.2));
+          const a = o.a + o.sweep * u * u;
+          pts.push({ u, x: r * Math.cos(a), y: r * Math.sin(a) });
+        }
+        const step = pts.map((p, i) => {
+          const next = pts[Math.min(i + 1, N)];
+          const prev = pts[Math.max(i - 1, 0)];
+          return { dx: next.x - prev.x, dy: next.y - prev.y, v: Math.hypot(next.x - prev.x, next.y - prev.y) };
+        });
+        const vmax = Math.max(...step.map((s) => s.v)) || 1;
+        let turn = 0;
+        const kf = pts.map((p, i) => {
+          const k = o.size * (1 - 0.7 * Math.pow(p.u, 1.5));
+          let shape;
+          if (o.spin != null) shape = `rotate(${(o.spin * p.u * p.u).toFixed(1)}deg) scale(${k.toFixed(3)})`;
+          else {
+            const d = (Math.atan2(step[i].dy, step[i].dx) * 180) / Math.PI;
+            turn = i ? turn + ((((d - turn) % 360) + 540) % 360) - 180 : d; // (the shorter way round)
+            const sp = step[i].v / vmax;
+            shape = `rotate(${turn.toFixed(1)}deg) scale(${(k * (1 + 1.6 * sp)).toFixed(3)}, ${(k * (1 - 0.25 * sp)).toFixed(3)})`;
+          }
+          return {
+            transform: `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px) ${shape}`,
+            opacity: Math.max(0, Math.min(1, p.u / 0.15, (1 - p.u) / 0.08)),
+          };
+        });
+        const delay = CQ.rand(0, o.spin != null ? 160 : 220);
+        run(el, kf, { delay, duration: CQ.rand(640, 830) - delay });
+      };
+      const motes = lite ? 10 : 18;
+      for (let i = 0; i < motes; i++) {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / motes + CQ.rand(-0.2, 0.2);
+        spiral("t-mote", { a, r: CQ.clamp(CQ.rand(300, 660), 110, edge(a) - 20), sweep: CQ.rand(1.2, 2), size: CQ.rand(0.75, 1.25) });
+      }
+      const leaves = lite ? 3 : 6;
+      for (let i = 0; i < leaves; i++) {
+        const a = -Math.PI + ((i + 0.5) * Math.PI) / leaves + CQ.rand(-0.15, 0.15);
+        spiral("t-leaf", { a, r: Math.min(CQ.rand(560, 860), edge(a) + 30), sweep: CQ.rand(1, 1.6), size: CQ.rand(1.1, 1.5), spin: CQ.pick([-1, 1]) * CQ.rand(300, 600) });
+      }
+      // its last glint, as it closes
+      const wink = CQ.pos(CQ.el("div", "t-wink", over), P.x, P.y);
+      run(wink, [
+        { transform: "scale(0) rotate(0deg)", opacity: 0, easing: "cubic-bezier(.3,.8,.4,1)" },
+        { transform: "scale(1.25) rotate(45deg)", opacity: 1, offset: 0.35, easing: "cubic-bezier(.55,.085,.68,.53)" },
+        { transform: "scale(0) rotate(110deg)", opacity: 0 },
+      ], { delay: TL.wink, duration: 460 });
+      return dark.finished;
+    },
+    // the middle of the play button's wooden disc, on the stage
+    playPoint() {
+      const pw = PLAY_AT.w;
+      const ph = (pw * IMAGES.startButton.h) / IMAGES.startButton.w;
+      return { x: PLAY_AT.x - pw / 2 + pw * DISC.x, y: PLAY_AT.y - ph / 2 + ph * DISC.y };
+    },
+    // The title is gone: everything of it stops (its timers, the crown's glints, the absorb).
+    close() {
       this.gen++;
       this.timers.forEach(clearTimeout);
       clearInterval(this.sparkle);
       this.root.classList.add("hidden");
-      document.documentElement.classList.remove("on-title"); // ...and from now on the game's jungle
-      CQ.flow.chapter(cp, { noVeil: true });
+      (this.absorbAnims || []).forEach((a) => a.cancel());
+      (this.absorbLayers || []).forEach((l) => l.remove());
+      this.absorbAnims = this.absorbLayers = null;
+      CQ.screen.shade("title", false);
     },
   };
+  // how big an element is drawn now (its transform's scale, as its animation has it at this moment)
+  function scaleOf(el) {
+    const m = getComputedStyle(el).transform;
+    const v = m && m !== "none" ? m.replace(/^[^(]*\(|\)$/g, "").split(",").map(parseFloat) : null;
+    if (!v) return 1;
+    return Math.hypot(v[0], v[1], v.length === 16 ? v[2] : 0) || 1;
+  }
 
   async function boot() {
     const stage = document.getElementById("stage");

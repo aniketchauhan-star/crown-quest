@@ -363,21 +363,6 @@
       await this.sprite.play("grumble_wake", [4, 3, 2, 1], 150);
       if (this.state === "stir") this.sleep();
     }
-    // Stays stirring (eye open, no snoring) until settle() is called. Used in Level 8.
-    async stirHold() {
-      if (this.state !== "sleep") return;
-      this.state = "stir";
-      this.loud = 0; // (awake: no snore waiting)
-      CQ.audio.play("grumble.mumble");
-      const h = this.head();
-      CQ.comic(CONTENT.grumble.stir, h, { color: "purple", size: 70 });
-      await this.sprite.play("grumble_wake", [1, 2, 3, 4, 5], 160);
-    }
-    async settle() {
-      if (this.state !== "stir") return;
-      await this.sprite.play("grumble_wake", [5, 4, 3, 2, 1], 140);
-      this.sleep();
-    }
     // A wrong swap: wake up, pop up, roar, stand a moment, yawn and flop back to sleep.
     // hooks.afterRoar runs while he is standing (Zippy swaps the crown back then).
     async wakeUp(hooks) {
@@ -1037,7 +1022,14 @@
       this.rig.style.visibility = on ? "visible" : "hidden";
       this.vine.style.visibility = on ? "visible" : "hidden";
     }
+    // In front of the balance while he takes the crown (js/flow.js, swapOnPan): he, what he carries and
+    // the sparkles round him are drawn over it, even while it is still lifted over a look that has just
+    // ended (styles.css, #world.zippy-front; asked 2026-11-17: he and the crown went behind it).
+    front(on) {
+      CQ.world.root.classList.toggle("zippy-front", !!on);
+    }
     reset() {
+      this.front(false);
       this.A = { x: L.ZIPPY.ax, y: L.ZIPPY.ay };
       this.theta = 0;
       this.tilt = TILT;
@@ -1654,7 +1646,7 @@
         CQ.placeStand(ped, x);
         const slot = CQ.el("div", "bar-slot", this.layer);
         slot.setAttribute("role", "button");
-        slot.setAttribute("aria-label", `Gold bar ${v}`);
+        slot.setAttribute("aria-label", CQ.fmt(window.CONTENT.ui.goldBar, { v }));
         slot.style.width = L.BAR_W + "px";
         slot.style.height = BAR_H + "px";
         const g = CQ.el("div", "gbar", slot, `<span class="num">${v}</span>`);
@@ -1685,16 +1677,13 @@
         b.slot.tabIndex = can ? 0 : -1;
       });
     }
-    markTried(v) {
-      this.markTriedBar(this.get(v));
-    }
     markTriedBar(b) {
       if (!b) return;
       const v = b.value;
       b.state = "tried";
       b.slot.classList.add("tried");
       b.slot.classList.remove("gone", "glow");
-      b.slot.setAttribute("aria-label", `Gold bar ${v}, already tried`);
+      b.slot.setAttribute("aria-label", CQ.fmt(window.CONTENT.ui.goldBarTried, { v }));
       this.refresh();
     }
     glow(v, on) {
