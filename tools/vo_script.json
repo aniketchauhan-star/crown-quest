@@ -316,5 +316,7 @@
   {"id":"vo348","line":"The right-hand side equals 18.","spoken":"The right-hand side equals eighteen."},
   {"id":"vo349","line":"Let's try x = 10.","spoken":"Let's try x equals ten."},
   {"id":"vo350","line":"How about x = 12?","spoken":"How about x equals twelve?"},
-  {"id":"vo351","line":"Can we find the crown's mass without guessing?","spoken":"Can we find the crown's mass without guessing?"}
+  {"id":"vo351","line":"Can we find the crown's mass without guessing?","spoken":"Can we find the crown's mass without guessing?"},
+  {"id":"vo352","line":"Look to the left of the equal sign. 4x + 3 is the left-hand side.","spoken":"Look to the left of the equal sign. Four x plus three is the left-hand side."},
+  {"id":"vo353","line":"Look to the right of the equal sign. 19 is the right-hand side.","spoken":"Look to the right of the equal sign. Nineteen is the right-hand side."}
 ]

@@ -35,6 +35,13 @@
     "src" : "assets\/title\/zippy.webp",
     "w" : 1081,
     "x" : 245.80000000000001,
-    "y" : 88.900000000000006
+    "y" : 82.900000000000006
+  },
+  "zippyGrip" : {
+    "h" : 92,
+    "src" : "assets\/title\/zippy-grip.webp",
+    "w" : 70,
+    "x" : 255,
+    "y" : 102
   }
 }

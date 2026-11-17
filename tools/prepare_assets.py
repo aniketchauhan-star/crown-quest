@@ -417,6 +417,10 @@ def add_title(images):
     for name in ("zippy", "logo", "crown", "grumble"):
         v = t[name]
         images["t" + name.capitalize()] = {"src": v["src"], "w": v["w"], "h": v["h"], "x": v["x"], "y": v["y"], "s": v.get("s", 1)}
+    # Zippy's grip: the bit of the vine in front of his palm (x, y: its top-left on the Zippy picture)
+    if "zippyGrip" in t:
+        v = t["zippyGrip"]
+        images["tZippyGrip"] = {"src": v["src"], "w": v["w"], "h": v["h"], "x": v["x"], "y": v["y"]}
     print("title: the plate and 4 characters from assets/title/")
 
 

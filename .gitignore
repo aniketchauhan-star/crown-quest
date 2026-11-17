@@ -3,3 +3,6 @@
 __pycache__/
 *.pyc
 .vscode/
+
+# Clips the studio made, waiting for tools/vo_build.py
+tools/studio_out/

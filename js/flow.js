@@ -92,11 +92,6 @@
       setTimeout(() => (this.jumping = false), 1500);
       this.chapter(this.arriving ? this.current : ORDER[i + 1]);
     },
-    async askRestart() {
-      if (!this.current) return;
-      const ok = await CQ.confirm(C().ui.restartQ);
-      if (ok) this.goto(this.current);
-    },
   };
 
   // ------------------------------------------------------------------ scene reset for a checkpoint
@@ -352,7 +347,9 @@
             say("swap-tap-swap", { advance: "none" });
             setTimeout(() => {
               if (!CQ.swapBtn.cb) return; // already tapped
-              look(CQ.swapBtn.el); // once it has popped in
+              // once it has popped in; Zippy, with the bar, stays bright with it: when it is tapped he
+              // swings over in front of the balance (z.front) and must not jump out from under the fade
+              look([CQ.swapBtn.el, CQ.zippy.rig]);
               CQ.focus.offAfter(5000);
               CQ.hand.tapAt(CQ.centerOf(CQ.swapBtn.el));
             }, 500);
@@ -387,6 +384,9 @@
     CQ.hand.stop();
     CQ.idle.disarm();
     CQ.caption.hide();
+    // he and the crown stay in front of the balance all the way, even when it is still lifted over the
+    // look that "Now tap Swap!" put on the button (asked 2026-11-17: they went behind it)
+    z.front(true);
     const crown = b.find("left", (it) => it.type === "crown" && !it.ghost);
     const target = b.itemCenter(crown);
     // the view comes a little closer to Zippy and the balance for the swap (asked 2026-11-09: "when
@@ -446,6 +446,7 @@
     // he swings back with the crown, so the child can watch the balance, and the view goes back out
     CQ.camera.to(960, 540, 1, d === 0 ? 900 : 650);
     await R.when(z.home(d === 0 ? 620 : 460));
+    z.front(false); // (home, clear of the balance)
     if (d === 0) z.pose("ooh");
     return { d, barItem };
   }
@@ -1430,7 +1431,7 @@
           });
           it.el.tabIndex = 0;
           it.el.setAttribute("role", "button");
-          it.el.setAttribute("aria-label", `Gold bar ${v} on the ${s} pan: take it off the balance`);
+          it.el.setAttribute("aria-label", CQ.fmt(C().ui.goldBarOff, { v, side: C().ui.sides[s] || s }));
         });
       })
     );

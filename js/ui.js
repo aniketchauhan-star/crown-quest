@@ -1,7 +1,7 @@
 /*
  * Zippy's Crown Quest: user interface.
  * HUD, captions + narration, Next/Back, the SWAP button, speech bubbles, comic sound words,
- * name bursts, spotlight, thought bubbles, hand demos, word gems + Word Treasure, menu, confirm,
+ * name bursts, spotlight, thought bubbles, hand demos, word gems + Word Treasure, menu,
  * the Check panel (LHS/RHS with number pickers) and the equation board.
  */
 (function () {
@@ -19,8 +19,6 @@
     next: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M15 8l26 16-26 16z" fill="currentColor" stroke="#6B3E00" stroke-width="3.5" stroke-linejoin="round"/></svg>',
     back: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M33 8L7 24l26 16z" fill="currentColor" stroke="#6B3E00" stroke-width="3.5" stroke-linejoin="round"/></svg>',
     swap: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 17h28M28 9l9 8-9 8M40 31H12M20 23l-9 8 9 8" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    close: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13 13l22 22M35 13L13 35" stroke="currentColor" stroke-width="7" stroke-linecap="round"/></svg>',
-    check: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 25l9 9 19-20" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
   CQ.ICON = ICON;
   // A gem from elements.png, picked by a word's colour (see CONTENT.words).
@@ -201,7 +199,7 @@
       CQ.eqBoard.hide(true);
       CQ.idle.disarm();
       // and anything a step left behind when a chapter jump cut it short (Level 4's x + 2 = 7 strip)
-      this.layer.querySelectorAll(".comic, .nameburst, .thought, .flyer, .eq-strip").forEach((e) => e.remove());
+      this.layer.querySelectorAll(".comic, .nameburst, .thought, .flyer, .eq-strip, .answer-tick").forEach((e) => e.remove());
       this.overlay.querySelectorAll(".thought, .flyer").forEach((e) => e.remove());
       this.skip.classList.add("hidden");
     },
@@ -404,7 +402,7 @@
       this.el = CQ.el("div", "caption hidden", ui);
       // a speaker at the left of the caption; tapping it plays the line again. (Not Zippy's face: the
       // narrator reads these lines, not Zippy. Review, 2026-11-07.)
-      this.spk = button("spk", ICON.speaker, "Hear it again", this.el, () => this.replay());
+      this.spk = button("spk", ICON.speaker, C().ui.hearAgain, this.el, () => this.replay());
       this.txt = CQ.el("div", "cap-text", this.el);
       this.txt.setAttribute("aria-hidden", "true"); // screen readers get the whole line at once instead:
       this.probe = CQ.el("span", "cap-text cap-probe", this.el); // measures rows (unseen)
@@ -701,14 +699,6 @@
         return k;
       }
       return this.heard;
-    },
-    // Has the voice got as far as str in the line on screen (to its last word)? For things that appear on
-    // a word: when(), below.
-    reached(str) {
-      if (!this.text) return false;
-      const at = this.text.indexOf(str);
-      if (at < 0) return false;
-      return this.saidUpTo() >= wordAt(this.words, at + str.replace(/\s+$/, "").length - 1);
     },
     // Resolves when the voice of the line `text` gets to str (as it begins its last word), with that line
     // on screen (the one there now, or the next to come); or once the line has gone (skipped on); or after
@@ -1070,9 +1060,15 @@
       this.get = () => ({ x: 960, y: 540 });
       this.tick = null;
     },
+    // (only when the light has moved or changed size: drawing the whole screen's gradient again at every
+    // frame while it stood still made the browser fall behind on big screens, asked 2026-11-17)
     apply() {
       const p = CQ.camera.toScreen(this.get());
-      this.el.style.background = `radial-gradient(circle at ${p.x}px ${p.y}px, rgba(0,0,0,0) ${this.r}px, rgba(3,12,20,.76) ${this.r + 80}px)`;
+      const r = Math.round(this.r * 2) / 2;
+      const bg = `radial-gradient(circle at ${Math.round(p.x * 2) / 2}px ${Math.round(p.y * 2) / 2}px, rgba(0,0,0,0) ${r}px, rgba(3,12,20,.76) ${r + 80}px)`;
+      if (bg === this.bg) return;
+      this.bg = bg;
+      this.el.style.background = bg;
     },
     on(target, r, layer) {
       this.get = typeof target === "function" ? target : () => target;
@@ -1270,6 +1266,11 @@
   };
 
   // ------------------------------------------------------------------ hand pointer demos
+  // The hand shows how (tap here, drag that there) when a child has done nothing for a while (CQ.idle).
+  // It goes the moment the child touches anything or presses a key, and comes back only if they wait
+  // again (the learning-section skill: "It stops the moment the learner touches anything"). With Reduced
+  // motion it doesn't move: it points, standing still, at what to take and then at where it goes (or at
+  // what to tap), so the gesture still reads standing still ("stops the demonstrations").
   CQ.hand = {
     build(ui) {
       this.el = CQ.el("div", "hand hidden", ui);
@@ -1284,12 +1285,15 @@
       CQ.img("hand", "", this.el);
       this.el.style.transformOrigin = `${this.tip.x}px ${this.tip.y}px`;
       this.seq = 0;
+      this.active = false; // a gesture is being shown (between its repeats too)
+      ["pointerdown", "keydown"].forEach((t) => window.addEventListener(t, () => this.active && this.stop(), true));
     },
     placeAt(p) {
       CQ.pos(this.el, p.x - this.tip.x, p.y - this.tip.y);
     },
     stop() {
       this.seq++;
+      this.active = false;
       CQ.stopTween("hand");
       this.el.classList.add("hidden");
       this.dropCarry();
@@ -1306,10 +1310,12 @@
       const id = ++this.seq;
       this.dropCarry();
       if (!from || !to) return;
+      this.active = true;
       times = times || 2;
       opts = opts || {};
       const off = opts.carryAt || { x: 0, y: 0 };
       const alive = () => id === this.seq;
+      const s1 = opts.carryScale || 1;
       for (let n = 0; n < times; n++) {
         if (!alive()) return;
         this.el.classList.remove("hidden");
@@ -1321,23 +1327,35 @@
           this.carry = c;
           CQ.anim(c, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, keep: false, essential: true });
         }
-        await CQ.anim(this.el, [{ opacity: 0, transform: "scale(1.2)" }, { opacity: 1, transform: "scale(1)" }], { duration: 300, keep: false, essential: true });
-        if (!alive()) return;
-        await CQ.anim(this.el, [{ transform: "scale(1)" }, { transform: "scale(.88)" }], { duration: 200, keep: false, essential: true });
-        const s1 = opts.carryScale || 1;
-        await CQ.tween(
-          1350,
-          (k) => {
-            const p = { x: CQ.lerp(from.x, to.x, k), y: CQ.lerp(from.y, to.y, k) };
-            this.placeAt(p);
-            if (c) {
-              CQ.pos(c, p.x + off.x, p.y + off.y);
-              c.firstChild.style.transform = `translate(-50%,-50%) scale(${CQ.lerp(1, s1, k)})`;
-            }
-          },
-          CQ.ease.inOut,
-          "hand"
-        );
+        if (CQ.motion.reduced) {
+          // standing still: at what to take, then at where it goes, the faded copy with it
+          await CQ.anim(this.el, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, keep: false, essential: true });
+          await CQ.sleep(1100);
+          if (!alive()) return;
+          this.placeAt(to);
+          if (c) {
+            CQ.pos(c, to.x + off.x, to.y + off.y);
+            c.firstChild.style.transform = `translate(-50%,-50%) scale(${s1})`;
+          }
+          await CQ.sleep(1300);
+        } else {
+          await CQ.anim(this.el, [{ opacity: 0, transform: "scale(1.2)" }, { opacity: 1, transform: "scale(1)" }], { duration: 300, keep: false, essential: true });
+          if (!alive()) return;
+          await CQ.anim(this.el, [{ transform: "scale(1)" }, { transform: "scale(.88)" }], { duration: 200, keep: false, essential: true });
+          await CQ.tween(
+            1350,
+            (k) => {
+              const p = { x: CQ.lerp(from.x, to.x, k), y: CQ.lerp(from.y, to.y, k) };
+              this.placeAt(p);
+              if (c) {
+                CQ.pos(c, p.x + off.x, p.y + off.y);
+                c.firstChild.style.transform = `translate(-50%,-50%) scale(${CQ.lerp(1, s1, k)})`;
+              }
+            },
+            CQ.ease.inOut,
+            "hand"
+          );
+        }
         if (!alive()) return;
         if (c) CQ.anim(c, [{ opacity: 1 }, { opacity: 0 }], { duration: 380, essential: true });
         await CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 380, keep: false, essential: true });
@@ -1345,25 +1363,49 @@
         this.el.classList.add("hidden");
         await CQ.sleep(500);
       }
-      if (alive()) this.el.classList.add("hidden");
+      if (alive()) {
+        this.el.classList.add("hidden");
+        this.active = false;
+      }
     },
-    async tapAt(p, times) {
+    tapAt(p, times) {
+      return this.tapEach(p ? [p] : [], times);
+    },
+    // Taps each point in turn (two answers to choose from: "one of these"), gliding from one to the next:
+    // times taps on each (default: twice on one point, once each on several).
+    async tapEach(points, times) {
       const id = ++this.seq;
       this.dropCarry();
       CQ.stopTween("hand"); // an earlier drag demo must not keep moving the hand
-      if (!p) return;
-      times = times || 2;
+      points = (points || []).filter(Boolean);
+      if (!points.length) return;
+      this.active = true;
+      times = times || (points.length > 1 ? 1 : 2);
+      const alive = () => id === this.seq;
       this.el.classList.remove("hidden");
-      this.placeAt(p);
-      for (let n = 0; n < times; n++) {
-        if (id !== this.seq) return;
-        await CQ.anim(this.el, [{ transform: "translate(0,0) scale(1)" }, { transform: "translate(0,-14px) scale(.9)" }, { transform: "translate(0,0) scale(1)" }], {
-          duration: 650,
-          keep: false,
-          essential: true,
-        });
+      this.placeAt(points[0]);
+      for (let i = 0; i < points.length; i++) {
+        if (i > 0) {
+          const a = points[i - 1];
+          const b = points[i];
+          if (CQ.motion.reduced) this.placeAt(b);
+          else await CQ.tween(420, (k) => this.placeAt({ x: CQ.lerp(a.x, b.x, k), y: CQ.lerp(a.y, b.y, k) }), CQ.ease.inOut, "hand");
+        }
+        for (let n = 0; n < times; n++) {
+          if (!alive()) return;
+          if (CQ.motion.reduced) await CQ.sleep(650);
+          else
+            await CQ.anim(this.el, [{ transform: "translate(0,0) scale(1)" }, { transform: "translate(0,-14px) scale(.9)" }, { transform: "translate(0,0) scale(1)" }], {
+              duration: 650,
+              keep: false,
+              essential: true,
+            });
+        }
       }
-      if (id === this.seq) this.el.classList.add("hidden");
+      if (alive()) {
+        this.el.classList.add("hidden");
+        this.active = false;
+      }
     },
   };
 
@@ -1635,33 +1677,91 @@
     },
   };
 
-  CQ.confirm = function (text) {
-    return new Promise((res) => {
-      const c = C().ui;
-      const wrap = CQ.el("div", "modal-wrap", CQ.ui.modal);
-      const panel = CQ.el("div", "panel confirm-panel", wrap);
-      panel.setAttribute("role", "alertdialog");
-      CQ.el("h2", "panel-title", panel, text);
-      const row = CQ.el("div", "confirm-row", panel);
-      CQ.pauser.hold();
-      const done = (v) => {
-        wrap.remove();
-        CQ.pauser.release();
-        CQ.audio.play("ui.tap");
-        res(v);
-      };
-      button("btn-wood big yes", `${ICON.check}<span>${c.yes}</span>`, c.yes, row, () => done(true));
-      button("btn-wood big no", `${ICON.close}<span>${c.no}</span>`, c.no, row, () => done(false));
-    });
+  // ------------------------------------------------------------------ an answer: right or wrong
+  // Every answer a child gives looks and sounds the same, wherever it is given (the learning-section
+  // skill: "Every question follows one pattern, so a learner meets one game"):
+  //   wrong: the control shakes its head and goes red for a beat, with the soft "try again" sound;
+  //   right: it turns green for a moment, a tick draws itself on its corner, the success chime plays, it
+  //   swells once and a small burst of sparkles goes off beside it.
+  // What is said stays with each activity: a hint or the reason after a wrong answer, and nothing after a
+  // right one (reviews of 2026-11-07: a right label or card gets no words), except praise with confetti
+  // for the last of a set. With Reduced motion nothing moves: the colours and the tick only.
+  //   opts.silent: no sound (the caller plays its own); opts.pulse: false where the control pops by itself
+  CQ.answer = {
+    BEAT: 700, // ms a wrong answer stays red
+    LOOK: 1200, // ms a right answer stays green, with its tick
+    wrong(el, opts) {
+      opts = opts || {};
+      if (!opts.silent) CQ.audio.play("tryagain");
+      if (!el) return Promise.resolve();
+      el.classList.add("is-wrong");
+      setTimeout(() => el.classList.remove("is-wrong"), this.BEAT);
+      if (CQ.motion.reduced) return CQ.sleep(this.BEAT / 2);
+      // (the translate property: the control's own transform, a centring one too, is left alone)
+      const shake = ["0px", "-12px", "10px", "-7px", "4px", "0px"].map((x) => ({ translate: x + " 0px" }));
+      return CQ.anim(el, shake, { duration: 460, easing: "ease-in-out", keep: false, essential: true });
+    },
+    right(el, opts) {
+      opts = opts || {};
+      if (!opts.silent) CQ.audio.play("correct");
+      if (!el) return;
+      el.classList.add("is-right");
+      setTimeout(() => el.classList.remove("is-right"), this.LOOK);
+      const r = el.getBoundingClientRect();
+      if (!r.width) return;
+      const a = CQ.stage.toStage(r.left, r.top);
+      const b = CQ.stage.toStage(r.right, r.bottom);
+      this.tick(b.x - 4, a.y + 4, el);
+      if (CQ.motion.reduced) return;
+      if (opts.pulse !== false) this.pulse(el);
+      CQ.fx.sparkle(CQ.ui.layer, b.x + 6, (a.y + b.y) / 2, 7, 46);
+    },
+    // one outward pulse: it swells a little and settles (about its own middle, whatever its transform)
+    pulse(el) {
+      if (!el || CQ.motion.reduced) return;
+      const t = getComputedStyle(el).transform;
+      const base = t && t !== "none" ? t + " " : "";
+      CQ.anim(el, [{ transform: base + "scale(1)" }, { transform: base + "scale(1.08)", offset: 0.4 }, { transform: base + "scale(1)" }], {
+        duration: 380,
+        easing: "ease-out",
+        keep: false,
+        essential: true,
+      });
+    },
+    // a green tick in a disc, at (x, y) on the stage: it pops in, its tick drawn by a pen, and fades away;
+    // at once if its control goes first (the board moves on to its next screen)
+    tick(x, y, owner) {
+      const t = CQ.el("div", "answer-tick", CQ.ui.layer, '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="21"/><path d="M13.5 25l7 7L35 17.5"/></svg>');
+      CQ.pos(t, x, y);
+      if (!CQ.motion.reduced) {
+        CQ.anim(t, [{ transform: "scale(.4)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 260, easing: CQ.EASE.back, keep: false, essential: true });
+        CQ.anim(t.querySelector("path"), [{ strokeDashoffset: 33 }, { strokeDashoffset: 0 }], { duration: 280, delay: 140, easing: "ease-out", keep: false, essential: true });
+      }
+      const off = CQ.ticker.add(() => {
+        if (!t.isConnected) off();
+        else if (owner && !owner.isConnected) {
+          off();
+          t.remove();
+        }
+      });
+      CQ.anim(t, [{ opacity: 1 }, { opacity: 0 }], { duration: 320, delay: this.LOOK - 320, fill: "forwards", essential: true }).then(() => {
+        off();
+        t.remove();
+      });
+    },
   };
 
   // ------------------------------------------------------------------ number picker
   // The child taps a dashed blank, then picks one of three number tiles. Shared by the Check panel
   // and the practice board. Resolves with the number of misses once the right tile is picked.
+  // A filled blank is done with: out of the keyboard's way, read as its number.
   CQ.fillBlank = function (b, v) {
     b.textContent = CQ.num(v);
     b.classList.add("filled");
     b.classList.remove("glow");
+    b.tabIndex = -1;
+    b.setAttribute("aria-disabled", "true");
+    b.removeAttribute("aria-label");
     CQ.anim(b, [{ transform: "scale(1.4)" }, { transform: "scale(1)" }], { duration: 360, easing: CQ.EASE.back, keep: false });
   };
   CQ.pickNumber = function (b, host, options, correct, onMiss) {
@@ -1669,26 +1769,26 @@
     if (!picker) picker = CQ.el("div", "cp-picker hidden", host);
     let misses = 0;
     let resolve;
+    const struck = new Set(); // the wrong tiles picked: struck out until the blank is filled
     b.classList.add("glow");
     const pick = (v, chip) => {
       if (v === correct) {
         picker.classList.add("hidden");
         CQ.fillBlank(b, v);
-        CQ.audio.play("correct");
+        CQ.answer.right(b, { pulse: false }); // (fillBlank pops it already)
         b.onclick = null;
         CQ.idle.disarm();
         CQ.hand.stop();
         resolve(misses);
         return;
       }
+      if (struck.has(v)) return;
       misses++;
+      struck.add(v);
       CQ.track("answer", { step: b.dataset.k || "pick", choice: v, correct: false, attempt: misses });
-      CQ.audio.play("tryagain");
       chip.classList.add("wrong");
-      CQ.anim(chip, [{ transform: "translateX(0)" }, { transform: "translateX(-12px)" }, { transform: "translateX(12px)" }, { transform: "translateX(0)" }], {
-        duration: 300,
-        keep: false,
-      });
+      chip.disabled = true;
+      CQ.answer.wrong(chip);
       if (onMiss) onMiss(misses);
       if (misses >= 2) picker.querySelectorAll(".chip").forEach((c) => c.num === correct && c.classList.add("glow"));
     };
@@ -1706,6 +1806,10 @@
       options.forEach((v) => {
         const chip = button("chip", CQ.num(v), CQ.num(v), picker, () => pick(v, chip));
         chip.num = v; // (a button's own .value is always text)
+        if (struck.has(v)) {
+          chip.classList.add("wrong");
+          chip.disabled = true;
+        }
         if (misses >= 2 && v === correct) chip.classList.add("glow");
       });
       // the tiles stay within the check, clear of the balance beside it
@@ -1825,10 +1929,11 @@
       // single input box directly after RHS:, aligned beneath the 4 in the LHS row"; it was RHS: 9 = ?)
       this.lhs.className = "cp-side lhs";
       this.rhs.className = "cp-side rhs";
-      this.lhs.innerHTML = `<span class="lab">LHS</span><span class="op e1">=</span><span class="rest"><span class="ex">${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a}</span></span><span class="eqv"><span class="op">=</span><button type="button" class="blank" data-k="lhs" aria-label="Left-hand side value">?</button></span></span>`;
+      const U = C().ui;
+      this.lhs.innerHTML = `<span class="lab">${U.lhs}</span><span class="op e1">=</span><span class="rest"><span class="ex">${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a}</span></span><span class="eqv"><span class="op">=</span><button type="button" class="blank" data-k="lhs" aria-label="${U.lhsValue}">?</button></span></span>`;
       this.rhs.innerHTML = eq.rhsGiven
-        ? `<span class="lab">RHS</span><span class="op e1">=</span><span class="rest"><span class="ex"><span class="op">${CQ.num(eq.b)}</span></span></span>`
-        : `<span class="lab">RHS</span><span class="op e1">=</span><span class="rest"><span class="eqv"><button type="button" class="blank" data-k="rhs" aria-label="Right-hand side value">?</button></span></span>`;
+        ? `<span class="lab">${U.rhs}</span><span class="op e1">=</span><span class="rest"><span class="ex"><span class="op">${CQ.num(eq.b)}</span></span></span>`
+        : `<span class="lab">${U.rhs}</span><span class="op e1">=</span><span class="rest"><span class="eqv"><button type="button" class="blank" data-k="rhs" aria-label="${U.rhsValue}">?</button></span></span>`;
       this.cmp.innerHTML = "";
       this.cmp.className = "cp-compare";
       const old = this.el.querySelector(":scope > .cp-picker");
@@ -1893,10 +1998,6 @@
       this.lhs.querySelector(".xslot").innerHTML = `<span class="subbed">${CQ.num(v)}</span>`;
       CQ.audio.play("ui.pop");
       CQ.anim(slot, [{ transform: "scale(1.5)" }, { transform: "scale(1)" }], { duration: 380, easing: CQ.EASE.back, keep: false });
-    },
-    setValue(k, v) {
-      const b = this.blank(k);
-      if (b) CQ.fillBlank(b, v);
     },
     fill(k, options, correct, onMiss) {
       return CQ.pickNumber(this.blank(k), this.el, options, correct, onMiss);

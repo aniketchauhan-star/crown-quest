@@ -71,9 +71,13 @@ More of the review of 2026-11-13, later that day, spoken as shown with the numbe
 - Level 8: **vo349** "Let's try x = 10." and **vo350** "How about x = 12?" (they replace "Let's try different values of x.", which had no clip); **vo351** "Can we find the crown's mass without guessing?" (it replaces "Let's find the mass of the crown directly.", which had no clip); **vo126** "We can split 23 units into 8 and 15." (it was "First, split 23 into 8 and 15."); **vo128** "Let's remove 8 units from both sides." (it was "To keep the balance level, we must remove 8 units from both sides.").
 - Level 9, in a new order: **vo151** "We can split 18 units into 4 and 14." (it was "Split 18 into 4 and 14."), then **vo150** "There are 4 units beside the crowns. Let's see how we can remove them." (it was "First, let's remove these 4 units.", before the split), then **vo152** "Let's remove 4 units from both sides." (it was "Remove 4 from both sides.").
 
-The activity's LHS and RHS lines for a wrong label ("Look to the left of the equal sign. 4x + 3 is the left-hand side." and "Look to the right of the equal sign. 19 is the right-hand side.", from the review of 2026-11-07) are not in the script yet, so they are read by the device voice too.
+The activity's LHS and RHS lines for a wrong label ("Look to the left of the equal sign. 4x + 3 is the left-hand side." and "Look to the right of the equal sign. 19 is the right-hand side.", from the review of 2026-11-07) went into the script on 2026-11-17 as **vo352** and **vo353** (spoken with "four x plus three" and "nineteen"), waiting for the studio like the rest.
 
 The studio could not make them that day: every try ended in "Exceeded monthly Gemini API spending cap" (a 402 billing error on the studio's own Gemini account; the lines after vo317 came later that day and were not tried), so until they are made the device voice reads these lines (and what waits for their words comes about when a voice would say them: `onCue` in js/activities.js, and `cueIn` in its label activity). To make one: the studio's *Single Generation* tab, Language Hindi, Voice Female Teacher (Standard), Format .MP3, the file name (`vo030`, `vo031`, `vo032`, `vo035`, `vo052`, `vo054`, `vo071`, `vo126`, `vo128`, `vo134`, `vo150` to `vo152`, `vo316` to `vo351`; `python3 tools/vo_build.py` lists them all) and its spoken form as the text; put the MP3s in a zip and run `python3 tools/vo_build.py that.zip`, then check their pauses as above.
+
+On 2026-11-17 it still ended in the same error ("Your prepayment credits are depleted"): only the studio's owner can top that up. Until then the device voice reads these lines in **a woman's voice** when the device has one (`pickVoice` in js/audio.js picks by name, Indian English first: Tara on a Mac, Heera or Neerja on Windows), so they sound closer to the recorded teacher; a device with no known woman's voice keeps its best English voice.
+
+**The quick way, once the studio works:** `caffeinate -i node tools/vo_studio.mjs` makes every line that has no clip yet (or `node tools/vo_studio.mjs vo030 vo031` for some), in Female Teacher (Standard), Hindi, through the Single Generation tab. Each clip is kept in `tools/studio_out/` as soon as it is made (a rerun skips those), and at the end they are zipped for `python3 tools/vo_build.py tools/studio_out/studio.zip`. It stops at the first error the studio shows. Then check the clips as above.
 
 ## The rate limit
 
@@ -460,4 +464,6 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo349 | Let's try x = 10. | Let's try x equals ten. |  | no clip yet |
 | vo350 | How about x = 12? | How about x equals twelve? |  | no clip yet |
 | vo351 | Can we find the crown's mass without guessing? | = |  | no clip yet |
+| vo352 | Look to the left of the equal sign. 4x + 3 is the left-hand side. | Look to the left of the equal sign. Four x plus three is the left-hand side. |  | no clip yet |
+| vo353 | Look to the right of the equal sign. 19 is the right-hand side. | Look to the right of the equal sign. Nineteen is the right-hand side. |  | no clip yet |
 <!-- /vo-table -->
