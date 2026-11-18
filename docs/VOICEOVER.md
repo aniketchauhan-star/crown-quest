@@ -1,10 +1,10 @@
 # Voice-over
 
-Every line the game shows in its caption bar, and every line Zippy says in his speech bubble, is a recorded clip in `assets/vo/`. The narrator is a clear North Indian teacher's voice, a woman's, except 51 lines in a man's voice from the user's own recording (2026-11-18: "The lines from the user's recording", below). Zippy has a bright, young boy's voice.
+Every line the game shows in its caption bar, and every line Zippy says in his speech bubble, is a recorded clip in `assets/vo/`. The narrator is a clear North Indian teacher's voice, a woman's, except 63 lines in a man's voice from the user's own recordings (2026-11-18: "The lines from the user's recording", below). Zippy has a bright, young boy's voice.
 
 | | |
 |---|---|
-| Clips | `assets/vo/vo001.ogg` … one file per line, Ogg Opus, 24 kbps, mono: 320 clips, 33.0 minutes, 6.1 MB (12 lines of the script are still to record: "Still to record", below). On 2026-11-13 every clip was re-encoded from 32 to 24 kbps (speech stays clear; the folder had to be smaller), and the 33 clips of lines the game no longer says were removed with their script entries. |
+| Clips | `assets/vo/vo001.ogg` … one file per line, Ogg Opus, 24 kbps, mono: 332 clips, 33.7 minutes, 6.2 MB, every line of the script. On 2026-11-13 every clip was re-encoded from 32 to 24 kbps (speech stays clear; the folder had to be smaller), and the 33 clips of lines the game no longer says were removed with their script entries. |
 | Script | `tools/vo_script.json`: each line as shown, as spoken, and the Devanagari the voice was given |
 | Map | `js/vo_lines.js` (generated): line as shown → [clip, seconds] |
 | Player | `js/voice.js` (finds and loads clips), played by `js/audio.js`, typed out by the caption in `js/ui.js` |
@@ -54,11 +54,11 @@ A flagged line gets a corrected spoken form if it needs one, and is made again. 
 
 On 2026-11-18 the user recorded all 51 themselves, in one file, read one after another in the order of `docs/VO_LINES_TO_MAKE.txt`, **in a man's voice**, and chose to use it although every other narrator line is the woman teacher ("Use it anyway": the narrator's voice now changes on these lines, sometimes within one screen). `tools/vo_split.py` cut it into one clip per line: the speech recogniser found every line in the recording (402 of their 403 words), each cut is in the quiet between two lines, and the recording was brought up 5 dB, from −21.5 LUFS to the loudness of the other clips (about −16.5), with a limiter so nothing distorts. Their word timings were heard by the recogniser, like every other clip's.
 
-**To give them the one woman's voice later**, once the studio works: `caffeinate -i node tools/vo_studio.mjs vo030 vo031 …` with these ids (`vo030`, `vo031`, `vo032`, `vo035`, `vo052`, `vo054`, `vo071`, `vo126`, `vo128`, `vo134`, `vo150` to `vo152`, `vo316` to `vo353`; given ids, it makes them even though they have clips), then `python3 tools/vo_build.py tools/studio_out/studio.zip`, which replaces these clips. **Another long recording** of several lines goes in the same way: `~/.cache/crown-quest/venv/bin/python tools/vo_split.py recording.mp3 vo030 vo031 …` (the ids in the order they are read; `--check` first, to see that every line is found), then `~/.cache/crown-quest/venv/bin/python tools/vo_build.py tools/split_out/split.zip` (run with the recogniser's Python, so the new clips are timed by ear; the clips wait in `tools/split_out/`, apart from the studio's `tools/studio_out/`).
+**To give them the one woman's voice later**, once the studio works: `caffeinate -i node tools/vo_studio.mjs vo030 vo031 …` with these ids (`vo030`, `vo031`, `vo032`, `vo035`, `vo052`, `vo054`, `vo071`, `vo126`, `vo128`, `vo134`, `vo150` to `vo152`, `vo316` to `vo365`; given ids, it makes them even though they have clips), then `python3 tools/vo_build.py tools/studio_out/studio.zip`, which replaces these clips. **Another long recording** of several lines goes in the same way: `~/.cache/crown-quest/venv/bin/python tools/vo_split.py recording.mp3 vo030 vo031 …` (the ids in the order they are read; `--check` first, to see that every line is found), then `~/.cache/crown-quest/venv/bin/python tools/vo_build.py tools/split_out/split.zip` (run with the recogniser's Python, so the new clips are timed by ear; the clips wait in `tools/split_out/`, apart from the studio's `tools/studio_out/`).
 
-### Still to record
+### 12 more lines, recorded the same way
 
-12 lines the game says were never in the script, so they never had a clip and no list showed them: they came in with the reviews of 2026-11-08 and 2026-11-13 (Level 8's and 9's working, the take-off with the trays, the sort's reworded instruction) and the right-bar-first try of Level 6. They were found on 2026-11-18 (by playing the game through, and by working out every line `js/content.js` can make with the levels' numbers) and added as **vo354** to **vo365**: "Drag the 5 bar to Zippy, then tap Swap.", "The crown and 8 units balance 23 units.", "Trying different values could take a while.", "Drag an 8 bar off each side of the balance.", "Now remove 8 from the other side.", "Drag a 4 bar off each side of the balance.", "Now remove 4 from the other side.", "The two crowns balance 14 units.", "Divide both sides into two equal groups.", "Each crown has a mass of 7 units. So, x = 7.", "Let's check 7." and "Drag each equation into the correct box.". Until they are recorded the device voice reads them. Their spoken forms are in `tools/vo_script.json`; `python3 tools/vo_build.py` lists them.
+12 lines the game says were never in the script, so they never had a clip and no list showed them: they came in with the reviews of 2026-11-08 and 2026-11-13 (Level 8's and 9's working, the take-off with the trays, the sort's reworded instruction) and the right-bar-first try of Level 6. They were found on 2026-11-18 (by playing the game through, and by working out every line `js/content.js` can make with the levels' numbers) and added as **vo354** to **vo365**: "Drag the 5 bar to Zippy, then tap Swap.", "The crown and 8 units balance 23 units.", "Trying different values could take a while.", "Drag an 8 bar off each side of the balance.", "Now remove 8 from the other side.", "Drag a 4 bar off each side of the balance.", "Now remove 4 from the other side.", "The two crowns balance 14 units.", "Divide both sides into two equal groups.", "Each crown has a mass of 7 units. So, x = 7.", "Let's check 7." and "Drag each equation into the correct box.". The user recorded them the same day, in the same voice and the same way (one file, `2 (1).mp3`, read in that order), and `tools/vo_split.py` cut it like the first (it heard 92 of their 94 words; +4.8 dB to the game's loudness). Since then every line of the script has a clip.
 
 What the 51 lines are, and why they changed:
 
@@ -476,16 +476,16 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo351 | Can we find the crown's mass without guessing? | = |  | 3.2 |
 | vo352 | Look to the left of the equal sign. 4x + 3 is the left-hand side. | Look to the left of the equal sign. Four x plus three is the left-hand side. |  | 5.8 |
 | vo353 | Look to the right of the equal sign. 19 is the right-hand side. | Look to the right of the equal sign. Nineteen is the right-hand side. |  | 5.5 |
-| vo354 | Drag the 5 bar to Zippy, then tap Swap. | Drag the five bar to ज़िप्पी, then tap Swap. |  | no clip yet |
-| vo355 | The crown and 8 units balance 23 units. | The crown and eight units balance twenty-three units. |  | no clip yet |
-| vo356 | Trying different values could take a while. | = |  | no clip yet |
-| vo357 | Drag an 8 bar off each side of the balance. | Drag an eight bar off each side of the balance. |  | no clip yet |
-| vo358 | Now remove 8 from the other side. | Now remove eight from the other side. |  | no clip yet |
-| vo359 | Drag a 4 bar off each side of the balance. | Drag a four bar off each side of the balance. |  | no clip yet |
-| vo360 | Now remove 4 from the other side. | Now remove four from the other side. |  | no clip yet |
-| vo361 | The two crowns balance 14 units. | The two crowns balance fourteen units. |  | no clip yet |
-| vo362 | Divide both sides into two equal groups. | = |  | no clip yet |
-| vo363 | Each crown has a mass of 7 units. So, x = 7. | Each crown has a mass of seven units. So, x equals seven. |  | no clip yet |
-| vo364 | Let's check 7. | Let's check seven. |  | no clip yet |
-| vo365 | Drag each equation into the correct box. | = |  | no clip yet |
+| vo354 | Drag the 5 bar to Zippy, then tap Swap. | Drag the five bar to ज़िप्पी, then tap Swap. |  | 4.2 |
+| vo355 | The crown and 8 units balance 23 units. | The crown and eight units balance twenty-three units. |  | 4.3 |
+| vo356 | Trying different values could take a while. | = |  | 2.8 |
+| vo357 | Drag an 8 bar off each side of the balance. | Drag an eight bar off each side of the balance. |  | 4.0 |
+| vo358 | Now remove 8 from the other side. | Now remove eight from the other side. |  | 3.0 |
+| vo359 | Drag a 4 bar off each side of the balance. | Drag a four bar off each side of the balance. |  | 3.8 |
+| vo360 | Now remove 4 from the other side. | Now remove four from the other side. |  | 3.3 |
+| vo361 | The two crowns balance 14 units. | The two crowns balance fourteen units. |  | 3.0 |
+| vo362 | Divide both sides into two equal groups. | = |  | 3.9 |
+| vo363 | Each crown has a mass of 7 units. So, x = 7. | Each crown has a mass of seven units. So, x equals seven. |  | 6.1 |
+| vo364 | Let's check 7. | Let's check seven. |  | 1.2 |
+| vo365 | Drag each equation into the correct box. | = |  | 3.7 |
 <!-- /vo-table -->
