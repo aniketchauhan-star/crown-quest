@@ -8,9 +8,10 @@
   to -20 LUFS (under the voice). It prints each snore's timing: paste the list into `snores` in the
   `audio` section of js/content.js (Grumble's breathing follows each sound: js/world.js, sleep).
 - art/audio/monkey laugh.mp3 -> assets/audio/zippy-win-laugh.mp3: Zippy's laugh when he wins a crown,
-  short (review, 2026-11-13: "reduce the timing of Zippy's laugh"): its run of loud "ha"s, from 0.55 s
-  (after the quiet first ones) to 3.32 s (a gap between two "ha"s), the last two faded out from 2.85 s,
-  2.77 s in all, levelled to -16 LUFS. (It was the first 5.6 s, with the tail of chuckles.)
+  short (reviews of 2026-11-13 and 2026-11-18: "reduce the timing of Zippy's laugh"): its first loud
+  "ha"s, from 0.55 s (after the quiet first ones) to 2.30 s (the clear gap after the eighth "ha"), the
+  last one faded out from 2.10 s, 1.75 s in all, levelled to -16 LUFS. (It was 2.77 s, to 3.32 s, and
+  before that the first 5.6 s, with the tail of chuckles.) Its length is `winLaugh` in js/content.js.
 - art/audio/wood ring.mp3 -> assets/audio/alarm-wood-ring.mp3: the treasure room's alarm when the balance
   tips (a wrong swap, and the intro's "what if" cloud): its one wooden strike, struck twice 0.42 s apart
   (RING! RING!), levelled to -17 LUFS.
@@ -96,7 +97,7 @@ def snores():
 
 
 def laugh():
-    make(SRC / "monkey laugh.mp3", OUT / "zippy-win-laugh.mp3", 0.55, 2.77, -16.0, fade_from=2.85)
+    make(SRC / "monkey laugh.mp3", OUT / "zippy-win-laugh.mp3", 0.55, 1.75, -16.0, fade_from=2.10)
 
 
 def alarm():

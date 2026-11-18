@@ -1765,9 +1765,6 @@ html.reduced-motion .hand-ring.b {
   text-shadow: var(--halo);
   z-index: 5;
 }
-.cp-eq {
-  display: none;
-}
 .cp-row {
   display: flex;
   justify-content: center;
@@ -1831,42 +1828,6 @@ html.reduced-motion .hand-ring.b {
   border-style: solid;
   cursor: default;
 }
-.cp-compare {
-  margin-top: 6px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-.cp-cmp-row {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 28px;
-  font: 800 56px/1 var(--font);
-}
-.cp-verdict {
-  margin-top: 2px;
-  font: 800 36px/1.1 var(--font);
-}
-.cp-compare.ok .cp-verdict {
-  color: var(--ok);
-}
-.cp-compare.no .cp-verdict {
-  color: var(--no);
-}
-.cp-compare .cv.lhs {
-  color: var(--lhs);
-}
-.cp-compare .cv.rhs {
-  color: var(--rhs);
-}
-.csym.ok {
-  color: var(--ok);
-}
-.csym.no {
-  color: var(--no);
-}
 .cp-picker {
   position: absolute;
   transform: translate(-50%, -100%);
@@ -1918,13 +1879,13 @@ html.reduced-motion .hand-ring.b {
     filter: drop-shadow(0 0 16px rgba(255, 216, 77, 0.95)) drop-shadow(0 5px 3px rgba(0, 0, 0, 0.3));
   }
 }
-.num-chip {
-  width: 100px;
-  height: 100px;
-  background: url(assets/elements/tile.webp) center / 100% 100% no-repeat;
-  font: 800 56px/104px var(--font);
-  text-align: center;
-  color: #5a3500;
+/* the value tried for x, flying out of the crown into "Try x = …": the number itself, gold, as it will
+   stand there (no tile round it: review, 2026-11-18) */
+.num-fly {
+  font: 800 82px/1 var(--font);
+  color: #ffd84d;
+  text-shadow: 0 0 14px rgba(255, 216, 77, 0.75), 0 0 30px rgba(255, 190, 40, 0.45);
+  white-space: nowrap;
   z-index: 70;
 }
 .subbed {
@@ -2291,15 +2252,55 @@ html.reduced-motion .hand-ring.b {
   transition: color 0.5s ease, opacity 0.5s ease, text-shadow 0.5s ease;
 }
 /* Trying a value (review, 2026-11-13): "Try x = 4" under the equation, in gold, clearly a try; each side
-   worked out under it, LHS then RHS, their first = signs one under the other (name | = | the rest); the
-   side being said lit in its colour, the one before back to plain, in full view ("Keep the previous
-   calculation visible"); what it means, smaller, under the comparison, the try lit with it (red: not a
-   solution; green: the solution). */
+   worked out under it, LHS then RHS, the side being said lit in its colour, the one before back to
+   plain, in full view ("Keep the previous calculation visible"). All three on one grid, name | = | the
+   rest, every = under the one above (review, 2026-11-18: "Check the alignment of text in x = 8"). At the
+   end the working fades away (gone), "Try" with it (sure), and x = 4 is left, lit red (not a solution)
+   or green (the solution), its name under its = (review, 2026-11-18: "Fade the calculations and change
+   'Try x = 6' to a clear x = 6"). */
 .notebook .nb-row.try {
-  margin: 0 0 2px;
-  font-size: 62px;
-  font-style: italic;
   color: #ffd84d;
+}
+.notebook .nb-row.try .tw {
+  display: inline-block;
+  margin-right: 0.12em;
+  font-size: 0.8em;
+  font-style: italic;
+  transition: opacity 0.5s ease;
+}
+.notebook .nb-row.try.sure .tw {
+  opacity: 0;
+}
+.notebook .nb-row.try .se {
+  position: relative;
+}
+.notebook .nb-row.gone {
+  opacity: 0;
+}
+.notebook .nb-name {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  translate: -50% 0;
+  margin-top: 22px;
+  padding: 8px 22px 2px;
+  border-radius: 18px;
+  font: 800 40px/1.1 var(--font);
+  white-space: nowrap;
+  text-shadow: none;
+}
+.notebook .nb-name:empty {
+  display: none;
+}
+.notebook .nb-row .nb-name.ok {
+  color: #07301d;
+  background: #74f0ac;
+  text-shadow: none;
+}
+.notebook .nb-row .nb-name.no {
+  color: #3d0c06;
+  background: #ff8f80;
+  text-shadow: none;
 }
 .notebook .nb-row.side {
   display: grid;
@@ -2328,38 +2329,8 @@ html.reduced-motion .hand-ring.b {
   color: #74f0ac;
   text-shadow: 0 0 16px rgba(116, 240, 172, 0.7);
 }
-.notebook .nb-row.verdict {
-  font-size: 54px;
-}
-.notebook .nb-row.big {
-  font-size: 104px;
-  line-height: 1.15;
-}
-.notebook .nb-row.no {
-  color: #ff8f80;
-}
-.notebook .nb-row.ok,
 .notebook .nb-title {
   color: #74f0ac;
-}
-/* the solution, x = 5, when the voice says it: big and green in a green outline, its name under it (a
-   little smaller since "Try x = 5" stands over the working: 2026-11-13) */
-.notebook .nb-row.sol {
-  margin-top: 8px;
-  padding: 2px 28px 0;
-  font-size: 88px;
-  line-height: 1.2;
-  color: #74f0ac;
-  border: 6px dashed #74f0ac;
-  border-radius: 26px;
-}
-.notebook .nb-row.sol-name {
-  margin-top: 8px;
-  padding: 8px 22px 2px;
-  font: 800 40px/1.1 var(--font);
-  color: #07301d;
-  background: #74f0ac;
-  border-radius: 18px;
 }
 /* x lit on the formula screen: the x itself turns gold and glows softly, breathing like its crown on
    the balance, which glows the same gold (review, 2026-11-13: "Highlight x and the crown together with
@@ -2597,9 +2568,6 @@ html.reduced-motion .hand-ring.b {
 .eq-board,
 .eq-strip,
 .cp-side,
-.cv,
-.csym,
-.cp-verdict,
 .eb-row,
 .same,
 .hot {
@@ -2611,12 +2579,10 @@ html.reduced-motion .hand-ring.b {
   color: #fffaf0;
   text-shadow: none;
 }
-:is(body.lit, body.checking, body.solving) .cp-side.lhs,
-:is(body.lit, body.checking, body.solving) .cp-compare .cv.lhs {
+:is(body.lit, body.checking, body.solving) .cp-side.lhs {
   color: #5ee6dc;
 }
-:is(body.lit, body.checking, body.solving) .cp-side.rhs,
-:is(body.lit, body.checking, body.solving) .cp-compare .cv.rhs {
+:is(body.lit, body.checking, body.solving) .cp-side.rhs {
   color: #ffc35c;
 }
 :is(body.lit, body.checking, body.solving) .cp-side.lhs .blank {
@@ -2625,15 +2591,9 @@ html.reduced-motion .hand-ring.b {
 :is(body.lit, body.checking, body.solving) .cp-side.rhs .blank {
   color: var(--rhs);
 }
-:is(body.lit, body.checking, body.solving) .csym.ok,
-:is(body.lit, body.checking, body.solving) .cp-compare.ok .cp-verdict,
 :is(body.lit, body.checking, body.solving) .eb-row.final,
 :is(body.lit, body.checking, body.solving) .eq-strip .es.b {
   color: #74f0ac;
-}
-:is(body.lit, body.checking, body.solving) .csym.no,
-:is(body.lit, body.checking, body.solving) .cp-compare.no .cp-verdict {
-  color: #ff8f80;
 }
 :is(body.lit, body.checking, body.solving) .same {
   color: #8fc2ff;
@@ -2647,82 +2607,111 @@ html.reduced-motion .hand-ring.b {
 }
 /* The check, like the formula screen (body.checking: CQ.checkPanel.open in js/ui.js): the balance
    stands at the left, bright, and the check is worked in the room at its right, big, one row under the
-   other: LHS, then RHS, then the two compared. */
+   other: the equation, Try x = 4, LHS, then RHS. */
 body.checking .check-panel {
   left: 1460px;
   top: 262px;
   width: 820px;
 }
-/* the equation itself, kept in sight at the top, and under it x = 4 (review, 2026-11-08) */
-body.checking .cp-eq {
-  display: block;
-  margin-bottom: 30px;
-  font: 800 76px/1.1 var(--font);
-  color: #fffaf0;
-}
-body.checking .cp-x {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 18px;
-  margin-bottom: 36px;
-  font: 800 82px/1 var(--font);
-  color: #fffaf0;
-}
-/* "Try x = 4": the value tried for x, clearly a try (review, 2026-11-13); lit with what it turns out to
-   be (red: not a solution; green: the solution), as that is written in */
-body.checking .cp-x .try {
-  margin-right: 4px;
-  font-size: 0.8em;
-  font-style: italic;
-  color: #ffd84d;
-}
-body.checking .cp-x {
-  transition: color 0.5s ease, text-shadow 0.5s ease;
-}
-body.checking .cp-x.lit-no,
-body.checking .cp-x.lit-no .try {
-  color: #ff8f80;
-  text-shadow: 0 0 18px rgba(255, 143, 128, 0.7);
-}
-body.checking .cp-x.lit-ok,
-body.checking .cp-x.lit-ok .try {
-  color: #74f0ac;
-  text-shadow: 0 0 18px rgba(116, 240, 172, 0.65);
-}
-body.checking .cp-x.lit-no .xslot {
-  box-shadow: 0 0 22px rgba(255, 143, 128, 0.9);
-}
-body.checking .cp-x.lit-ok .xslot {
-  box-shadow: 0 0 22px rgba(116, 240, 172, 0.85);
-}
-/* the two sides, one under the other: name | = | the rest, their first = signs lined up, so the right
-   side's box stands under the 4 (review, 2026-11-13; they were lined up on their second =) */
+/* One grid for all its rows (review, 2026-11-18: "Check the alignment of text in x = 8 for all
+   equations"; the equation and "Try x = 8" stood centred by themselves): each row's left part ends at
+   its =, every = under the one above, the rest starts after it, and each row's parts stand on one
+   baseline (the x of the maths face, the words and the numbers alike). The right side's box still
+   stands under the 4 (review, 2026-11-13). */
 body.checking .cp-row {
   display: grid;
   grid-template-columns: auto auto auto;
   justify-content: center;
-  align-items: center;
+  align-items: baseline;
   column-gap: 18px;
-  row-gap: 36px;
-  font-size: 82px;
+  row-gap: 34px;
+  font: 800 82px/1.1 var(--font);
 }
 body.checking .cp-side {
   display: contents;
 }
 body.checking .cp-side .lab {
   justify-self: end;
+  white-space: nowrap;
+  padding-top: 0;
+  font-size: inherit; /* (the row's own size: "Try x" as big as its = 4) */
+}
+body.checking .cp-side.lhs .lab,
+body.checking .cp-side.rhs .lab {
   font-size: 58px;
+}
+body.checking .cp-side .e1 {
+  position: relative; /* the name under x = 4 hangs from it */
 }
 body.checking .cp-side .rest,
 body.checking .cp-side .ex,
 body.checking .cp-side .eqv {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 16px;
 }
 body.checking .cp-side .rest {
   justify-self: start;
+  white-space: nowrap;
+}
+/* the equation itself, kept in sight at the top (review, 2026-11-08) */
+body.checking .cp-side.eqn > * {
+  font-size: 76px;
+  color: #fffaf0;
+}
+/* "Try x = 4": the value tried for x, clearly a try (review, 2026-11-13), all in gold, the value plain
+   with no box round it (review, 2026-11-18: "4 is not required to put in a box"). At the end "Try" fades
+   and x = 4 is left, lit with what it turns out to be (green: the solution; red: not a solution). */
+body.checking .cp-side.try > * {
+  color: #ffd84d;
+  transition: color 0.5s ease, text-shadow 0.5s ease, opacity 0.6s ease;
+}
+body.checking .cp-side.try .tw {
+  display: inline-block;
+  margin-right: 0.1em;
+  font-size: 0.8em;
+  font-style: italic;
+  transition: opacity 0.5s ease;
+}
+body.checking .cp-side.try.sure .tw {
+  opacity: 0;
+}
+body.checking .cp-side.try .xval {
+  display: inline-block;
+}
+body.checking .cp-side.try.lit-ok > * {
+  color: #74f0ac;
+  text-shadow: 0 0 18px rgba(116, 240, 172, 0.65);
+}
+body.checking .cp-side.try.lit-no > * {
+  color: #ff8f80;
+  text-shadow: 0 0 18px rgba(255, 143, 128, 0.7);
+}
+/* its name under it, written in: Solution (green) or Not a solution (red), like Level 4's */
+body.checking .cp-name {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  translate: -50% 0;
+  margin-top: 26px;
+  padding: 8px 24px 2px;
+  border-radius: 18px;
+  font: 800 44px/1.1 var(--font);
+  white-space: nowrap;
+  text-shadow: none;
+}
+body.checking .cp-name:empty {
+  display: none;
+}
+body.checking .cp-side.try .cp-name.ok {
+  color: #07301d;
+  background: #74f0ac;
+  text-shadow: none;
+}
+body.checking .cp-side.try .cp-name.no {
+  color: #3d0c06;
+  background: #ff8f80;
+  text-shadow: none;
 }
 /* as each side's value is said, it glows softly in its colour; the glow of the side before fades, the
    row staying in full view (review, 2026-11-13: "Fade the previous highlight") */
@@ -2735,10 +2724,14 @@ body.checking .cp-side .blank {
 body.checking .cp-side.faded > * {
   opacity: 0.45;
 }
+/* the working done with, on the ending's second screen ("Fade the calculations"): both sides fade away */
+body.checking .cp-side.gone > * {
+  opacity: 0;
+}
 body.checking .cp-side.lit > * {
   text-shadow: 0 0 16px currentColor;
 }
-body.checking .cp-side.lit .blank {
+body.checking .cp-side.lit .blank:not(.melt) {
   box-shadow: 0 0 20px currentColor;
 }
 body.checking .check-panel .blank {
@@ -2746,20 +2739,33 @@ body.checking .check-panel .blank {
   height: 116px;
   font-size: 78px;
 }
+/* A right number's box melts away (melt), then the number stands in its row as plain text in its side's
+   colour (plain), what stands beside it gliding over (CQ.flip) (review, 2026-11-18: the picture's
+   "LHS = 6 + 3 = 9, RHS = 9", no boxes round the numbers of the working). */
+#stage .check-panel .cp-side .blank.melt {
+  color: inherit;
+  border-color: transparent;
+  background-color: transparent;
+  box-shadow: none;
+  transition: border-color 0.32s ease, background-color 0.32s ease, box-shadow 0.32s ease, color 0.32s ease, text-shadow 0.5s ease, opacity 0.6s ease;
+}
+#stage .check-panel .cp-side .blank.plain {
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: none;
+  font-size: inherit;
+  line-height: inherit;
+}
+/* x in the left side, and the value put in for it: plain like the rest of the row */
 body.checking .check-panel .xslot {
-  min-width: 112px;
-  height: 112px;
-}
-body.checking .cp-compare {
-  margin-top: 40px;
-}
-body.checking .cp-cmp-row {
-  gap: 44px;
-  font-size: 124px;
-}
-body.checking .cp-verdict {
-  margin-top: 10px;
-  font-size: 50px;
+  display: inline;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
 }
 /* Levels 8–9's working, like the formula screen (body.solving: CQ.eqBoard.open in js/ui.js): the
    balance stands at the left, bright (with its labels: x, ÷ 2), and the steps are written at its
@@ -3254,92 +3260,81 @@ body.solving .eb-row.final {
   width: 1480px;
   height: 888px;
 }
-.pr-body {
-  position: absolute;
-  left: 22px;
-  right: 22px;
-  top: 24px;
-  bottom: 18px;
-  display: flex;
-  gap: 24px;
-}
-/* the problem and the keypad side by side, together in the middle */
-.pr-body.with-pad {
-  justify-content: center;
-  gap: 70px;
-}
-.pr-body.with-pad .pr-main {
-  flex: 0 0 660px;
-}
+/* the working and the number tiles under it, together in the middle of the board: as rows come and go,
+   what is there glides to stay in the middle (js/activities.js, activityPractice) */
 .pr-main {
-  position: relative;
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  inset: 24px 22px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: 52px;
 }
-.pr-pad {
-  flex: 0 0 auto;
-  align-self: center;
+/* The working, one row under another (review, 2026-11-18: "All steps will be visible one after the
+   other"): each row's left side ends at its =, every = under the equation's, each row on one baseline. */
+.pr-work {
   display: grid;
-  grid-template-columns: repeat(5, 100px);
-  grid-auto-rows: 100px;
-  gap: 14px;
-  padding: 22px;
+  grid-template-columns: auto auto auto;
+  align-items: baseline;
+  column-gap: 26px;
+  row-gap: 12px;
+  font: 800 80px/1.2 var(--font);
+  color: #fffaf0;
 }
-.key {
-  border: none;
-  padding: 8px 0 0;
-  background: url(assets/elements/tile.webp) center / 100% 100% no-repeat;
-  font: 800 50px/1 var(--font);
-  color: #5a3500;
-  cursor: pointer;
-  filter: drop-shadow(0 5px 3px rgba(0, 0, 0, 0.3));
+.pr-row {
+  display: contents;
 }
-.key:active {
-  transform: translateY(4px);
-}
-.key.del {
-  font-size: 42px;
-}
-.key.check {
-  grid-column: span 2;
-  background-image: url(assets/elements/pillGreen.webp);
-  color: #fff;
-  font-size: 40px;
-  text-shadow: 0 3px 0 #0c3d29;
-}
-.key.check:disabled {
-  opacity: 0.5;
-  filter: grayscale(0.7);
-  cursor: default;
-  transform: none;
-}
-.pr-find {
-  font: 800 46px/1 var(--font);
-  color: var(--lhs);
-}
-.pr-hint {
-  font: 700 36px/1 var(--font);
-  color: #7a5600;
-  background: #fff1c2;
-  border: 3px solid #e0b84a;
-  border-radius: 14px;
-  padding: 10px 18px 6px;
-}
-.pr-eq {
-  font: 800 120px/1.1 var(--font);
-  color: var(--ink);
+.pr-row > .pl {
+  justify-self: end;
   white-space: nowrap;
 }
-.pr-eq.sm {
-  font-size: 84px;
+.pr-row > .pr {
+  justify-self: start;
+  white-space: nowrap;
 }
-.pr-body.with-pad .pr-eq {
-  font-size: 100px; /* room for the keypad beside it */
+.pr-row > * {
+  transition: color 0.5s ease, text-shadow 0.5s ease;
+}
+/* the equation big by itself before the first one ("Now, use what you've learned to solve an
+   equation."), then at its place at the top */
+.pr-row.hero > * {
+  font-size: 124px;
+}
+/* x, found: green */
+.pr-row.final > * {
+  color: #74f0ac;
+  text-shadow: 0 0 18px rgba(116, 240, 172, 0.5);
+}
+/* The answer box, x = □: dashed, light on the dark board, a number tile goes into it (js/tiles.js lights
+   it up, .nt-*: gold while a tile is over it, green when right, red when wrong); its ? faint, a number
+   in it bright. Once the answer is in, its box melts away (melt) and the number stands in the row as
+   plain text (plain), what stands beside it gliding over (review, 2026-11-18: no boxes round the numbers
+   of the working). */
+.pr-box {
+  display: inline-block;
+  min-width: 156px;
+  padding: 0 20px;
+  border: 5px dashed rgba(255, 250, 240, 0.8);
+  border-radius: 20px;
+  background-color: rgba(255, 250, 240, 0.07);
+  color: #fffaf0;
+  line-height: 1.15;
+  text-align: center;
+}
+.pr-box.nt-empty {
+  color: rgba(255, 250, 240, 0.55);
+}
+.pr-box.melt {
+  border-color: transparent;
+  background-color: transparent;
+  color: inherit;
+  transition: border-color 0.32s ease, background-color 0.32s ease, color 0.32s ease;
+}
+.pr-box.plain {
+  min-width: 0;
+  padding: 0;
+  border: none;
 }
 .pr-done {
   font: 800 76px/1.1 var(--font);
@@ -3362,140 +3357,6 @@ body.solving .eb-row.final {
   }
   to {
     transform: translateY(-14px);
-  }
-}
-.pr-ans {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  font: 800 88px/1 var(--font);
-  color: var(--ink);
-  white-space: nowrap;
-}
-.pr-input {
-  display: inline-grid;
-  place-items: center;
-  min-width: 200px;
-  height: 116px;
-  padding: 10px 24px 0;
-  border: 5px solid var(--ink);
-  border-radius: 22px;
-  background: #fff;
-  color: var(--ink); /* the typed number shows dark in its white box (the row around it is bright) */
-  font-style: normal;
-}
-.pr-input.empty {
-  border-style: dashed;
-  color: rgba(27, 58, 68, 0.35);
-  animation: blankPulse 0.9s ease-in-out infinite alternate;
-}
-.pr-input.ok {
-  border-color: var(--ok);
-  background: #e7f6ee;
-  color: var(--ok);
-}
-.pr-input.no {
-  border-color: var(--no);
-  background: #fdecea;
-  color: var(--no);
-}
-.pr-x {
-  font: 800 62px/1 var(--font);
-  padding: 12px 26px 6px;
-  border-radius: 18px;
-  background: #e8f1ff;
-  color: var(--same);
-  white-space: nowrap;
-}
-.pr-x.ok {
-  background: #e7f6ee;
-  color: var(--ok);
-}
-.pr-x.no {
-  background: #fdecea;
-  color: var(--no);
-}
-.pr-sides {
-  display: flex;
-  gap: 30px;
-}
-.pr-side {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 22px 8px;
-  border-radius: 20px;
-  font: 800 56px/1.1 var(--font);
-  white-space: nowrap;
-}
-.pr-side.lhs {
-  color: var(--lhs);
-  background: rgba(23, 112, 112, 0.1);
-  border: 4px solid rgba(23, 112, 112, 0.4);
-}
-.pr-side.rhs {
-  color: var(--rhs);
-  background: rgba(185, 122, 22, 0.1);
-  border: 4px solid rgba(185, 122, 22, 0.45);
-}
-.pr-banner {
-  padding: 14px 28px 8px;
-  border-radius: 20px;
-  font: 800 48px/1.1 var(--font);
-  text-align: center;
-}
-.pr-banner.ok {
-  color: #fff;
-  background: var(--ok);
-}
-.pr-banner.no {
-  color: var(--no);
-  background: rgba(200, 71, 59, 0.12);
-  font-size: 72px;
-}
-.pr-note {
-  font: 700 40px/1.2 var(--font);
-  color: var(--ink);
-  text-align: center;
-}
-.pr-note.blue {
-  color: var(--same);
-  background: #e8f1ff;
-  border-radius: 16px;
-  padding: 12px 22px 8px;
-}
-.pr-line {
-  font: 800 70px/1.15 var(--font);
-  color: var(--ink);
-  white-space: nowrap;
-}
-.pr-ask {
-  font: 800 58px/1.1 var(--font);
-  color: var(--ink);
-}
-.pr-choices {
-  display: flex;
-  gap: 30px;
-}
-.btn-wood.pr-choice,
-.btn-wood.pr-act {
-  font-size: 44px;
-}
-.btn-wood.pr-choice.ok {
-  filter: drop-shadow(0 0 16px rgba(43, 182, 115, 0.95)) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
-}
-.btn-wood.pr-choice.no {
-  opacity: 0.45;
-}
-.btn-wood.pr-act.glow {
-  animation: actGlow 1s ease-in-out infinite alternate;
-}
-@keyframes actGlow {
-  from {
-    filter: drop-shadow(0 0 0 rgba(255, 216, 77, 0.95)) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
-  }
-  to {
-    filter: drop-shadow(0 0 18px rgba(255, 216, 77, 0.95)) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
   }
 }
 
@@ -4170,20 +4031,14 @@ html.lite #title .t-drift {
    and keys keep their own light faces. */
 .activity .board-title,
 .activity .label-eq,
-.activity .rc-eq,
-.activity .pr-eq,
-.activity .pr-ans,
-.activity .pr-line,
-.activity .pr-ask,
-.activity .pr-note:not(.blue) {
+.activity .rc-eq {
   color: #fffaf0;
   text-shadow: none;
 }
 .activity .tok.glow-var {
   color: #2b2100; /* on its gold highlight */
 }
-.activity .tok.glow-lhs,
-.activity .pr-find {
+.activity .tok.glow-lhs {
   color: #5ee6dc;
 }
 .activity .tok.glow-rhs {
@@ -4489,30 +4344,6 @@ html.lite #title .t-drift {
 .activity .pr-done {
   color: #74f0ac;
 }
-.activity .pr-side.lhs {
-  color: #5ee6dc;
-  background: rgba(94, 230, 220, 0.12);
-  border-color: rgba(94, 230, 220, 0.55);
-}
-.activity .pr-side.rhs {
-  color: #ffc35c;
-  background: rgba(255, 195, 92, 0.12);
-  border-color: rgba(255, 195, 92, 0.55);
-}
-/* the number in its white box is written in its side's dark colour, the box's edge keeps the bright one
-   (the bright teal and orange of the row hardly showed on the white: 2026-11-17) */
-.activity .pr-side.lhs .blank {
-  color: var(--lhs);
-  border-color: #5ee6dc;
-}
-.activity .pr-side.rhs .blank {
-  color: #a35d00;
-  border-color: #ffc35c;
-}
-.activity .pr-banner.no {
-  color: #ff8f80;
-  background: rgba(255, 143, 128, 0.14);
-}
 .activity .same {
   color: #8fc0ff;
   background: rgba(143, 192, 255, 0.16);
@@ -4690,17 +4521,6 @@ html.reduced-motion .bar-slot.looked .gbar {
   color: var(--ok);
   box-shadow: 0 0 0 6px rgba(63, 210, 126, 0.55), 0 0 22px rgba(63, 210, 126, 0.6);
 }
-/* practice: the two choices and the one-button steps */
-.btn-wood.pr-choice,
-.btn-wood.pr-act {
-  transition: transform 0.12s, opacity 0.3s ease, filter 0.3s ease;
-}
-.btn-wood.pr-choice.is-wrong {
-  filter: drop-shadow(0 0 16px rgba(255, 90, 80, 0.95)) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
-}
-.btn-wood.pr-act.is-right {
-  filter: drop-shadow(0 0 16px rgba(43, 182, 115, 0.95)) drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
-}
 /* the label activity: a wrong label red for a beat as it shakes its head; a right one's box rings green */
 .activity.label-act .label-chip {
   transition: border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
@@ -4747,4 +4567,121 @@ html.reduced-motion *::after {
 }
 html.reduced-motion .thought.tip .ms-alarm {
   animation: none !important; /* (the alarm in the "what if" cloud: still, not ringing) */
+}
+
+/* ---------------------------------------------------------------- number tiles (js/tiles.js)
+   The practice board's answer control, in place of the keypad (2026-11-18): golden number tiles in a
+   row, dragged into the answer box (tapped, or Enter, goes in too). No frame round the row; a faint
+   tile stays in each tile's place while it is away. The box is the board's own (bright on the dark):
+   only its border, glow and colours change here. Motion: translate, scale and opacity only. */
+.nt-tray {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+}
+.nt-slot {
+  position: relative;
+  width: 124px;
+  height: 123px;
+}
+.nt-slot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url(assets/elements/tile.webp) center / 100% 100% no-repeat;
+  opacity: 0.14;
+  filter: grayscale(0.7);
+}
+.nt-tile {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding-top: 8px;
+  background: url(assets/elements/tile.webp) center / 100% 100% no-repeat;
+  font: 800 58px/1 var(--font);
+  color: #5a3500;
+  text-shadow: none;
+  white-space: nowrap;
+  filter: drop-shadow(0 6px 4px rgba(0, 0, 0, 0.35));
+  cursor: default;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: scale 0.15s ease-out, opacity 0.3s ease;
+  z-index: 1;
+}
+/* the grab hand only while the row takes a tile */
+.nt-tray.nt-open .nt-tile:not(.nt-struck) {
+  cursor: grab;
+}
+.nt-tile:focus-visible {
+  outline: 4px solid #ffd84d;
+  outline-offset: 6px;
+  border-radius: 26px;
+}
+/* held, or gliding into the box: a little bigger, over everything, its shadow further down */
+.nt-tile.nt-lifted {
+  cursor: grabbing;
+  scale: 1.1;
+  z-index: 5;
+  filter: drop-shadow(0 16px 14px rgba(0, 0, 0, 0.45));
+}
+/* in the box: the box shows its number */
+.nt-tile.nt-in {
+  opacity: 0;
+  pointer-events: none;
+  transition: none;
+}
+/* tried and wrong: greyed, its number red, and it can't be picked again */
+.nt-tile.nt-struck {
+  color: var(--no);
+  opacity: 0.55;
+  filter: saturate(0.2) brightness(0.85) drop-shadow(0 4px 3px rgba(0, 0, 0, 0.3));
+  cursor: default;
+}
+/* the answer is in: the others step back */
+.nt-tile.nt-spent {
+  opacity: 0.35;
+  cursor: default;
+}
+.nt-tile.nt-glow {
+  animation: tileGlow 0.8s ease-in-out infinite alternate;
+}
+/* the faint tile the hand carries when it shows how (blank, so it gives nothing away) */
+.hand-carry .nt-tile.nt-carried {
+  inset: auto;
+  left: 0;
+  top: 0;
+  width: 124px;
+  height: 123px;
+  transform: translate(-50%, -50%);
+  opacity: 0.72;
+  cursor: default;
+}
+/* the answer box: it breathes while it waits, and lights up gold while a tile is held over it */
+.nt-drop {
+  transition: scale 0.15s ease-out, border-color 0.2s ease, background-color 0.2s ease, color 0.3s ease;
+}
+.nt-drop.nt-empty {
+  animation: blankPulse 0.9s ease-in-out infinite alternate;
+}
+.nt-drop.nt-hover {
+  scale: 1.08;
+  border-style: solid;
+  border-color: #ffd84d;
+  background-color: rgba(255, 216, 77, 0.16);
+}
+.nt-drop.nt-ok {
+  border-style: solid;
+  border-color: #3fd27e;
+  color: #74f0ac;
+  background-color: rgba(63, 210, 126, 0.14);
+}
+.nt-drop.nt-no {
+  border-style: solid;
+  border-color: #ff8f80;
+  color: #ff8f80;
+  background-color: rgba(255, 143, 128, 0.14);
 }
