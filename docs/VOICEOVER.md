@@ -4,7 +4,7 @@ Every line the game shows in its caption bar, and every line Zippy says in his s
 
 | | |
 |---|---|
-| Clips | `assets/vo/vo001.ogg` … one file per line, Ogg Opus, 24 kbps, mono: 332 clips, 33.7 minutes, 6.2 MB, every line of the script. On 2026-11-13 every clip was re-encoded from 32 to 24 kbps (speech stays clear; the folder had to be smaller), and the 33 clips of lines the game no longer says were removed with their script entries. |
+| Clips | `assets/vo/vo001.ogg` … one file per line, Ogg Opus, 24 kbps, mono: 348 clips for the script's 365 lines, 35.1 minutes, 6.6 MB (the 17 lines without a clip wait for a recording: "The review of 2026-11-18", below). On 2026-11-13 every clip was re-encoded from 32 to 24 kbps (speech stays clear; the folder had to be smaller), and the 33 clips of lines the game no longer says were removed with their script entries. |
 | Script | `tools/vo_script.json`: each line as shown, as spoken, and the Devanagari the voice was given |
 | Map | `js/vo_lines.js` (generated): line as shown → [clip, seconds] |
 | Player | `js/voice.js` (finds and loads clips), played by `js/audio.js`, typed out by the caption in `js/ui.js` |
@@ -59,6 +59,14 @@ On 2026-11-18 the user recorded all 51 themselves, in one file, read one after a
 ### 12 more lines, recorded the same way
 
 12 lines the game says were never in the script, so they never had a clip and no list showed them: they came in with the reviews of 2026-11-08 and 2026-11-13 (Level 8's and 9's working, the take-off with the trays, the sort's reworded instruction) and the right-bar-first try of Level 6. They were found on 2026-11-18 (by playing the game through, and by working out every line `js/content.js` can make with the levels' numbers) and added as **vo354** to **vo365**: "Drag the 5 bar to Zippy, then tap Swap.", "The crown and 8 units balance 23 units.", "Trying different values could take a while.", "Drag an 8 bar off each side of the balance.", "Now remove 8 from the other side.", "Drag a 4 bar off each side of the balance.", "Now remove 4 from the other side.", "The two crowns balance 14 units.", "Divide both sides into two equal groups.", "Each crown has a mass of 7 units. So, x = 7.", "Let's check 7." and "Drag each equation into the correct box.". The user recorded them the same day, in the same voice and the same way (one file, `2 (1).mp3`, read in that order), and `tools/vo_split.py` cut it like the first (it heard 92 of their 94 words; +4.8 dB to the game's loudness). Since then every line of the script has a clip.
+
+### The review of 2026-11-18
+
+The review of 13 screenshots changed the check's ending and the practice screen (README, "The check" and "Practice"), which brought 34 new lines (**vo366** to **vo399**):
+
+- **17 made from the user's own recordings, with no new recording** (**vo383** to **vo399**). Each is the opening sentence, word for word, of a line already recorded: "Not quite." (from vo184 "Not quite. Try the other one."), the eight steps practice now says by themselves, such as "Subtract 6 from both sides." (from vo186 "Subtract 6 from both sides. What is 17 − 6?"), and the eight answers it says after a second wrong try, such as "17 − 6 = 11." (from vo188 "17 − 6 = 11. Type 11."). `tools/vo_cut.py` cuts them: the source line's words are timed, so the cut goes in the pause before its next sentence (found by its sound), with a short fade; their `"from"` in `tools/vo_script.json` says which recording each comes from. Then `~/.cache/crown-quest/venv/bin/python tools/vo_build.py tools/split_out/cut.zip`, as for any new clips.
+- **17 still to record** (**vo366** to **vo382**), new words, read by the device voice meanwhile: the check's two endings ("Both sides have the same value. The balance is level!" and "The two sides have different values. The balance tips!"), what the value tried is ("So, x = 6 is the solution.", "So, x = 4 is not a solution.", one line per value a child can try: 6, 7, 8 and 15; 4, 5, 8, 9, 10, 12, 23 and 31), and practice's "Now, use what you've learned to solve an equation.", "Find the value of x." and "Not quite! Let's do it together.". `docs/VO_LINES_TO_MAKE.txt` lists them first, in the order to read them; one recording of all of them goes in with `tools/vo_split.py` as above.
+- **No longer said** (their clips are still in `assets/vo/`, 169 clips, 4.4 MB): the old practice lines (the typed answer's "The left side equals …, so … is not a solution. Let's find x step by step." for every number, "What undoes adding 6?", "Type your answer on the keypad, then tap Check.", the hints with "Type …", the check in the original equation), the check's old one-screen endings ("Both sides equal 9. So, 6 is the solution. Zippy can use the 6-unit bar!", "They're different, so 4 is not a solution." …) and older lines that were already unused. Removing their entries from `tools/vo_script.json` and running `tools/vo_build.py` deletes their clips.
 
 What the 51 lines are, and why they changed:
 
@@ -141,9 +149,9 @@ So that whatever a line names comes in on screen as the voice says it ("when the
 - **Loading.** On a website, after Play, the game quietly downloads every clip one at a time, in the order they are heard. Opened straight from the folder, the files are already at hand.
 - **Address options.** `?vo=0` turns the recordings off (the device voice reads every line); `?vospeed=2` plays them at double speed (0.5 to 4), handy for checking lines quickly.
 
-## Practice: the wrong-answer line
+## Practice's lines
 
-When a child's practice answer is wrong, the line repeats the number they typed: "The left side equals 14, and the right side equals 17. They're different, so 8 is not a solution. Let's find x step by step." Any number can be typed, so not every one can have a clip. Clips exist for every whole number up to 6 away from the right answer, and for the usual mistakes (for x + 6 = 17, also 23; for 3x + 5 = 26, 21 and 31; for x − 7 = 12, 5, 7 and 12; for x ÷ 4 = 6, 2, 4, 6 and 10; for 2x + 7 = 1, 4, 6 and 8; for 3(x + 2) = 21, 19 and 21). Any other number is read by the device voice. To add one, add its line to `tools/vo_script.json` (copy a neighbour and change the numbers) and make it as below.
+Since 2026-11-18 practice says only fixed lines, so every one of them can have a clip: "Now, use what you've learned to solve an equation." (before the first equation), "Find the value of x." (each equation), "Not quite! Let's do it together." (a wrong first answer), each step ("Subtract 5 from both sides.", "Divide both sides by 3." …), "Not quite." (a wrong step) and, after a second wrong step, its answer ("26 − 5 = 21."). The child picks x from number tiles, so no answer repeats a number the child made up; a right answer is not followed by any line. (Until then a wrong typed answer was repeated back, "The left side equals 14, and the right side equals 17. They're different, so 8 is not a solution. Let's find x step by step.", with clips for the numbers near the right one.)
 
 ## Remaking a line
 
@@ -487,4 +495,38 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo363 | Each crown has a mass of 7 units. So, x = 7. | Each crown has a mass of seven units. So, x equals seven. |  | 6.1 |
 | vo364 | Let's check 7. | Let's check seven. |  | 1.2 |
 | vo365 | Drag each equation into the correct box. | = |  | 3.7 |
+| vo366 | Both sides have the same value. The balance is level! | = |  | no clip yet |
+| vo367 | The two sides have different values. The balance tips! | = |  | no clip yet |
+| vo368 | So, x = 6 is the solution. | So, x equals six is the solution. |  | no clip yet |
+| vo369 | So, x = 7 is the solution. | So, x equals seven is the solution. |  | no clip yet |
+| vo370 | So, x = 8 is the solution. | So, x equals eight is the solution. |  | no clip yet |
+| vo371 | So, x = 15 is the solution. | So, x equals fifteen is the solution. |  | no clip yet |
+| vo372 | So, x = 4 is not a solution. | So, x equals four is not a solution. |  | no clip yet |
+| vo373 | So, x = 5 is not a solution. | So, x equals five is not a solution. |  | no clip yet |
+| vo374 | So, x = 8 is not a solution. | So, x equals eight is not a solution. |  | no clip yet |
+| vo375 | So, x = 9 is not a solution. | So, x equals nine is not a solution. |  | no clip yet |
+| vo376 | So, x = 10 is not a solution. | So, x equals ten is not a solution. |  | no clip yet |
+| vo377 | So, x = 12 is not a solution. | So, x equals twelve is not a solution. |  | no clip yet |
+| vo378 | So, x = 23 is not a solution. | So, x equals twenty-three is not a solution. |  | no clip yet |
+| vo379 | So, x = 31 is not a solution. | So, x equals thirty-one is not a solution. |  | no clip yet |
+| vo380 | Now, use what you've learned to solve an equation. | = |  | no clip yet |
+| vo381 | Find the value of x. | = |  | no clip yet |
+| vo382 | Not quite! Let's do it together. | = |  | no clip yet |
+| vo383 | Not quite. | = |  | 1.1 |
+| vo384 | Subtract 6 from both sides. | Subtract six from both sides. |  | 2.7 |
+| vo385 | Subtract 5 from both sides. | Subtract five from both sides. |  | 2.8 |
+| vo386 | Divide both sides by 3. | Divide both sides by three. |  | 2.2 |
+| vo387 | Add 7 to both sides. | Add seven to both sides. |  | 2.1 |
+| vo388 | Multiply both sides by 4. | Multiply both sides by four. |  | 2.6 |
+| vo389 | Subtract 7 from both sides. | Subtract seven from both sides. |  | 2.5 |
+| vo390 | Divide both sides by 2. | Divide both sides by two. |  | 2.1 |
+| vo391 | Subtract 2 from both sides. | Subtract two from both sides. |  | 2.9 |
+| vo392 | 17 − 6 = 11. | Seventeen minus six equals eleven. |  | 3.2 |
+| vo393 | 26 − 5 = 21. | Twenty-six minus five equals twenty-one. |  | 3.5 |
+| vo394 | 21 ÷ 3 = 7. | Twenty-one divided by three equals seven. |  | 3.5 |
+| vo395 | 12 + 7 = 19. | Twelve plus seven equals nineteen. |  | 2.9 |
+| vo396 | 6 × 4 = 24. | Six times four equals twenty-four. |  | 3.0 |
+| vo397 | 1 − 7 = −6. | One minus seven equals minus six. |  | 3.0 |
+| vo398 | −6 ÷ 2 = −3. | Minus six divided by two equals minus three. |  | 3.7 |
+| vo399 | 7 − 2 = 5. | Seven minus two equals five. |  | 2.8 |
 <!-- /vo-table -->

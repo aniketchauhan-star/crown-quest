@@ -80,16 +80,17 @@ window.CONTENT = {
     "l4-23": "Now let's find the crown's mass.",
     "l4-24": "We need a value of x that makes both sides equal.",
     "l4-25": "Let's check 4. Replace x with 4 and find the value of each side.",
-    // a side at a time, then what it means (review, 2026-11-13: "Screen 1: 'The left-hand side equals 6.'
-    // Screen 2: 'The right-hand side equals 7.' Screen 3: 'They're different, so 4 is not a solution.'"; it
-    // was one line), and the same for 5
+    // a side at a time (review, 2026-11-13: "Screen 1: 'The left-hand side equals 6.' Screen 2: 'The
+    // right-hand side equals 7.'"), and the same for 5. Then, as in every check, two screens: the
+    // balance (check-diff / check-same, below) and what the value is (check-not-sol; for 5, l4-29)
+    // (review, 2026-11-18: "Split the ending into two screens… We can do like this for all values we are
+    // trying and for every equation"; they were "They're different, so 4 is not a solution." and "Both
+    // sides equal 7.")
     "l4-26": "The left-hand side equals 6.",
     "l4-26b": "The right-hand side equals 7.",
-    "l4-26c": "They're different, so 4 is not a solution.",
     "l4-27": "Now, let's check 5. Replace x with 5 and find the value of each side.",
     "l4-28": "The left-hand side equals 7.",
     "l4-28b": "The right-hand side equals 7.",
-    "l4-28c": "Both sides equal 7.",
     "l4-29": "A value that makes an equation true is called its solution. So, 5 is the solution.",
     "l4-30": "The crown's mass is 5 units. Zippy can use the 5-unit bar!",
     "l4-give": "Drag the 5 bar to Zippy, then tap Swap.", // (x = 5 is known: review, 2026-11-08)
@@ -101,25 +102,29 @@ window.CONTENT = {
     // side.' Only LHS is being asked here"; it was "Find the value of each side.")
     "check-find-lhs": "Find the value of the left-hand side.",
     "check-find-rhs": "Now find the value of the right-hand side.",
-    "l5-yes": "Both sides equal {b}. So, {v} is the solution. Zippy can use the {v}-unit bar!",
     "check-now-swap": "Now Zippy can swap. Tap Swap!",
     "check-lets": "Let's check {v}.",
     "check-next": "Now, let's check {v}.",
-    // Once both sides are worked out, a line each, then what it means (review, 2026-11-13: "1. 'The
-    // left-hand side equals 7.' 2. 'The right-hand side equals 9.' 3. 'They're different, so 4 is not a
-    // solution.'"; it was "The left side equals 7, and the right side equals 9. They're different." and
-    // "The sides aren't equal, so 4 is not a solution."). A value that works ends with its level's line
-    // (l5-yes, l6-right…).
+    // Once both sides are worked out, a line each (review, 2026-11-13: "1. 'The left-hand side equals 7.'
+    // 2. 'The right-hand side equals 9.'"). Then the ending, on two screens (review, 2026-11-18: "Split the
+    // ending into two screens: 1. Check the value. Keep the aligned calculations… VO: 'Both sides have the
+    // same value. The balance is level!' 2. Confirm the solution. Fade the calculations and change 'Try
+    // x = 6' to a clear x = 6… VO: 'So, x = 6 is the solution.' … We can do like this for all values we
+    // are trying and for every equation as one screen currently looks cluttered"): the balance first
+    // (the same, or different: it tips), then what the value is. A value that is not a solution has the
+    // same two screens, in the same words. (They were one screen: "Both sides equal 9. So, 6 is the
+    // solution. Zippy can use the 6-unit bar!", and "They're different, so 4 is not a solution.", with
+    // 9 = 9 or 7 ≠ 9 and a written verdict under the working.)
     "check-lhs-is": "The left-hand side equals {s}.",
     "check-rhs-is": "The right-hand side equals {b}.",
-    "check-not": "They're different, so {v} is not a solution.",
+    "check-same": "Both sides have the same value. The balance is level!",
+    "check-diff": "The two sides have different values. The balance tips!",
+    "check-sol": "So, x = {v} is the solution.",
+    "check-not-sol": "So, x = {v} is not a solution.",
     "check-try-another": "Try another value.",
     "l6-prompt": "Choose a value for x. Check whether both sides are equal.",
-    "l6-right": "Both sides equal {b}. So, {v} is the solution.",
-    "l6-success": "Both sides equal {b}. Zippy can use the {v}-unit bar!",
     "l7-prompt": "Another crown and two coins balance ten coins. Which value of x makes both sides equal?",
     "l7-support": "Replace x with your chosen value. Then compare the two sides.",
-    "l7-success": "Both sides equal {b}. So, {v} is the solution.",
     "hint-lhs": "Add: {v} + {a}. Count on from {v}: {seq}.",
     "hint-lhs-k": "{k} × {v} = {kv}. Then add {a}.",
     "hint-rhs": "RHS is the number on the right of =.",
@@ -140,7 +145,6 @@ window.CONTENT = {
     "l8-9": "Now the crown balances 15 units. So, x = 15.",
     "l8-10": "Before Zippy swaps, let's check the answer in the original equation.",
     "l8-11": "Replace x with 15.",
-    "l8-13": "Both sides equal 23. So, 15 is the solution.",
     "l8-14": "The crown's mass is 15 units. Zippy can use the 15-unit bar!",
     "l8-give": "Give the 15 bar to Zippy, then tap Swap.",
     "l8-15": "That works! Zippy collects the crown, and Grumble stays asleep.",
@@ -161,7 +165,6 @@ window.CONTENT = {
     "l9-7": "Divide both sides into two equal groups.", // (review, 2026-11-08)
     "l9-8": "Each crown has a mass of 7 units. So, x = 7.", // (review, 2026-11-08)
     "l9-9": "Let's check. Put 7 in place of x.",
-    "l9-10": "Both sides equal 18! Zippy can make the swap.",
     "l9-give": "Give a 7 bar to Zippy, then tap Swap.",
     "l9-give2": "One more crown! Give the other 7 bar to Zippy.",
 
@@ -190,12 +193,7 @@ window.CONTENT = {
   },
 
   ui: {
-    tryWord: "Try", // the check's "Try x = 4" (review, 2026-11-13)
-    // what a check shows it means, under the comparison (written, not said)
-    // (review, 2026-11-13, on the check: "End with '7 ≠ 9. So, 4 is not a solution.'"; Level 4's try on
-    // the formula screen keeps its own shorter "4 is not a solution.", as its note asks)
-    notSolution: "So, {v} is not a solution.",
-    isSolution: "So, {v} is the solution.",
+    tryWord: "Try", // the check's "Try x = 4" (review, 2026-11-13); it fades as the try's verdict comes (2026-11-18)
     back: "Back",
     next: "Next",
     swap: "SWAP",
@@ -220,7 +218,7 @@ window.CONTENT = {
     lhs: "LHS",
     rhs: "RHS",
     // read by screen readers only (not shown): the speaker in the question bar, the gold bars ({v} = the
-    // bar's number; {side} = left or right), the boxes to fill in and the keypad's keys
+    // bar's number; {side} = left or right), the boxes to fill in, and practice's list of answers
     hearAgain: "Hear it again",
     goldBar: "Gold bar {v}",
     goldBarTried: "Gold bar {v}, already tried",
@@ -229,7 +227,7 @@ window.CONTENT = {
     lhsValue: "Left-hand side value",
     rhsValue: "Right-hand side value",
     emptyBox: "Empty label box",
-    keys: { "⌫": "Delete", "−": "Minus", ".": "Point" },
+    answers: "Answers",
   },
 
   // The words written on Level 4's formula screen, each as the voice names its part (js/activities.js:
@@ -244,9 +242,10 @@ window.CONTENT = {
     lhs: "Left-hand side (LHS)",
     rhs: "Right-hand side (RHS)",
     linear: "Linear equation in one variable",
+    // what a value tried turns out to be, written under it once the working has faded (review, 2026-11-18:
+    // "change 'Try x = 6' to a clear x = 6"): on the formula screen and in every check of Levels 5–9
     solution: "Solution",
-    // the try's verdict, written under 6 ≠ 7 (the checks of Levels 5–9 say "So, …": ui.notSolution)
-    notSolution: "{v} is not a solution.",
+    notSolution: "Not a solution",
   },
 
   // Every screen of the quest, in order: the list in the top left corner jumps to any of them (and
@@ -296,11 +295,12 @@ window.CONTENT = {
       n: 5, kind: "guided", crown: 6, left: 3, right: [3, 3, 3], bars: [4, 6, 7], tries: [4, 6],
       chips: { 4: { lhs: [6, 7, 9], rhs: [3, 7, 9] }, 6: { lhs: [8, 9, 10], rhs: [3, 6, 9] } },
     },
-    // Levels 6–7: the child chooses. say = the narrator's line for each moment of the check.
+    // Levels 6–7: the child chooses. say = the narrator's line for each moment of the check (its ending
+    // is the same in every check: check-same / check-diff, then check-sol / check-not-sol).
     L6: {
       n: 6, kind: "independent", crown: 7, left: 4, right: [4, 4, 3], bars: [5, 8, 7],
       intro: [],
-      say: { prompt: "l6-prompt", firstRight: "l6-right", firstTry: "check-lets", nextTry: "check-next", success: "l6-success" },
+      say: { prompt: "l6-prompt", firstTry: "check-lets", nextTry: "check-next" },
       chips: {
         8: { lhs: [11, 12, 13], rhs: [4, 8, 11] },
         5: { lhs: [8, 9, 10], rhs: [4, 5, 11] },
@@ -310,7 +310,7 @@ window.CONTENT = {
     L7: {
       n: 7, kind: "independent", crown: 8, left: 2, right: [4, 4, 2], bars: [10, 8, 12],
       intro: [],
-      say: { prompt: "l7-prompt", firstRight: "l7-success", firstTry: "l7-support", nextTry: "check-next", success: "l7-success" },
+      say: { prompt: "l7-prompt", firstTry: "l7-support", nextTry: "check-next" },
       chips: {
         10: { lhs: [11, 12, 13], rhs: [2, 10, 12] },
         12: { lhs: [13, 14, 15], rhs: [2, 10, 12] },
@@ -405,98 +405,73 @@ window.CONTENT = {
   },
 
   /*
-   * Practice: six equations. The child types x on the keypad.
-   * Right first time: the check is shown and the next equation starts.
-   * Wrong: the game shows why (LHS ≠ RHS), then solves it step by step with the child and checks it.
-   * lhs describes the left side so the game can work it out for any answer the child types:
-   *   { k, op, c } = k·x + c or k·x − c;  { div } = x ÷ div;  { mul, op, c } = mul(x + c).
-   * Step kinds: ask (two choices), act (one button), type (type a number on the keypad).
+   * Practice: six equations (review, 2026-11-18). Before the first, a line to start on, with the
+   * equation big in the middle. Each equation: "Find the value of x.", and the child chooses x from a
+   * list (choices) and taps Check.
+   * Right: the next equation (no check of it, no words: "once correct move to the next ques").
+   * Wrong: "Not quite! Let's do it together.", and the equation is solved on the board step by step,
+   * every step staying in view under the one before (no two-choice questions, no notes written under
+   * the working: "Directly state the step: Subtract 5 from both sides"). For each step the question bar
+   * says it (say), its working row is written in under the rows before (work), and the child chooses
+   * what its left side (get) equals. A wrong choice: it shakes, "Not quite.", and the child chooses
+   * again; a second wrong choice: the answer is told (tell: "26 − 5 = 21.") and written in. The last
+   * step's answer is x. No check in the original equation ("This checking not required in these 6
+   * questions").
+   * choices: the list's numbers, as the review's picture has them for x + 6 = 17 (17, 6, 11, 23): the
+   * equation's own numbers, the answer, and what the wrong operation would give.
    */
   practice: {
-    stepTitles: { try: "Try independently", right: "Correct answer: {x}", wrong: "Let's find x step by step", check: "Check the solution", done: "All done!" },
-    find: "Find x.",
     lines: {
-      find: "Find x: {eq}.",
-      howTo: "Type your answer on the keypad, then tap Check.",
-      right: "Both sides equal {r}. So, {x} is the solution.",
-      wrong: "The left side equals {l}, and the right side equals {r}. They're different, so {a} is not a solution. Let's find x step by step.",
-      typeAgain: "Not quite. Work out {expr}.",
-      typeHint: "{expr} = {ans}. Type {ans}.",
-      askAgain: "Not quite. Try the other one.",
-      check: "Now check in the original equation. Put {x} in place of x.",
-      checkAgain: "Not quite. Work out {expr}.",
-      checkRight: "Both sides are equal. Your solution works!",
+      start: "Now, use what you've learned to solve an equation.", // before the first equation
+      find: "Find the value of x.",
+      wrong: "Not quite! Let's do it together.",
+      stepWrong: "Not quite.",
+      tell: "{expr} = {ans}.", // a step's answer, after two wrong choices
     },
     words: {
-      yourAnswer: "Your answer:",
-      bothEqual: "Both sides equal {r}.",
-      stepByStep: "Let's find x step by step.",
-      works: "When the sides match, your solution works.",
-      allDone: "You solved all {n} equations!",
+      choose: "Choose", // the list, before a number is chosen
       check: "Check",
+      allDone: "You solved all {n} equations!",
     },
     problems: [
       {
-        eq: "x + 6 = 17", x: 11, lhs: { k: 1, op: "+", c: 6 }, rhs: 17,
+        eq: "x + 6 = 17", x: 11, choices: [17, 6, 11, 23],
         steps: [
-          { kind: "ask", title: "Undo the addition", show: "x <<+ 6>> = 17", say: "What undoes adding 6?",
-            choices: ["Add 6", "Subtract 6"], answer: 1, right: "Yes! Subtracting 6 undoes adding 6." },
-          { kind: "type", title: "Subtract from BOTH sides", lines: ["x + 6 {{− 6}} = 17 {{− 6}}"], prompt: "x = 17 − 6 =",
-            say: "Subtract 6 from both sides. What is 17 − 6?", expr: "17 − 6", answer: 11 },
+          { say: "Subtract 6 from both sides.", work: "x + 6 {{− 6}} = 17 {{− 6}}", get: "x", expr: "17 − 6", answer: 11, choices: [17, 6, 11, 23] },
         ],
-        check: { lhs: "11 + 6", options: [16, 17, 18] },
       },
       {
-        eq: "3x + 5 = 26", x: 7, lhs: { k: 3, op: "+", c: 5 }, rhs: 26,
+        eq: "3x + 5 = 26", x: 7, choices: [26, 5, 7, 21],
         steps: [
-          { kind: "ask", title: "Undo adding 5", show: "3x <<+ 5>> = 26", say: "What undoes adding 5?",
-            choices: ["Add 5", "Subtract 5"], answer: 1, right: "Yes! Subtracting 5 undoes adding 5." },
-          { kind: "type", title: "Undo adding 5", lines: ["3x + 5 {{− 5}} = 26 {{− 5}}"], prompt: "3x =",
-            say: "Subtract 5 from both sides. What is 26 − 5?", expr: "26 − 5", answer: 21 },
-          { kind: "type", title: "Find one lot of x", lines: ["3x = 21", "Divide both sides by 3.", "[[3x|3]] = [[21|3]]"], prompt: "x =",
-            say: "3x = 21. Divide both sides by 3. What is 21 ÷ 3?", expr: "21 ÷ 3", answer: 7 },
+          { say: "Subtract 5 from both sides.", work: "3x + 5 {{− 5}} = 26 {{− 5}}", get: "3x", expr: "26 − 5", answer: 21, choices: [26, 21, 5, 31] },
+          { say: "Divide both sides by 3.", work: "[[3x|3]] = [[21|3]]", get: "x", expr: "21 ÷ 3", answer: 7, choices: [21, 3, 7, 63] },
         ],
-        check: { lhs: "3 × 7 + 5", options: [23, 26, 28] },
       },
       {
-        eq: "x - 7 = 12", x: 19, lhs: { k: 1, op: "−", c: 7 }, rhs: 12,
+        eq: "x - 7 = 12", x: 19, choices: [12, 19, 7, 5],
         steps: [
-          { kind: "act", title: "Undo subtracting 7", show: "x <<− 7>> = 12", note: "Adding 7 undoes subtracting 7.",
-            button: "Add 7 to BOTH sides", say: "Adding 7 undoes subtracting 7. Tap the button to add 7 to both sides." },
-          { kind: "type", title: "Add to both sides", lines: ["x − 7 {{+ 7}} = 12 {{+ 7}}"], prompt: "x = 12 + 7 =",
-            say: "Add 7 to both sides. What is 12 + 7?", expr: "12 + 7", answer: 19 },
+          { say: "Add 7 to both sides.", work: "x − 7 {{+ 7}} = 12 {{+ 7}}", get: "x", expr: "12 + 7", answer: 19, choices: [12, 19, 7, 5] },
         ],
-        check: { lhs: "19 − 7", options: [11, 12, 26] },
       },
       {
-        eq: "[[x|4]] = 6", x: 24, lhs: { div: 4 }, rhs: 6,
+        eq: "[[x|4]] = 6", x: 24, choices: [6, 4, 1.5, 24],
         steps: [
-          { kind: "act", title: "Undo dividing by 4", show: "[[x|<<4>>]] = 6", note: "Multiplying by 4 undoes dividing by 4.",
-            button: "Multiply BOTH sides by 4", say: "Multiplying by 4 undoes dividing by 4. Tap the button to multiply both sides by 4." },
-          { kind: "type", title: "Multiply both sides", lines: ["[[x|4]] {{× 4}} = 6 {{× 4}}"], prompt: "x = 6 × 4 =",
-            say: "Multiply both sides by 4. What is 6 × 4?", expr: "6 × 4", answer: 24 },
+          { say: "Multiply both sides by 4.", work: "[[x|4]] {{× 4}} = 6 {{× 4}}", get: "x", expr: "6 × 4", answer: 24, choices: [6, 4, 1.5, 24] },
         ],
-        check: { lhs: "[[24|4]]", options: [4, 6, 8] },
       },
       {
-        eq: "2x + 7 = 1", x: -3, lhs: { k: 2, op: "+", c: 7 }, rhs: 1, hint: "x can be negative too.",
+        eq: "2x + 7 = 1", x: -3, choices: [1, -3, 7, 4],
         steps: [
-          { kind: "type", title: "Undo adding 7", show: "2x <<+ 7>> = 1", note: "Subtract 7 from both sides.", lines: ["2x + 7 {{− 7}} = 1 {{− 7}}"],
-            prompt: "2x =", say: "Subtract 7 from both sides. What is 1 − 7?", expr: "1 − 7", answer: -6 },
-          { kind: "type", title: "Divide both sides by 2", lines: ["2x = −6", "[[2x|2]] = [[−6|2]]"], prompt: "x =",
-            say: "Divide both sides by 2. What is −6 ÷ 2?", expr: "−6 ÷ 2", answer: -3 },
+          { say: "Subtract 7 from both sides.", work: "2x + 7 {{− 7}} = 1 {{− 7}}", get: "2x", expr: "1 − 7", answer: -6, choices: [1, -6, 6, 8] },
+          { say: "Divide both sides by 2.", work: "[[2x|2]] = [[−6|2]]", get: "x", expr: "−6 ÷ 2", answer: -3, choices: [-6, -3, 3, -12] },
         ],
-        check: { lhs: "2 × (−3) + 7", options: [-1, 1, 13] },
       },
       {
-        eq: "3(x + 2) = 21", x: 5, lhs: { mul: 3, op: "+", c: 2 }, rhs: 21, hint: "3 multiplies the whole bracket.",
+        eq: "3(x + 2) = 21", x: 5, choices: [21, 7, 2, 5],
         steps: [
-          { kind: "type", title: "Undo multiplying by 3", show: "<<3>>(x + 2) = 21", note: "Divide BOTH sides by 3.", lines: ["[[3(x + 2)|3]] = [[21|3]]"],
-            prompt: "x + 2 =", say: "Divide both sides by 3. What is 21 ÷ 3?", expr: "21 ÷ 3", answer: 7 },
-          { kind: "type", title: "Undo adding 2", show: "x <<+ 2>> = 7", note: "Subtract 2 from BOTH sides.", lines: ["x + 2 {{− 2}} = 7 {{− 2}}"],
-            prompt: "x =", say: "Subtract 2 from both sides. What is 7 − 2?", expr: "7 − 2", answer: 5 },
+          { say: "Divide both sides by 3.", work: "[[3(x + 2)|3]] = [[21|3]]", get: "x + 2", expr: "21 ÷ 3", answer: 7, choices: [21, 7, 3, 63] },
+          { say: "Subtract 2 from both sides.", work: "x + 2 {{− 2}} = 7 {{− 2}}", get: "x", expr: "7 − 2", answer: 5, choices: [7, 2, 5, 9] },
         ],
-        check: { lhs: "3(5 + 2)", options: [17, 21, 27] },
       },
     ],
   },
@@ -539,8 +514,8 @@ window.CONTENT = {
       { cue: "grumble.snore5", out: 3.33, len: 4.37 },
       { cue: "grumble.snore6", out: 3.26, len: 4.53 },
     ],
-    // Zippy's win laugh lasts this long (s); his next line waits for it (shorter since review 2026-11-13:
-    // "reduce the timing of Zippy's laugh"; it was 5.6)
-    winLaugh: 2.77,
+    // Zippy's win laugh lasts this long (s): he laughs only while it is heard, and his next line waits for
+    // it (reviews of 2026-11-13 and 2026-11-18: "reduce the timing of Zippy's laugh"; it was 5.6, then 2.77)
+    winLaugh: 1.75,
   },
 };

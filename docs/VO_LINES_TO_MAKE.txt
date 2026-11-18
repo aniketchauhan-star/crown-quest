@@ -1,3 +1,110 @@
+NEW ON 2026-11-18 (review of 13 screenshots): 17 LINES STILL TO RECORD
+============================================================
+Until they are recorded, the device's own voice reads them (a woman's on most devices).
+Record them like the last ones: one file, read in THIS order, then
+    ~/.cache/crown-quest/venv/bin/python tools/vo_split.py recording.mp3 vo366 vo367 ... vo382
+    ~/.cache/crown-quest/venv/bin/python tools/vo_build.py tools/split_out/split.zip
+(or give the file to Claude). Seventeen more of the review's lines needed no recording: they
+are the first sentences of lines you had already recorded, cut out by tools/vo_cut.py
+(vo383 to vo399: "Not quite.", the eight steps such as "Subtract 6 from both sides.", and
+the eight answers such as "17 − 6 = 11.").
+
+TO READ, IN THIS ORDER (only the words to say):
+
+Both sides have the same value. The balance is level!
+The two sides have different values. The balance tips!
+So, x equals six is the solution.
+So, x equals seven is the solution.
+So, x equals eight is the solution.
+So, x equals fifteen is the solution.
+So, x equals four is not a solution.
+So, x equals five is not a solution.
+So, x equals eight is not a solution.
+So, x equals nine is not a solution.
+So, x equals ten is not a solution.
+So, x equals twelve is not a solution.
+So, x equals twenty-three is not a solution.
+So, x equals thirty-one is not a solution.
+Now, use what you've learned to solve an equation.
+Find the value of x.
+Not quite! Let's do it together.
+
+------------------------------------------------------------
+THE CHECK (Levels 4 to 9): the ending's two screens
+------------------------------------------------------------
+
+Filename: vo366
+   TEXT: Both sides have the same value. The balance is level!
+
+Filename: vo367
+   TEXT: The two sides have different values. The balance tips!
+
+------------------------------------------------------------
+THE CHECK: what the value tried is (one line per value a child can try)
+------------------------------------------------------------
+
+Filename: vo368
+   TEXT: So, x equals six is the solution.
+   (shown in game: So, x = 6 is the solution.)
+
+Filename: vo369
+   TEXT: So, x equals seven is the solution.
+   (shown in game: So, x = 7 is the solution.)
+
+Filename: vo370
+   TEXT: So, x equals eight is the solution.
+   (shown in game: So, x = 8 is the solution.)
+
+Filename: vo371
+   TEXT: So, x equals fifteen is the solution.
+   (shown in game: So, x = 15 is the solution.)
+
+Filename: vo372
+   TEXT: So, x equals four is not a solution.
+   (shown in game: So, x = 4 is not a solution.)
+
+Filename: vo373
+   TEXT: So, x equals five is not a solution.
+   (shown in game: So, x = 5 is not a solution.)
+
+Filename: vo374
+   TEXT: So, x equals eight is not a solution.
+   (shown in game: So, x = 8 is not a solution.)
+
+Filename: vo375
+   TEXT: So, x equals nine is not a solution.
+   (shown in game: So, x = 9 is not a solution.)
+
+Filename: vo376
+   TEXT: So, x equals ten is not a solution.
+   (shown in game: So, x = 10 is not a solution.)
+
+Filename: vo377
+   TEXT: So, x equals twelve is not a solution.
+   (shown in game: So, x = 12 is not a solution.)
+
+Filename: vo378
+   TEXT: So, x equals twenty-three is not a solution.
+   (shown in game: So, x = 23 is not a solution.)
+
+Filename: vo379
+   TEXT: So, x equals thirty-one is not a solution.
+   (shown in game: So, x = 31 is not a solution.)
+
+------------------------------------------------------------
+PRACTICE (the six equations)
+------------------------------------------------------------
+
+Filename: vo380
+   TEXT: Now, use what you've learned to solve an equation.
+
+Filename: vo381
+   TEXT: Find the value of x.
+
+Filename: vo382
+   TEXT: Not quite! Let's do it together.
+
+
 NOTE (2026-11-18): all 63 lines below are in the game now, from the user's own recordings
 ("1 (1).mp3" for the 51, "2 (1).mp3" for the 12; a man's voice, read in this order; cut by
 tools/vo_split.py). The list is kept for making them again in the one woman's voice, Female

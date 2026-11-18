@@ -494,15 +494,21 @@
     const g = CQ.grumble;
     await collectCrown({ wear: true }); // he puts the crown on, and keeps it on until he swings away
     // He has won the crown: he laughs, in his own recorded laugh (asked 2026-11-09: "use this voice when
-    // monkey win"); his "Hee hee! Sleep tight, Grumble!" and Grumble's loud snores wait until it has
-    // nearly ended, so they don't talk over it.
+    // monkey win"), and only for as long as the laugh is heard (review, 2026-11-18: "Reduce the timing
+    // of Zippy's laugh when Zippy collects the crown": he went on laughing through Grumble's snore and
+    // his whole "Hee hee! Sleep tight, Grumble!", about 9 s). Grumble's snore is asked for a moment
+    // before the laugh ends (it comes a breath later), then he stands proud, wearing it, while it is
+    // heard, and says his line.
+    const laugh = ((C().audio && C().audio.winLaugh) || 1.2) * 1000;
     z.pose("laugh");
     CQ.audio.play("zippy.win", { volume: 1.3 });
     CQ.fx.confetti(CQ.world.fx, 700, 420, 44);
     CQ.audio.play("confetti");
-    await R.wait(Math.max(0, ((C().audio && C().audio.winLaugh) || 1.2) * 1000 - 500));
+    await R.wait(Math.max(0, laugh - 500));
     g.snore(1, 1.8, true); // "Sleep tight, Grumble!" (a moment about him: even if he snored a moment ago); the line waits for it
-    await R.when(z.say(C().zippy.sleepTight, { keepPose: true }));
+    await R.wait(Math.min(500, laugh));
+    z.pose("idle");
+    await R.when(z.say(C().zippy.sleepTight));
     z.pose("idle");
     CQ.track("level_complete", { level: CQ.hud.crowns });
     if (!lineId) return;
@@ -628,16 +634,19 @@
     CQ.fx.sparkle(CQ.world.fx, cc.x, cc.y, 14, 80);
     CQ.audio.play("crown.sparkle");
     await meet;
-    // Grumble guards the treasure. Luckily, he's asleep!
+    // Grumble guards the treasure. Luckily, he's asleep! The question bar empties as the view leaves
+    // Zippy, and Grumble's name comes in as the voice says "Grumble" (review, 2026-11-18: "Text not
+    // matching with what we are showing on screen": his snore keeps the next line waiting, and "Meet
+    // Zippy! He spots a golden crown." stayed in the bar under his name meanwhile).
+    CQ.caption.hide();
     await R.when(CQ.camera.to(300, 760, 1.65, 1300));
     g.hush();
     g.snore(1, 2.2, true); // Grumble guards the treasure. Luckily, he's asleep! (the line waits for it)
     CQ.spot.on(() => g.center(), 430, CQ.world.grumbleLayer); // the same spotlight as Zippy's
-    await R.wait(450);
-    const gb = CQ.nameBurst(C().names.grumble, C().names.grumbleTag, 1250, 400, "purple");
+    const named = R.when(untilSaid(CQ.T("intro-2"), "Grumble")).then(() => CQ.nameBurst(C().names.grumble, C().names.grumbleTag, 1250, 400, "purple"));
     await say("intro-2", { advance: "auto" });
     await say("intro-3", { advance: "auto", pause: 700 });
-    await CQ.hideBurst(gb);
+    await CQ.hideBurst(await named);
     CQ.spot.off();
     await R.when(CQ.camera.to(960, 540, 1, 1300));
     // If the balance tips, the alarm will wake Grumble: a cloud above sleeping Grumble's head, its trail
@@ -996,9 +1005,14 @@
   // left side fading back a little while the right side is talked about. Only once both sides have been
   // worked out is the crown replaced on the balance (four coins beside the three, or a bar of the value)
   // and does the balance tip, or stay level and flash (same review: "jab LHS and RHS nikal le tb crown ko
-  // replace kro and balance tilt kro"); then what it means: 7 ≠ 9 on "different" (9 = 9 on the number
-  // said after "equal"), and "So, 4 is not a solution." written in, its 4 as the voice says it.
-  // o: { from, line, find, rhsGiven, yesLines }  (line ids from content.js)
+  // replace kro and balance tilt kro"). Then the ending, on two screens (review, 2026-11-18: "Split the
+  // ending into two screens… as one screen currently looks cluttered", for every value tried): the
+  // working stays as it is while "Both sides have the same value. The balance is level!" is said (or
+  // "The two sides have different values. The balance tips!"), both sides lit on "Both sides", the hub
+  // flashing on "level" (the balance tipping on "tips"); then the working fades away, "Try" with it,
+  // and x = 6 is left under the equation, green ("So, x = 6 is the solution.", its name written under
+  // it on "solution"; red, "Not a solution", for a value that isn't).
+  // o: { from, line, find, rhsGiven }  (line ids from content.js)
   async function checkRoutine(L, v, o) {
     o = o || {};
     const cp = CQ.checkPanel;
@@ -1088,35 +1102,45 @@
     onSaid(rt, `${CQ.num(bb)}.`, () => cp.sayValue("rhs"));
     await saidR;
     // Both sides worked out: now on the balance, the crown makes way for the value (four coins, a group of
-    // their own beside the three; or a gold bar of it), and the balance tips the way the pans now weigh,
-    // the heavier pan lower; or it stays level, its hub flashing.
+    // their own beside the three; or a gold bar of it), the beam held as it is until the line says how
+    // the balance is.
     lights(null);
     cp.lightSide(null);
     await R.when(CQ.xPan.put(v));
     await R.wait(250);
-    const d = b.evaluate();
-    if (d === 0) b.flashEmblem();
-    await R.wait(d === 0 ? 900 : 1400);
-    // what it means: 7 ≠ 9 (or 9 = 9) as the voice says "different" (or the value after "equal"), and
-    // "So, 4 is not a solution." written in under it, its 4 as the voice says it, the try lit with it
-    let compared = null;
-    const compareNow = () => compared || (compared = R.when(cp.compare(s, bb)));
-    let concluded = null;
-    const conclude = (text) => concluded || (concluded = R.when(cp.verdict(CQ.fmt(eq ? C().ui.isSolution : C().ui.notSolution, { v: CQ.num(v) }), eq, text, v)));
-    const lines = eq ? o.yesLines || [] : ["check-not"];
-    for (let i = 0; i < lines.length; i++) {
-      const text = CQ.T(lines[i], vars);
-      const said = say(lines[i], { vars });
-      if (i === 0) {
-        await R.when(untilSaid(text, eq ? `equal ${CQ.num(bb)}` : "different"));
-        await compareNow();
-        if (text.indexOf("solution") >= 0) conclude(text);
+    // Screen 1, the check: the working kept as it is, both sides lit with their pans on "Both sides"
+    // ("two sides"), and the balance as the voice says it: level, its hub flashing, on "level"; or it
+    // tips, the heavier pan lower, on "tips".
+    const sameId = eq ? "check-same" : "check-diff";
+    const sameText = CQ.T(sameId, vars);
+    const saidSame = say(sameId, { vars });
+    onSaid(sameText, eq ? "Both sides" : "two sides", () => {
+      lights("both");
+      cp.lightSide("both");
+    });
+    let tipped = false;
+    const tip = () => {
+      if (tipped) return;
+      tipped = true;
+      const d = b.evaluate();
+      if (d === 0) {
+        b.flashEmblem();
+        CQ.audio.play("balance.level");
       }
-      await said;
-    }
-    await compareNow();
-    await conclude(null);
-    await R.wait(700);
+    };
+    onSaid(sameText, eq ? "is level" : "balance tips", tip);
+    await saidSame;
+    tip(); // (the line was skipped before its word)
+    lights(null);
+    cp.lightSide(null);
+    // Screen 2, what the value is: the working fades away, "Try" with it, and x = 6 is left under the
+    // equation, green as the voice says "x = 6" (red for a value that isn't a solution), its name written
+    // in under it on "solution".
+    const solId = eq ? "check-sol" : "check-not-sol";
+    const solText = CQ.T(solId, vars);
+    const saidSol = say(solId, { vars, hold: 1800 });
+    await R.when(cp.confirm(eq, solText, { lit: `x = ${CQ.num(v)}`, name: eq ? "the solution" : "a solution" }));
+    await saidSol;
     b.clearCounts();
     // the crown back on its pan before the view goes back to the scene
     await R.when(CQ.xPan.restore());
@@ -1169,7 +1193,7 @@
       await R.when(z.say(CQ.fmt(i ? C().zippy.tryNext : C().zippy.tryN, { v })));
       say("l5-give", { vars: { v }, advance: "none" });
       await giveBar([v], { glow: true });
-      const ok = await checkRoutine(L, v, { line: "check-replace", yesLines: ["l5-yes"] });
+      const ok = await checkRoutine(L, v, { line: "check-replace" });
       if (ok) return swapAfterCheck(v);
     }
   }
@@ -1185,12 +1209,10 @@
     for (;;) {
       const left = L.bars.filter((x) => CQ.bars.get(x).state !== "tried");
       const v = await giveBar(left);
-      let ok;
       // the same check whichever bar it is, the right one first too: the child works out each side (review,
       // 2026-11-08: "Do not automatically fill in 10 for the LHS… Compare both sides only after the learner
       // completes these steps")
-      if (misses === 0) ok = await checkRoutine(L, v, { line: S.firstTry, yesLines: [v === L.crown ? S.firstRight : S.success] });
-      else ok = await checkRoutine(L, v, { line: S.nextTry, yesLines: [S.success] });
+      const ok = await checkRoutine(L, v, { line: misses === 0 ? S.firstTry : S.nextTry });
       if (ok) return swapAfterCheck(v);
       misses++;
       CQ.track("hint_shown", { level: L.n, tier: misses });
@@ -1617,7 +1639,7 @@
     await putBack(trays, 8, 23);
     b.setSign("x + 8 = 23");
     const crown = b.find("left", (it) => it.type === "crown");
-    await checkRoutine(L, 15, { from: b.itemCenter(crown), rhsGiven: true, line: "l8-11", yesLines: ["l8-13"] });
+    await checkRoutine(L, 15, { from: b.itemCenter(crown), rhsGiven: true, line: "l8-11" });
     // The swap: only a checked value gets the SWAP button.
     await say("l8-14", { advance: "auto" });
     say("l8-give", { advance: "none" });
@@ -1826,7 +1848,7 @@
     // x.
     await putBack(ledges, 4, 18);
     b.setSign("2x + 4 = 18");
-    await checkRoutine(L, 7, { from: b.itemCenter(crowns[0]), rhsGiven: true, line: "l9-9", yesLines: ["l9-10"] });
+    await checkRoutine(L, 7, { from: b.itemCenter(crowns[0]), rhsGiven: true, line: "l9-9" });
     // Two swaps, one 7 bar for each crown.
     say("l9-give", { advance: "none" });
     let swapped = 0;
