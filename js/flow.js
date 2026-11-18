@@ -63,11 +63,7 @@
           if (i === start && SNORE_AT.includes(id)) CQ.grumble.snore(1); // a level begins: he snores once
           if (veil && i === start) CQ.veil.reveal();
           if (change) await arrive();
-          const res = await STEPS[id]();
-          if (res === "again") {
-            setTimeout(() => this.chapter("intro"), 0);
-            return;
-          }
+          await STEPS[id]();
         }
       } catch (e) {
         if (!(e instanceof CQ.CancelError)) console.error(e);
@@ -108,7 +104,9 @@
     document.querySelectorAll(".activity").forEach((e) => e.remove());
     CQ.world.drag.querySelectorAll(".wlabel, .ledge, .ledge-bar, .flyer").forEach((e) => e.remove());
     if (!carry) CQ.camera.set(960, 540, 1);
-    CQ.world.balanceLayer.style.opacity = ""; // (the label activity fades it out while it is on)
+    // (the label activity fades the balance out while it is on; the finale fades out the balance, Grumble,
+    // the bars and the hanging Zippy)
+    [CQ.world.balanceLayer, CQ.world.grumbleLayer, CQ.world.barLayer, CQ.world.zippyLayer].forEach((l) => (l.style.opacity = ""));
     CQ.world.dark.style.opacity = 0;
     CQ.screen.shade("dark", false);
     CQ.Give.disable();
@@ -1855,11 +1853,10 @@
   }
 
   // ------------------------------------------------------------------ FINALE
+  // Only the jungle and Zippy dancing (js/activities.js): the scene fades away round him
   async function runFinale() {
-    CQ.zippy.setVisible(false); // the finale Zippy (with the crown tower) takes over
     CQ.track("game_complete", {});
-    const r = await CQ.activityFinale();
-    return r;
+    await CQ.activityFinale();
   }
 
   const STEPS = {

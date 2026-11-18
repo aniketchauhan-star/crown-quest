@@ -437,7 +437,6 @@ When a child's practice answer is wrong, the line repeats the number they typed:
 | vo312 | Not quite. Work out 3(5 + 2). | Not quite. Work out three times, five plus two. | नॉट क्वाइट। वर्क आउट थ्री टाइम्स, फाइव प्लस टू। | 4.1 |
 | vo313 | Great work! You solved every equation. | = | ग्रेट वर्क! यू सॉल्व्ड एवरी इक्वेशन। | 3.0 |
 | vo314 | Quest complete! Zippy collected all 10 crowns — and Grumble is still snoring! | Quest complete! ज़िप्पी collected all ten crowns, and Grumble is still snoring! | क्वेस्ट कंप्लीट! ज़िप्पी कलेक्टेड ऑल टेन क्राउन्स, एंड ग्रंबल इज़ स्टिल स्नोरिंग! | 6.7 |
-| vo315 | Here's what you learned on your quest. | = | हियर्स वॉट यू लर्न्ड ऑन योर क्वेस्ट। | 1.8 |
 | vo316 | Now, can you spot these parts in another equation? | = |  | 3.8 |
 | vo317 | Drag each label to the matching box. | = |  | 2.8 |
 | vo318 | Not quite. x represents the unknown value. It is the variable. | = |  | 5.6 |

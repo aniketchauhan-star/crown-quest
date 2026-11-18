@@ -169,9 +169,8 @@ window.CONTENT = {
     "p-intro": "You've helped Zippy find the crowns' masses. Let's try a few equations.",
     "p-done": "Great work! You solved every equation.",
 
-    // Finale
+    // Finale (only heard: Zippy dances, with no words on the screen)
     "fin-1": "Quest complete! Zippy collected all 10 crowns — and Grumble is still snoring!",
-    "fin-2": "Here's what you learned on your quest.",
   },
 
   // Zippy's own lines (speech bubble + his voice).
@@ -216,7 +215,6 @@ window.CONTENT = {
     chapters: "Chapters",
     screens: "All the screens", // the list in the top left corner (read by screen readers)
     replay: "Play this screen again",
-    playAgain: "Play again",
     unit: "1 unit",
     // the two sides, as they are written in the working (the check, Level 4's try, practice)
     lhs: "LHS",
@@ -514,16 +512,6 @@ window.CONTENT = {
     { id: "linear", word: "Linear equation in one variable", meaning: "One variable, and its highest power is 1", example: "x + 2 = 7", color: "#3D8BFD" },
     { id: "solution", word: "Solution", meaning: "A value that makes an equation true", example: "x = 5", color: "#E5484D" },
   ],
-
-  finale: {
-    title: "Quest complete!",
-    cards: [
-      "A level balance shows an equation: LHS = RHS.",
-      "To check a value, replace x. If LHS = RHS, it's the solution.",
-      "Do the same thing to both sides to find x directly.",
-    ],
-    chapters: "Chapters",
-  },
 
   // Sound effects: map any sound cue to a recorded file, e.g. overrides: { "zippy.laugh": "assets/audio/zippy-laugh.mp3" }.
   // (The voice lines are in assets/vo/, see docs/VOICEOVER.md.) The recordings here are made from the
