@@ -318,5 +318,17 @@
   {"id":"vo350","line":"How about x = 12?","spoken":"How about x equals twelve?"},
   {"id":"vo351","line":"Can we find the crown's mass without guessing?","spoken":"Can we find the crown's mass without guessing?"},
   {"id":"vo352","line":"Look to the left of the equal sign. 4x + 3 is the left-hand side.","spoken":"Look to the left of the equal sign. Four x plus three is the left-hand side."},
-  {"id":"vo353","line":"Look to the right of the equal sign. 19 is the right-hand side.","spoken":"Look to the right of the equal sign. Nineteen is the right-hand side."}
+  {"id":"vo353","line":"Look to the right of the equal sign. 19 is the right-hand side.","spoken":"Look to the right of the equal sign. Nineteen is the right-hand side."},
+  {"id":"vo354","line":"Drag the 5 bar to Zippy, then tap Swap.","spoken":"Drag the five bar to ज़िप्पी, then tap Swap.","devanagari":""},
+  {"id":"vo355","line":"The crown and 8 units balance 23 units.","spoken":"The crown and eight units balance twenty-three units.","devanagari":""},
+  {"id":"vo356","line":"Trying different values could take a while.","spoken":"Trying different values could take a while.","devanagari":""},
+  {"id":"vo357","line":"Drag an 8 bar off each side of the balance.","spoken":"Drag an eight bar off each side of the balance.","devanagari":""},
+  {"id":"vo358","line":"Now remove 8 from the other side.","spoken":"Now remove eight from the other side.","devanagari":""},
+  {"id":"vo359","line":"Drag a 4 bar off each side of the balance.","spoken":"Drag a four bar off each side of the balance.","devanagari":""},
+  {"id":"vo360","line":"Now remove 4 from the other side.","spoken":"Now remove four from the other side.","devanagari":""},
+  {"id":"vo361","line":"The two crowns balance 14 units.","spoken":"The two crowns balance fourteen units.","devanagari":""},
+  {"id":"vo362","line":"Divide both sides into two equal groups.","spoken":"Divide both sides into two equal groups.","devanagari":""},
+  {"id":"vo363","line":"Each crown has a mass of 7 units. So, x = 7.","spoken":"Each crown has a mass of seven units. So, x equals seven.","devanagari":""},
+  {"id":"vo364","line":"Let's check 7.","spoken":"Let's check seven.","devanagari":""},
+  {"id":"vo365","line":"Drag each equation into the correct box.","spoken":"Drag each equation into the correct box.","devanagari":""}
 ]

@@ -4,5 +4,6 @@ __pycache__/
 *.pyc
 .vscode/
 
-# Clips the studio made, waiting for tools/vo_build.py
+# Clips the studio made, or cut from a long recording (tools/vo_split.py), waiting for tools/vo_build.py
 tools/studio_out/
+tools/split_out/
