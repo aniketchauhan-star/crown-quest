@@ -2930,13 +2930,6 @@ body.solving .eb-row.final {
 #world.snap > * {
   transition: none !important;
 }
-.nb-zippy-rig {
-  position: absolute;
-  left: 200px;
-  top: 240px;
-  width: 0;
-  height: 0;
-}
 
 /* ---------------------------------------------------------------- activities */
 .activity {
@@ -3134,95 +3127,56 @@ body.solving .eb-row.final {
 .bin.glow {
   animation: chipPulse 0.7s ease-in-out infinite alternate;
 }
-.finale-title {
-  position: absolute;
-  left: 1245px; /* centred over the idea cards */
-  top: 168px;
-  transform: translateX(-50%);
-  font: 800 130px/1 var(--font);
-  white-space: nowrap;
-  z-index: 3;
-}
-.finale-title {
-  color: #4a2300;
-  -webkit-text-stroke: 18px #4a2300;
-}
-.finale-title::after {
-  content: attr(data-t);
-  position: absolute;
-  left: 0;
-  top: 0;
-  -webkit-text-stroke: 0;
-  background: linear-gradient(#fff6c2, #ffd84d 45%, #f0a01c 75%, #ffe27a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.finale-zippy {
-  position: absolute;
-  left: 150px;
-  top: 0;
-  width: 440px;
-  height: 900px;
+/* The finale: only the jungle and Zippy dancing (js/activities.js, activityFinale). Behind him a soft gold
+   glow and specks floating up, under his feet a soft shadow, in front of him twinkling stars: no frames or
+   boxes, only soft light. His frames sit side by side on one strip inside a window one frame big. */
+.finale-act {
   pointer-events: none;
 }
-.finale-zippy .nb-zippy-rig {
-  left: 270px;
-  top: 165px;
-}
-.crown-tower {
+.finale-magic {
   position: absolute;
-  left: 150px;
-  top: 352px;
-  width: 0;
-  height: 0;
+  inset: 0;
 }
-.tower-crown {
+.finale-glow {
   position: absolute;
-  left: -50px;
-  width: 100px;
-  top: calc(var(--i) * -34px - 56px);
-  transform: rotate(var(--r));
-  transform-origin: 50% 100%;
-  animation: towerWobble 1.4s ease-in-out infinite alternate;
-  animation-delay: calc(var(--i) * 0.09s);
-  filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.3));
-}
-.finale-cards {
-  position: absolute;
-  left: 700px;
-  top: 330px;
-  width: 1100px;
-  display: grid;
-  gap: 22px;
-}
-.idea-card {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  padding: 8px 18px 2px;
-  font: 700 42px/1.2 var(--font);
-  color: var(--ink);
-}
-.ic-n {
-  flex: 0 0 68px;
-  height: 68px;
+  width: 980px;
+  height: 980px;
   border-radius: 50%;
-  background: var(--ok);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font: 800 42px/1 var(--font);
-  padding-top: 6px;
+  background: radial-gradient(circle closest-side, rgba(255, 226, 120, 0.95), rgba(255, 210, 80, 0.55) 40%, rgba(255, 200, 60, 0) 100%);
+  transform: translate(-50%, -50%);
+  opacity: 0;
 }
-.finale-btns {
+.finale-shadow {
   position: absolute;
-  left: 700px;
-  top: 820px;
-  width: 1100px; /* centred under the idea cards */
-  display: flex;
-  justify-content: center;
-  gap: 22px;
+  width: 330px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(52, 30, 8, 0.42), rgba(52, 30, 8, 0));
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
+.finale-dancer {
+  position: absolute;
+  overflow: hidden;
+  opacity: 0;
+}
+.finale-strip {
+  position: absolute;
+  max-width: none;
+}
+.finale-star {
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%) scale(0);
+}
+.finale-speck {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #fffbe0, #ffd84d 45%, rgba(255, 200, 60, 0));
+  transform: translate(-50%, -50%);
+  opacity: 0;
 }
 
 /* ---------------------------------------------------------------- A quick recap (four panels)
@@ -4160,14 +4114,6 @@ html.lite #title .t-drift {
     transform: scale(1.18);
   }
 }
-@keyframes towerWobble {
-  from {
-    transform: rotate(calc(var(--r) - 4deg));
-  }
-  to {
-    transform: rotate(calc(var(--r) + 4deg));
-  }
-}
 @keyframes coinSpin {
   0%,
   100% {
@@ -4219,7 +4165,7 @@ html.lite #title .t-drift {
 }
 
 /* ---------------------------------------------------------------- activities on the dark fade */
-/* The activities (label, sort, recap, practice, finale) have no board: their content sits straight on
+/* The activities (label, sort, recap, practice) have no board: their content sits straight on
    the dark fade, so their words and numbers are bright, like the formula screen's. Chips, cards, boxes
    and keys keep their own light faces. */
 .activity .board-title,
@@ -4229,8 +4175,7 @@ html.lite #title .t-drift {
 .activity .pr-ans,
 .activity .pr-line,
 .activity .pr-ask,
-.activity .pr-note:not(.blue),
-.activity .idea-card {
+.activity .pr-note:not(.blue) {
   color: #fffaf0;
   text-shadow: none;
 }

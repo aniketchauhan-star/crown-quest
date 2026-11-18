@@ -1,7 +1,7 @@
 /*
  * Zippy's Crown Quest: activities.
  * The formula screen (concept explanations with Back), "Label the parts", "Sort it",
- * the Word Treasure recap chest, and the finale.
+ * the Word Treasure recap chest, and the finale (Zippy dancing).
  */
 (function () {
   "use strict";
@@ -2388,53 +2388,169 @@
   };
 
   // ------------------------------------------------------------------ Finale
+  // Only the jungle and Zippy dancing (asked 2026-11-18: "nothing I want, only Zippy is dancing", the
+  // voice-over, "without any text", "some magic things happen around him"). The balance, Grumble, the
+  // bars and the hanging Zippy fade away in a burst of gold sparkles, and there Zippy stands on the
+  // paving, the crown on his head and his bag over his shoulder, dancing and laughing to the finale
+  // music: one frame of his sheet per eighth note, so his 8 frames are one bar. Around him a soft gold
+  // glow breathes, stars twinkle, gold specks float up, and at the start of every bar a little burst of
+  // sparkles pops up somewhere round him. He laughs, and the narrator's line is heard
+  // with no words on the screen. No buttons: the corner ones (the screens list, Play this screen again)
+  // stay, and he dances on until another screen is chosen.
+  // Smooth: the frames sit side by side on one strip behind a window, and the strip slides (transform
+  // only: nothing is redrawn), each frame landing on a whole pixel; the frame on show is worked out from
+  // the clock at every screen refresh, so a late refresh never slows the dance or puts it out of step.
+  // The magic runs as browser animations (transform and opacity). With Reduced motion he stands still,
+  // laughing, and the magic is held lit.
+  const DANCE = {
+    x: 960, // stage px: the middle of his cell, between his feet...
+    y: 1000, // ...and the paving under them
+    scale: 1.25,
+    beat: 250, // ms a frame: an eighth note of the finale music (120 BPM, js/audio.js)
+    still: 2, // with Reduced motion: frame 2 (fist up, laughing)
+    body: -280, // his middle, from his feet (stage px)
+  };
+  // Where the stars twinkle, from between his feet (stage px): all round him, clear of him, his raised
+  // hand and his bag.
+  const STARS = [
+    [-300, -470], [-360, -250], [-260, -90], [290, -500], [370, -300], [300, -110],
+    [-130, -650], [160, -670], [-430, -420], [440, -170], [-40, -740], [450, -460],
+  ];
+  const SPECKS = 22; // gold specks floating up from the paving round him
+  const BAR = 2000; // ms: a bar of the finale music (8 frames); a sparkle burst on each
+
   CQ.activityFinale = async function () {
-    const c = C().finale;
+    const s = window.SPRITES.zippy_dance;
+    const still = CQ.motion.reduced;
+    const W = CQ.world;
     const wrap = CQ.el("div", "activity finale-act", CQ.ui.overlay);
-    CQ.el("div", "nb-dim light", wrap);
-    CQ.soft.set("activity", [], 1); // the finale's fade is lighter
-    const title = CQ.el("div", "finale-title", wrap, c.title);
-    title.setAttribute("data-t", c.title);
-    const z = CQ.el("div", "finale-zippy", wrap);
-    const end = CQ.vineEndFor(270, 165, 0.72); // the rig below sits at (270, 165)
-    CQ.hangVine(z, end.x, end.y);
-    const rig = CQ.el("div", "nb-zippy-rig", z);
-    const sp = new CQ.Sprite(rig, "", 0.72);
-    sp.play("zippy_laugh", [1, 7, 3, 8, 5], 230, { loop: true }); // celebrating next to his crown tower
-    const tower = CQ.el("div", "crown-tower", rig);
-    for (let i = 0; i < CQ.CROWNS_TOTAL; i++) {
-      const cr = CQ.img("crown", "tower-crown", tower);
-      cr.style.setProperty("--i", i);
-      cr.style.setProperty("--r", CQ.rand(-8, 8).toFixed(1) + "deg");
-    }
-    const cards = CQ.el("div", "finale-cards", wrap);
-    c.cards.forEach((t, i) => {
-      const e = CQ.el("div", "idea-card", cards, `<span class="ic-n">${i + 1}</span><span>${CQ.rich(t)}</span>`);
-      CQ.anim(e, [{ transform: "translateX(80px)", opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], { duration: 500, delay: 900 + i * 450, easing: CQ.EASE.back });
+    wrap.setAttribute("aria-hidden", "true"); // nothing to read or press on it
+    const back = CQ.el("div", "finale-magic", wrap); // behind him: the glow and the specks
+    const glow = CQ.el("div", "finale-glow", back);
+    CQ.pos(glow, DANCE.x, DANCE.y + DANCE.body);
+    const shadow = CQ.el("div", "finale-shadow", wrap);
+    CQ.pos(shadow, DANCE.x, DANCE.y);
+
+    // Zippy: a window one frame big, and the strip of frames inside it
+    const fw = Math.round(s.w * DANCE.scale);
+    const fh = Math.round(s.h * DANCE.scale);
+    const k = fw / s.w;
+    const fig = CQ.el("div", "finale-dancer", wrap);
+    CQ.box(fig, DANCE.x - s.ax * k, DANCE.y - s.ay * k, fw, fh);
+    fig.style.transformOrigin = `${s.ax * k}px ${s.ay * k}px`; // he grows from his feet
+    const strip = CQ.el("img", "finale-strip", fig);
+    strip.alt = "";
+    strip.draggable = false;
+    strip.src = s.src;
+    CQ.box(strip, 0, 0, fw * s.count, fh);
+    const show = (f) => (strip.style.transform = `translate3d(${-(f - 1) * fw}px, 0, 0)`);
+    show(still ? DANCE.still : 1);
+    const front = CQ.el("div", "finale-magic", wrap); // in front: the stars
+
+    // the magic round him (built while he is still unseen)
+    const loop = (el, kf, dur, delay, opts) =>
+      el.animate(kf, Object.assign({ duration: dur, delay: -delay, iterations: Infinity, easing: "ease-in-out" }, opts));
+    STARS.forEach(([dx, dy], i) => {
+      const st = CQ.el("div", "sparkle finale-star", front);
+      CQ.pos(st, DANCE.x + dx + CQ.rand(-18, 18), DANCE.y + dy + CQ.rand(-18, 18));
+      const size = CQ.rand(0.75, 1.3).toFixed(2);
+      if (still) return (st.style.transform = `translate(-50%,-50%) scale(${(size * 0.8).toFixed(2)})`);
+      const at = (sc, r) => `translate(-50%,-50%) scale(${(sc * size).toFixed(2)}) rotate(${r}deg)`;
+      const dur = CQ.rand(1800, 2800);
+      loop(st, [
+        { transform: at(0, 0), opacity: 0 },
+        { transform: at(1, 45), opacity: 1, offset: 0.3 },
+        { transform: at(0.8, 75), opacity: 0.9, offset: 0.5 },
+        { transform: at(0, 120), opacity: 0, offset: 0.8 },
+        { transform: at(0, 120), opacity: 0 },
+      ], dur, (i / STARS.length) * dur);
     });
-    const btns = CQ.el("div", "finale-btns", wrap);
-    let choice;
-    const chosen = new Promise((r) => (choice = r));
-    CQ.button("btn-wood big", `${CQ.ICON.restart}<span>${C().ui.playAgain}</span>`, C().ui.playAgain, btns, () => choice("again"));
-    CQ.button("btn-wood big", `${CQ.gem("#3D8BFD", 40)}<span>${C().ui.wordTreasure}</span>`, C().ui.wordTreasure, btns, () => CQ.treasure.open());
-    CQ.button("btn-wood big", `${CQ.ICON.menu}<span>${c.chapters}</span>`, c.chapters, btns, () => CQ.menu.open());
-    CQ.anim(title, [{ transform: "translateX(-50%) scale(.3)", opacity: 0 }, { transform: "translateX(-50%) scale(1)", opacity: 1 }], { duration: 700, easing: CQ.EASE.back, essential: true });
-    CQ.anim(z, [{ transform: "translateY(-800px)" }, { transform: "translateY(0)" }], { duration: 900, easing: CQ.EASE.back, essential: true });
-    CQ.audio.play("fanfare");
-    CQ.audio.music("finale");
+    if (!still)
+      for (let i = 0; i < SPECKS; i++) {
+        const sp = CQ.el("div", "finale-speck", back);
+        CQ.pos(sp, DANCE.x + CQ.rand(-420, 420), DANCE.y + CQ.rand(-60, 10));
+        const size = CQ.rand(0.6, 1.3).toFixed(2);
+        const dx = CQ.rand(-70, 70);
+        const up = CQ.rand(380, 640);
+        const dur = CQ.rand(3600, 6000);
+        loop(sp, [
+          { transform: `translate(-50%,-50%) scale(${size})`, opacity: 0 },
+          { transform: `translate(-50%,-50%) translate(${dx * 0.3}px, ${-up * 0.25}px) scale(${size})`, opacity: 1, offset: 0.25 },
+          { transform: `translate(-50%,-50%) translate(${dx}px, ${-up}px) scale(${size * 0.4})`, opacity: 0 },
+        ], dur, (i / SPECKS) * dur, { easing: "linear" });
+      }
+
+    // a little burst of sparkles somewhere round him (each sparkle goes when it has faded)
     const burst = () => {
-      CQ.fx.confetti(CQ.ui.layer, CQ.rand(500, 1400), CQ.rand(250, 450), 40);
-      CQ.audio.play("confetti");
+      const [dx, dy] = CQ.pick(STARS);
+      const x = DANCE.x + dx * 0.9;
+      const y = DANCE.y + dy * 0.9;
+      for (let i = 0; i < 5; i++) {
+        const sp = CQ.el("div", "sparkle finale-star", front);
+        CQ.pos(sp, x + CQ.rand(-50, 50), y + CQ.rand(-50, 50));
+        const at = (sc, r) => `translate(-50%,-50%) scale(${sc.toFixed(2)}) rotate(${r}deg)`;
+        const sc = CQ.rand(0.5, 1);
+        sp.animate([
+          { transform: at(0, 0), opacity: 0 },
+          { transform: at(sc, 60), opacity: 1, offset: 0.35 },
+          { transform: at(0, 140), opacity: 0 },
+        ], { duration: CQ.rand(700, 1000), delay: i * 70, easing: "ease-out", fill: "both" }).finished.then(() => sp.remove(), () => sp.remove());
+      }
     };
-    burst();
-    const iv = setInterval(burst, 2600);
-    CQ.run.onCancel(() => clearInterval(iv));
-    await CQ.say("fin-1", { advance: "auto" });
-    await CQ.say("fin-2", { advance: "none" });
-    const r = await CQ.run.when(chosen);
-    clearInterval(iv);
-    CQ.soft.set("activity", false);
-    wrap.remove();
-    return r;
+
+    // the dance: the frame for this moment, at every screen refresh, until the screen goes
+    let t0 = 0;
+    let shown = 0;
+    let bar = 0;
+    const dance = () => {
+      if (still) return;
+      strip.style.willChange = "transform"; // (only while he dances: the strip goes with the screen)
+      const off = CQ.ticker.add((dt, now) => {
+        if (!wrap.isConnected) return off(); // another screen has been chosen
+        if (!t0) t0 = now;
+        const f = (Math.floor((now - t0) / DANCE.beat) % s.count) + 1;
+        if (f !== shown) show((shown = f));
+        const b = Math.floor((now - t0) / BAR) + 1;
+        if (b !== bar) {
+          bar = b;
+          burst();
+        }
+      });
+    };
+
+    // his sheet ready to show (it is loaded with the game; this only waits for it on a slow device)
+    if (strip.decode) await CQ.run.when(strip.decode().catch(() => {}));
+
+    // the scene fades away in a burst of sparkles where he will stand...
+    CQ.audio.music("finale");
+    CQ.audio.play("bar.merge");
+    [W.balanceLayer, W.grumbleLayer, W.barLayer, W.zippyLayer].forEach((l) =>
+      CQ.anim(l, [{ opacity: 1 }, { opacity: 0 }], { duration: 700, easing: "ease-in", essential: true })
+    );
+    CQ.fx.sparkle(front, DANCE.x, DANCE.y + DANCE.body, 18, 240);
+    await CQ.run.wait(350);
+    // ...and there he is, dancing
+    CQ.audio.play("fanfare");
+    CQ.anim(glow, [{ opacity: 0 }, { opacity: 0.75 }], { duration: 900, easing: "ease-out", essential: true }).then(() => {
+      if (!still && glow.isConnected)
+        loop(glow, [
+          { transform: "translate(-50%,-50%) scale(.94)", opacity: 0.6 },
+          { transform: "translate(-50%,-50%) scale(1.06)", opacity: 0.9 },
+        ], 2000, 0, { direction: "alternate" }); // breathing with the music, a bar each way
+    });
+    CQ.anim(shadow, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, easing: "ease-out", essential: true });
+    CQ.anim(
+      fig,
+      still ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1)" }],
+      { duration: still ? 300 : 600, easing: CQ.EASE.back, essential: true }
+    );
+    dance();
+    await CQ.run.wait(900);
+    // he laughs, then the narrator (no caption: no words on this screen)
+    CQ.audio.play("zippy.win", { volume: 1.3 });
+    await CQ.run.wait(Math.max(0, ((C().audio && C().audio.winLaugh) || 1.2) * 1000 - 300));
+    const text = CQ.T("fin-1");
+    await CQ.run.when(CQ.audio.speak(CQ.speakable(text), { who: "narrator", line: text }));
+    await CQ.run.when(new Promise(() => {})); // he dances on: the menu or ↻ ends this screen
   };
 })();

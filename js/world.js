@@ -471,12 +471,6 @@
     e.style.top = y - VINE.end.y * VINE.scale + "px";
     e.style.transform = `rotate(${((angle || 0) - VINE_LEAN).toFixed(4)}rad)`;
   };
-  // A vine hanging straight down to (x, y) (notebook and finale).
-  CQ.hangVine = function (parent, x, y) {
-    const e = CQ.makeVine(parent);
-    CQ.placeVine(e, x, y, 0);
-    return e;
-  };
 
   // ================================================================== Zippy
   // Where Zippy's hands are, measured from the tip of his tail, in source-art pixels (scaled at use).
