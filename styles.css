@@ -1180,43 +1180,29 @@ html[data-shade] .stage-edge::after {
      "text aise ni aana chahie next line mei..same line mei aa skta hai"; it was 1100 px, and lines of
      920–1000 px went onto two rows). js/ui.js cuts a longer line into rows that each fit. */
   width: 1190px;
-  min-height: 120px;
+  min-height: 145px; /* as tall as with the speaker it had (96 px + the frame): a one-row and a two-row line give the same bar, so it doesn't jump between lines */
+  /* no icon: the line starts at the bar's left and types itself out left to right, its rows inside the
+     frame (asked 2026-11-18: "The question template text should come from left to right. Not in
+     between."; for a moment that day it was centred, after "remove this speaker icon and the question
+     template text should come in between of question panel and it should be fully wrapped in this"; a
+     speaker medallion used to sit at the left). A tap on the bar plays the line again. */
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 2px 14px 0 2px;
+  justify-content: flex-start;
+  padding: 2px 20px 0 28px;
+  cursor: pointer;
   pointer-events: auto;
   z-index: 20; /* the words children read always sit above name bursts and effects */
 }
-.spk {
-  /* a speaker in a gold medallion (tap it to hear the line again). Not Zippy's face: the narrator
-     reads these lines, not Zippy. */
-  position: relative;
-  flex: 0 0 96px;
-  width: 96px;
-  height: 96px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 5px solid #4a2300;
-  border-radius: 50%;
-  overflow: hidden;
-  background: radial-gradient(circle at 38% 32%, #fff3b0, #ffd84d 45%, #f0a01c);
-  box-shadow: inset 0 -4px 0 rgba(107, 62, 0, 0.35);
-  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.3));
-  color: #5e3415;
-  cursor: pointer;
-}
-.spk svg {
-  width: 58px;
-  height: 58px;
-  margin-left: 2px;
-}
-.spk:active {
-  transform: translateY(4px);
+/* the unseen "Hear it again" button (keyboards, screen readers): the bar shows where the focus is */
+.caption:focus-within {
+  outline: 4px solid #ffd84d;
+  outline-offset: 4px;
 }
 .cap-text {
   flex: 1;
+  min-width: 0;
+  text-align: left;
   font-weight: 600;
   font-size: 40px;
   line-height: 1.2;
@@ -3183,6 +3169,45 @@ body.solving .eb-row.final {
   background: radial-gradient(closest-side, #fffbe0, #ffd84d 45%, rgba(255, 200, 60, 0));
   transform: translate(-50%, -50%);
   opacity: 0;
+}
+/* "Mission Complete!" across the top (2026-11-18): the name titles' gold letters in a dark brown edge
+   (.nameburst.orange), a little smaller so it stays clear of the corner buttons */
+.finale-title {
+  z-index: 13;
+}
+.finale-title .nb-word {
+  font-size: 124px;
+}
+.finale-title .nb-ch {
+  -webkit-text-stroke: 15px var(--nb-ink);
+}
+/* Play again, between the title and Zippy's crown: it pops up, then breathes gently */
+.finale-again {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  z-index: 14;
+}
+.finale-again.on {
+  animation: againBreath 1.1s ease-in-out infinite alternate;
+}
+.finale-again .btn-wood {
+  height: 112px;
+  min-width: 330px;
+  font-size: 52px;
+  filter: drop-shadow(0 0 14px rgba(255, 216, 77, 0.7)) drop-shadow(0 8px 6px rgba(0, 0, 0, 0.35));
+}
+.finale-again .btn-wood svg {
+  width: 58px;
+  height: 58px;
+}
+@keyframes againBreath {
+  from {
+    scale: 1;
+  }
+  to {
+    scale: 1.06;
+  }
 }
 
 /* ---------------------------------------------------------------- A quick recap (four panels)

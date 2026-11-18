@@ -172,7 +172,8 @@ window.CONTENT = {
     "p-intro": "You've helped Zippy find the crowns' masses. Let's try a few equations.",
     "p-done": "Great work! You solved every equation.",
 
-    // Finale (only heard: Zippy dances, with no words on the screen)
+    // Finale (heard, not shown in the question bar: Zippy dances; the title and the replay button are
+    // in `finale`, below)
     "fin-1": "Quest complete! Zippy collected all 10 crowns — and Grumble is still snoring!",
   },
 
@@ -217,7 +218,7 @@ window.CONTENT = {
     // the two sides, as they are written in the working (the check, Level 4's try, practice)
     lhs: "LHS",
     rhs: "RHS",
-    // read by screen readers only (not shown): the speaker in the question bar, the gold bars ({v} = the
+    // read by screen readers only (not shown): the question bar's hear-it-again button, the gold bars ({v} = the
     // bar's number; {side} = left or right), the boxes to fill in, and practice's list of answers
     hearAgain: "Hear it again",
     goldBar: "Gold bar {v}",
@@ -487,6 +488,14 @@ window.CONTENT = {
     { id: "linear", word: "Linear equation in one variable", meaning: "One variable, and its highest power is 1", example: "x + 2 = 7", color: "#3D8BFD" },
     { id: "solution", word: "Solution", meaning: "A value that makes an equation true", example: "x = 5", color: "#E5484D" },
   ],
+
+  // The finale's words (asked 2026-11-18: "add a mission complete in a magical way in upper side…
+  // monkey is dancing for 7 to 8 seconds. And then replay button will come in between"): the title across
+  // the top, and the button that plays the quest again from the start
+  finale: {
+    title: "Mission Complete!",
+    replay: "Play again",
+  },
 
   // Sound effects: map any sound cue to a recorded file, e.g. overrides: { "zippy.laugh": "assets/audio/zippy-laugh.mp3" }.
   // (The voice lines are in assets/vo/, see docs/VOICEOVER.md.) The recordings here are made from the
