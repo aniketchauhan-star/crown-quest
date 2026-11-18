@@ -11,8 +11,6 @@
 
   // ------------------------------------------------------------------ icons
   const ICON = {
-    speaker:
-      '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 18h8l11-9v30l-11-9H7z" fill="currentColor" stroke="#5E3415" stroke-width="3" stroke-linejoin="round"/><path d="M31 17c2.6 2 4 4.6 4 7s-1.4 5-4 7M36 11c4.4 3.3 7 8 7 13s-2.6 9.7-7 13" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></svg>',
     restart:
       '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M38 24a14 14 0 1 1-4.1-9.9" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><path d="M29 6l9 8-11 5z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/></svg>',
     menu: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 13h28M10 24h28M10 35h28" stroke="currentColor" stroke-width="7" stroke-linecap="round"/></svg>',
@@ -400,16 +398,25 @@
   CQ.caption = {
     build(ui) {
       this.el = CQ.el("div", "caption hidden", ui);
-      // a speaker at the left of the caption; tapping it plays the line again. (Not Zippy's face: the
-      // narrator reads these lines, not Zippy. Review, 2026-11-07.)
-      this.spk = button("spk", ICON.speaker, C().ui.hearAgain, this.el, () => this.replay());
+      // No speaker beside the words (asked 2026-11-18: "remove this speaker icon and the question template
+      // text should come in between of question panel and it should be fully wrapped in this"; since
+      // 2026-11-07 a speaker in a gold medallion sat at the bar's left): the line starts at the bar's left
+      // and types itself out left to right, its rows inside the frame (asked 2026-11-18: "should come from
+      // left to right. Not in between."; it was centred for a moment). A tap on the bar still plays the
+      // line again once it is all shown (while it is typing, a tap shows it all at once). Keyboards and
+      // screen readers have an unseen "Hear it again" button for that.
       this.txt = CQ.el("div", "cap-text", this.el);
       this.txt.setAttribute("aria-hidden", "true"); // screen readers get the whole line at once instead:
       this.probe = CQ.el("span", "cap-text cap-probe", this.el); // measures rows (unseen)
       this.probe.setAttribute("aria-hidden", "true");
       this.sr = CQ.el("div", "sr-only", this.el);
       this.sr.setAttribute("aria-live", "polite");
-      this.txt.addEventListener("click", () => this.reveal());
+      this.again = button("sr-only cap-again", "", C().ui.hearAgain, this.el, () => this.replay());
+      this.el.addEventListener("click", (e) => {
+        if (e.target === this.again) return;
+        if (this.chars) this.reveal();
+        else this.replay();
+      });
       this.text = null;
       this.rows = [""];
       this.busy = false; // true while the child is listening to the line again
@@ -455,7 +462,6 @@
         easing: CQ.EASE.out,
         keep: false,
       });
-      CQ.anim(this.spk, [{ transform: "scale(.85)" }, { transform: "scale(1.08)" }, { transform: "scale(1)" }], { duration: 480, easing: CQ.EASE.back, keep: false });
     },
     // The line in as few rows as it needs, each fitting the bar, as even as they can be: cut at whole
     // words, best at the end of a sentence or at a comma or dash where one is near, and never on a

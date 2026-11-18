@@ -2313,9 +2313,14 @@
   // paving, the crown on his head and his bag over his shoulder, dancing and laughing to the finale
   // music: one frame of his sheet per eighth note, so his 8 frames are one bar. Around him a soft gold
   // glow breathes, stars twinkle, gold specks float up, and at the start of every bar a little burst of
-  // sparkles pops up somewhere round him. He laughs, and the narrator's line is heard
-  // with no words on the screen. No buttons: the corner ones (the screens list, Play this screen again)
-  // stay, and he dances on until another screen is chosen.
+  // sparkles pops up somewhere round him. He laughs, and the narrator's line is heard (not shown in the
+  // question bar). Then (asked 2026-11-18: "add a mission complete in a magical way in upper side. Upper
+  // top. And monkey is dancing for 7 to 8 seconds. And then replay button will come in between. And
+  // nothing"): "Mission Complete!" drops in across the top letter by letter, each with a little burst of
+  // sparkles, stars twinkling round it and a wave of light running through its letters now and then; he
+  // dances for four bars (8 s), then holds his pose, fist up and laughing; and the Play again button pops
+  // up between the title and his crown, breathing gently, to play the quest again from the start.
+  // Nothing else: the corner buttons (the screens list, Play this screen again) stay as everywhere.
   // Smooth: the frames sit side by side on one strip behind a window, and the strip slides (transform
   // only: nothing is redrawn), each frame landing on a whole pixel; the frame on show is worked out from
   // the clock at every screen refresh, so a late refresh never slows the dance or puts it out of step.
@@ -2331,19 +2336,24 @@
   };
   // Where the stars twinkle, from between his feet (stage px): all round him, clear of him, his raised
   // hand and his bag.
+  // (the ones over his crown sit either side of the Play again button, clear of it)
   const STARS = [
     [-300, -470], [-360, -250], [-260, -90], [290, -500], [370, -300], [300, -110],
-    [-130, -650], [160, -670], [-430, -420], [440, -170], [-40, -740], [450, -460],
+    [-340, -650], [340, -660], [-430, -420], [440, -170], [450, -460],
   ];
   const SPECKS = 22; // gold specks floating up from the paving round him
   const BAR = 2000; // ms: a bar of the finale music (8 frames); a sparkle burst on each
+  const DANCE_FOR = 4 * BAR; // he dances four bars ("7 to 8 seconds"), then holds his pose
+  const TITLE = { x: 960, y: 170 }; // "Mission Complete!": its middle, across the top, clear of the corner buttons
+  const AGAIN = { x: 960, y: 350 }; // Play again: between the title and his crown
+  // stars twinkling round the title, from its middle (stage px), clear of its letters
+  const TITLE_STARS = [[-640, -50], [655, -40], [-590, 70], [600, 75], [-700, 20], [710, 25]];
 
   CQ.activityFinale = async function () {
     const s = window.SPRITES.zippy_dance;
     const still = CQ.motion.reduced;
     const W = CQ.world;
     const wrap = CQ.el("div", "activity finale-act", CQ.ui.overlay);
-    wrap.setAttribute("aria-hidden", "true"); // nothing to read or press on it
     const back = CQ.el("div", "finale-magic", wrap); // behind him: the glow and the specks
     const glow = CQ.el("div", "finale-glow", back);
     CQ.pos(glow, DANCE.x, DANCE.y + DANCE.body);
@@ -2365,6 +2375,29 @@
     const show = (f) => (strip.style.transform = `translate3d(${-(f - 1) * fw}px, 0, 0)`);
     show(still ? DANCE.still : 1);
     const front = CQ.el("div", "finale-magic", wrap); // in front: the stars
+    [back, shadow, fig, front].forEach((e) => e.setAttribute("aria-hidden", "true")); // (only the title and the button are read)
+
+    // "Mission Complete!" across the top, its letters waiting to drop in (the name titles' gold letters in
+    // a dark edge: CQ.nameBurst's look), and the Play again button, waiting for the dance to end
+    const c = C().finale;
+    const title = CQ.el("div", "nameburst orange finale-title", wrap);
+    title.setAttribute("role", "heading");
+    title.setAttribute("aria-level", "1");
+    title.setAttribute("aria-label", c.title);
+    CQ.pos(title, TITLE.x, TITLE.y);
+    const word = CQ.el("div", "nb-word", title);
+    word.setAttribute("aria-hidden", "true");
+    const letters = Array.from(c.title).map((ch) => {
+      const l = CQ.el("span", "nb-ch" + (ch === " " ? " gap" : ""), word, ch === " " ? "\u00a0" : ch);
+      l.setAttribute("data-ch", ch === " " ? "\u00a0" : ch);
+      l.style.opacity = "0";
+      return l;
+    });
+    const titleStars = TITLE_STARS.map(([dx, dy]) => {
+      const st = CQ.el("div", "sparkle finale-star", front);
+      CQ.pos(st, TITLE.x + dx, TITLE.y + dy);
+      return st;
+    });
 
     // the magic round him (built while he is still unseen)
     const loop = (el, kf, dur, delay, opts) =>
@@ -2417,16 +2450,24 @@
       }
     };
 
-    // the dance: the frame for this moment, at every screen refresh, until the screen goes
+    // the dance: the frame for this moment, at every screen refresh, for four bars; then he holds his pose
     let t0 = 0;
     let shown = 0;
     let bar = 0;
+    let danced;
+    const danceOver = new Promise((r) => (danced = r));
     const dance = () => {
-      if (still) return;
-      strip.style.willChange = "transform"; // (only while he dances: the strip goes with the screen)
+      if (still) return danced();
+      strip.style.willChange = "transform"; // (only while he dances)
       const off = CQ.ticker.add((dt, now) => {
         if (!wrap.isConnected) return off(); // another screen has been chosen
         if (!t0) t0 = now;
+        if (now - t0 >= DANCE_FOR) {
+          off();
+          show((shown = DANCE.still)); // fist up, laughing
+          strip.style.willChange = "";
+          return danced();
+        }
         const f = (Math.floor((now - t0) / DANCE.beat) % s.count) + 1;
         if (f !== shown) show((shown = f));
         const b = Math.floor((now - t0) / BAR) + 1;
@@ -2435,6 +2476,61 @@
           burst();
         }
       });
+    };
+
+    // The title comes in: each letter drops in from above and lands with a little pop, one after the
+    // other, a few sparkles bursting from every other one as it lands; then the stars round it twinkle,
+    // and every few seconds a wave of light runs through the letters (each lifts and swells a little in
+    // turn). With Reduced motion the letters simply fade in, one after the other, and stay still.
+    const titleIn = () => {
+      CQ.audio.play("name.burst");
+      letters.forEach((l, i) => {
+        const kf = still ? [{ opacity: 0 }, { opacity: 1 }] : [{ transform: "translateY(-150px) scale(.4)", opacity: 0 }, { transform: "translateY(0) scale(1)", opacity: 1 }];
+        CQ.anim(l, kf, { duration: still ? 300 : 520, delay: i * (still ? 40 : 85), easing: CQ.EASE.back, keep: false, essential: true }).then(() => {
+          l.style.opacity = "";
+          if (still || !wrap.isConnected || l.classList.contains("gap")) return;
+          if (i % 2 === 0) {
+            const p = CQ.centerOf(l);
+            if (p) CQ.fx.sparkle(front, p.x, p.y, 4, 70);
+          }
+          // the wave of light, every 3.6 s, running from the first letter to the last
+          loop(l, [
+            { transform: "translateY(0) scale(1)" },
+            { transform: "translateY(-12px) scale(1.12)", offset: 0.07 },
+            { transform: "translateY(0) scale(1)", offset: 0.15 },
+            { transform: "translateY(0) scale(1)" },
+          ], 3600, -(1400 + i * 60), { easing: "ease-in-out" });
+        });
+      });
+      titleStars.forEach((st, i) => {
+        const size = 0.8 + (i % 3) * 0.2;
+        if (still) {
+          st.style.transform = `translate(-50%,-50%) scale(${size * 0.8})`;
+          return CQ.anim(st, [{ opacity: 0 }, { opacity: 1 }], { duration: 400, delay: 400 + i * 120, essential: true });
+        }
+        const at = (sc, r) => `translate(-50%,-50%) scale(${(sc * size).toFixed(2)}) rotate(${r}deg)`;
+        loop(st, [
+          { transform: at(0, 0), opacity: 0 },
+          { transform: at(1, 45), opacity: 1, offset: 0.3 },
+          { transform: at(0.8, 75), opacity: 0.9, offset: 0.5 },
+          { transform: at(0, 120), opacity: 0, offset: 0.8 },
+          { transform: at(0, 120), opacity: 0 },
+        ], 2200, -(i * 380) - 1400);
+      });
+    };
+    // Play again pops up between the title and him, with a burst of sparkles, and breathes gently (CSS)
+    // to be tapped: the quest starts again from the beginning.
+    const againIn = () => {
+      const holder = CQ.el("div", "finale-again", wrap);
+      CQ.pos(holder, AGAIN.x, AGAIN.y);
+      const btn = CQ.button("btn-wood", `${CQ.ICON.restart}<span>${c.replay}</span>`, c.replay, holder, () => {
+        btn.disabled = true;
+        CQ.audio.play("ui.tap");
+        CQ.flow.chapter("intro");
+      });
+      CQ.audio.play("ui.pop");
+      CQ.anim(holder, [{ scale: "0.3", opacity: 0 }, { scale: "1", opacity: 1 }], { duration: 520, easing: CQ.EASE.back, keep: false, essential: true }).then(() => holder.classList.add("on"));
+      if (!still) CQ.fx.sparkle(front, AGAIN.x, AGAIN.y, 14, 220);
     };
 
     // his sheet ready to show (it is loaded with the game; this only waits for it on a slow device)
@@ -2464,12 +2560,26 @@
       { duration: still ? 300 : 600, easing: CQ.EASE.back, essential: true }
     );
     dance();
-    await CQ.run.wait(900);
-    // he laughs, then the narrator (no caption: no words on this screen)
-    CQ.audio.play("zippy.win", { volume: 1.3 });
-    await CQ.run.wait(Math.max(0, ((C().audio && C().audio.winLaugh) || 1.2) * 1000 - 300));
-    const text = CQ.T("fin-1");
-    await CQ.run.when(CQ.audio.speak(CQ.speakable(text), { who: "narrator", line: text }));
-    await CQ.run.when(new Promise(() => {})); // he dances on: the menu or ↻ ends this screen
+    const danceStart = performance.now();
+    // the title, as he lands
+    await CQ.run.wait(600);
+    titleIn();
+    await CQ.run.wait(300);
+    // he laughs, then the narrator (not in the question bar: only the title is written on this screen);
+    // the voice goes on by itself, the button doesn't wait for it
+    (async () => {
+      CQ.audio.play("zippy.win", { volume: 1.3 });
+      await CQ.run.wait(Math.max(0, ((C().audio && C().audio.winLaugh) || 1.2) * 1000 - 300));
+      const text = CQ.T("fin-1");
+      await CQ.run.when(CQ.audio.speak(CQ.speakable(text), { who: "narrator", line: text }));
+    })().catch(() => {}); // (cancelled: another screen was chosen)
+    // the dance over (with Reduced motion he stands still meanwhile), he strikes his pose; then Play again
+    await CQ.run.when(danceOver);
+    const left = DANCE_FOR - (performance.now() - danceStart);
+    if (still && left > 0) await CQ.run.wait(left);
+    if (!still) CQ.anim(fig, [{ transform: "scale(1)" }, { transform: "scale(1.07)", offset: 0.4 }, { transform: "scale(1)" }], { duration: 460, easing: "ease-out", keep: false, essential: true });
+    await CQ.run.wait(500);
+    againIn();
+    await CQ.run.when(new Promise(() => {})); // the screen stays: Play again, the menu or ↻ ends it
   };
 })();
