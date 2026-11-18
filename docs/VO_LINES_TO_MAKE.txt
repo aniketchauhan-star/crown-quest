@@ -1,9 +1,9 @@
-NOTE (2026-11-18): the first 12 lines below are still to record. The 51 after them are in
-the game, from the user's own recording ("1 (1).mp3", a man's voice, read in that order; cut by
-tools/vo_split.py); their list is kept for making them again in the one woman's voice, Female
+NOTE (2026-11-18): all 63 lines below are in the game now, from the user's own recordings
+("1 (1).mp3" for the 51, "2 (1).mp3" for the 12; a man's voice, read in this order; cut by
+tools/vo_split.py). The list is kept for making them again in the one woman's voice, Female
 Teacher (Standard), once Aamir's studio has credit again (docs/VOICEOVER.md).
 
-STILL TO RECORD (12 lines, found 2026-11-18; same settings as below)
+THE 12 LINES FOUND ON 2026-11-18 (recorded as "2 (1).mp3"; same settings as below)
 ============================================================
 
 Filename: vo354
