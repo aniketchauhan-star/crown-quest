@@ -1,0 +1,291 @@
+PART 1  (45 lines: vo001 to vo064)
+
+Meet Zippy! He spots a golden crown.
+Grumble guards the treasure.
+Luckily, he's asleep!
+If the balance tips, the alarm will wake Grumble.
+Let's replace the crown with something just as heavy. That will keep the balance level!
+Each coin has a mass of one unit.
+Which bar should ज़िप्पी use?
+Drag it to Zippy, then tap Swap.
+Now tap Swap!
+Oops! That bar is too light, the balance tipped!
+Oops! That bar is too heavy, the balance tipped!
+Drag a gold bar to Zippy.
+Each coin is one unit. The crown balances five coins, so it is five units. Try the five bar!
+Perfect swap! The crown is five units, just like the five coins.
+Hee hee! Sleep tight, Grumble!
+There's another crown! Let's help ज़िप्पी collect it too.
+Each coin is one unit. The crown balances seven coins, so it is seven units. Try the seven bar!
+Perfect swap! The crown is seven units, just like the seven coins.
+One more crown. Grumble is still asleep!
+Each coin is one unit. The crown balances four coins, so it is four units. Try the four bar!
+Perfect swap! The crown is four units, just like the four coins.
+Wait... this crown has two coins beside it.
+The crown and these two coins together balance seven coins.
+But ज़िप्पी needs a replacement for just the crown.
+How can we find the crown's mass?
+Let's call the crown's mass x.
+The crown and two coins have a total mass of x plus two.
+They balance seven units on the other side.
+So, we can write x plus two equals seven.
+Now look at x plus two. It represents the total mass of the crown and the two coins.
+Here x is a variable, and two is a constant. We add them together.
+The balance shows that x plus two equals seven.
+A statement that says two expressions have equal values is called an equation.
+The expression to the left of the equals sign is called the left-hand side, or L H S.
+The expression to the right of the equals sign is called the right-hand side, ऑर R H S.
+Brilliant! You labelled every part.
+This equation has one variable: x.
+This equation has one variable, and its highest power is one.
+Check the highest power of x.
+The highest power of x is one, so this equation is linear.
+The highest power of x is two, so this equation is nonlinear.
+Great sorting! You found every linear equation.
+A quick recap.
+A variable is a symbol that represents a value.
+An equation states that two expressions have equal values.
+
+
+PART 2  (45 lines: vo065 to vo118)
+
+The expression to the left of the equals sign is the left-hand side.
+The expression to the right of the equals sign is the right-hand side.
+Now let's find the crown's mass.
+We need a value of x that makes both sides equal.
+Let's check four. Replace x with four and find the value of each side.
+Now, let's check five. Replace x with five and find the value of each side.
+Both sides equal seven.
+A value that makes an equation true is called its solution. So, five is the solution.
+The crown's mass is five units. ज़िप्पी can use the five-unit bar!
+Now ज़िप्पी can swap. Tap Swap!
+Let's try four.
+Give the four bar to ज़िप्पी.
+Replace x with four.
+Add: four plus three. Count on from four: five, six, seven.
+R H S is the number on the right of the equals sign.
+Phew! Good thing we checked.
+Now, let's try six.
+Give the six bar to ज़िप्पी.
+Replace x with six.
+Add: six plus three. Count on from six: seven, eight, nine.
+Both sides equal nine. So, six is the solution. ज़िप्पी can use the six-unit bar!
+Choose a value for x. Check whether both sides are equal.
+Both sides equal eleven. So, seven is the solution.
+Let's check five.
+Replace x with five and find the value of each side.
+Add: five plus four. Count on from five: six, seven, eight, nine.
+The left side equals nine, and the right side equals eleven. They're different, so five is not a solution.
+Try another value.
+Let's check eight.
+Replace x with eight and find the value of each side.
+Add: eight plus four. Count on from eight: nine, ten, eleven, twelve.
+The left side equals twelve, and the right side equals eleven. They're different, so eight is not a solution.
+Now, let's check five.
+Now, let's check eight.
+Now, let's check seven.
+Add: seven plus four. Count on from seven: eight, nine, ten, eleven.
+Both sides equal eleven. ज़िप्पी can use the seven-unit bar!
+Another crown and two coins balance ten coins. Which value of x makes both sides equal?
+Both sides equal ten. So, eight is the solution.
+Replace x with your chosen value. Then compare the two sides.
+Add: ten plus two. Count on from ten: eleven, twelve.
+The left side equals twelve, and the right side equals ten. They're different, so ten is not a solution.
+Add: twelve plus two. Count on from twelve: thirteen, fourteen.
+The left side equals fourteen, and the right side equals ten. They're different, so twelve is not a solution.
+Now, let's check ten.
+
+
+PART 3  (45 lines: vo119 to vo181)
+
+Add: eight plus two. Count on from eight: nine, ten.
+Now, let's check twelve.
+ज़िप्पी spots another crown!
+There are eight units beside the crown. Let's see how we can remove them.
+Now the crown balances fifteen units. So, x equals fifteen.
+Before ज़िप्पी swaps, let's check the answer in the original equation.
+Replace x with fifteen.
+Add: fifteen plus eight. Count on from fifteen: sixteen, seventeen, eighteen, nineteen, twenty, twenty-one, twenty-two, twenty-three.
+Both sides equal twenty-three. So, fifteen is the solution.
+The crown's mass is fifteen units. ज़िप्पी can use the fifteen-unit bar!
+Give the fifteen bar to ज़िप्पी, then tap Swap.
+Let's check twenty-three.
+Add: twenty-three plus eight. Count on from twenty-three: twenty-four, twenty-five, twenty-six, twenty-seven, twenty-eight, twenty-nine, thirty, thirty-one.
+The left side equals thirty-one, and the right side equals twenty-three. They're different, so twenty-three is not a solution.
+Let's check thirty-one.
+Add: thirty-one plus eight. Count on from thirty-one: thirty-two, thirty-three, thirty-four, thirty-five, thirty-six, thirty-seven, thirty-eight, thirty-nine.
+The left side equals thirty-nine, and the right side equals twenty-three. They're different, so thirty-one is not a solution.
+That works! ज़िप्पी collects the crown, and Grumble stays asleep.
+Each crown has the same mass, x.
+Two lots of x make two x.
+We need the mass of one crown.
+Let's check. Put seven in place of x.
+Two times seven equals fourteen. Then add four.
+Both sides equal eighteen! ज़िप्पी can make the swap.
+Give a seven bar to ज़िप्पी, then tap Swap.
+Let's check nine.
+Two times nine equals eighteen. Then add four.
+The left side equals twenty-two, and the right side equals eighteen. They're different, so nine is not a solution.
+One more crown! Give the other seven bar to ज़िप्पी.
+You've helped ज़िप्पी find the crowns' masses. Let's try a few equations.
+Find x: x plus six equals seventeen.
+Type your answer on the keypad, then tap Check.
+Both sides equal seventeen. So, eleven is the solution.
+The left side equals eleven, and the right side equals seventeen. They're different, so five is not a solution. Let's find x step by step.
+The left side equals twelve, and the right side equals seventeen. They're different, so six is not a solution. Let's find x step by step.
+The left side equals thirteen, and the right side equals seventeen. They're different, so seven is not a solution. Let's find x step by step.
+The left side equals fourteen, and the right side equals seventeen. They're different, so eight is not a solution. Let's find x step by step.
+The left side equals fifteen, and the right side equals seventeen. They're different, so nine is not a solution. Let's find x step by step.
+The left side equals sixteen, and the right side equals seventeen. They're different, so ten is not a solution. Let's find x step by step.
+The left side equals eighteen, and the right side equals seventeen. They're different, so twelve is not a solution. Let's find x step by step.
+The left side equals nineteen, and the right side equals seventeen. They're different, so thirteen is not a solution. Let's find x step by step.
+The left side equals twenty, and the right side equals seventeen. They're different, so fourteen is not a solution. Let's find x step by step.
+The left side equals twenty-one, and the right side equals seventeen. They're different, so fifteen is not a solution. Let's find x step by step.
+The left side equals twenty-two, and the right side equals seventeen. They're different, so sixteen is not a solution. Let's find x step by step.
+The left side equals twenty-three, and the right side equals seventeen. They're different, so seventeen is not a solution. Let's find x step by step.
+
+
+PART 4  (45 lines: vo182 to vo226)
+
+The left side equals twenty-nine, and the right side equals seventeen. They're different, so twenty-three is not a solution. Let's find x step by step.
+What undoes adding six?
+Not quite. Try the other one.
+Yes! Subtracting six undoes adding six.
+Subtract six from both sides. What is seventeen minus six?
+Not quite. Work out seventeen minus six.
+Seventeen minus six equals eleven. Type eleven.
+Now check in the original equation. Put eleven in place of x.
+Not quite. Work out eleven plus six.
+Both sides are equal. Your solution works!
+Find x: three x plus five equals twenty-six.
+Both sides equal twenty-six. So, seven is the solution.
+The left side equals eight, and the right side equals twenty-six. They're different, so one is not a solution. Let's find x step by step.
+The left side equals eleven, and the right side equals twenty-six. They're different, so two is not a solution. Let's find x step by step.
+The left side equals fourteen, and the right side equals twenty-six. They're different, so three is not a solution. Let's find x step by step.
+The left side equals seventeen, and the right side equals twenty-six. They're different, so four is not a solution. Let's find x step by step.
+The left side equals twenty, and the right side equals twenty-six. They're different, so five is not a solution. Let's find x step by step.
+The left side equals twenty-three, and the right side equals twenty-six. They're different, so six is not a solution. Let's find x step by step.
+The left side equals twenty-nine, and the right side equals twenty-six. They're different, so eight is not a solution. Let's find x step by step.
+The left side equals thirty-two, and the right side equals twenty-six. They're different, so nine is not a solution. Let's find x step by step.
+The left side equals thirty-five, and the right side equals twenty-six. They're different, so ten is not a solution. Let's find x step by step.
+The left side equals thirty-eight, and the right side equals twenty-six. They're different, so eleven is not a solution. Let's find x step by step.
+The left side equals forty-one, and the right side equals twenty-six. They're different, so twelve is not a solution. Let's find x step by step.
+The left side equals forty-four, and the right side equals twenty-six. They're different, so thirteen is not a solution. Let's find x step by step.
+The left side equals sixty-eight, and the right side equals twenty-six. They're different, so twenty-one is not a solution. Let's find x step by step.
+The left side equals ninety-eight, and the right side equals twenty-six. They're different, so thirty-one is not a solution. Let's find x step by step.
+What undoes adding five?
+Yes! Subtracting five undoes adding five.
+Subtract five from both sides. What is twenty-six minus five?
+Not quite. Work out twenty-six minus five.
+Twenty-six minus five equals twenty-one. Type twenty-one.
+Three x equals twenty-one. Divide both sides by three. What is twenty-one divided by three?
+Not quite. Work out twenty-one divided by three.
+Twenty-one divided by three equals seven. Type seven.
+Now check in the original equation. Put seven in place of x.
+Not quite. Work out three times seven, plus five.
+Find x: x minus seven equals twelve.
+Both sides equal twelve. So, nineteen is the solution.
+The left side equals minus two, and the right side equals twelve. They're different, so five is not a solution. Let's find x step by step.
+The left side equals zero, and the right side equals twelve. They're different, so seven is not a solution. Let's find x step by step.
+The left side equals five, and the right side equals twelve. They're different, so twelve is not a solution. Let's find x step by step.
+The left side equals six, and the right side equals twelve. They're different, so thirteen is not a solution. Let's find x step by step.
+The left side equals seven, and the right side equals twelve. They're different, so fourteen is not a solution. Let's find x step by step.
+The left side equals eight, and the right side equals twelve. They're different, so fifteen is not a solution. Let's find x step by step.
+The left side equals nine, and the right side equals twelve. They're different, so sixteen is not a solution. Let's find x step by step.
+
+
+PART 5  (45 lines: vo227 to vo271)
+
+The left side equals ten, and the right side equals twelve. They're different, so seventeen is not a solution. Let's find x step by step.
+The left side equals eleven, and the right side equals twelve. They're different, so eighteen is not a solution. Let's find x step by step.
+The left side equals thirteen, and the right side equals twelve. They're different, so twenty is not a solution. Let's find x step by step.
+The left side equals fourteen, and the right side equals twelve. They're different, so twenty-one is not a solution. Let's find x step by step.
+The left side equals fifteen, and the right side equals twelve. They're different, so twenty-two is not a solution. Let's find x step by step.
+The left side equals sixteen, and the right side equals twelve. They're different, so twenty-three is not a solution. Let's find x step by step.
+The left side equals seventeen, and the right side equals twelve. They're different, so twenty-four is not a solution. Let's find x step by step.
+The left side equals eighteen, and the right side equals twelve. They're different, so twenty-five is not a solution. Let's find x step by step.
+Adding seven undoes subtracting seven. Tap the button to add seven to both sides.
+Add seven to both sides. What is twelve plus seven?
+Not quite. Work out twelve plus seven.
+Twelve plus seven equals nineteen. Type nineteen.
+Now check in the original equation. Put nineteen in place of x.
+Not quite. Work out nineteen minus seven.
+Find x: x divided by four equals six.
+Both sides equal six. So, twenty-four is the solution.
+The left side equals zero point five, and the right side equals six. They're different, so two is not a solution. Let's find x step by step.
+The left side equals one, and the right side equals six. They're different, so four is not a solution. Let's find x step by step.
+The left side equals one point five, and the right side equals six. They're different, so six is not a solution. Let's find x step by step.
+The left side equals two point five, and the right side equals six. They're different, so ten is not a solution. Let's find x step by step.
+The left side equals four point five, and the right side equals six. They're different, so eighteen is not a solution. Let's find x step by step.
+The left side equals four point seven five, and the right side equals six. They're different, so nineteen is not a solution. Let's find x step by step.
+The left side equals five, and the right side equals six. They're different, so twenty is not a solution. Let's find x step by step.
+The left side equals five point two five, and the right side equals six. They're different, so twenty-one is not a solution. Let's find x step by step.
+The left side equals five point five, and the right side equals six. They're different, so twenty-two is not a solution. Let's find x step by step.
+The left side equals five point seven five, and the right side equals six. They're different, so twenty-three is not a solution. Let's find x step by step.
+The left side equals six point two five, and the right side equals six. They're different, so twenty-five is not a solution. Let's find x step by step.
+The left side equals six point five, and the right side equals six. They're different, so twenty-six is not a solution. Let's find x step by step.
+The left side equals six point seven five, and the right side equals six. They're different, so twenty-seven is not a solution. Let's find x step by step.
+The left side equals seven, and the right side equals six. They're different, so twenty-eight is not a solution. Let's find x step by step.
+The left side equals seven point two five, and the right side equals six. They're different, so twenty-nine is not a solution. Let's find x step by step.
+The left side equals seven point five, and the right side equals six. They're different, so thirty is not a solution. Let's find x step by step.
+Multiplying by four undoes dividing by four. Tap the button to multiply both sides by four.
+Multiply both sides by four. What is six times four?
+Not quite. Work out six times four.
+Six times four equals twenty-four. Type twenty-four.
+Now check in the original equation. Put twenty-four in place of x.
+Not quite. Work out twenty-four divided by four.
+x can be negative too.
+Find x: two x plus seven equals one.
+Both sides equal one. So, minus three is the solution.
+The left side equals minus eleven, and the right side equals one. They're different, so minus nine is not a solution. Let's find x step by step.
+The left side equals minus nine, and the right side equals one. They're different, so minus eight is not a solution. Let's find x step by step.
+The left side equals minus seven, and the right side equals one. They're different, so minus seven is not a solution. Let's find x step by step.
+The left side equals minus five, and the right side equals one. They're different, so minus six is not a solution. Let's find x step by step.
+
+
+PART 6  (44 lines: vo272 to vo315)
+
+The left side equals minus three, and the right side equals one. They're different, so minus five is not a solution. Let's find x step by step.
+The left side equals minus one, and the right side equals one. They're different, so minus four is not a solution. Let's find x step by step.
+The left side equals three, and the right side equals one. They're different, so minus two is not a solution. Let's find x step by step.
+The left side equals five, and the right side equals one. They're different, so minus one is not a solution. Let's find x step by step.
+The left side equals seven, and the right side equals one. They're different, so zero is not a solution. Let's find x step by step.
+The left side equals nine, and the right side equals one. They're different, so one is not a solution. Let's find x step by step.
+The left side equals eleven, and the right side equals one. They're different, so two is not a solution. Let's find x step by step.
+The left side equals thirteen, and the right side equals one. They're different, so three is not a solution. Let's find x step by step.
+The left side equals fifteen, and the right side equals one. They're different, so four is not a solution. Let's find x step by step.
+The left side equals nineteen, and the right side equals one. They're different, so six is not a solution. Let's find x step by step.
+The left side equals twenty-three, and the right side equals one. They're different, so eight is not a solution. Let's find x step by step.
+Subtract seven from both sides. What is one minus seven?
+Not quite. Work out one minus seven.
+One minus seven equals minus six. Type minus six.
+Divide both sides by two. What is minus six divided by two?
+Not quite. Work out minus six divided by two.
+Minus six divided by two equals minus three. Type minus three.
+Now check in the original equation. Put minus three in place of x.
+Not quite. Work out two times minus three, plus seven.
+Three multiplies the whole bracket.
+Find x: three times, x plus two, equals twenty-one.
+Both sides equal twenty-one. So, five is the solution.
+The left side equals six, and the right side equals twenty-one. They're different, so zero is not a solution. Let's find x step by step.
+The left side equals nine, and the right side equals twenty-one. They're different, so one is not a solution. Let's find x step by step.
+The left side equals twelve, and the right side equals twenty-one. They're different, so two is not a solution. Let's find x step by step.
+The left side equals fifteen, and the right side equals twenty-one. They're different, so three is not a solution. Let's find x step by step.
+The left side equals eighteen, and the right side equals twenty-one. They're different, so four is not a solution. Let's find x step by step.
+The left side equals twenty-four, and the right side equals twenty-one. They're different, so six is not a solution. Let's find x step by step.
+The left side equals twenty-seven, and the right side equals twenty-one. They're different, so seven is not a solution. Let's find x step by step.
+The left side equals thirty, and the right side equals twenty-one. They're different, so eight is not a solution. Let's find x step by step.
+The left side equals thirty-three, and the right side equals twenty-one. They're different, so nine is not a solution. Let's find x step by step.
+The left side equals thirty-six, and the right side equals twenty-one. They're different, so ten is not a solution. Let's find x step by step.
+The left side equals thirty-nine, and the right side equals twenty-one. They're different, so eleven is not a solution. Let's find x step by step.
+The left side equals sixty-three, and the right side equals twenty-one. They're different, so nineteen is not a solution. Let's find x step by step.
+The left side equals sixty-nine, and the right side equals twenty-one. They're different, so twenty-one is not a solution. Let's find x step by step.
+Divide both sides by three. What is twenty-one divided by three?
+Subtract two from both sides. What is seven minus two?
+Not quite. Work out seven minus two.
+Seven minus two equals five. Type five.
+Now check in the original equation. Put five in place of x.
+Not quite. Work out three times, five plus two.
+Great work! You solved every equation.
+Quest complete! ज़िप्पी collected all ten crowns, and Grumble is still snoring!
+Here's what you learned on your quest.
