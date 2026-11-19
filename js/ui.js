@@ -390,28 +390,38 @@
   // voice shows at once. Whatever a line names can come in on screen as the voice says it: when(text,
   // str) (review, 2026-11-16: "when the VO says 7, 7 should appear").
   // The question bar shows the whole line at once (review, 2026-11-07: "One text in the instruction
-  // panel should not be split into two screens"; from 2026-11-05 it showed one row at a time). A line
-  // too long for one row is cut, at whole words, into rows (as even as they can be, broken after a full
-  // stop or comma where one is near), shown one under the other, and the bar grows to fit them. Every
-  // row is the same size.
+  // panel should not be split into two screens"; from 2026-11-05 it showed one row at a time), all of it
+  // on ONE row (asked 2026-11-19: "The text of question template should come in a full form like in one
+  // line… the text do not separate in downside… do this where this type of things happened in this
+  // game"; until then a line too long for one row was cut into two rows, one under the other): a line
+  // too long for the bar at its own size is shown a little smaller, just small enough to fit (layout).
   const LEAD = 0.08; // s: a word counts as said this much before its sound begins (what it names has a moment to come in)
   // The room the bar stands in the middle of (stage px, styles.css): from the right of the two buttons at
   // the top left (.nav: 36 + 140 + 14 + 140) to the left of Next (.next-btn: 1920 − 36 − 190). It stays
   // put when Next is hidden, so the bar doesn't move between screens.
   const CAP_ROOM = { from: 330, to: 1694 };
+  // How far the bar may reach (stage px), so that as long a line as can be keeps the bar's own size. In
+  // the jungle: from 470, clear of Zippy's vine and the curl of his tail at the top left (x ≈ 396–450,
+  // y 0–180), to 1660, 34 px short of Next (styles.css). On a dark screen, where Zippy isn't (the formula
+  // screen, the check, Levels 8–9's working, an activity: CAP_DARK_BY, CQ.soft's owners), from 364, as
+  // clear of the buttons at the top left as of Next (asked 2026-11-19 of "A value that makes an equation
+  // true is its solution. / So, x = 5!": "text panel ko thda lamba krdo..neeche So, x=5. ajeeb lgra").
+  const CAP_SCENE = { from: 470, to: 1660 };
+  const CAP_DARK = { from: 364, to: 1660 };
+  const CAP_DARK_BY = ["notebook", "check", "solve", "activity"];
   CQ.caption = {
     build(ui) {
       this.el = CQ.el("div", "caption hidden", ui);
       // No speaker beside the words (asked 2026-11-18: "remove this speaker icon and the question template
       // text should come in between of question panel and it should be fully wrapped in this"; since
       // 2026-11-07 a speaker in a gold medallion sat at the bar's left): the line starts at the bar's left
-      // and types itself out left to right, its rows inside the frame (asked 2026-11-18: "should come from
-      // left to right. Not in between."; it was centred for a moment). A tap on the bar still plays the
-      // line again once it is all shown (while it is typing, a tap shows it all at once). Keyboards and
-      // screen readers have an unseen "Hear it again" button for that.
+      // and types itself out left to right, inside the frame (asked 2026-11-18: "should come from left to
+      // right. Not in between."; it was centred for a moment). A tap on the bar still plays the line
+      // again once it is all shown (while it is typing, a tap shows it all at once). Keyboards and screen
+      // readers have an unseen "Hear it again" button for that.
       this.txt = CQ.el("div", "cap-text", this.el);
       this.txt.setAttribute("aria-hidden", "true"); // screen readers get the whole line at once instead:
-      this.probe = CQ.el("span", "cap-text cap-probe", this.el); // measures rows (unseen)
+      this.probe = CQ.el("span", "cap-text cap-probe", this.el); // measures the line (unseen)
       this.probe.setAttribute("aria-hidden", "true");
       this.sr = CQ.el("div", "sr-only", this.el);
       this.sr.setAttribute("aria-live", "polite");
@@ -422,7 +432,7 @@
         else this.replay();
       });
       this.text = null;
-      this.rows = [""];
+      this.lim = null; // the room the line on screen was laid out in (CAP_SCENE or CAP_DARK)
       this.busy = false; // true while the child is listening to the line again
       this.replays = 0;
       this.line = 0; // counts lines, so a voice that starts late can tell its line has gone
@@ -443,10 +453,7 @@
       this.busy = false;
       const n = ++this.line;
       this.el.classList.remove("hidden");
-      this.el.style.width = ""; // at its widest (styles.css) to cut the line into rows, then fitted to them
-      this.el.style.left = "";
-      this.rows = this.split(text);
-      this.fit();
+      this.layout();
       this.sr.textContent = CQ.speakable(text);
       this.words = wordsOf(text);
       this.heard = -1;
@@ -470,106 +477,76 @@
         keep: false,
       });
     },
-    // The line in as few rows as it needs, each fitting the bar, as even as they can be: cut at whole
-    // words, best at the end of a sentence or at a comma or dash where one is near, and never on a
-    // little word that leads into the next (…equals | 7). A fraction or a marked group of the line
-    // ([[…]], {{…}}, <<…>>) is never cut.
-    split(text) {
-      const max = this.txt.clientWidth - 6;
-      if (!(max > 0)) return [text];
-      const widths = new Map();
-      const width = (str) => {
-        if (!widths.has(str)) {
-          this.probe.innerHTML = CQ.rich(str);
-          widths.set(str, this.probe.offsetWidth);
-        }
-        return widths.get(str);
-      };
-      if (width(String(text)) <= max) return [text];
-      const open = (w) => ["[[", "{{", "<<"].some((o, i) => w.split(o).length > w.split(["]]", "}}", ">>"][i]).length);
-      const words = [];
-      String(text).split(" ").forEach((w) => {
-        const last = words.length - 1;
-        if (last >= 0 && open(words[last])) words[last] += " " + w;
-        else words.push(w);
-      });
-      const WEAK = /^(a|an|the|of|to|and|or|but|is|are|be|can|will|equals|=|\+|−|-|×|÷|with|by|for|from|in|into|on|at|as|than|so|its|his|our|your|their|this|that|these|those|each|every|\d+)$/i;
-      const END = /[.!?…]["”’)]?$/; // a word that ends a sentence
-      const row = (i, j) => words.slice(i, j).join(" ");
-      // as few rows as it needs (filling each row in turn gives the fewest)
-      let k = 0;
-      for (let i = 0; i < words.length; k++) {
-        let j = i + 1;
-        while (j < words.length && width(row(i, j + 1)) <= max) j++;
-        i = j;
-      }
-      // then the most even cut into that many rows
-      const cost = (i, j, last) => {
-        const w = width(row(i, j));
-        if (w > max && j - i > 1) return Infinity;
-        const slack = (max - w) / max;
-        if (last) return slack * slack * 0.5; // the last row may be shorter
-        let c = slack * slack;
-        if (END.test(words[j - 1])) c -= 0.12; // the end of a sentence: the best place
-        else if (/[,;:—]$/.test(words[j - 1])) c -= 0.08; // a good place to pause
-        else if (WEAK.test(words[j - 1])) c += 0.25; // it leads into the next row
-        if (words[j] === "—") c += 0.2; // a dash doesn't begin a row
-        if (END.test(words[j]) && !END.test(words[j - 1])) c += 0.2; // nor does a sentence's last word
-        return c;
-      };
-      const n = words.length;
-      let layer = new Map([[0, { c: 0, cuts: [] }]]);
-      for (let r = 1; r <= k; r++) {
-        const next = new Map();
-        layer.forEach((prev, i) => {
-          for (let j = i + 1; j <= n - (k - r); j++) {
-            if (r === k && j !== n) continue;
-            const c = prev.c + cost(i, j, r === k);
-            if (c === Infinity) break;
-            if (!next.has(j) || c < next.get(j).c) next.set(j, { c, cuts: prev.cuts.concat(j) });
-          }
-        });
-        layer = next;
-      }
-      const end = layer.get(n);
-      if (!end) return [text];
-      let i = 0;
-      return end.cuts.map((j) => {
-        const r = row(i, j);
-        i = j;
-        return r;
-      });
-    },
-    // The bar as wide as its line (asked 2026-11-19, of "Meet Zippy!" in the long bar: "resize the box
-    // according to the sentence. Width of the box"): its widest row and the frame round it, from where the
-    // bar starts at the left, never wider than styles.css has it. It changes with the line, as the new
-    // line comes in (set's fade), not as a slide: the bar's width itself is never animated.
-    fit() {
+    // The line on one row in the room the bar has now (limits): at the bar's own size (styles.css,
+    // --cap-base) where it fits; a line too long for that a little smaller (--cap-size), just small enough
+    // to fit, the bar keeping its height with the line in its middle. Then the bar as wide as its line
+    // (asked 2026-11-19, of "Meet Zippy!" in the long bar: "resize the box according to the sentence.
+    // Width of the box"), in the middle of the room between the buttons at the top left and Next (asked
+    // 2026-11-19: "This question template need to be come in between not in side"; it stood at the left of
+    // that room), a long line keeping to its room. The words in it stay at its left, typed left to right.
+    // Its size and width change with the line, as the new line comes in (set's fade): never animated.
+    layout() {
+      const lim = (this.lim = this.limits());
+      const st = this.el.style;
+      st.removeProperty("--cap-size");
+      st.left = lim.from + "px";
+      st.width = lim.to - lim.from + "px"; // at its widest, to measure the line in it
       const full = this.el.offsetWidth;
       const room = this.txt.clientWidth;
       if (!(full > 0 && room > 0)) return;
-      let w = 0;
-      this.rows.forEach((r) => {
-        this.probe.innerHTML = CQ.rich(r);
-        w = Math.max(w, this.probe.getBoundingClientRect().width / CQ.stage.scale);
-      });
+      const max = room - 6;
+      this.probe.innerHTML = CQ.rich(this.text);
+      const measure = () => this.probe.getBoundingClientRect().width / CQ.stage.scale;
+      let w = measure();
+      if (w > max) {
+        // the size that fits it (its width goes with its size, nearly in step), then a little less while
+        // it is still too long
+        const base = parseFloat(getComputedStyle(this.probe).fontSize);
+        let size = Math.floor(((base * max) / w) * 10) / 10;
+        for (let i = 0; i < 8; i++) {
+          st.setProperty("--cap-size", size + "px");
+          w = measure();
+          if (w <= max) break;
+          size -= 0.5;
+        }
+      }
       const width = Math.min(full, Math.ceil(full - room + w + 4));
-      this.el.style.width = width + "px";
-      // and in the middle of the room between the buttons at the top left and Next (asked 2026-11-19: "This
-      // question template need to be come in between not in side"; it stood at the left of that room, its
-      // right side short). A long line still keeps to the room styles.css gives it: never further left
-      // (Zippy's tail), never nearer Next. The words in it stay at its left, typed left to right.
-      const left = this.el.offsetLeft;
+      st.width = width + "px";
       const mid = (CAP_ROOM.from + CAP_ROOM.to) / 2;
-      this.el.style.left = Math.round(Math.max(left, Math.min(mid - width / 2, left + full - width))) + "px";
+      st.left = Math.round(Math.max(lim.from, Math.min(mid - width / 2, lim.to - width))) + "px";
     },
-    // Show the whole line, row under row: its letters hidden, to be typed with the voice (typed), or in full.
+    // The room the bar may take now: wider on a dark screen, where Zippy isn't.
+    limits() {
+      return CAP_DARK_BY.some((o) => CQ.soft.owners.has(o)) ? CAP_DARK : CAP_SCENE;
+    },
+    // The dark has come in or lifted with a line still up (CQ.soft.set). A bar laid out on a dark screen
+    // further left than the jungle lets it go would stand over Zippy's vine as he comes back: it fades out
+    // and comes back laid out for the room it has now (in one step where motion is reduced). A bar that
+    // fits where it is stays as it is.
+    roomChanged() {
+      if (!this.text || !this.lim) return;
+      const lim = this.limits();
+      if (lim === this.lim) return;
+      const left = this.el.offsetLeft;
+      if (left >= lim.from && left + this.el.offsetWidth <= lim.to) {
+        this.lim = lim;
+        return;
+      }
+      if (CQ.motion.reduced) return this.layout();
+      const n = this.line;
+      CQ.anim(this.el, [{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: CQ.EASE.in, keep: false }).then(() => {
+        if (n !== this.line || this.limits() !== lim) return; // (a new line has been laid out meanwhile)
+        this.layout();
+        CQ.anim(this.el, [{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: CQ.EASE.out, keep: false });
+      });
+    },
+    // Show the whole line: its letters hidden, to be typed with the voice (typed), or in full.
     render(typed) {
-      this.txt.innerHTML = this.rows.map((r) => `<span class="cap-row">${CQ.rich(r)}</span>`).join("");
+      this.txt.innerHTML = `<span class="cap-row">${CQ.rich(this.text)}</span>`;
       this.txt.classList.toggle("typing", !!typed);
       this.chars = typed ? this.hideLetters() : null;
     },
-    // Each letter of the line in its own span, hidden until it is typed: the rows keep their final layout.
+    // Each letter of the line in its own span, hidden until it is typed: the line keeps its final layout.
     // The letters of each word are kept together (wordChars[k]: word k's letters, with the space before it),
     // to come in as that word is said.
     hideLetters() {
@@ -594,10 +571,7 @@
           }
           c.replaceWith(frag);
         });
-      Array.from(this.txt.querySelectorAll(".cap-row")).forEach((row, i) => {
-        if (i > 0 && groups[groups.length - 1].length) groups.push([]); // a new row: a new word
-        walk(row);
-      });
+      walk(this.txt);
       const filled = groups.filter((g) => g.some((x) => !/\s/.test(x.textContent)));
       // (one group of letters per word of the line; if the rich text ever splits them otherwise, the
       // letters are shared out over the words by their place in the line instead)
@@ -1132,6 +1106,7 @@
       else this.owners.set(owner, keep);
       CQ.screen.shade("soft:" + owner, keep === false ? false : shade != null ? shade : keep.length ? 1 : 2);
       this.apply();
+      CQ.caption.roomChanged(); // (a dark screen lifting: the question bar keeps clear of Zippy's vine)
     },
     // every owner but except (one owner or a list of them)
     clear(except) {
@@ -1707,26 +1682,81 @@
   // ------------------------------------------------------------------ an answer: right or wrong
   // Every answer a child gives looks and sounds the same, wherever it is given (the learning-section
   // skill: "Every question follows one pattern, so a learner meets one game"):
-  //   wrong: the control shakes its head and goes red for a beat, with the soft "try again" sound;
+  //   wrong: the whole screen shakes its head and red light glows in from the screen's corners and
+  //   fades, with the soft "try again" sound; the control goes red for a beat, and the child tries again;
   //   right: it turns green for a moment, a tick draws itself on its corner, the success chime plays, it
   //   swells once and a small burst of sparkles goes off beside it.
-  // What is said stays with each activity: a hint or the reason after a wrong answer, and nothing after a
-  // right one (reviews of 2026-11-07: a right label or card gets no words), except praise with confetti
-  // for the last of a set. With Reduced motion nothing moves: the colours and the tick only.
+  // Nothing is said or written after a wrong answer (asked 2026-11-19, on a check whose wrong tile was
+  // followed by "2 × 7 = 14. Add 4 to get 18." in the question bar: "glat krne pr yh text ki need ni… bs
+  // shake krdo… sbme implement kr dena", "just shake the screen and some red light from corner of the
+  // screens", on the screens where things are dragged and dropped, not in the opening levels: the label
+  // and sort activities, the checks of Levels 5–9, practice), and nothing after a right one (reviews of
+  // 2026-11-07: a right label or card gets no words), except praise with confetti for the last of a set.
+  // With Reduced motion nothing moves: the colours, the red light and the tick only.
   //   opts.silent: no sound (the caller plays its own); opts.pulse: false where the control pops by itself
   CQ.answer = {
     BEAT: 700, // ms a wrong answer stays red
     LOOK: 1200, // ms a right answer stays green, with its tick
+    SHAKE: 480, // ms the screen shakes after a wrong answer
+    GLOW: 1100, // ms the red light at the screen's corners comes and goes
+    // Resolves when the shake is over (what follows it, a tile or label going home, waits for it).
     wrong(el, opts) {
       opts = opts || {};
       if (!opts.silent) CQ.audio.play("tryagain");
-      if (!el) return Promise.resolve();
-      el.classList.add("is-wrong");
-      setTimeout(() => el.classList.remove("is-wrong"), this.BEAT);
-      if (CQ.motion.reduced) return CQ.sleep(this.BEAT / 2);
-      // (the translate property: the control's own transform, a centring one too, is left alone)
-      const shake = ["0px", "-12px", "10px", "-7px", "4px", "0px"].map((x) => ({ translate: x + " 0px" }));
-      return CQ.anim(el, shake, { duration: 460, easing: "ease-in-out", keep: false, essential: true });
+      if (el) {
+        el.classList.add("is-wrong");
+        setTimeout(() => el.classList.remove("is-wrong"), this.BEAT);
+      }
+      return this.alarm();
+    },
+    // The screen shakes its head: the whole stage, side to side, less each time, by the same part of the
+    // screen on any window (the translate and scale properties, so its own transform, its fit to the
+    // window, is left alone). Meanwhile it is drawn a touch bigger about its middle (2.4% at most), enough
+    // that its edges never come into view as it moves. The red light lies over the whole window (bands
+    // too, so it comes from the screen's own corners, and stays still while the game shakes under it): it
+    // closes in from the corners, stays a moment and fades. A wrong answer meanwhile starts both again.
+    // Transform and opacity only.
+    alarm() {
+      const stage = CQ.stage.el;
+      const vp = stage && stage.parentElement;
+      if (!vp || !vp.animate) return Promise.resolve(); // (no Web Animations: the control's red only)
+      if (!this.red || !this.red.isConnected) this.red = CQ.el("div", "wrong-light", vp);
+      const red = this.red;
+      const still = CQ.motion.reduced;
+      const light = still
+        ? [{ opacity: 0, easing: CQ.EASE.out }, { opacity: 1, offset: 0.2 }, { opacity: 1, offset: 0.42, easing: CQ.EASE.in }, { opacity: 0 }]
+        : [
+            { opacity: 0, scale: "1.18", easing: CQ.EASE.out },
+            { opacity: 1, scale: "1", offset: 0.2 },
+            { opacity: 1, scale: "1", offset: 0.42, easing: CQ.EASE.in },
+            { opacity: 0, scale: "1.05" },
+          ];
+      if (this.glowing) this.glowing.cancel();
+      red.classList.add("on");
+      const g = (this.glowing = red.animate(light, { duration: this.GLOW, easing: "linear" }));
+      g.finished.then(
+        () => {
+          if (this.glowing !== g) return;
+          this.glowing = null;
+          red.classList.remove("on");
+        },
+        () => {} // (started again)
+      );
+      if (still) return CQ.sleep(this.BEAT / 2);
+      const st = CQ.stage;
+      const k = st.scale || 1;
+      const mid = { x: st.ox + (k * CQ.W) / 2, y: st.oy + (k * CQ.H) / 2 }; // (the stage's middle, in the window)
+      const zoom = [1, 1.024, 1.024, 1.024, 1.02, 1.014, 1.007, 1]; // (its edges stay out: half the growth ≥ the shake)
+      const kf = [0, -18, 15, -11, 7, -4, 2, 0].map((x, i) => {
+        const z = zoom[i];
+        return { scale: String(z), translate: `${x * k - (z - 1) * mid.x}px ${-(z - 1) * mid.y}px` };
+      });
+      if (this.shaking) this.shaking.cancel();
+      const s = (this.shaking = stage.animate(kf, { duration: this.SHAKE, easing: "linear" }));
+      return s.finished.then(
+        () => this.shaking === s && (this.shaking = null),
+        () => {} // (started again: the new shake is waited on by its own answer)
+      );
     },
     right(el, opts) {
       opts = opts || {};
@@ -1820,7 +1850,10 @@
     b.removeAttribute("aria-label");
     CQ.anim(b, [{ transform: "scale(1.4)" }, { transform: "scale(1)" }], { duration: 360, easing: CQ.EASE.back, keep: false });
   };
-  CQ.pickNumber = function (b, host, options, correct, onMiss) {
+  // A wrong tile: the screen shakes and red light glows in from its corners (CQ.answer.wrong), the tile
+  // is struck out, and the child picks again; nothing is said or written (asked 2026-11-19). After two,
+  // the right tile glows.
+  CQ.pickNumber = function (b, host, options, correct) {
     let picker = host.querySelector(":scope > .cp-picker");
     if (!picker) picker = CQ.el("div", "cp-picker hidden", host);
     let misses = 0;
@@ -1845,7 +1878,6 @@
       chip.classList.add("wrong");
       chip.disabled = true;
       CQ.answer.wrong(chip);
-      if (onMiss) onMiss(misses);
       if (misses >= 2) picker.querySelectorAll(".chip").forEach((c) => c.num === correct && c.classList.add("glow"));
     };
     const open = () => {
@@ -2030,6 +2062,7 @@
         document.body.classList.remove("checking");
         this.el.classList.add("hidden");
         [this.lhs, this.rhs, this.xRow].forEach((s) => s.classList.remove("lit", "faded", "sure", "lit-ok", "lit-no"));
+        this.eqRow.classList.remove("gone");
         return Promise.resolve();
       }
       return CQ.anim(this.el, [{ transform: "translate(-50%, 0)", opacity: 1 }, { transform: "translate(-50%, 60px)", opacity: 0 }], {
@@ -2064,8 +2097,8 @@
       CQ.anim(val, [{ transform: "scale(1.35)" }, { transform: "scale(1)" }], { duration: 380, easing: CQ.EASE.back, keep: false });
     },
     // The child picks a side's value; once it is in, its box melts away (settle).
-    fill(k, options, correct, onMiss) {
-      return CQ.pickNumber(this.blank(k), this.el, options, correct, onMiss).then((misses) => {
+    fill(k, options, correct) {
+      return CQ.pickNumber(this.blank(k), this.el, options, correct).then((misses) => {
         this.settle(k);
         return misses;
       });
@@ -2092,10 +2125,13 @@
     // under it, LHS and RHS, stays in full view, unlit (review, 2026-11-19: "before we remove LHS and RHS
     // part, so please add this part again"; it faded away, 2026-11-18). Nothing is written under x = 6,
     // no Solution / Not a solution (review, 2026-11-19: "do not write not a solution and this kind of
-    // things in this game"): the voice says it. cue = { lit }: the words the light waits for in line.
+    // things in this game"): the voice says it. The equation over it fades away as "Try" does (review,
+    // 2026-11-19: "No need the first line. Only x is equal to 4 and then other things… x + 2 = 7 will not
+    // come"), the rows staying where they stand. cue = { lit }: the words the light waits for in line.
     async confirm(ok, line, cue) {
       this.lightSide(null);
       this.xRow.classList.add("sure");
+      this.eqRow.classList.add("gone");
       if (cue.lit) await CQ.run.when(CQ.caption.when(line, cue.lit));
       this.xRow.classList.add(ok ? "lit-ok" : "lit-no");
     },
@@ -2224,9 +2260,10 @@
       }
       return CQ.sleep(took);
     },
-    // A stretch of a row lit up as one, from one of its parts to a later one in the same side (Level 9:
-    // x + x; the terms that cancel): they are wrapped in a span, lit with a ring that takes no room (cls:
-    // x-lit, gold; c-lit, red). Returns the span (its class off: unlit).
+    // A stretch of a row lit up as one, from one of its parts to a later one in the same side (the digits
+    // of a number: Levels 8–9's 8 and 4, the 4s that cancel; never a + or − with them, asked 2026-11-19:
+    // "Only digit should highlighted"): they are wrapped in a span, lit with a ring that takes no room
+    // (cls: x-lit, gold; c-lit, red). Returns the span (its class off: unlit).
     light(first, last, cls) {
       const span = document.createElement("span");
       span.className = "x-span " + (cls || "x-lit");
@@ -2239,8 +2276,9 @@
       }
       return span;
     },
-    // The {{…}} marks of the rows so far (− 8 on both sides, ÷ 2) back to plain, their boxes fading: lit
-    // only while their step is talked about (asked 2026-11-19: "after this no need to highlight").
+    // The {{…}} marks of the rows so far (the 8 of − 8 on both sides, the 2 of ÷ 2) back to plain, their
+    // boxes fading: lit only while their step is talked about (asked 2026-11-19: "after this no need to
+    // highlight").
     unmark() {
       this.el.querySelectorAll(".same").forEach((e) => e.classList.add("unmark"));
     },

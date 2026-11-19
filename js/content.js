@@ -7,6 +7,7 @@
  *
  * Maths in any text: x is set in italics by itself; "x^2" shows a power; "[[x|4]]" is a fraction
  * (x over 4); "{{− 8}}" is the "same on both sides" highlight; "<<+ 4>>" is a red highlight.
+ * A highlight lights the numbers only: its + − × ÷ stay plain ("{{− 8}}" shows − then a boxed 8).
  */
 window.CONTENT = {
   title: {
@@ -39,13 +40,12 @@ window.CONTENT = {
     "l1-2": "Drag it to Zippy, then tap Swap.",
     "l2-1": "Another crown! Let's collect it!",
     "l3-1": "One more crown! Grumble's still asleep!",
-    "swap-correct": "Perfect swap! Both weigh {n} units!", // Level 1 (levels: win)
-    "swap-perfect": "Perfect! Both weigh {n} units!", // Levels 2 and 3
-    "swap-light": "Oops! Too light! The balance tipped!",
-    "swap-heavy": "Oops! Too heavy! The balance tipped!",
     "swap-hint2": "The crown balances {n} coins. Try the {n}-unit bar!",
     "swap-tap-swap": "Now tap Swap!",
-    "swap-give": "Give Zippy a gold bar.",
+    // after every wrong bar, in every level where the child picks a bar (user, 2026-11-19, with their own
+    // recording; it took the place of "Give Zippy a gold bar." in Levels 1–3 and "Try another value!" in
+    // Levels 6–7)
+    "wrong-bar": "Oops! The balance tipped. Try another bar!",
 
     // Level 4: the mystery crown
     "l4-1": "Wait! This crown has two coins beside it.",
@@ -87,11 +87,14 @@ window.CONTENT = {
     // (review, 2026-11-18: "Split the ending into two screens… We can do like this for all values we are
     // trying and for every equation"; they were "They're different, so 4 is not a solution." and "Both
     // sides equal 7.")
-    "l4-26": "The LHS is 6.",
-    "l4-26b": "The RHS is 7.",
+    // In every spoken line the sides are named in full, "left-hand side" and "right-hand side", never
+    // "LHS"/"RHS" (user, 2026-11-19); LHS and RHS stay only where they are written as names: the working's
+    // rows (ui.lhs, ui.rhs), the labels, and "…called the left-hand side, or LHS." that introduces them.
+    "l4-26": "The left-hand side is 6.",
+    "l4-26b": "The right-hand side is 7.",
     "l4-27": "Now try x = 5. Find both sides.",
-    "l4-28": "The LHS is 7.",
-    "l4-28b": "The RHS is 7.",
+    "l4-28": "The left-hand side is 7.",
+    "l4-28b": "The right-hand side is 7.",
     "l4-29": "A value that makes an equation true is its solution. So, x = 5!",
     "l4-30": "The crown weighs 5 units. Zippy can swap it!",
     "l4-give": "Drag the 5-unit bar to Zippy, then tap Swap.", // (x = 5 is known: review, 2026-11-08)
@@ -101,8 +104,8 @@ window.CONTENT = {
     "check-replace": "Replace x with {v}.",
     // a side at a time (review, 2026-11-13: "Change the instruction to 'Find the value of the left-hand
     // side.' Only LHS is being asked here"; it was "Find the value of each side.")
-    "check-find-lhs": "Find the LHS.",
-    "check-find-rhs": "Now find the RHS.",
+    "check-find-lhs": "Find the left-hand side.",
+    "check-find-rhs": "Now find the right-hand side.",
     "check-now-swap": "Now Zippy can swap. Tap Swap!",
     "check-lets": "Let's check {v}.",
     "check-next": "Now let's check {v}.", // Level 7 (levels: say.nextTry)
@@ -117,20 +120,20 @@ window.CONTENT = {
     // same two screens, in the same words. (They were one screen: "Both sides equal 9. So, 6 is the
     // solution. Zippy can use the 6-unit bar!", and "They're different, so 4 is not a solution.", with
     // 9 = 9 or 7 ≠ 9 and a written verdict under the working.)
-    "check-lhs-is": "The LHS is {s}.",
-    "check-rhs-is": "The RHS is {b}.",
+    "check-lhs-is": "The left-hand side is {s}.",
+    "check-rhs-is": "The right-hand side is {b}.",
     "check-same": "Both sides are equal! The balance stays level!",
     "check-diff": "The values differ! The balance tips!",
     "check-sol": "So, x = {v} is the solution!",
     "check-not-sol": "So, x = {v} is not a solution.",
-    "check-try-another": "Try another value!",
-    "l6-prompt": "Choose a value for x. Are both sides equal?",
+    // Level 6's question, with the user's own recording (2026-11-19; it was "Choose a value for x. Are both
+    // sides equal?"): the crown glows on "Another crown!", the gold bars on "Which gold bar" (flow.js)
+    "l6-prompt": "Another crown! Which gold bar will keep the balance level?",
     "l7-prompt": "Another crown! Together with two coins, it balances 10 coins. Find x!",
     "l7-support": "Replace x with your value. Compare both sides.",
-    "hint-lhs": "Add {v} + {a}. Count on: {seq}.",
-    "hint-lhs-sum": "Add {v} + {a} to get {s}.", // Level 8 (levels: hintLhs): too far to count on
-    "hint-lhs-k": "{k} × {v} = {kv}. Add {a} to get {s}.",
-    "hint-rhs": "The RHS is the number on the right of the equals sign.",
+    // (a wrong number in a check gets no hint, only the screen's shake and its red corners: asked
+    // 2026-11-19; "Add 4 + 3. Count on: 5, 6, 7.", "2 × 7 = 14. Add 4 to get 18." and the right-hand side's
+    // "The right-hand side is the number on the right of the equals sign." are no longer said)
 
     // Level 8: the smart way
     "l8-1": "Zippy spots another crown!",
@@ -150,7 +153,6 @@ window.CONTENT = {
     "l8-11": "Replace x with 15.",
     "l8-14": "The crown weighs 15 units. Time to swap!",
     "l8-give": "Give Zippy the 15-unit bar, then tap Swap.",
-    "l8-15": "It worked! Another crown collected, and Grumble's still asleep!",
 
     // Level 9: two matching crowns
     "l9-1": "Each crown has the same mass, x.",
@@ -171,6 +173,14 @@ window.CONTENT = {
     "l9-give": "Give Zippy a 7-unit bar, then tap Swap.",
     "l9-give2": "One more crown! Give Zippy the other 7-unit bar.",
 
+    // Every crown Zippy wins: once he has it, the only voice (user, 2026-11-19). His first crown (Level
+    // 1) has the first line, only that once; every crown after it, to the last, has the second. (They
+    // took the place of "Perfect swap! Both weigh 5 units!", "Perfect! Both weigh {n} units!" in Levels
+    // 2–3, "It worked! Another crown collected, and Grumble's still asleep!" in Level 8, and Zippy's
+    // "Hee hee! Sleep tight, Grumble!".)
+    "crown-first": "Woohoo! Zippy got his first crown!",
+    "crown-another": "Woohoo! Zippy got another crown!",
+
     // Practice: try a few equations (the words for each equation are in `practice` below)
     "p-intro": "You've helped Zippy find the crowns' masses. Now try a few equations!",
 
@@ -181,7 +191,6 @@ window.CONTENT = {
 
   // Zippy's own lines (speech bubble + his voice).
   zippy: {
-    sleepTight: "Hee hee! Sleep tight, Grumble!",
     checked: "Phew! Good thing we checked!",
     tryN: "Let's try {v}.",
     tryNext: "Now let's try {v}.",
@@ -286,13 +295,12 @@ window.CONTENT = {
    * right pan, stacked bottom row first (rows of at most 4). bars = the three gold bars (shown in a
    * new random order each time). chips = the three number choices for each blank in the check.
    * crowns = how many matching crowns (Level 9), itemScale = smaller crowns and bars so all fit.
-   * win = the narrator's line after the right swap (Levels 1–3); hintLhs = the check's hint for a wrong
-   * left side when counting on is too long (Level 8: "Add 15 + 8 to get 23.").
+   * (The line after each crown is "crown-first" / "crown-another", above.)
    */
   levels: {
-    L1: { n: 1, kind: "swap", crown: 5, left: 0, right: [3, 2], bars: [3, 5, 7], intro: ["l1-1", "l1-2"], win: "swap-correct" },
-    L2: { n: 2, kind: "swap", crown: 7, left: 0, right: [4, 3], bars: [5, 7, 9], intro: ["l2-1"], win: "swap-perfect" },
-    L3: { n: 3, kind: "swap", crown: 4, left: 0, right: [2, 2], bars: [3, 4, 6], intro: ["l3-1"], win: "swap-perfect" },
+    L1: { n: 1, kind: "swap", crown: 5, left: 0, right: [3, 2], bars: [3, 5, 7], intro: ["l1-1", "l1-2"] },
+    L2: { n: 2, kind: "swap", crown: 7, left: 0, right: [4, 3], bars: [5, 7, 9], intro: ["l2-1"] },
+    L3: { n: 3, kind: "swap", crown: 4, left: 0, right: [2, 2], bars: [3, 4, 6], intro: ["l3-1"] },
     L4: { n: 4, kind: "mystery", crown: 5, left: 2, right: [4, 3], bars: [4, 5, 7] },
     L5: {
       n: 5, kind: "guided", crown: 6, left: 3, right: [3, 3, 3], bars: [4, 6, 7], tries: [4, 6],
@@ -321,7 +329,7 @@ window.CONTENT = {
       },
     },
     L8: {
-      n: 8, kind: "smart", crown: 15, leftBar: 8, rightBar: 23, bars: [15, 23, 31], hintLhs: "hint-lhs-sum",
+      n: 8, kind: "smart", crown: 15, leftBar: 8, rightBar: 23, bars: [15, 23, 31],
       chips: { 15: { lhs: [22, 23, 24] } },
     },
     L9: {
@@ -341,35 +349,15 @@ window.CONTENT = {
     // into the second pair, and its instruction in the question bar while the child places LHS and RHS
     // (review, 2026-11-13: "Add the transition: 'Now, label the left-hand side and right-hand side.'");
     // the LHS box comes in on the first words here, the RHS box on the second
-    pair2: "Now label the LHS and RHS.",
-    pair2Cue: { LHS: "the LHS", RHS: "and RHS" },
+    pair2: "Now label the left-hand side and right-hand side.",
+    pair2Cue: { LHS: "the left-hand", RHS: "and right-hand" },
     // the four labels, as written on their tiles (the keys are the game's own names for them)
     names: { Variable: "Variable", Equation: "Equation", LHS: "LHS", RHS: "RHS" },
-    // (a right label: no words, only a success sound and a green border: review, 2026-11-07)
-    // A wrong label in a box: it shakes and goes back, and then that label, and only that one, is put in
-    // its own box for the child, with its line, while the part it names lights up (review, 2026-11-13:
-    // "Not quite. x represents the unknown value. It is the variable. Briefly shake the incorrect label.
-    // Highlight only lowercase x. Move Variable into the box pointing to x. If Equation is also
-    // incorrect, highlight the full statement and place its label with: 'The complete statement is an
-    // equation.'"). The pair's other label is left for the child (review, 2026-11-16: "I only got the
-    // variable wrong and the equation's explanation came too… the hint should follow what we got
-    // wrong"). LHS and RHS work the same way, with their lines from the review of 2026-11-07 ("Use
-    // different openings, or go straight to the explanation").
-    miss: {
-      Variable: "Not quite! x is the unknown value, so it's the variable.",
-      Equation: "The complete statement is an equation.",
-      LHS: "4x + 3 is on the left. That's the LHS.",
-      RHS: "19 is on the right. That's the RHS.",
-    },
-    // in each of those lines, the words on which the part lights up (look) and on which the label sets
-    // off for its box (go), landing as the line names it
-    missCue: {
-      Variable: { look: "quite! x", go: "so it's" },
-      Equation: { look: "The complete", go: "is an" },
-      LHS: { look: "4x + 3", go: "That's the" },
-      RHS: { look: "19 is", go: "That's the" },
-    },
-    done: "Brilliant! You labelled every part!", // (only when the child put every label in)
+    // (a right label: no words, only a success sound and a green border: review, 2026-11-07; a wrong one:
+    // no words either, the screen shakes with red light at its corners and the label goes back for
+    // another try: asked 2026-11-19. Until then a wrong label was explained and put in its box for the
+    // child, "Not quite! x is the unknown value, so it's the variable.": reviews of 2026-11-13 and -16)
+    done: "Brilliant! You labelled every part!", // (every label in)
   },
 
   // Activity: sort linear / nonlinear
@@ -385,10 +373,10 @@ window.CONTENT = {
       { eq: "2x^2 + 1 = 9", linear: false },
       { eq: "x + 2 = 7", linear: true },
     ],
-    // (a right card: no words, it snaps into place with a success sound: review, 2026-11-07)
-    miss1: "Check the highest power of x.",
-    miss2Linear: "The highest power of x is 1, so this equation is linear.",
-    miss2Nonlinear: "The highest power of x is 2, so this equation is nonlinear.",
+    // (a right card: no words, it snaps into place with a success sound: review, 2026-11-07; a wrong
+    // one: no words either, the screen shakes with red light at its corners and the card goes back to
+    // the tray, its panel glowing if it was wrong before: asked 2026-11-19. It was "Check the highest
+    // power of x.", then "The highest power of x is 1, so this equation is linear.")
     done: "Great sorting! You found every linear equation.",
   },
 
@@ -412,24 +400,22 @@ window.CONTENT = {
    * equation big in the middle. Each equation: "Find the value of x.", and the child chooses x from a
    * list (choices) and taps Check.
    * Right: the next equation (no check of it, no words: "once correct move to the next ques").
-   * Wrong: "Not quite! Let's do it together.", and the equation is solved on the board step by step,
+   * Wrong: the screen shakes and red light glows in from its corners, with no words (asked 2026-11-19;
+   * it was "Not quite! Let's solve it together."), and the equation is solved on the board step by step,
    * every step staying in view under the one before (no two-choice questions, no notes written under
    * the working: "Directly state the step: Subtract 5 from both sides"). For each step the question bar
    * says it (say), its working row is written in under the rows before (work), and the child chooses
-   * what its left side (get) equals. A wrong choice: it shakes, "Not quite.", and the child chooses
-   * again; a second wrong choice: the answer is told (tell: "26 − 5 = 21.") and written in. The last
-   * step's answer is x. No check in the original equation ("This checking not required in these 6
-   * questions").
+   * what its left side (get) equals. A wrong choice: the shake and the red light, no words (it was "Not
+   * quite!", and after a second "26 − 5 = 21." with the answer put in), and the child chooses again;
+   * after two, the right tile glows. The last step's answer is x. No check in the original equation
+   * ("This checking not required in these 6 questions").
    * choices: the list's numbers, as the review's picture has them for x + 6 = 17 (17, 6, 11, 23): the
    * equation's own numbers, the answer, and what the wrong operation would give.
    */
   practice: {
     lines: {
       start: "Your turn! Solve an equation.", // before the first equation
-      find: "Find x.",
-      wrong: "Not quite! Let's solve it together.",
-      stepWrong: "Not quite!",
-      tell: "{expr} = {ans}.", // a step's answer, after two wrong choices
+      find: "Find the value of x.", // each equation (asked 2026-11-19; it was "Find x." for a day)
     },
     words: {
       choose: "Choose", // the list, before a number is chosen
@@ -439,40 +425,40 @@ window.CONTENT = {
       {
         eq: "x + 6 = 17", x: 11, choices: [17, 6, 11, 23],
         steps: [
-          { say: "Subtract 6 from both sides.", work: "x + 6 {{− 6}} = 17 {{− 6}}", get: "x", expr: "17 − 6", answer: 11, choices: [17, 6, 11, 23] },
+          { say: "Subtract 6 from both sides.", work: "x + 6 {{− 6}} = 17 {{− 6}}", get: "x", answer: 11, choices: [17, 6, 11, 23] },
         ],
       },
       {
         eq: "3x + 5 = 26", x: 7, choices: [26, 5, 7, 21],
         steps: [
-          { say: "Subtract 5 from both sides.", work: "3x + 5 {{− 5}} = 26 {{− 5}}", get: "3x", expr: "26 − 5", answer: 21, choices: [26, 21, 5, 31] },
-          { say: "Divide both sides by 3.", work: "[[3x|3]] = [[21|3]]", get: "x", expr: "21 ÷ 3", answer: 7, choices: [21, 3, 7, 63] },
+          { say: "Subtract 5 from both sides.", work: "3x + 5 {{− 5}} = 26 {{− 5}}", get: "3x", answer: 21, choices: [26, 21, 5, 31] },
+          { say: "Divide both sides by 3.", work: "[[3x|3]] = [[21|3]]", get: "x", answer: 7, choices: [21, 3, 7, 63] },
         ],
       },
       {
         eq: "x - 7 = 12", x: 19, choices: [12, 19, 7, 5],
         steps: [
-          { say: "Add 7 to both sides.", work: "x − 7 {{+ 7}} = 12 {{+ 7}}", get: "x", expr: "12 + 7", answer: 19, choices: [12, 19, 7, 5] },
+          { say: "Add 7 to both sides.", work: "x − 7 {{+ 7}} = 12 {{+ 7}}", get: "x", answer: 19, choices: [12, 19, 7, 5] },
         ],
       },
       {
         eq: "[[x|4]] = 6", x: 24, choices: [6, 4, 1.5, 24],
         steps: [
-          { say: "Multiply both sides by 4.", work: "[[x|4]] {{× 4}} = 6 {{× 4}}", get: "x", expr: "6 × 4", answer: 24, choices: [6, 4, 1.5, 24] },
+          { say: "Multiply both sides by 4.", work: "[[x|4]] {{× 4}} = 6 {{× 4}}", get: "x", answer: 24, choices: [6, 4, 1.5, 24] },
         ],
       },
       {
         eq: "2x + 7 = 1", x: -3, choices: [1, -3, 7, 4],
         steps: [
-          { say: "Subtract 7 from both sides.", work: "2x + 7 {{− 7}} = 1 {{− 7}}", get: "2x", expr: "1 − 7", answer: -6, choices: [1, -6, 6, 8] },
-          { say: "Divide both sides by 2.", work: "[[2x|2]] = [[−6|2]]", get: "x", expr: "−6 ÷ 2", answer: -3, choices: [-6, -3, 3, -12] },
+          { say: "Subtract 7 from both sides.", work: "2x + 7 {{− 7}} = 1 {{− 7}}", get: "2x", answer: -6, choices: [1, -6, 6, 8] },
+          { say: "Divide both sides by 2.", work: "[[2x|2]] = [[−6|2]]", get: "x", answer: -3, choices: [-6, -3, 3, -12] },
         ],
       },
       {
         eq: "3(x + 2) = 21", x: 5, choices: [21, 7, 2, 5],
         steps: [
-          { say: "Divide both sides by 3.", work: "[[3(x + 2)|3]] = [[21|3]]", get: "x + 2", expr: "21 ÷ 3", answer: 7, choices: [21, 7, 3, 63] },
-          { say: "Subtract 2 from both sides.", work: "x + 2 {{− 2}} = 7 {{− 2}}", get: "x", expr: "7 − 2", answer: 5, choices: [7, 2, 5, 9] },
+          { say: "Divide both sides by 3.", work: "[[3(x + 2)|3]] = [[21|3]]", get: "x + 2", answer: 7, choices: [21, 7, 3, 63] },
+          { say: "Subtract 2 from both sides.", work: "x + 2 {{− 2}} = 7 {{− 2}}", get: "x", answer: 5, choices: [7, 2, 5, 9] },
         ],
       },
     ],
@@ -506,6 +492,10 @@ window.CONTENT = {
     overrides: {
       "zippy.win": "assets/audio/zippy-win-laugh.mp3", // Zippy laughs when he has won the crown
       alarm: "assets/audio/alarm-wood-ring.mp3", // the alarm when the balance tips: a wooden ring, twice (asked 2026-11-09)
+      // every shower of confetti (an equation solved, an activity's last answer, a crown won): a real
+      // pop and real paper confetti falling, not a made sound (asked 2026-11-19: "should not like it's
+      // generated by AI")
+      confetti: "assets/audio/confetti.mp3",
       "grumble.snore1": "assets/audio/grumble-snore-1.mp3",
       "grumble.snore2": "assets/audio/grumble-snore-2.mp3",
       "grumble.snore3": "assets/audio/grumble-snore-3.mp3",

@@ -1181,15 +1181,18 @@ html[data-shade] .stage-edge::after {
   left: 470px; /* clear of Zippy's tail at the left, and of the Next button at the right; js/ui.js stands a
     bar narrower than this room in the middle between the top-left buttons and Next (CAP_ROOM) */
   top: 18px;
-  /* as wide as there is room for (up to 40 px from the Next button), so that a line that can be one row
-     is one row (review, 2026-11-16, on "This equation has one variable, / and its highest power is 1.":
-     "text aise ni aana chahie next line mei..same line mei aa skta hai"; it was 1100 px, and lines of
-     920–1000 px went onto two rows). js/ui.js cuts a longer line into rows that each fit, then fits the
-     bar to them: as wide as its line (asked 2026-11-19: "resize the box according to the sentence"), and
-     as tall as its rows with a little parchment round them ("should not too much big like current, make
-     it small. Not too much small, we easily see the text"; it was 145 px tall for any line). */
+  /* as wide as there is room for (up to 34 px from the Next button: review, 2026-11-16, on "This equation
+     has one variable, / and its highest power is 1.": "text aise ni aana chahie next line mei..same line
+     mei aa skta hai"; it was 1100 px). Every line is on ONE row (asked 2026-11-19: "The text of question
+     template should come in a full form like in one line"): js/ui.js (CQ.caption.layout) shows a line too
+     long for the bar at --cap-base a little smaller (--cap-size), just small enough to fit, then fits the
+     bar to it: as wide as its line (asked 2026-11-19: "resize the box according to the sentence"), and
+     one row tall with a little parchment round it ("should not too much big like current, make it small.
+     Not too much small, we easily see the text"; it was 145 px tall for any line). On a dark screen, with
+     no Zippy at the left, js/ui.js lets it reach further left (CAP_DARK). */
   width: 1190px;
-  /* no icon: the line starts at the bar's left and types itself out left to right, its rows inside the
+  --cap-base: 42px; /* the line's size (40 px until 2026-11-19: "increase the sentence text size. Little.") */
+  /* no icon: the line starts at the bar's left and types itself out left to right, inside the
      frame (asked 2026-11-18: "The question template text should come from left to right. Not in
      between."; for a moment that day it was centred, after "remove this speaker icon and the question
      template text should come in between of question panel and it should be fully wrapped in this"; a
@@ -1212,16 +1215,20 @@ html[data-shade] .stage-edge::after {
   min-width: 0;
   text-align: left;
   font-weight: 600;
-  font-size: 42px; /* (40 px until 2026-11-19: "increase the sentence text size. Little."; at 44 px twelve lines no longer fit on one row) */
-  line-height: 1.2;
+  font-size: var(--cap-size, var(--cap-base));
+  line-height: calc(var(--cap-base) * 1.2); /* (a smaller line keeps the bar's height, in its middle) */
   color: var(--ink);
   padding-top: 4px;
 }
-/* the whole line at once, row under row (js/ui.js, CQ.caption.render), each row kept whole: the bar is
-   only as wide as the widest */
+/* the whole line at once, on one row (js/ui.js, CQ.caption.render): the bar is only as wide as the line */
 .cap-row {
   display: block;
   white-space: nowrap;
+}
+/* the x's own face (a taller line than the round letters') never makes the bar taller: a line with an x
+   has the same bar as any other (3 px taller until 2026-11-19; as .wlabel .v) */
+.cap-text .v {
+  line-height: 0;
 }
 /* a recorded line types itself out as it is said: letters wait, hidden, in their places */
 /* a line comes in word by word as it is said, each word whole, with a short fade (asked 2026-11-19: "do
@@ -1235,7 +1242,7 @@ html[data-shade] .stage-edge::after {
 html.reduced-motion .cap-text .ch {
   transition: none;
 }
-/* measures how wide a row would be (js/ui.js, CQ.caption.split): never seen */
+/* measures how wide the line is (js/ui.js, CQ.caption.layout): never seen */
 .cap-probe {
   position: absolute;
   left: 0;
@@ -1913,12 +1920,15 @@ html.reduced-motion .hand-ring.b {
 .eb-row {
   position: relative;
 }
+/* {{…}}: the number of a step done to both sides, boxed (its sign plain beside it, asked 2026-11-19:
+   "Only digit should highlighted"). Like every highlight on a number (.mark-new, .x-lit, .c-lit), its box
+   takes no room: a ring drawn round it, its padding given back by its margins (below, with
+   display: inline-block), so nothing in its row moves as it comes or goes and its sign keeps its usual gap */
 .same {
   color: var(--same);
   background: rgba(47, 123, 216, 0.12);
-  border: 4px solid rgba(47, 123, 216, 0.55);
-  border-radius: 14px;
-  padding: 0 10px;
+  box-shadow: 0 0 0 4px rgba(47, 123, 216, 0.55);
+  border-radius: 12px;
 }
 .eb-row.final {
   color: var(--ok);
@@ -2239,6 +2249,12 @@ html.reduced-motion .hand-ring.b {
 .notebook .eqn.big {
   font-size: 150px;
   color: #fffaf0;
+  transition: opacity 0.5s ease;
+}
+/* a try's verdict: the equation fades away with the working, x = 4 left by itself (review, 2026-11-19:
+   "No need the first line. Only x is equal to 4") */
+.notebook .eqn.big.gone {
+  opacity: 0;
 }
 /* lines worked out under the equation (trying a value): LHS: 4 + 2 = 6, 6 ≠ 7, 7 = 7 */
 .notebook .nb-rows {
@@ -2346,8 +2362,10 @@ html.reduced-motion .hand-ring.b {
     filter: drop-shadow(0 0 5px rgba(255, 241, 226, 1)) drop-shadow(0 0 22px rgba(255, 140, 60, 1)) drop-shadow(0 0 36px rgba(255, 130, 50, 0.55));
   }
 }
-/* a sign named by its label (Level 4's "variable", "constant", "addition") takes the label's colour and
-   glows softly in it as the label comes in (review, 2026-11-13: "highlighting each matching symbol") */
+/* a sign named by its label (Level 4's "variable", "constant") takes the label's colour and glows softly
+   in it as the label comes in (review, 2026-11-13: "highlighting each matching symbol"); the + named
+   "addition" stays plain, its label joined to it by its line (asked 2026-11-19: "plus sign will not
+   highlighted") */
 .notebook .tok.lit-var {
   color: #ffd84d;
   text-shadow: 0 0 10px rgba(255, 216, 77, 0.8), 0 0 26px rgba(255, 190, 40, 0.5);
@@ -2355,10 +2373,6 @@ html.reduced-motion .hand-ring.b {
 .notebook .tok.lit-const {
   color: #ffa65e;
   text-shadow: 0 0 10px rgba(255, 166, 94, 0.8), 0 0 26px rgba(255, 140, 60, 0.5);
-}
-.notebook .tok.lit-op {
-  color: #cfdce2;
-  text-shadow: 0 0 10px rgba(207, 220, 226, 0.8), 0 0 24px rgba(180, 200, 210, 0.45);
 }
 @keyframes goldGlow {
   from {
@@ -2550,7 +2564,7 @@ html.reduced-motion .hand-ring.b {
 .eb-row,
 .same,
 .hot {
-  transition: color 0.5s ease, text-shadow 0.5s ease, background-color 0.5s ease, border-color 0.5s ease;
+  transition: color 0.5s ease, text-shadow 0.5s ease, background-color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
 }
 :is(body.lit, body.checking, body.solving) .check-panel,
 :is(body.lit, body.checking, body.solving) .eq-board,
@@ -2577,7 +2591,7 @@ html.reduced-motion .hand-ring.b {
 :is(body.lit, body.checking, body.solving) .same {
   color: #8fc2ff;
   background: rgba(143, 194, 255, 0.12);
-  border-color: rgba(143, 194, 255, 0.6);
+  box-shadow: 0 0 0 4px rgba(143, 194, 255, 0.6);
 }
 :is(body.lit, body.checking, body.solving) .hot {
   color: #ff8f80;
@@ -2613,11 +2627,9 @@ body.checking .cp-side .lab {
   justify-self: end;
   white-space: nowrap;
   padding-top: 0;
-  font-size: inherit; /* (the row's own size: "Try x" as big as its = 4) */
-}
-body.checking .cp-side.lhs .lab,
-body.checking .cp-side.rhs .lab {
-  font-size: 58px;
+  /* the row's own size: "Try x" as big as its = 4, and LHS and RHS as big as the numbers after them
+     (asked 2026-11-19: "LHS and RHS ka font size chota hai numbers ke font se"; they were 58 px) */
+  font-size: inherit;
 }
 body.checking .cp-side .rest,
 body.checking .cp-side .ex,
@@ -2630,10 +2642,15 @@ body.checking .cp-side .rest {
   justify-self: start;
   white-space: nowrap;
 }
-/* the equation itself, kept in sight at the top (review, 2026-11-08) */
+/* the equation itself, kept in sight at the top (review, 2026-11-08) until the ending's second screen,
+   where it fades away and x = 4 is left with its working under it, everything else staying where it
+   stands (review, 2026-11-19: "No need the first line. Only x is equal to 4 and then other things") */
 body.checking .cp-side.eqn > * {
   font-size: 76px;
   color: #fffaf0;
+}
+body.checking .cp-side.eqn.gone > * {
+  opacity: 0;
 }
 /* "Try x = 4": the value tried for x, clearly a try (review, 2026-11-13), all in gold, the value plain
    with no box round it (review, 2026-11-18: "4 is not required to put in a box"). At the end "Try" fades
@@ -2744,6 +2761,13 @@ body.solving .eb-row {
   align-items: center;
   width: 100%;
 }
+/* a little more room between the terms and signs of the working (Levels 8–9 and practice), so a lit
+   number's box stands clear of the + or − beside it (asked 2026-11-19: only the number lit); the longest
+   row (2x + 4 − 4 = 4 + 14 − 4) still fits its half of the board, every = under the others */
+.eq-board .eb-row,
+.pr-work {
+  word-spacing: 0.06em;
+}
 .eb-l {
   justify-self: end;
 }
@@ -2754,32 +2778,36 @@ body.solving .eb-row {
   grid-column: 1 / -1;
   justify-self: center;
 }
-/* ##…##: what has just changed, in gold (x + 8 = 8 + 15) */
+/* ##…##: what has just changed, in gold (the 8 and the 15 of x + 8 = 8 + 15, each in a box of its own:
+   a highlight holds the numbers, never the + − × ÷ between them, asked 2026-11-19; CQ.rich) */
 .mark-new {
   color: #ffd84d;
   background: rgba(255, 216, 77, 0.14);
-  border: 4px solid rgba(255, 216, 77, 0.7);
-  border-radius: 14px;
-  padding: 0 10px;
+  box-shadow: 0 0 0 4px rgba(255, 216, 77, 0.7);
+  border-radius: 12px;
 }
 /* ##…## gone back to plain (Level 8's 8 + 15, once the voice moves on to the 8 beside the crown:
    review, 2026-11-13): its box fades, the numbers stay where they are */
 .mark-new {
-  transition: color 0.5s ease, background-color 0.5s ease, border-color 0.5s ease;
+  transition: color 0.5s ease, background-color 0.5s ease, box-shadow 0.5s ease;
 }
 .mark-new.unmark {
   color: inherit;
   background: transparent;
-  border-color: transparent;
+  box-shadow: 0 0 0 4px transparent;
 }
-/* {{…}}, the same thing done to both sides (− 7, ÷ 2), likewise: lit while its step is talked about,
-   plain like the rest of its row once the step is done (asked 2026-11-19: "This should highlight in
-   start… after this no need to highlight… Do this where these type of things come"): its box fades, the
-   numbers stay where they are. (body: it outranks the lit and activity colours of .same.) */
+/* {{…}}, the same thing done to both sides (− 7, ÷ 2: the number boxed, its sign plain beside it, the
+   two kept together in a .both span), likewise: lit while its step is talked about, plain like the rest
+   of its row once the step is done (asked 2026-11-19: "This should highlight in start… after this no
+   need to highlight… Do this where these type of things come"): its box fades, the numbers stay where
+   they are. (body: it outranks the lit and activity colours of .same.) */
 body .same.unmark {
   color: inherit;
   background: transparent;
-  border-color: transparent;
+  box-shadow: 0 0 0 4px transparent;
+}
+.both {
+  white-space: nowrap; /* a sign never ends a line without its number */
 }
 /* Values tried on the balance, on a card by it (Level 8: review, 2026-11-13): the try now, big (10 + 8 =
    18, its 10 lit like its bar, then 18 ≠ 23 in red), under small records of the tries before */
@@ -4191,26 +4219,10 @@ html.lite #title .t-drift {
   box-shadow: none;
   text-shadow: 0 0 8px rgba(255, 216, 77, 0.7), 0 0 24px rgba(255, 190, 40, 0.45);
 }
-/* A part pointed out while its label is put in for the child, after a wrong label (review, 2026-11-13:
-   "Highlight only lowercase x", "highlight the full statement"): it takes its label's colour and glows,
-   breathing, until its label is in. The whole statement glows green, the Equation's colour, each sign
-   keeping its own colour. */
-.activity .tok.look-var {
-  color: #ffd84d;
-  --glow: rgba(255, 210, 60, 0.85);
-}
-.activity .tok.look-lhs {
-  color: #5ee6dc;
-  --glow: rgba(94, 230, 220, 0.85);
-}
-.activity .tok.look-rhs {
-  color: #ffc35c;
-  --glow: rgba(255, 195, 92, 0.85);
-}
+/* The whole statement pointed out (the recap's Equation): it glows green, the Equation's colour,
+   breathing, each sign keeping its own colour. */
 .activity .tok.look-eq {
   --glow: rgba(116, 240, 172, 0.9);
-}
-.activity .tok:is(.look-var, .look-lhs, .look-rhs, .look-eq) {
   animation: partLook 1.1s ease-in-out infinite alternate;
 }
 @keyframes partLook {
@@ -4317,7 +4329,7 @@ html.lite #title .t-drift {
 .activity .same {
   color: #8fc0ff;
   background: rgba(143, 192, 255, 0.16);
-  border-color: rgba(143, 192, 255, 0.6);
+  box-shadow: 0 0 0 4px rgba(143, 192, 255, 0.6);
 }
 .activity .hot {
   color: #ff8f80;
@@ -4373,8 +4385,9 @@ html.reduced-motion .bar-slot.looked .gbar {
   }
 }
 /* an x of the equation lit up with its crown (Level 9: "Highlight each crown alongside its
-   corresponding x", review 2026-11-08), or x + x lit as one (.x-span, eqBoard.light): gold, with a ring
-   that takes no room, so nothing moves */
+   corresponding x", review 2026-11-08; both x's of x + x at once, each by itself), or a number of a row
+   lit by itself (.x-span, eqBoard.light: the 8 of x + 8, never with its +, asked 2026-11-19): gold, with
+   a ring that takes no room, so nothing moves */
 .eq-board .v,
 .eq-board .x-span {
   border-radius: 12px;
@@ -4383,19 +4396,14 @@ html.reduced-motion .bar-slot.looked .gbar {
 .eq-board .x-lit {
   color: #ffd84d;
   background: rgba(255, 216, 77, 0.16);
-  box-shadow: 0 0 0 5px rgba(255, 216, 77, 0.75);
+  box-shadow: 0 0 0 4px rgba(255, 216, 77, 0.75);
 }
-/* the terms that cancel (Level 9: + 4 − 4, and 4 … − 4, review 2026-11-08), lit red as one, with a
-   ring that takes no room; a "− 4" box inside takes the red look too */
+/* the terms that cancel (Level 9, review 2026-11-08: the 4s of 2x + 4 − 4 = 4 + 14 − 4), each 4 lit
+   red by itself, its + or − plain (asked 2026-11-19), with a ring that takes no room */
 .eq-board .c-lit {
   color: #ff8f80;
   background: rgba(255, 143, 128, 0.14);
-  box-shadow: 0 0 0 5px rgba(255, 143, 128, 0.8);
-}
-.eq-board .c-lit .same {
-  color: inherit;
-  background: transparent;
-  border-color: transparent;
+  box-shadow: 0 0 0 4px rgba(255, 143, 128, 0.8);
 }
 /* Level 9's two equal groups (review, 2026-11-08: "pairing each crown with one 7 bar through matching
    highlights"): each crown and its 7 bar lit in a colour of their own (violet, pink: as strong as the
@@ -4430,7 +4438,7 @@ html.reduced-motion .bar-slot.looked .gbar {
 /* A highlight box hugs its words: an inline block one line of text high (the box's own border and
    ring round that), so boxes in rows one under another never run into each other, wherever they are
    (asked 2026-11-09: "the things should not overlap with each other"): the working of Levels 8-9
-   (x + x over 2x, the - 4 and / 2 boxes), practice, the formula screen. */
+   (the x's of x + x, the 4 of − 4, the 2 of ÷ 2), practice, the formula screen. */
 .same,
 .hot,
 .mark-new,
@@ -4439,11 +4447,44 @@ html.reduced-motion .bar-slot.looked .gbar {
   display: inline-block;
   line-height: 1;
 }
+/* a number's box: a little room inside it at its sides, given back by its margins, so the box (a ring
+   that takes no room) never moves its row (asked 2026-11-19: only the number lit, its sign plain beside
+   it, the same pill in gold, blue and red) */
+.same,
+.mark-new,
+.eq-board .x-span,
+.eq-board .v {
+  padding: 0 4px;
+  margin: 0 -4px;
+}
 
 /* ---------------------------------------------------------------- an answer, right or wrong
    Every answer looks the same wherever it is given (CQ.answer in js/ui.js; the learning-section skill,
-   "the activity"): wrong, the control shakes its head and goes red for a beat; right, it turns green for
-   a moment, with a tick drawn on its corner, one swell and a small burst of sparkles. */
+   "the activity"): wrong, the whole screen shakes its head and red light glows in from the screen's
+   corners, the control red for a beat (no words: asked 2026-11-19); right, it turns green for a moment,
+   with a tick drawn on its corner, one swell and a small burst of sparkles. */
+/* The red light of a wrong answer (CQ.answer.alarm): over the whole window, the bands too, so it comes
+   from the screen's own corners, brightest there and gone well before the middle, where the maths is.
+   It closes in from the corners, stays a moment and fades (scale and opacity only); it is there only
+   while it shows. */
+.wrong-light {
+  position: absolute;
+  inset: 0;
+  z-index: 2; /* over the stage; under "Please turn your device sideways" */
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+  --red: 255, 46, 46;
+  --fall: rgba(var(--red), 0.8), rgba(var(--red), 0.45) 14%, rgba(var(--red), 0.17) 40%, rgba(var(--red), 0.05) 68%, rgba(var(--red), 0) 100%;
+  background:
+    radial-gradient(ellipse 38% 52% at 0% 0%, var(--fall)),
+    radial-gradient(ellipse 38% 52% at 100% 0%, var(--fall)),
+    radial-gradient(ellipse 38% 52% at 0% 100%, var(--fall)),
+    radial-gradient(ellipse 38% 52% at 100% 100%, var(--fall));
+}
+.wrong-light.on {
+  display: block;
+}
 .answer-tick {
   position: absolute;
   width: 46px;

@@ -71,12 +71,25 @@
   // superscript powers and a drawn ≠ sign. "x" inside ordinary words (Next, box…) is left alone.
   // Maths marks: [[a|b]] is a fraction (a over b), {{…}} the blue "same on both sides" highlight,
   // <<…>> a red highlight, ##…## a gold one (what has just changed).
+  // A highlight holds the numbers (and x), never the signs: + − × ÷ stand plain beside its boxes, each
+  // term in a box of its own (asked 2026-11-19, with "+ 8" boxed in x + 8 = 8 + 15: "plus sign will not
+  // highlighted. Only digit highlight… Do this in all game"). So ##8 + 15## lights 8 and 15, the + plain
+  // between them, and {{− 8}} is − with 8 lit; a {{…}} step keeps its sign with it in a .both span, so
+  // the step comes in and goes as one. (A sign with no space after it is a number's own: −6 stays lit
+  // whole. A mark holding other markup, a fraction, stays one box.)
+  const marked = (inner, cls) =>
+    /</.test(inner)
+      ? `<span class="${cls}">${inner}</span>`
+      : inner
+          .split(/(^[+−×÷-] | [+−×÷-] )/)
+          .map((p, i) => (i % 2 ? p : p && `<span class="${cls}">${p}</span>`))
+          .join("");
   CQ.rich = function (s) {
     return esc(s)
       .replace(/\[\[(.+?)\|(.+?)\]\]/g, '<span class="frac"><span class="fn">$1</span><span class="fd">$2</span></span>')
-      .replace(/\{\{(.+?)\}\}/g, '<span class="same">$1</span>')
-      .replace(/&lt;&lt;(.+?)&gt;&gt;/g, '<span class="hot">$1</span>')
-      .replace(/##(.+?)##/g, '<span class="mark-new">$1</span>')
+      .replace(/\{\{(.+?)\}\}/g, (m, t) => `<span class="both">${marked(t, "same")}</span>`)
+      .replace(/&lt;&lt;(.+?)&gt;&gt;/g, (m, t) => marked(t, "hot"))
+      .replace(/##(.+?)##/g, (m, t) => marked(t, "mark-new"))
       .replace(/ - /g, " − ")
       .replace(/\^(\d)/g, "<sup>$1</sup>")
       .replace(/²/g, "<sup>2</sup>")

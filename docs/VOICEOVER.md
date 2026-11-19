@@ -4,7 +4,7 @@ Every line the game shows in its caption bar, and every line Zippy says in his s
 
 | | |
 |---|---|
-| Clips | `assets/vo/vo001.ogg` … one file per line, Ogg Opus, 24 kbps, mono: 197 clips, 11.1 minutes, 2.1 MB, every line of the script (115 of them recorded again on 2026-11-19 for the new text: "The new text of 2026-11-19", below; 2026-11-19: the 168 clips of lines the game no longer says were removed with their script entries). On 2026-11-13 every clip was re-encoded from 32 to 24 kbps (speech stays clear; the folder had to be smaller), and the 33 clips of lines the game no longer says were removed with their script entries. |
+| Clips | `assets/vo/vo001.ogg` … one file per line, Ogg Opus, 24 kbps, mono: 191 clips, 10.8 minutes, 2.1 MB, every line of the script (115 of them recorded again on 2026-11-19 for the new text: "The new text of 2026-11-19", below; 2026-11-19: the 168 clips of lines the game no longer says were removed with their script entries). On 2026-11-13 every clip was re-encoded from 32 to 24 kbps (speech stays clear; the folder had to be smaller), and the 33 clips of lines the game no longer says were removed with their script entries. |
 | Script | `tools/vo_script.json`: each line as shown, as spoken, and the Devanagari the voice was given |
 | Map | `js/vo_lines.js` (generated): line as shown → [clip, seconds] |
 | Player | `js/voice.js` (finds and loads clips), played by `js/audio.js`, typed out by the caption in `js/ui.js` |
@@ -77,7 +77,15 @@ The user gave new words for the game's 194 spoken lines (shorter, simpler: "The 
 - **115 recorded again** (their old clips are in git at d398223): new words. Each kept its id with its new text and spoken form. `docs/VO_LINES_TO_MAKE.txt` lists them in game order, in three parts of under 4 minutes each. The user recorded them the same day, in the same voice as the rest (`part 1.mp3`, `part 2.mp3`, `part 3.mp3`, 2:05, 2:26 and 2:39, in the game folder; not the older parts of the same names in `crown quest recordings`), and `tools/vo_split.py` cut each part against its own lines: every line found in order, 855 of 881 words heard (the misses are the recogniser's weak words, such as "weigh" and the letters of L H S), +3.2 dB to the game's loudness (−18.4 LUFS against the other clips' −18.5), no long pauses. Their word timings were heard by the recogniser, like every other clip's.
 - **One new line, vo400** "Now try x = 8.": Level 6's next try is now "Now try x = …" and Level 7's "Now let's check …", so "Now, let's check 8.", said in both levels, became two lines (vo107 keeps its clip as Level 7's "Now let's check 8.").
 
-Three lines now differ by level, set in `levels` in `js/content.js`: the win line (`win`: Level 1 "Perfect swap! Both weigh 5 units!", Levels 2–3 "Perfect! Both weigh … units!"), the next try (`say.nextTry`, above) and the left side's hint (`hintLhs`: Level 8 "Add 15 + 8 to get 23." instead of counting on eight numbers). Every cue that waits for a word was moved to the new words (`CQ.caption.when`; for example the LHS row is written on "LHS", no longer "left-hand"). Level 4's "addition" label now comes on "and" ("x is a variable, and 2 is a constant."), as the line no longer says "We add them together". "Now let's find the crown's mass." was not in the new list (it had "Check the highest power of x." twice instead), so it stays as it was.
+Two lines now differ by level, set in `levels` in `js/content.js` (a third, the win line of Levels 1–3, `win`, went later that day: every crown now has "Woohoo! Zippy got his first crown!" or "…another crown!", below): the next try (`say.nextTry`, above) and the left side's hint (`hintLhs`: Level 8 "Add 15 + 8 to get 23." instead of counting on eight numbers). Every cue that waits for a word was moved to the new words (`CQ.caption.when`; for example the LHS row is written on "LHS", no longer "left-hand"). Level 4's "addition" label now comes on "and" ("x is a variable, and 2 is a constant."), as the line no longer says "We add them together". "Now let's find the crown's mass." was not in the new list (it had "Check the highest power of x." twice instead), so it stays as it was.
+
+**vo401** "Woohoo! Zippy got his first crown!" (2026-11-19, later): Level 1's win line, in place of "Perfect swap! Both weigh 5 units!" (vo014, removed), asked with the words "This voice will come when he got crown first time. Only this voice will come." After Zippy's laugh it is the only voice: in Level 1 he no longer says "Hee hee! Sleep tight, Grumble!" (it was `zippyLine: false` on L1 in `levels` for a moment; since vo402 no crown has that line), and Grumble's snore for that line goes too. The user recorded it themselves, in the same voice as the rest (`Woohoo! Zippy got his first crown!.mp3`, one line, so no cutting): brought up 1.7 dB to the game's loudness (−18.9 LUFS), with the usual short fades and 0.3 s of quiet added at the end (the recording stops 50 ms after "crown"), then `vo_build.py` with the recogniser's Python timed its words by ear.
+
+**vo402** "Woohoo! Zippy got another crown!" (2026-11-19, later): the line after every crown but the first, to the last ("After first time woohoo Zippy got another crown. This sound will come after one stole of crown … Last tak. Only first time Zippy got his first crown"). Asked whether the old lines after a crown stay, the user chose "Woohoo line only": after Zippy's laugh the Woohoo line is the only voice for every crown, so "Perfect! Both weigh 7 units!" and "…4 units!" (Levels 2–3, vo018/vo021), "It worked! Another crown collected, and Grumble's still asleep!" (Level 8, vo146) and Zippy's "Hee hee! Sleep tight, Grumble!" (vo015) were removed with their clips. Which of the two lines is said goes by the crowns Zippy has (`crownLine` in `js/flow.js`, keys `crown-first` / `crown-another` in `js/content.js`): his first crown is Level 1's, also when a level is started from the screens list; Level 9's first crown (the one that flies up) has "another crown" too. On "crown" the crown he wears sparkles. The user recorded it themselves, in the same voice as the rest (`Woohoo! Zippy got another crown!.mp3`, one line): already at the game's loudness (−18.9 LUFS, so no gain), the usual limiter and short fades and 0.3 s of quiet added at the end, then `vo_build.py` with the recogniser's Python heard all 5 words.
+
+**vo403** "Oops! The balance tipped. Try another bar!" (2026-11-19, later): said after every wrong bar, in every level where the child picks one ("When user choose a wrong bar, so this voice will come … Do this in all game"). Levels 1–3: after the alarm and Zippy's return, in place of "Give Zippy a gold bar." (vo012, removed; the "Oops! Too light/heavy!" lines, vo010/vo011, had gone the same day), staying up while the child picks again; after a second miss the hint ("The crown balances … Try the …-unit bar!") follows it. Levels 6–7: in place of "Try another value!" (vo101, removed). Levels 8–9: after "Phew! Good thing we checked!", before the prompt comes back. The user recorded it themselves, in the same voice as the rest (`Oops! The balance tipped. Try another bar!.mp3`, one line): `tools/vo_split.py` heard all 7 words and brought it to the game's loudness (−18.6 LUFS), then `vo_build.py` with the recogniser's Python timed its words by ear.
+
+**"Left-hand side", not "LHS"** (2026-11-19, later; user: "LHS ko left-hand side and RHS ko right-hand side krdo"): every spoken line that named a side by its letters now says it in full. LHS and RHS stay where they are written as names (the working's rows "LHS = 4 + 2 = 6", the labels, "Left-hand side (LHS)") and in the two lines that introduce them ("…is called the left-hand side, or LHS.", vo038 and vo039). 24 lines, keeping their ids: "The left-hand side is 6." … for every value (vo071, vo323, vo325, vo327, vo328, vo330, vo332, vo333, vo335, vo336, vo338, vo339, vo340, vo342, vo344, vo345, vo346, vo348), "Find the left-hand side." (vo134), "Now find the right-hand side." (vo326), "The right-hand side is the number on the right of the equals sign." (vo086), "Now label the left-hand side and right-hand side." (vo320), "4x + 3 is on the left. That's the left-hand side." (vo352) and "19 is on the right. That's the right-hand side." (vo353). **No new recording:** each clip is made from the user's own recordings, the clips of the text before 2026-11-19 (git, d398223: "The left-hand side equals 6.", "Find the value of the left-hand side." …) and that day's ("The L H S is six." …), joined in the pause between two words, mostly in the stop after "side" (−60 to −90 dB), with a 12 ms crossfade, each part brought to the clip's level. Each entry's `"splice"` in `tools/vo_script.json` says what it was joined from. The pauses at the joins (35–115 ms) are those of the recordings themselves (35–185 ms), and the pitch steps across them are the ones the voice makes there anyway. The recogniser, listening freely, heard all 24 as written; loudness −18.3 to −19.3 LUFS, like the rest. vo320 is the old clip unchanged (its words are the same; only its comma went). Then `vo_build.py` with the recogniser's Python timed their words by ear, and every cue that waited for "LHS" or "RHS" now waits for "left-hand" or "right-hand" (the row "LHS =" is written on "left-hand", = on "is", the value on its number). If a join ever sounds wrong, record that line again and cut it with `tools/vo_split.py` (its id as above).
 
 What the 51 lines are, and why they changed:
 
@@ -184,18 +192,14 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo007 | Which bar should Zippy choose? | = |  | 2.4 |
 | vo008 | Drag it to Zippy, then tap Swap. | = | ड्रैग इट टू ज़िप्पी, देन टैप स्वैप। | 2.9 |
 | vo009 | Now tap Swap! | = | नाउ टैप स्वैप! | 1.6 |
-| vo010 | Oops! Too light! The balance tipped! | = |  | 3.0 |
-| vo011 | Oops! Too heavy! The balance tipped! | = |  | 3.0 |
-| vo012 | Give Zippy a gold bar. | = |  | 1.7 |
+| vo403 | Oops! The balance tipped. Try another bar! | = |  | 3.7 |
 | vo013 | The crown balances 5 coins. Try the 5-unit bar! | The crown balances five coins. Try the five-unit bar! |  | 4.5 |
-| vo014 | Perfect swap! Both weigh 5 units! | Perfect swap! Both weigh five units! |  | 3.2 |
-| vo015 (Zippy) | Hee hee! Sleep tight, Grumble! | = | ही ही! स्लीप टाइट, ग्रंबल! | 2.5 |
+| vo401 | Woohoo! Zippy got his first crown! | Woohoo! ज़िप्पी got his first crown! |  | 3.9 |
 | vo016 | Another crown! Let's collect it! | = |  | 2.6 |
 | vo017 | The crown balances 7 coins. Try the 7-unit bar! | The crown balances seven coins. Try the seven-unit bar! |  | 4.6 |
-| vo018 | Perfect! Both weigh 7 units! | Perfect! Both weigh seven units! |  | 2.7 |
+| vo402 | Woohoo! Zippy got another crown! | Woohoo! ज़िप्पी got another crown! |  | 3.6 |
 | vo019 | One more crown! Grumble's still asleep! | = |  | 3.3 |
 | vo020 | The crown balances 4 coins. Try the 4-unit bar! | The crown balances four coins. Try the four-unit bar! |  | 4.7 |
-| vo021 | Perfect! Both weigh 4 units! | Perfect! Both weigh four units! |  | 2.8 |
 | vo022 | Wait! This crown has two coins beside it. | = | वेट... दिस क्राउन हैज टू कॉइन्स बिसाइड इट. | 3.5 |
 | vo023 | Together, they balance 7 coins. | Together, they balance seven coins. |  | 2.8 |
 | vo024 | But Zippy needs to replace only the crown. | = |  | 2.9 |
@@ -231,7 +235,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo067 | Now let's find the crown's mass. | = | नाउ लेट्स फाइंड द क्राउन्स मास। | 2.8 |
 | vo068 | We need x to make both sides equal. | = |  | 2.5 |
 | vo069 | Let's try x = 4. Find the value of each side. | Let's try x equals four. Find the value of each side. |  | 5.4 |
-| vo071 | The LHS is 6. | The L H S is six. |  | 2.6 |
+| vo071 | The left-hand side is 6. | The left-hand side is six. |  | 2.7 |
 | vo072 | Now try x = 5. Find both sides. | Now try x equals five. Find both sides. |  | 4.6 |
 | vo075 | A value that makes an equation true is its solution. So, x = 5! | A value that makes an equation true is its solution. So, x equals five! |  | 6.8 |
 | vo076 | The crown weighs 5 units. Zippy can swap it! | The crown weighs five units. Zippy can swap it! |  | 4.2 |
@@ -240,17 +244,16 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo082 | Give Zippy the 4-unit bar. | Give Zippy the four-unit bar. |  | 2.7 |
 | vo083 | Replace x with 4. | Replace x with four. | रिप्लेस एक्स विद फोर। | 2.2 |
 | vo085 | Add 4 + 3. Count on: 5, 6, 7. | Add four plus three. Count on: five, six, seven. |  | 5.6 |
-| vo086 | The RHS is the number on the right of the equals sign. | The R H S is the number on the right of the equals sign. |  | 4.2 |
+| vo086 | The right-hand side is the number on the right of the equals sign. | = |  | 4.4 |
 | vo087 (Zippy) | Phew! Good thing we checked! | = | फ़्यू! गुड थिंग वी चेक्ड। | 1.7 |
 | vo089 (Zippy) | Now let's try 6. | Now let's try six. | नाउ, लेट्स ट्राई सिक्स। | 1.8 |
 | vo090 | Give Zippy the 6-unit bar. | Give Zippy the six-unit bar. |  | 2.4 |
 | vo091 | Replace x with 6. | Replace x with six. | रिप्लेस एक्स विद सिक्स। | 2.3 |
 | vo092 | Add 6 + 3. Count on: 7, 8, 9. | Add six plus three. Count on: seven, eight, nine. |  | 5.6 |
-| vo095 | Choose a value for x. Are both sides equal? | = |  | 3.9 |
+| vo404 | Another crown! Which gold bar will keep the balance level? | = |  | 4.7 |
 | vo097 | Let's check 5. | Let's check five. | लेट्स चेक फाइव। | 1.4 |
 | vo098 | Replace x with 5 and find the value of each side. | Replace x with five and find the value of each side. | रिप्लेस एक्स विद फाइव एंड फाइंड द वैल्यू ऑफ ईच साइड। | 4.2 |
 | vo099 | Add 5 + 4. Count on: 6, 7, 8, 9. | Add five plus four. Count on: six, seven, eight, nine. |  | 6.0 |
-| vo101 | Try another value! | = | ट्राई अनदर वैल्यू. | 1.7 |
 | vo102 | Let's check 8. | Let's check eight. | लेट्स चेक एट। | 1.6 |
 | vo103 | Replace x with 8 and find the value of each side. | Replace x with eight and find the value of each side. | रिप्लेस एक्स विद ऐट एंड फाइंड द वैल्यू ऑफ ईच साइड। | 4.4 |
 | vo104 | Add 8 + 4. Count on: 9, 10, 11, 12. | Add eight plus four. Count on: nine, ten, eleven, twelve. |  | 6.5 |
@@ -273,7 +276,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo131 | The crown balances 15 units. So, x = 15! | The crown balances fifteen units. So, x equals fifteen! |  | 6.2 |
 | vo132 | Before swapping, let's check the original equation. | = |  | 4.0 |
 | vo133 | Replace x with 15. | Replace x with fifteen. | रिप्लेस एक्स विद फिफ्टीन। | 2.3 |
-| vo134 | Find the LHS. | Find the L H S. |  | 1.9 |
+| vo134 | Find the left-hand side. | = |  | 1.7 |
 | vo135 | Add 15 + 8 to get 23. | Add fifteen plus eight to get twenty-three. |  | 3.8 |
 | vo138 | The crown weighs 15 units. Time to swap! | The crown weighs fifteen units. Time to swap! |  | 4.7 |
 | vo139 | Give Zippy the 15-unit bar, then tap Swap. | Give Zippy the fifteen-unit bar, then tap Swap. |  | 5.0 |
@@ -281,7 +284,6 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo141 | Add 23 + 8 to get 31. | Add twenty-three plus eight to get thirty-one. |  | 4.2 |
 | vo143 | Let's check 31. | Let's check thirty-one. | लेट्स चेक थर्टी वन। | 1.8 |
 | vo144 | Add 31 + 8 to get 39. | Add thirty-one plus eight to get thirty-nine. |  | 3.9 |
-| vo146 | It worked! Another crown collected, and Grumble's still asleep! | = |  | 5.4 |
 | vo148 | Each crown has the same mass, x. | = | ईच क्राउन हैज द सेम मास, एक्स। | 2.5 |
 | vo149 | Two crowns together have a mass of 2x. | Two crowns together have a mass of two x. |  | 3.8 |
 | vo150 | There are 4 extra units beside the crowns. Let's remove them. | There are four extra units beside the crowns. Let's remove them. |  | 5.4 |
@@ -300,32 +302,32 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo317 | Drag each label to the correct box. | = |  | 2.7 |
 | vo318 | Not quite! x is the unknown value, so it's the variable. | = |  | 4.3 |
 | vo319 | The complete statement is an equation. | = |  | 2.2 |
-| vo320 | Now label the LHS and RHS. | Now label the L H S and R H S. |  | 4.0 |
+| vo320 | Now label the left-hand side and right-hand side. | = |  | 4.0 |
 | vo321 | Let's return to the crown's equation. | = |  | 1.9 |
 | vo322 | We usually leave the power 1 unwritten. | We usually leave the power one unwritten. |  | 2.7 |
-| vo323 | The RHS is 7. | The R H S is seven. |  | 2.8 |
-| vo325 | The LHS is 7. | The L H S is seven. |  | 2.4 |
-| vo326 | Now find the RHS. | Now find the R H S. |  | 2.5 |
-| vo327 | The LHS is 9. | The L H S is nine. |  | 2.4 |
-| vo328 | The RHS is 9. | The R H S is nine. |  | 2.5 |
-| vo330 | The LHS is 12. | The L H S is twelve. |  | 2.3 |
-| vo332 | The LHS is 11. | The L H S is eleven. |  | 2.5 |
-| vo333 | The RHS is 11. | The R H S is eleven. |  | 2.4 |
-| vo335 | The LHS is 10. | The L H S is ten. |  | 2.4 |
-| vo336 | The LHS is 14. | The L H S is fourteen. |  | 2.5 |
-| vo338 | The RHS is 10. | The R H S is ten. |  | 2.1 |
-| vo339 | The LHS is 23. | The L H S is twenty-three. |  | 3.0 |
-| vo340 | The LHS is 31. | The L H S is thirty-one. |  | 3.1 |
-| vo342 | The LHS is 39. | The L H S is thirty-nine. |  | 3.2 |
-| vo344 | The RHS is 23. | The R H S is twenty-three. |  | 2.9 |
-| vo345 | The LHS is 18. | The L H S is eighteen. |  | 2.8 |
-| vo346 | The LHS is 22. | The L H S is twenty-two. |  | 3.0 |
-| vo348 | The RHS is 18. | The R H S is eighteen. |  | 2.9 |
+| vo323 | The right-hand side is 7. | The right-hand side is seven. |  | 2.8 |
+| vo325 | The left-hand side is 7. | The left-hand side is seven. |  | 2.5 |
+| vo326 | Now find the right-hand side. | = |  | 2.5 |
+| vo327 | The left-hand side is 9. | The left-hand side is nine. |  | 2.5 |
+| vo328 | The right-hand side is 9. | The right-hand side is nine. |  | 2.9 |
+| vo330 | The left-hand side is 12. | The left-hand side is twelve. |  | 2.4 |
+| vo332 | The left-hand side is 11. | The left-hand side is eleven. |  | 2.4 |
+| vo333 | The right-hand side is 11. | The right-hand side is eleven. |  | 2.6 |
+| vo335 | The left-hand side is 10. | The left-hand side is ten. |  | 2.5 |
+| vo336 | The left-hand side is 14. | The left-hand side is fourteen. |  | 2.5 |
+| vo338 | The right-hand side is 10. | The right-hand side is ten. |  | 2.0 |
+| vo339 | The left-hand side is 23. | The left-hand side is twenty-three. |  | 3.0 |
+| vo340 | The left-hand side is 31. | The left-hand side is thirty-one. |  | 2.7 |
+| vo342 | The left-hand side is 39. | The left-hand side is thirty-nine. |  | 2.7 |
+| vo344 | The right-hand side is 23. | The right-hand side is twenty-three. |  | 2.6 |
+| vo345 | The left-hand side is 18. | The left-hand side is eighteen. |  | 2.5 |
+| vo346 | The left-hand side is 22. | The left-hand side is twenty-two. |  | 3.1 |
+| vo348 | The right-hand side is 18. | The right-hand side is eighteen. |  | 2.4 |
 | vo349 | Let's try x = 10. | Let's try x equals ten. |  | 2.3 |
 | vo350 | How about x = 12? | How about x equals twelve? |  | 2.3 |
 | vo351 | Can we solve this without guessing? | = |  | 2.8 |
-| vo352 | 4x + 3 is on the left. That's the LHS. | Four x plus three is on the left. That's the L H S. |  | 4.5 |
-| vo353 | 19 is on the right. That's the RHS. | Nineteen is on the right. That's the R H S. |  | 3.8 |
+| vo352 | 4x + 3 is on the left. That's the left-hand side. | Four x plus three is on the left. That's the left-hand side. |  | 4.1 |
+| vo353 | 19 is on the right. That's the right-hand side. | Nineteen is on the right. That's the right-hand side. |  | 3.7 |
 | vo354 | Drag the 5-unit bar to Zippy, then tap Swap. | Drag the five-unit bar to Zippy, then tap Swap. |  | 4.4 |
 | vo355 | The crown and 8 units balance 23 units. | The crown and eight units balance twenty-three units. |  | 4.3 |
 | vo356 | Guessing could take a while! | = |  | 1.5 |
@@ -353,7 +355,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo378 | So, x = 23 is not a solution. | So, x equals twenty-three is not a solution. |  | 4.6 |
 | vo379 | So, x = 31 is not a solution. | So, x equals thirty-one is not a solution. |  | 4.4 |
 | vo380 | Your turn! Solve an equation. | = |  | 3.4 |
-| vo381 | Find x. | = |  | 1.7 |
+| vo381 | Find the value of x. | = |  | 2.5 |
 | vo382 | Not quite! Let's solve it together. | = |  | 3.0 |
 | vo383 | Not quite! | = |  | 1.1 |
 | vo384 | Subtract 6 from both sides. | Subtract six from both sides. |  | 2.7 |
