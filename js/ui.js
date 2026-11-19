@@ -395,6 +395,10 @@
   // stop or comma where one is near), shown one under the other, and the bar grows to fit them. Every
   // row is the same size.
   const LEAD = 0.08; // s: a word counts as said this much before its sound begins (what it names has a moment to come in)
+  // The room the bar stands in the middle of (stage px, styles.css): from the right of the two buttons at
+  // the top left (.nav: 36 + 140 + 14 + 140) to the left of Next (.next-btn: 1920 − 36 − 190). It stays
+  // put when Next is hidden, so the bar doesn't move between screens.
+  const CAP_ROOM = { from: 330, to: 1694 };
   CQ.caption = {
     build(ui) {
       this.el = CQ.el("div", "caption hidden", ui);
@@ -440,6 +444,7 @@
       const n = ++this.line;
       this.el.classList.remove("hidden");
       this.el.style.width = ""; // at its widest (styles.css) to cut the line into rows, then fitted to them
+      this.el.style.left = "";
       this.rows = this.split(text);
       this.fit();
       this.sr.textContent = CQ.speakable(text);
@@ -548,7 +553,15 @@
         this.probe.innerHTML = CQ.rich(r);
         w = Math.max(w, this.probe.getBoundingClientRect().width / CQ.stage.scale);
       });
-      this.el.style.width = Math.min(full, Math.ceil(full - room + w + 4)) + "px";
+      const width = Math.min(full, Math.ceil(full - room + w + 4));
+      this.el.style.width = width + "px";
+      // and in the middle of the room between the buttons at the top left and Next (asked 2026-11-19: "This
+      // question template need to be come in between not in side"; it stood at the left of that room, its
+      // right side short). A long line still keeps to the room styles.css gives it: never further left
+      // (Zippy's tail), never nearer Next. The words in it stay at its left, typed left to right.
+      const left = this.el.offsetLeft;
+      const mid = (CAP_ROOM.from + CAP_ROOM.to) / 2;
+      this.el.style.left = Math.round(Math.max(left, Math.min(mid - width / 2, left + full - width))) + "px";
     },
     // Show the whole line, row under row: its letters hidden, to be typed with the voice (typed), or in full.
     render(typed) {
