@@ -1183,9 +1183,11 @@ html[data-shade] .stage-edge::after {
   /* as wide as there is room for (up to 40 px from the Next button), so that a line that can be one row
      is one row (review, 2026-11-16, on "This equation has one variable, / and its highest power is 1.":
      "text aise ni aana chahie next line mei..same line mei aa skta hai"; it was 1100 px, and lines of
-     920–1000 px went onto two rows). js/ui.js cuts a longer line into rows that each fit. */
+     920–1000 px went onto two rows). js/ui.js cuts a longer line into rows that each fit, then fits the
+     bar to them: as wide as its line (asked 2026-11-19: "resize the box according to the sentence"), and
+     as tall as its rows with a little parchment round them ("should not too much big like current, make
+     it small. Not too much small, we easily see the text"; it was 145 px tall for any line). */
   width: 1190px;
-  min-height: 145px; /* as tall as with the speaker it had (96 px + the frame): a one-row and a two-row line give the same bar, so it doesn't jump between lines */
   /* no icon: the line starts at the bar's left and types itself out left to right, its rows inside the
      frame (asked 2026-11-18: "The question template text should come from left to right. Not in
      between."; for a moment that day it was centred, after "remove this speaker icon and the question
@@ -1194,7 +1196,7 @@ html[data-shade] .stage-edge::after {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding: 2px 20px 0 28px;
+  padding: 8px 22px 6px 24px;
   cursor: pointer;
   pointer-events: auto;
   z-index: 20; /* the words children read always sit above name bursts and effects */
@@ -1209,14 +1211,16 @@ html[data-shade] .stage-edge::after {
   min-width: 0;
   text-align: left;
   font-weight: 600;
-  font-size: 40px;
+  font-size: 42px; /* (40 px until 2026-11-19: "increase the sentence text size. Little."; at 44 px twelve lines no longer fit on one row) */
   line-height: 1.2;
   color: var(--ink);
   padding-top: 4px;
 }
-/* the whole line at once, row under row (js/ui.js, CQ.caption.render) */
+/* the whole line at once, row under row (js/ui.js, CQ.caption.render), each row kept whole: the bar is
+   only as wide as the widest */
 .cap-row {
   display: block;
+  white-space: nowrap;
 }
 /* a recorded line types itself out as it is said: letters wait, hidden, in their places */
 .cap-text.typing .ch:not(.on) {
