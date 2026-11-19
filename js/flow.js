@@ -52,7 +52,9 @@
           // into the label activity: runL4a), rather than it being set up afresh
           const carry = i > start && !change && this.handOver === id;
           this.handOver = null;
-          if (i > start) await R.hold(CQ.PACE.between); // a moment before the next part (or before he swings off)
+          // a moment before the next part (or before he swings off); not before the finale handed the
+          // last practice board: the child tapped Next for it, and it comes at once
+          if (i > start && !(carry && id === "finale")) await R.hold(CQ.PACE.between);
           if (change) await outro();
           this.current = id;
           CQ.next.showNext(id !== "finale");
@@ -92,21 +94,24 @@
 
   // ------------------------------------------------------------------ scene reset for a checkpoint
   // opts.carry: the screen the step before left is taken over as it is (Level 4's formula screen, into the
-  // label activity: the camera, the dark and the balance stay as they are, and nothing shows in between)
+  // label activity: the camera, the dark and the balance stay as they are, and nothing shows in between;
+  // the last practice board, into the finale: the board and the blur behind it stay, for the finale to lift)
   function resetScene(cp, opts) {
     opts = opts || {};
     const carry = !!opts.carry;
+    const finale = cp === "finale";
     CQ.gen++;
     CQ.stopTweens();
     CQ.audio.stopSpeech();
-    CQ.ui.reset({ keepSpot: opts.keepSpot, keepSoft: carry ? "notebook" : null });
+    CQ.ui.reset({ keepSpot: opts.keepSpot, keepSoft: carry ? (finale ? "activity" : "notebook") : null });
     if (!carry) CQ.notebook.hideNow();
-    document.querySelectorAll(".activity").forEach((e) => e.remove());
+    document.querySelectorAll(carry ? ".activity:not(.handover)" : ".activity").forEach((e) => e.remove());
     CQ.world.drag.querySelectorAll(".wlabel, .ledge, .ledge-bar, .flyer").forEach((e) => e.remove());
     if (!carry) CQ.camera.set(960, 540, 1);
-    // (the label activity fades the balance out while it is on; the finale fades out the balance, Grumble,
-    // the bars and the hanging Zippy)
-    [CQ.world.balanceLayer, CQ.world.grumbleLayer, CQ.world.barLayer, CQ.world.zippyLayer].forEach((l) => (l.style.opacity = ""));
+    // (the label activity fades the balance out while it is on.) The finale is only the jungle and Zippy
+    // dancing: the balance, Grumble, the bars and the hanging Zippy are gone from its first moment,
+    // however it is reached (asked 2026-11-19: the last balance showed a moment before "Mission Complete!")
+    [CQ.world.balanceLayer, CQ.world.grumbleLayer, CQ.world.barLayer, CQ.world.zippyLayer].forEach((l) => (l.style.opacity = finale ? "0" : ""));
     CQ.world.dark.style.opacity = 0;
     CQ.screen.shade("dark", false);
     CQ.Give.disable();
@@ -240,31 +245,30 @@
   function glowCrown(on) {
     CQ.balance.glowItems("left", (it) => it.type === "crown", on);
   }
-  // A number in a row of the working (CQ.eqBoard) lit gold, with its sign when it is added on the left
-  // (side "left": "+ 8" in x + 8; "right": the 8 in 8 + 15, its first number). Returns the lit span.
-  function lightTerm(row, side, n, eb) {
+  // The number n in a row of the working (CQ.eqBoard) lit (cls: x-lit, gold, the default; c-lit, red):
+  // the number alone, never the sign before it (asked 2026-11-19, with "+ 8" lit in x + 8: "plus sign
+  // will not highlighted. Only digit highlight… Do this in all game"). side "left": the 8 of x + 8;
+  // "right": the 8 of 8 + 15, its first. Returns the lit span; all: every n on that side, each lit by
+  // itself (the terms that cancel: both 4s of 2x + 4 − 4), in a list.
+  function lightTerm(row, side, n, eb, cls, all) {
     const host = row && row.querySelector(side === "left" ? ".eb-l" : ".eb-r");
-    if (!host) return null;
-    const chars = [...host.querySelectorAll(".wch")];
+    const chars = host ? [...host.querySelectorAll(".wch")] : [];
     const digits = String(n).split("");
+    const lit = [];
     for (let i = 0; i + digits.length <= chars.length; i++) {
       if (!digits.every((d, j) => chars[i + j].textContent === d)) continue;
       const before = chars[i - 1];
       const after = chars[i + digits.length];
       if (before && /\d/.test(before.textContent)) continue; // (part of a bigger number)
       if (after && /\d/.test(after.textContent)) continue;
-      let first = chars[i];
-      if (side === "left") {
-        // with its + (and the space between)
-        let k = i - 1;
-        while (k >= 0 && chars[k].textContent === " ") k--;
-        if (k >= 0 && chars[k].textContent === "+") first = chars[k];
-      }
+      const first = chars[i];
       const last = chars[i + digits.length - 1];
-      if (first.parentNode !== last.parentNode) return null;
-      return eb.light(first, last, "x-lit");
+      if (first.parentNode !== last.parentNode) continue;
+      lit.push(eb.light(first, last, cls || "x-lit"));
+      if (!all) break;
+      i += digits.length - 1;
     }
-    return null;
+    return all ? lit : lit[0] || null;
   }
   // "Look here!" (CQ.focus): what a line is about glows softly, and the rest of the scene fades back a
   // little and blurs, the whole balance staying bright. look(what) moves the glow there; look(null)
@@ -488,42 +492,41 @@
     z.pose("yes"); // thumbs up as it flies away
     await R.when(CQ.hud.flyCrown(hp, hp.w));
   }
-  // Equal masses: celebration.
-  async function celebrate(lineId, vars) {
+  // The narrator's line once Zippy has a crown, and the only voice then (user, 2026-11-19): his first
+  // crown, "Woohoo! Zippy got his first crown!", only that once; every crown after it, to the last (Level
+  // 9's first one too), "Woohoo! Zippy got another crown!". It goes by the crowns he has (CQ.hud.crowns,
+  // counted as the crown is collected; a screen started from the list has the crowns of the levels
+  // before it), so it is Level 1's crown that is his first. If he is wearing it, it sparkles on "crown".
+  async function crownLine() {
+    const id = CQ.hud.crowns > 1 ? "crown-another" : "crown-first";
     const z = CQ.zippy;
-    const g = CQ.grumble;
+    if (z.wearing) {
+      onSaid(CQ.T(id), "crown", () => {
+        const hp = z.headPoint();
+        CQ.fx.sparkle(CQ.world.fx, hp.x, hp.y, 10, 70);
+      });
+    }
+    await say(id);
+  }
+  // Equal masses: celebration. He puts the crown on and laughs; the crown line (crownLine) follows. (Until
+  // 2026-11-19 he said "Hee hee! Sleep tight, Grumble!" after the laugh, with a snore from Grumble, and
+  // the narrator went on with "Perfect! Both weigh 7 units!" in Levels 1–3 and "It worked! Another
+  // crown collected…" in Level 8: the user asked for the Woohoo line alone.)
+  async function celebrate() {
+    const z = CQ.zippy;
     await collectCrown({ wear: true }); // he puts the crown on, and keeps it on until he swings away
     // He has won the crown: he laughs, in his own recorded laugh (asked 2026-11-09: "use this voice when
     // monkey win"), and only for as long as the laugh is heard (review, 2026-11-18: "Reduce the timing
-    // of Zippy's laugh when Zippy collects the crown": he went on laughing through Grumble's snore and
-    // his whole "Hee hee! Sleep tight, Grumble!", about 9 s). Grumble's snore is asked for a moment
-    // before the laugh ends (it comes a breath later), then he stands proud, wearing it, while it is
-    // heard, and says his line.
+    // of Zippy's laugh when Zippy collects the crown"), then stands proud, wearing it, while the line is
+    // heard.
     const laugh = ((C().audio && C().audio.winLaugh) || 1.2) * 1000;
     z.pose("laugh");
     CQ.audio.play("zippy.win", { volume: 1.3 });
     CQ.fx.confetti(CQ.world.fx, 700, 420, 44);
     CQ.audio.play("confetti");
-    await R.wait(Math.max(0, laugh - 500));
-    g.snore(1, 1.8, true); // "Sleep tight, Grumble!" (a moment about him: even if he snored a moment ago); the line waits for it
-    await R.wait(Math.min(500, laugh));
-    z.pose("idle");
-    await R.when(z.say(C().zippy.sleepTight));
+    await R.wait(laugh);
     z.pose("idle");
     CQ.track("level_complete", { level: CQ.hud.crowns });
-    if (!lineId) return;
-    // "Perfect swap! Both weigh 5 units!": the bar that took the crown's place and the coins opposite it
-    // light up together on "Both" (as the voice says it)
-    const text = CQ.T(lineId, vars);
-    const b = CQ.balance;
-    if (vars && vars.n != null) {
-      onSaid(text, "Both", () => {
-        b.glowItems("left", (it) => it.type === "bar");
-        b.glowItems("right");
-      });
-    }
-    await say(lineId, { vars });
-    b.clearGlow();
   }
   // Unequal masses: the alarm rings and Grumble wakes up. With a fright, Zippy lets go: the crown jumps
   // back onto the pan and the wrong bar goes back to its own stand (marked Tried); Zippy runs off the
@@ -741,16 +744,20 @@
       const { d, barItem } = await swapOnPan(v);
       if (d === 0) {
         CQ.Give.useHeld();
-        await celebrate(L.win || "swap-correct", { n: L.crown });
+        await celebrate();
+        await crownLine();
         return;
       }
       await wakeAndUndo(v, barItem); // the bar is back on its stand, marked Tried
       attempts++;
       CQ.track("hint_shown", { level: L.n, tier: attempts >= 2 ? 2 : 1 });
+      // after every wrong bar: "Oops! The balance tipped. Try another bar!" (user, 2026-11-19; no "Oops!
+      // Too light/heavy!" any more). After the first it stays up while the child picks again (it was
+      // "Give Zippy a gold bar."); after the second, the hint follows it.
       if (attempts === 1) {
-        await say(v < L.crown ? "swap-light" : "swap-heavy", { advance: "auto" });
-        say("swap-give", { advance: "none" });
+        say("wrong-bar", { advance: "none" });
       } else {
+        await say("wrong-bar", { advance: "auto" });
         // each as the voice says it: the crown on "The crown", its coins are counted as "balances" is
         // said, and the bar lights up on "bar"
         const h2 = CQ.T("swap-hint2", { n: L.crown });
@@ -1046,30 +1053,28 @@
     await R.when(cp.substitute(v, from, lineText));
     CQ.focus.off();
     if (line) await line;
-    // The left side on its own: "Find the value of the left-hand side.", LHS = 4 + 3 = □ written as the
-    // voice says "LHS", the left pan's things lit with it (same review: "Only LHS is being asked
-    // here").
+    // The left side on its own: "Find the left-hand side.", LHS = 4 + 3 = □ written as the voice says
+    // "left-hand", the left pan's things lit with it (same review: "Only LHS is being asked here").
+    // (The spoken lines name the sides in full, the rows keep LHS and RHS: user, 2026-11-19.)
     const ch = chipsFor(L, v);
     const findId = o.find || "check-find-lhs";
     const findText = CQ.T(findId, vars);
     say(findId, { vars, advance: "none" });
-    onSaid(findText, "LHS", () => lights("left"));
-    await R.when(cp.lhsRow(findText, "LHS"));
-    await cp.fill("lhs", ch.lhs, s, (m) => {
-      if (k > 1) return say("hint-lhs-k", { vars, advance: "none" });
-      const seq = [];
-      for (let i = 1; i <= a && i <= 8; i++) seq.push(v + i);
-      say(L.hintLhs || "hint-lhs", { vars: Object.assign({ seq: seq.join(", ") }, vars), advance: "none" });
-      if (m >= 2 && L.left) b.autoCount("left", v).catch(() => {});
-    });
-    // Then the right side, under it: RHS = □ (or RHS = 23, given) as the voice says "RHS", the
-    // right pan's things lit; its box under the 4.
+    onSaid(findText, "left-hand", () => lights("left"));
+    await R.when(cp.lhsRow(findText, "left-hand"));
+    // A wrong tile: the screen shakes and red light glows in from its corners, the tile is struck out,
+    // and the child picks again, the instruction staying in the question bar; no hint is said or
+    // written (asked 2026-11-19: "glat krne pr yh text ki need ni… bs shake krdo"; it was "2 × 7 = 14.
+    // Add 4 to get 18.", "Add 4 + 3. Count on: 5, 6, 7.", with the left pan's coins counted after two).
+    await cp.fill("lhs", ch.lhs, s);
+    // Then the right side, under it: RHS = □ (or RHS = 23, given) as the voice says "right-hand",
+    // the right pan's things lit; its box under the 4.
     if (!o.rhsGiven) {
       const rhsText = CQ.T("check-find-rhs", vars);
       say("check-find-rhs", { vars, advance: "none" });
-      onSaid(rhsText, "RHS", () => lights("right"));
-      await R.when(cp.side(rhsText, "RHS"));
-      await cp.fill("rhs", ch.rhs, bb, () => say("hint-rhs", { advance: "none" }));
+      onSaid(rhsText, "right-hand", () => lights("right"));
+      await R.when(cp.side(rhsText, "right-hand"));
+      await cp.fill("rhs", ch.rhs, bb);
     } else {
       lights("right");
       await R.when(cp.side(null, null));
@@ -1077,14 +1082,15 @@
     await R.wait(350);
     // What each side equals, a line each (same review: "1. 'The left-hand side equals 7.' Highlight LHS:
     // 4 + 3 = 7 and the seven coins together. 2. 'The right-hand side equals 9.' Fade the previous
-    // highlight. Highlight RHS: [9] and the nine coins"): each side lit with its pan as the voice names it,
-    // its value swelling as the voice says it; the left side fades back a little meanwhile the right.
+    // highlight. Highlight RHS: [9] and the nine coins"; said now "The left-hand side is 7."): each side
+    // lit with its pan as the voice names it ("left-hand", "right-hand"), its value swelling as the voice
+    // says it; the left side fades back a little meanwhile the right.
     const eq = s === bb;
     lights(null);
     cp.lightSide(null);
     const lt = CQ.T("check-lhs-is", vars);
     const saidL = say("check-lhs-is", { vars });
-    onSaid(lt, "LHS", () => {
+    onSaid(lt, "left-hand", () => {
       lights("left");
       cp.lightSide("lhs");
     });
@@ -1092,7 +1098,7 @@
     await saidL;
     const rt = CQ.T("check-rhs-is", vars);
     const saidR = say("check-rhs-is", { vars });
-    onSaid(rt, "RHS", () => {
+    onSaid(rt, "right-hand", () => {
       lights("right");
       cp.lightSide("rhs");
     });
@@ -1176,7 +1182,7 @@
     if (o.oneOfTwo) await collectCrown();
     else await celebrate();
     if (o.sign !== false) CQ.balance.setSign(o.sign || `x = ${v}`);
-    if (o.line) await say(o.line, { vars: { v } });
+    await crownLine();
     return d;
   }
 
@@ -1201,7 +1207,20 @@
     const S = L.say;
     CQ.balance.setSign(`x + ${L.left} = ${sum(L.right)}`);
     for (const id of L.intro) await say(id, { advance: "auto" });
+    // Level 6's question, "Another crown! Which gold bar will keep the balance level?" (user, 2026-11-19):
+    // as the voice says them, the crown glows on "Another crown!", then the gold bars on "Which gold bar"
+    // to the end of the question, as in Level 1's "Which bar…"; then the whole scene is back for the child
+    // to choose. (Not after the line: a line skipped with Next lets its cues go at once.)
+    const cued = key === "L6";
+    let asked = false;
+    if (cued) {
+      const q = CQ.T(S.prompt);
+      onSaid(q, "Another crown", () => asked || look(crownEls));
+      onSaid(q, "Which gold", () => asked || look(barEls));
+    }
     await say(S.prompt, { advance: "auto", pause: 150 });
+    asked = true;
+    if (cued) look(null);
     let misses = 0;
     for (;;) {
       const left = L.bars.filter((x) => CQ.bars.get(x).state !== "tried");
@@ -1213,7 +1232,7 @@
       if (ok) return swapAfterCheck(v);
       misses++;
       CQ.track("hint_shown", { level: L.n, tier: misses });
-      say("check-try-another", { advance: "none" });
+      say("wrong-bar", { advance: "none" }); // after every wrong bar (user, 2026-11-19; it was "Try another value!")
     }
   }
 
@@ -1557,8 +1576,9 @@
     look(null);
     // "We can split 23 units into 8 and 15." (same review: "Introduce the split first… Animate the weight
     // splitting as 23 becomes 8+15"): the 23 bar lights up and splits, an 8 bar and a 15 bar sliding apart
-    // out of it, while x + 8 = 8 + 15 is written in under x + 8 = 23 (its = under the other, 8 + 15 lit).
-    // The balance stays level: splitting a bar doesn't change its mass.
+    // out of it, while x + 8 = 8 + 15 is written in under x + 8 = 23 (its = under the other, 8 and 15
+    // lit, each in a box of its own, the + between them plain: CQ.rich). The balance stays level:
+    // splitting a bar doesn't change its mass.
     // (each part as the voice says it: the 23 bar lights on "23", cracks on "into", and splits; under
     // x + 8 = 23, x + 8 = is written, then 8 on "8" and + 15 on "15": review, 2026-11-16)
     const l85t = CQ.T("l8-5");
@@ -1572,10 +1592,9 @@
     await l85;
     // "There are 8 units beside the crown…" (same review: "Match the highlight to the VO. Highlight the 8
     // beside the crown and +8 on the LHS, rather than 8+15"): 8 + 15 goes back to plain, and the 8 bar on
-    // the left pan lights up with + 8 in x + 8.
+    // the left pan lights up with the 8 of x + 8 (the 8 only, not its +: asked 2026-11-19).
     const row = eb.el.lastElementChild;
-    const unmark = row.querySelector(".mark-new");
-    if (unmark) unmark.classList.add("unmark");
+    row.querySelectorAll(".mark-new").forEach((e) => e.classList.add("unmark"));
     const l86t = CQ.T("l8-6");
     const said86 = say("l8-6");
     await R.when(untilSaid(l86t, "are 8"));
@@ -1583,8 +1602,8 @@
     look(leftBarEls);
     await said86;
     // "Let's remove 8 units from both sides." (same review: "Highlight both 8-unit weights and both
-    // matching 8s in the equation"): the 8 bar on each pan, and + 8 at the left with the 8 at the right,
-    // the right ones joining on "both sides".
+    // matching 8s in the equation"): the 8 bar on each pan, and the 8 of x + 8 at the left with the 8 of
+    // 8 + 15 at the right, the right ones joining on "both sides".
     const l87t = CQ.T("l8-7");
     const said87 = say("l8-7");
     await R.when(untilSaid(l87t, "both sides"));
@@ -1602,7 +1621,7 @@
     // remove 8 from the other side.", the other bar lit up; the second levels it.
     const trays = makeTrays();
     say("l8-8-drag", { advance: "none" });
-    const minus = (s) => (s === "left" ? ".eb-l .same" : ".eb-r .same");
+    const minus = (s) => (s === "left" ? ".eb-l .both" : ".eb-r .both"); // (a side's − 8: its −, and the 8 in its box)
     await takeOffEach(8, trays, {
       off: (s, n) => R.when(n === 1 ? eb.set("x + 8 {{− 8}} = 8 + 15 {{− 8}}", { hold: minus(s === "left" ? "right" : "left"), each: 40 }) : eb.reveal(minus(s))),
       next: () => say("l8-other", { advance: "none" }),
@@ -1646,10 +1665,11 @@
       const v = await giveBar(L.bars.filter((x) => CQ.bars.get(x).state !== "tried"));
       if (v !== 15) {
         await checkRoutine(L, v, { line: "check-lets", rhsGiven: true });
+        await say("wrong-bar", { advance: "auto" }); // after every wrong bar (user, 2026-11-19)
         say("l8-give", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
         continue;
       }
-      await swapAfterCheck(15, { line: "l8-15", sign: "15 + 8 = 23" });
+      await swapAfterCheck(15, { sign: "15 + 8 = 23" });
       return;
     }
   }
@@ -1698,25 +1718,27 @@
     await R.wait(450); // (a moment unlit, so both crowns lighting up together is seen as the next step)
     // "Two lots of x make 2x." (review, 2026-11-08: "Highlight x + x, then reveal 2x + 4 = 18 beneath
     // it. Highlight the two crowns together, keeping them as separate objects"): as the line starts,
-    // x + x lights up as one in the first row and both crowns light up at once, each by itself (still two
-    // crowns, each with its x over it: no box, no one label over both); on "make 2x", 2x + 4 = 18 is
+    // both x's of x + x light up at once in the first row, each by itself, the + between them plain (a
+    // highlight holds no sign: asked 2026-11-19), and both crowns light up at once, each by itself (still
+    // two crowns, each with its x over it: no box, no one label over both); on "make 2x", 2x + 4 = 18 is
     // written under it, 2x in gold. (From here on each line starts with its step, so the question bar
     // always shows the line for what is happening: same review, "Update the top instruction panel for
     // each VO line".)
     const l92 = CQ.T("l9-2");
     const said2 = say("l9-2");
-    const [xa, xb] = eb.el.lastElementChild.querySelectorAll("i.v");
-    const xx = eb.light(xa, xb);
+    const xx = [...eb.el.lastElementChild.querySelectorAll("i.v")];
+    xx.forEach((e) => e.classList.add("x-lit"));
     glowCrown(true);
     await R.when(untilSaid(l92, "mass of"));
     await R.when(eb.set("##2x## + 4 = 18"));
     await said2;
-    xx.classList.remove("x-lit");
+    xx.forEach((e) => e.classList.remove("x-lit"));
     glowCrown(false);
     xs.forEach(removeLabel);
     // As in Level 8 (review, 2026-11-13: "Do the same feedback for the rest of the file"): the split
     // first, "We can split 18 units into 4 and 14.", the 18 bar splitting on its pan, a 4 bar and a 14 bar
-    // sliding apart out of it, while 2x + 4 = 4 + 14 is written, 4 + 14 lit.
+    // sliding apart out of it, while 2x + 4 = 4 + 14 is written, 4 and 14 lit (each by itself, the +
+    // plain).
     const l94 = CQ.T("l9-4");
     const said4 = say("l9-4");
     eb.el.querySelectorAll(".mark-new").forEach((e) => e.classList.add("unmark")); // (2x was the last step: plain again, the highlight goes with the voice)
@@ -1728,18 +1750,17 @@
     ]);
     await said4;
     // "There are 4 units beside the crowns…": 4 + 14 back to plain, and the 4 bar on the left pan lit
-    // with + 4 in 2x + 4 (the highlight matches the voice).
+    // with the 4 of 2x + 4, not its + (the highlight matches the voice).
     const row9 = eb.el.lastElementChild;
-    const unmark9 = row9.querySelector(".mark-new");
-    if (unmark9) unmark9.classList.add("unmark");
+    row9.querySelectorAll(".mark-new").forEach((e) => e.classList.add("unmark"));
     const l93 = CQ.T("l9-3");
     const said93 = say("l9-3");
     await R.when(untilSaid(l93, "are 4"));
     const lit4l = lightTerm(row9, "left", 4, eb);
     look(leftBarEls);
     await said93;
-    // "Let's remove 4 units from both sides.": the 4 bar on each pan, and + 4 at the left with the 4 at
-    // the right, the right ones joining on "both sides".
+    // "Let's remove 4 units from both sides.": the 4 bar on each pan, and the 4 of 2x + 4 at the left with
+    // the 4 of 4 + 14 at the right, the right ones joining on "both sides".
     const l95 = CQ.T("l9-5");
     const said95 = say("l9-5");
     await R.when(untilSaid(l95, "both sides"));
@@ -1755,7 +1776,7 @@
     // from the other side." after the first; then the trays go, with the bars on them.
     const ledges = makeTrays();
     say("l9-5-drag", { advance: "none" });
-    const minus = (s) => (s === "left" ? ".eb-l .same" : ".eb-r .same");
+    const minus = (s) => (s === "left" ? ".eb-l .both" : ".eb-r .both"); // (a side's − 4: its −, and the 4 in its box)
     await takeOffEach(4, ledges, {
       off: (s, n) => R.when(n === 1 ? eb.set("2x + 4 {{− 4}} = 4 + 14 {{− 4}}", { hold: minus(s === "left" ? "right" : "left"), each: 40 }) : eb.reveal(minus(s))),
       next: () => say("l9-other", { advance: "none" }),
@@ -1765,19 +1786,19 @@
     await R.wait(900);
     // "The two crowns balance 14 units." (review, 2026-11-08: "Highlight the terms that cancel, then
     // reveal 2x = 14. The balance now shows two crowns opposite the 14 bar. Hide the drop trays."): as
-    // the line starts the trays go, with the 4 bars on them, and the terms that cancel light up (+ 4 − 4
-    // at the left, 4 and − 4 at the right); the crowns light up as "two crowns" is said, the 14 bar on
-    // "14 units", when 2x = 14 is written under the subtraction step. (The review lists "We need the mass
-    // of one crown" before this, but its 14 bar is split there, so this comes first.)
+    // the line starts the trays go, with the 4 bars on them, and the terms that cancel light up red: the
+    // 4s of 2x + 4 − 4 at the left and of 4 + 14 − 4 at the right, each 4 by itself, their + and − plain
+    // (a highlight holds no sign: asked 2026-11-19), the blue boxes of the − 4s fading as they do; the
+    // crowns light up as "two crowns" is said, the 14 bar on "14 units", when 2x = 14 is written under
+    // the subtraction step. (The review lists "We need the mass of one crown" before this, but its 14 bar
+    // is split there, so this comes first.)
     look(null);
     const l9t = CQ.T("l9-two");
     const saidT = say("l9-two");
     const traysGone = R.when(hideTrays(ledges));
     const r4 = eb.el.lastElementChild;
-    const s4l = r4.querySelector(".eb-l");
-    const s4r = r4.querySelector(".eb-r");
-    const plus = Array.from(s4l.children).find((e) => e.textContent === "+");
-    const cancels = [eb.light(plus, s4l.querySelector(".same"), "c-lit"), eb.light(s4r.firstElementChild, s4r.firstElementChild, "c-lit"), eb.light(s4r.querySelector(".same"), s4r.querySelector(".same"), "c-lit")];
+    eb.unmark();
+    const cancels = lightTerm(r4, "left", 4, eb, "c-lit", true).concat(lightTerm(r4, "right", 4, eb, "c-lit", true));
     // (the row as it is said: 2x on "two crowns", = 14 on "14")
     const row2x = R.when(eb.set("2x = 14", { line: l9t, parts: [{ cue: "Two crowns", text: "2x" }, { cue: "balance 14", text: "= 14" }] }));
     await R.when(untilSaid(l9t, "Two crowns"));
@@ -1855,6 +1876,7 @@
       const v = await giveBar(L.bars.filter((x) => CQ.bars.list.some((bar) => bar.value === x && bar.state === "idle")));
       if (v !== 7) {
         await checkRoutine(L, v, { line: "check-lets", rhsGiven: true });
+        await say("wrong-bar", { advance: "auto" }); // after every wrong bar (user, 2026-11-19)
         say(swapped ? "l9-give2" : "l9-give", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
         continue;
       }
