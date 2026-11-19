@@ -2010,12 +2010,12 @@
       return [...side.querySelectorAll(":scope > .lab, :scope > .e1, :scope > .rest > .ex > *, :scope > .rest > .eqv > *")];
     },
     // The left side is written in as the voice names it (line: the line being said; cue: its words,
-    // "left-hand"), with the value already in for x.
+    // "LHS"), with the value already in for x.
     async lhsRow(line, cue) {
       await writePieces(this.pieces(this.lhs), line, cue);
       await CQ.run.wait(200);
     },
-    // The right side, the same way ("right-hand"; or straight on, when it is given).
+    // The right side, the same way ("RHS"; or straight on, when it is given).
     async side(line, cue) {
       await writePieces(this.pieces(this.rhs), line, cue);
       await CQ.run.wait(250);

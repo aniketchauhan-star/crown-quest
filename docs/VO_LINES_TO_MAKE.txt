@@ -1,488 +1,161 @@
-NEW ON 2026-11-18 (review of 13 screenshots): 17 LINES, RECORDED THE SAME DAY
+THE NEW TEXT OF 2026-11-19: 115 LINES, RECORDED THE SAME DAY
 ============================================================
-The user recorded them in one file, new.mp3, in this order; they are in the game now
-(vo366 to vo382). To record them again: one file, read in THIS order, then
-    ~/.cache/crown-quest/venv/bin/python tools/vo_split.py recording.mp3 vo366 vo367 ... vo382
+The user recorded them as part 1.mp3, part 2.mp3 and part 3.mp3 (game folder), in this order;
+they are in the game now (docs/VOICEOVER.md, "The new text of 2026-11-19"). To record a part
+again, read it in this order and cut it with its command below.
+
+The game's dialogue was reworded on 2026-11-19. 115 lines have new words, so their old clips
+were taken out (they are in git, commit d398223). They are read in the same voice as the rest
+of the game, in THIS order, one file per part (each part is under 4 minutes; a part that runs
+over can go on in a second file, "part 1 (1).mp3"), and cut part by part:
+
+    ~/.cache/crown-quest/venv/bin/python tools/vo_split.py "part 1.mp3" vo001 vo002 vo004 vo005 vo006 vo007 vo016 vo019 vo014 vo013 vo018 vo017 vo021 vo020 vo010 vo011 vo012 vo023 vo024 vo025 vo027 vo029 vo030 vo031 vo032 vo033 vo034 vo035 vo036 vo316 vo317 vo320 vo318 vo352 vo353 vo322 vo053 vo054 vo068
+    ~/.cache/crown-quest/venv/bin/python tools/vo_split.py "part 2.mp3" vo069 vo071 vo323 vo072 vo325 vo075 vo076 vo354 vo367 vo366 vo082 vo134 vo085 vo326 vo086 vo328 vo090 vo092 vo327 vo095 vo099 vo333 vo106 vo104 vo330 vo400 vo109 vo332 vo108 vo111 vo113 vo114 vo338 vo119 vo335 vo116 vo336 vo356
+    ~/.cache/crown-quest/venv/bin/python tools/vo_split.py "part 3.mp3" vo351 vo126 vo127 vo128 vo357 vo131 vo132 vo135 vo339 vo344 vo138 vo139 vo141 vo340 vo144 vo342 vo146 vo149 vo151 vo150 vo152 vo359 vo361 vo154 vo363 vo157 vo158 vo345 vo348 vo161 vo163 vo346 vo165 vo166 vo380 vo381 vo382 vo314
     ~/.cache/crown-quest/venv/bin/python tools/vo_build.py tools/split_out/split.zip
-(or give the file to Claude). Seventeen more of the review's lines needed no recording: they
-are the first sentences of lines you had already recorded, cut out by tools/vo_cut.py
-(vo383 to vo399: "Not quite.", the eight steps such as "Subtract 6 from both sides.", and
-the eight answers such as "17 − 6 = 11.").
 
-TO READ, IN THIS ORDER (only the words to say):
-
-Both sides have the same value. The balance is level!
-The two sides have different values. The balance tips!
-So, x equals six is the solution.
-So, x equals seven is the solution.
-So, x equals eight is the solution.
-So, x equals fifteen is the solution.
-So, x equals four is not a solution.
-So, x equals five is not a solution.
-So, x equals eight is not a solution.
-So, x equals nine is not a solution.
-So, x equals ten is not a solution.
-So, x equals twelve is not a solution.
-So, x equals twenty-three is not a solution.
-So, x equals thirty-one is not a solution.
-Now, use what you've learned to solve an equation.
-Find the value of x.
-Not quite! Let's do it together.
-
-------------------------------------------------------------
-THE CHECK (Levels 4 to 9): the ending's two screens
-------------------------------------------------------------
-
-Filename: vo366
-   TEXT: Both sides have the same value. The balance is level!
-
-Filename: vo367
-   TEXT: The two sides have different values. The balance tips!
-
-------------------------------------------------------------
-THE CHECK: what the value tried is (one line per value a child can try)
-------------------------------------------------------------
-
-Filename: vo368
-   TEXT: So, x equals six is the solution.
-   (shown in game: So, x = 6 is the solution.)
-
-Filename: vo369
-   TEXT: So, x equals seven is the solution.
-   (shown in game: So, x = 7 is the solution.)
-
-Filename: vo370
-   TEXT: So, x equals eight is the solution.
-   (shown in game: So, x = 8 is the solution.)
-
-Filename: vo371
-   TEXT: So, x equals fifteen is the solution.
-   (shown in game: So, x = 15 is the solution.)
-
-Filename: vo372
-   TEXT: So, x equals four is not a solution.
-   (shown in game: So, x = 4 is not a solution.)
-
-Filename: vo373
-   TEXT: So, x equals five is not a solution.
-   (shown in game: So, x = 5 is not a solution.)
-
-Filename: vo374
-   TEXT: So, x equals eight is not a solution.
-   (shown in game: So, x = 8 is not a solution.)
-
-Filename: vo375
-   TEXT: So, x equals nine is not a solution.
-   (shown in game: So, x = 9 is not a solution.)
-
-Filename: vo376
-   TEXT: So, x equals ten is not a solution.
-   (shown in game: So, x = 10 is not a solution.)
-
-Filename: vo377
-   TEXT: So, x equals twelve is not a solution.
-   (shown in game: So, x = 12 is not a solution.)
-
-Filename: vo378
-   TEXT: So, x equals twenty-three is not a solution.
-   (shown in game: So, x = 23 is not a solution.)
-
-Filename: vo379
-   TEXT: So, x equals thirty-one is not a solution.
-   (shown in game: So, x = 31 is not a solution.)
-
-------------------------------------------------------------
-PRACTICE (the six equations)
-------------------------------------------------------------
-
-Filename: vo380
-   TEXT: Now, use what you've learned to solve an equation.
-
-Filename: vo381
-   TEXT: Find the value of x.
-
-Filename: vo382
-   TEXT: Not quite! Let's do it together.
-
-
-NOTE (2026-11-18): all 63 lines below are in the game now, from the user's own recordings
-("1 (1).mp3" for the 51, "2 (1).mp3" for the 12; a man's voice, read in this order; cut by
-tools/vo_split.py). The list is kept for making them again in the one woman's voice, Female
-Teacher (Standard), once Aamir's studio has credit again (docs/VOICEOVER.md).
-
-THE 12 LINES FOUND ON 2026-11-18 (recorded as "2 (1).mp3"; same settings as below)
-============================================================
-
-Filename: vo354
-   TEXT: Drag the five bar to ज़िप्पी, then tap Swap.
-   (shown in game: Drag the 5 bar to Zippy, then tap Swap.)
-
-Filename: vo355
-   TEXT: The crown and eight units balance twenty-three units.
-   (shown in game: The crown and 8 units balance 23 units.)
-
-Filename: vo356
-   TEXT: Trying different values could take a while.
-
-Filename: vo357
-   TEXT: Drag an eight bar off each side of the balance.
-   (shown in game: Drag an 8 bar off each side of the balance.)
-
-Filename: vo358
-   TEXT: Now remove eight from the other side.
-   (shown in game: Now remove 8 from the other side.)
-
-Filename: vo359
-   TEXT: Drag a four bar off each side of the balance.
-   (shown in game: Drag a 4 bar off each side of the balance.)
-
-Filename: vo360
-   TEXT: Now remove four from the other side.
-   (shown in game: Now remove 4 from the other side.)
-
-Filename: vo361
-   TEXT: The two crowns balance fourteen units.
-   (shown in game: The two crowns balance 14 units.)
-
-Filename: vo362
-   TEXT: Divide both sides into two equal groups.
-
-Filename: vo363
-   TEXT: Each crown has a mass of seven units. So, x equals seven.
-   (shown in game: Each crown has a mass of 7 units. So, x = 7.)
-
-Filename: vo364
-   TEXT: Let's check seven.
-   (shown in game: Let's check 7.)
-
-Filename: vo365
-   TEXT: Drag each equation into the correct box.
-
-CROWN QUEST - VOICE LINES MADE FROM THE USER'S RECORDING (51 lines)
-============================================================
-
-STUDIO:   Ai Wala Human By Aamir
-          https://ai-wala-human-by-aamir-809572708022.asia-southeast1.run.app/
-
-SETTINGS - the same for every line:
-  Language : Hindi   (the words stay English; Hindi gives the Indian-accent teacher voice)
-  Voice    : Female Teacher (Standard)
-  Format   : .MP3
-  Filename : the vo number of the line (for example vo030)
-  Text     : paste the TEXT exactly as written below
-
-Paste the TEXT, not the 'shown in game' line: numbers are written as words on
-purpose, and Zippy is written ज़िप्पी on purpose (otherwise the voice says 'Jippy').
-
-ONE BY ONE: tab 'Single Generation', fill in the settings, paste the TEXT, type the
-Filename, press GENERATE VOICEOVER, download the MP3.
-ALL AT ONCE: tab 'Batch Generation' with the table at the end of this file.
-
-------------------------------------------------------------
-LEVEL 4 - formula screen (x + 2 = 7)
-------------------------------------------------------------
-
-1. Filename: vo030
-   TEXT: Let's find x so ज़िप्पी can make the swap.
-   (shown in game: Let's find x so Zippy can make the swap.)
-
-2. Filename: vo031
-   TEXT: Here, x represents the crown's mass. We need to find its value.
-
-3. Filename: vo032
-   TEXT: Here, x is the variable. Its value is unknown.
-
-4. Filename: vo035
-   TEXT: Adding x and two gives the algebraic expression x plus two.
-   (shown in game: Adding x and 2 gives the algebraic expression x + 2.)
-
-------------------------------------------------------------
-LEVEL 4 - label activity (4x + 3 = 19)
-------------------------------------------------------------
-
-5. Filename: vo316
-   TEXT: Now, can you spot these parts in another equation?
-
-6. Filename: vo317
-   TEXT: Drag each label to the matching box.
-
-7. Filename: vo318
-   TEXT: Not quite. x represents the unknown value. It is the variable.
-
-8. Filename: vo319
-   TEXT: The complete statement is an equation.
-
-9. Filename: vo352
-   TEXT: Look to the left of the equal sign. Four x plus three is the left-hand side.
-   (shown in game: Look to the left of the equal sign. 4x + 3 is the left-hand side.)
-
-10. Filename: vo353
-   TEXT: Look to the right of the equal sign. Nineteen is the right-hand side.
-   (shown in game: Look to the right of the equal sign. 19 is the right-hand side.)
-
-11. Filename: vo320
-   TEXT: Now, label the left-hand side and right-hand side.
-
-12. Filename: vo321
-   TEXT: Let's return to the crown's equation.
-
-------------------------------------------------------------
-LEVEL 4 - linear equation
-------------------------------------------------------------
-
-13. Filename: vo052
-   TEXT: The power of x is one.
-   (shown in game: The power of x is 1.)
-
-14. Filename: vo322
-   TEXT: We usually leave the one unwritten.
-   (shown in game: We usually leave the 1 unwritten.)
-
-15. Filename: vo054
-   TEXT: This is called a linear equation in one variable.
-
-------------------------------------------------------------
-LEVEL 4 - trying 4 and 5
-------------------------------------------------------------
-
-16. Filename: vo071
-   TEXT: The left-hand side equals six.
-   (shown in game: The left-hand side equals 6.)
-
-17. Filename: vo323
-   TEXT: The right-hand side equals seven.
-   (shown in game: The right-hand side equals 7.)
-
-18. Filename: vo324
-   TEXT: They're different, so four is not a solution.
-   (shown in game: They're different, so 4 is not a solution.)
-
-19. Filename: vo325
-   TEXT: The left-hand side equals seven.
-   (shown in game: The left-hand side equals 7.)
-
-------------------------------------------------------------
-LEVELS 5 to 9 - the check
-------------------------------------------------------------
-
-20. Filename: vo134
-   TEXT: Find the value of the left-hand side.
-
-21. Filename: vo326
-   TEXT: Now find the value of the right-hand side.
-
-22. Filename: vo327
-   TEXT: The left-hand side equals nine.
-   (shown in game: The left-hand side equals 9.)
-
-23. Filename: vo328
-   TEXT: The right-hand side equals nine.
-   (shown in game: The right-hand side equals 9.)
-
-24. Filename: vo329
-   TEXT: They're different, so five is not a solution.
-   (shown in game: They're different, so 5 is not a solution.)
-
-25. Filename: vo330
-   TEXT: The left-hand side equals twelve.
-   (shown in game: The left-hand side equals 12.)
-
-26. Filename: vo331
-   TEXT: They're different, so eight is not a solution.
-   (shown in game: They're different, so 8 is not a solution.)
-
-27. Filename: vo332
-   TEXT: The left-hand side equals eleven.
-   (shown in game: The left-hand side equals 11.)
-
-28. Filename: vo333
-   TEXT: The right-hand side equals eleven.
-   (shown in game: The right-hand side equals 11.)
-
-29. Filename: vo334
-   TEXT: They're different, so ten is not a solution.
-   (shown in game: They're different, so 10 is not a solution.)
-
-30. Filename: vo335
-   TEXT: The left-hand side equals ten.
-   (shown in game: The left-hand side equals 10.)
-
-31. Filename: vo336
-   TEXT: The left-hand side equals fourteen.
-   (shown in game: The left-hand side equals 14.)
-
-32. Filename: vo337
-   TEXT: They're different, so twelve is not a solution.
-   (shown in game: They're different, so 12 is not a solution.)
-
-33. Filename: vo338
-   TEXT: The right-hand side equals ten.
-   (shown in game: The right-hand side equals 10.)
-
-34. Filename: vo339
-   TEXT: The left-hand side equals twenty-three.
-   (shown in game: The left-hand side equals 23.)
-
-35. Filename: vo340
-   TEXT: The left-hand side equals thirty-one.
-   (shown in game: The left-hand side equals 31.)
-
-36. Filename: vo341
-   TEXT: They're different, so twenty-three is not a solution.
-   (shown in game: They're different, so 23 is not a solution.)
-
-37. Filename: vo342
-   TEXT: The left-hand side equals thirty-nine.
-   (shown in game: The left-hand side equals 39.)
-
-38. Filename: vo343
-   TEXT: They're different, so thirty-one is not a solution.
-   (shown in game: They're different, so 31 is not a solution.)
-
-39. Filename: vo344
-   TEXT: The right-hand side equals twenty-three.
-   (shown in game: The right-hand side equals 23.)
-
-40. Filename: vo345
-   TEXT: The left-hand side equals eighteen.
-   (shown in game: The left-hand side equals 18.)
-
-41. Filename: vo346
-   TEXT: The left-hand side equals twenty-two.
-   (shown in game: The left-hand side equals 22.)
-
-42. Filename: vo347
-   TEXT: They're different, so nine is not a solution.
-   (shown in game: They're different, so 9 is not a solution.)
-
-43. Filename: vo348
-   TEXT: The right-hand side equals eighteen.
-   (shown in game: The right-hand side equals 18.)
-
-------------------------------------------------------------
-LEVEL 8
-------------------------------------------------------------
-
-44. Filename: vo349
-   TEXT: Let's try x equals ten.
-   (shown in game: Let's try x = 10.)
-
-45. Filename: vo350
-   TEXT: How about x equals twelve?
-   (shown in game: How about x = 12?)
-
-46. Filename: vo351
-   TEXT: Can we find the crown's mass without guessing?
-
-47. Filename: vo126
-   TEXT: We can split twenty-three units into eight and fifteen.
-   (shown in game: We can split 23 units into 8 and 15.)
-
-48. Filename: vo128
-   TEXT: Let's remove eight units from both sides.
-   (shown in game: Let's remove 8 units from both sides.)
-
-------------------------------------------------------------
-LEVEL 9
-------------------------------------------------------------
-
-49. Filename: vo151
-   TEXT: We can split eighteen units into four and fourteen.
-   (shown in game: We can split 18 units into 4 and 14.)
-
-50. Filename: vo150
-   TEXT: There are four units beside the crowns. Let's see how we can remove them.
-   (shown in game: There are 4 units beside the crowns. Let's see how we can remove them.)
-
-51. Filename: vo152
-   TEXT: Let's remove four units from both sides.
-   (shown in game: Let's remove 4 units from both sides.)
-
-============================================================
-ALL AT ONCE (Batch Generation)
-============================================================
-Copy the lines below into a spreadsheet (Excel or Google Sheets): they split into two
-columns, filename and text. Save it as .xlsx and upload it in 'Batch Generation'.
-Text column: text. Filename column: filename. Start row: 2. Same settings as above,
-Concurrency 1. Then 'Download All (.zip)'.
-
-filename	text
-vo030	Let's find x so ज़िप्पी can make the swap.
-vo031	Here, x represents the crown's mass. We need to find its value.
-vo032	Here, x is the variable. Its value is unknown.
-vo035	Adding x and two gives the algebraic expression x plus two.
-vo316	Now, can you spot these parts in another equation?
-vo317	Drag each label to the matching box.
-vo318	Not quite. x represents the unknown value. It is the variable.
-vo319	The complete statement is an equation.
-vo352	Look to the left of the equal sign. Four x plus three is the left-hand side.
-vo353	Look to the right of the equal sign. Nineteen is the right-hand side.
-vo320	Now, label the left-hand side and right-hand side.
-vo321	Let's return to the crown's equation.
-vo052	The power of x is one.
-vo322	We usually leave the one unwritten.
-vo054	This is called a linear equation in one variable.
-vo071	The left-hand side equals six.
-vo323	The right-hand side equals seven.
-vo324	They're different, so four is not a solution.
-vo325	The left-hand side equals seven.
-vo134	Find the value of the left-hand side.
-vo326	Now find the value of the right-hand side.
-vo327	The left-hand side equals nine.
-vo328	The right-hand side equals nine.
-vo329	They're different, so five is not a solution.
-vo330	The left-hand side equals twelve.
-vo331	They're different, so eight is not a solution.
-vo332	The left-hand side equals eleven.
-vo333	The right-hand side equals eleven.
-vo334	They're different, so ten is not a solution.
-vo335	The left-hand side equals ten.
-vo336	The left-hand side equals fourteen.
-vo337	They're different, so twelve is not a solution.
-vo338	The right-hand side equals ten.
-vo339	The left-hand side equals twenty-three.
-vo340	The left-hand side equals thirty-one.
-vo341	They're different, so twenty-three is not a solution.
-vo342	The left-hand side equals thirty-nine.
-vo343	They're different, so thirty-one is not a solution.
-vo344	The right-hand side equals twenty-three.
-vo345	The left-hand side equals eighteen.
-vo346	The left-hand side equals twenty-two.
-vo347	They're different, so nine is not a solution.
-vo348	The right-hand side equals eighteen.
-vo349	Let's try x equals ten.
-vo350	How about x equals twelve?
-vo351	Can we find the crown's mass without guessing?
-vo126	We can split twenty-three units into eight and fifteen.
-vo128	Let's remove eight units from both sides.
-vo151	We can split eighteen units into four and fourteen.
-vo150	There are four units beside the crowns. Let's see how we can remove them.
-vo152	Let's remove four units from both sides.
-
-============================================================
-ZIPPY'S 4 LINES (only if you want one woman's voice everywhere)
-============================================================
-These are already made, in the boy voice 'Male Child (Energetic)'. If Zippy should also
-have the Female Teacher (Standard) voice, make them again with the same settings:
-
-Filename: vo015
-   TEXT: Hee hee! Sleep tight, Grumble!
-
-Filename: vo081
-   TEXT: Let's try four.
-   (shown in game: Let's try 4.)
-
-Filename: vo087
-   TEXT: Phew! Good thing we checked.
-
-Filename: vo089
-   TEXT: Now, let's try six.
-   (shown in game: Now, let's try 6.)
-
-============================================================
-WHEN THEY ARE MADE
-============================================================
-Keep each file's name (vo030.mp3, vo031.mp3 ...). Put them all in one zip (or the
-studio's own 'Download All' zip) and give it to Claude, or run:
-    python3 tools/vo_build.py the.zip
-That turns them into the game's clips, times every word and lists any line still missing.
+Numbers and maths are written as words, the way to say them (LHS and RHS as the letters
+L H S and R H S).
+
+Not in the list: 14 lines whose words did not change, only their punctuation (for example
+"Now, let's check 10." is now "Now let's check 10."). Their recordings still say exactly the
+right words, so they stay. To re-record them anyway, for the new "!" endings:
+    vo022  Wait! This crown has two coins beside it.
+    vo050  Brilliant! You labelled every part!
+    vo051  This equation has one variable, x.
+    vo087  Phew! Good thing we checked!
+    vo089  Now let's try six.
+    vo101  Try another value!
+    vo107  Now let's check eight.
+    vo118  Now let's check ten.
+    vo120  Now let's check twelve.
+    vo368  So, x equals six is the solution!
+    vo369  So, x equals seven is the solution!
+    vo370  So, x equals eight is the solution!
+    vo371  So, x equals fifteen is the solution!
+    vo383  Not quite!
+
+
+PART 1  (39 lines: vo001 to vo068)
+
+Meet Zippy! He's spotted a golden crown!
+But Grumble guards the treasure.
+If the balance tips, the alarm will wake him!
+Let's swap the crown without tipping the balance!
+Each coin weighs one unit.
+Which bar should Zippy choose?
+Another crown! Let's collect it!
+One more crown! Grumble's still asleep!
+Perfect swap! Both weigh five units!
+The crown balances five coins. Try the five-unit bar!
+Perfect! Both weigh seven units!
+The crown balances seven coins. Try the seven-unit bar!
+Perfect! Both weigh four units!
+The crown balances four coins. Try the four-unit bar!
+Oops! Too light! The balance tipped!
+Oops! Too heavy! The balance tipped!
+Give Zippy a gold bar.
+Together, they balance seven coins.
+But Zippy needs to replace only the crown.
+How much does the crown weigh?
+Together, the crown and coins weigh x plus two units.
+So, x plus two equals seven.
+Let's find x to help Zippy swap!
+Here, x represents the crown's mass.
+x is our variable. Its value is unknown.
+x plus two represents the crown and two coins together.
+x is a variable, and two is a constant.
+Together, they form the algebraic expression x plus two.
+The balance shows x plus two equals seven.
+Can you identify these parts in another equation?
+Drag each label to the correct box.
+Now label the L H S and R H S.
+Not quite! x is the unknown value, so it's the variable.
+Four x plus three is on the left. That's the L H S.
+Nineteen is on the right. That's the R H S.
+We usually leave the power one unwritten.
+It has one variable with a highest power of one.
+This is a linear equation in one variable.
+We need x to make both sides equal.
+
+PART 2  (38 lines: vo069 to vo356)
+
+Let's try x equals four. Find the value of each side.
+The L H S is six.
+The R H S is seven.
+Now try x equals five. Find both sides.
+The L H S is seven.
+A value that makes an equation true is its solution. So, x equals five!
+The crown weighs five units. Zippy can swap it!
+Drag the five-unit bar to Zippy, then tap Swap.
+The values differ! The balance tips!
+Both sides are equal! The balance stays level!
+Give Zippy the four-unit bar.
+Find the L H S.
+Add four plus three. Count on: five, six, seven.
+Now find the R H S.
+The R H S is the number on the right of the equals sign.
+The R H S is nine.
+Give Zippy the six-unit bar.
+Add six plus three. Count on: seven, eight, nine.
+The L H S is nine.
+Choose a value for x. Are both sides equal?
+Add five plus four. Count on: six, seven, eight, nine.
+The R H S is eleven.
+Now try x equals five.
+Add eight plus four. Count on: nine, ten, eleven, twelve.
+The L H S is twelve.
+Now try x equals eight.
+Add seven plus four. Count on: eight, nine, ten, eleven.
+The L H S is eleven.
+Now try x equals seven.
+Another crown! Together with two coins, it balances ten coins. Find x!
+Replace x with your value. Compare both sides.
+Add ten plus two. Count on: eleven, twelve.
+The R H S is ten.
+Add eight plus two. Count on: nine, ten.
+The L H S is ten.
+Add twelve plus two. Count on: thirteen, fourteen.
+The L H S is fourteen.
+Guessing could take a while!
+
+PART 3  (38 lines: vo351 to vo314)
+
+Can we solve this without guessing?
+Split twenty-three into eight and fifteen.
+There are eight extra units beside the crown. Let's remove them.
+Remove eight units from both sides.
+Drag an eight-unit bar off each side.
+The crown balances fifteen units. So, x equals fifteen!
+Before swapping, let's check the original equation.
+Add fifteen plus eight to get twenty-three.
+The L H S is twenty-three.
+The R H S is twenty-three.
+The crown weighs fifteen units. Time to swap!
+Give Zippy the fifteen-unit bar, then tap Swap.
+Add twenty-three plus eight to get thirty-one.
+The L H S is thirty-one.
+Add thirty-one plus eight to get thirty-nine.
+The L H S is thirty-nine.
+It worked! Another crown collected, and Grumble's still asleep!
+Two crowns together have a mass of two x.
+Split eighteen into four and fourteen.
+There are four extra units beside the crowns. Let's remove them.
+Remove four units from both sides.
+Drag a four-unit bar off each side.
+Two crowns balance fourteen units.
+But what does one crown weigh?
+Each crown weighs seven units. So, x equals seven!
+Let's check with x equals seven.
+Two times seven equals fourteen. Add four to get eighteen.
+The L H S is eighteen.
+The R H S is eighteen.
+Give Zippy a seven-unit bar, then tap Swap.
+Two times nine equals eighteen. Add four to get twenty-two.
+The L H S is twenty-two.
+One more crown! Give Zippy the other seven-unit bar.
+You've helped Zippy find the crowns' masses. Now try a few equations!
+Your turn! Solve an equation.
+Find x.
+Not quite! Let's solve it together.
+Quest complete! Zippy collected all crowns, and Grumble's still snoring!
