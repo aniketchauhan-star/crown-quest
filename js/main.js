@@ -558,13 +558,12 @@
     const fill = loading.querySelector(".lb-fill");
     // First only what the title screen shows (its pieces, assets/title, and the play button), so it
     // appears quickly even on a slow connection; the rest of the pictures load behind the title
-    // (CQ.ready), and Play waits for them if it has to. (The old title picture is not used any more.)
+    // (CQ.ready), and Play waits for them if it has to.
     const first = Object.keys(IMAGES).filter((k) => /^t[A-Z]/.test(k)).map((k) => IMAGES[k].src).concat(IMAGES.startButton.src, IMAGES.coin.src);
-    const unused = [IMAGES.startScreen].filter(Boolean).map((i) => i.src);
     const rest = [].concat(
       Object.values(window.IMAGES).map((i) => i.src),
       Object.values(window.SPRITES).map((s) => s.src)
-    ).filter((u, i, all) => !first.includes(u) && !unused.includes(u) && all.indexOf(u) === i);
+    ).filter((u, i, all) => !first.includes(u) && all.indexOf(u) === i);
     await CQ.preload(first, (p) => (fill.style.width = Math.round(p * 100) + "%"));
     try {
       if (document.fonts && document.fonts.load)

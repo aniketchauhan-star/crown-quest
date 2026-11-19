@@ -23,7 +23,6 @@ window.IMAGES = {
   crown: { src: "assets/props/crown.webp", w: 414, h: 338 },
   brickStand: { src: "assets/props/brick-stand.webp", w: 726, h: 292 },
   startButton: { src: "assets/ui/start-button.webp", w: 560, h: 466 },
-  startScreen: { src: "assets/ui/start-screen.webp", w: 1672, h: 941 },
   bgSky: { src: "assets/bg/jungle/01-sky.webp", w: 1920, h: 1080 },
   bgClouds: { src: "assets/bg/jungle/02-clouds.webp", w: 1429, h: 234 },
   bgMountainsFar: { src: "assets/bg/jungle/03-mountains-far.webp", w: 1450, h: 185 },

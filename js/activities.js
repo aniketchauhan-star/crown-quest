@@ -421,7 +421,10 @@
           // a side worked out (cls "side": LHS = 4 + 2 = 6): its name, =, and the rest, in columns, so
           // the two sides' first = signs stand one under the other (review, 2026-11-13); "Try x = 4" too,
           // its = over theirs (review, 2026-11-18: "Check the alignment of text in x = 8 for all
-          // equations"), its "Try" by itself, to fade when the try's verdict comes (cls "sure")
+          // equations"), its "Try" by itself, to fade when the try's verdict comes (cls "sure"). A side's
+          // value stays on its line, after its expression: LHS = 4 + 2 = 6 (review, 2026-11-19: "23 is
+          // equal to should same line in 15 is equal to"; = 6 on a line of its own under it, left of
+          // 4 + 2, was turned down the same day: "Please don't do this like this… in all game").
           const i = /\bside\b/.test(r.cls || "") ? r.t.indexOf(" = ") : -1;
           let left = i > 0 ? CQ.rich(r.t.slice(0, i)) : "";
           if (/\btry\b/.test(r.cls || "")) left = left.replace(UI.tryWord, `<span class="tw">${UI.tryWord}</span>`);
@@ -442,17 +445,8 @@
           // before, faded a little as the voice moves on to the other side; both sides, in their
           // colours, on "two sides"). cls: one class or more.
           if (r.lit) this.onCue(r.lit.cue, sig, () => el.classList.add(...r.lit.cls.split(" ")));
-          // r.name = { text, cls, cue }: the try's verdict written in under its =, as the voice gets to
-          // its word (Solution, Not a solution: review, 2026-11-18, "change 'Try x = 6' to a clear x = 6")
-          if (r.name && el.querySelector(".se")) {
-            const nm = CQ.el("span", "nb-name " + (r.name.cls || ""), el.querySelector(".se"));
-            this.onCue(r.name.cue, sig, () => {
-              nm.textContent = r.name.text;
-              CQ.audio.play("ui.pop", { volume: 0.5 });
-              CQ.anim(nm, [{ opacity: 0, transform: "scale(.85)" }, { opacity: 1, transform: "scale(1)" }], { duration: 320, easing: CQ.EASE.out, keep: false });
-              writeIn(nm, 120, 45);
-            });
-          }
+          // (no verdict written under the try: the voice says it, x = 4 lit red or green; review,
+          // 2026-11-19: "do not write not a solution and this kind of things in this game")
           // r.write = [{ text, cue }]: a new row is written in by hand, part by part, each part as the
           // voice says its word (LHS on "left-hand side", 4 + 2 straight after, = on "equals", 6 on "6")
           if (r.write && !before.keys.has(key)) {
@@ -935,9 +929,9 @@
       steps: [{ cue: cue.both, pans: true }].concat(steps),
     },
   });
-  // the second: the working fades away, "Try" with it, x = v is lit on lit.cue and its name written in on
-  // name.cue
-  const verdictRows = (v, s, lit, name) => [tryRow(v, { cls: "try side sure", lit, name }), { t: lhsText(v, s), cls: "side gone" }, { t: rhsText, cls: "side gone" }];
+  // the second: the working fades away, "Try" with it, and x = v is lit on lit.cue (nothing written under
+  // it: review, 2026-11-19)
+  const verdictRows = (v, s, lit) => [tryRow(v, { cls: "try side sure", lit }), { t: lhsText(v, s), cls: "side gone" }, { t: rhsText, cls: "side gone" }];
   CQ.NB_TRY = [
     // the crown lights up as the voice names it
     { id: "l4-23", s: { bal: "crown", cue: { bal: "crown's" } } },
@@ -982,12 +976,12 @@
     // both sides worked out: the crown makes way for 4 coins; "The two sides have different values. The
     // balance tips!", the balance tipping on "tips"
     balanceBeat("check-diff", 4, 6, { both: "two sides" }, [{ cue: "balance tips", tilt: true }]),
-    // "So, x = 4 is not a solution.": the working fades, x = 4 red on "x = 4", Not a solution on its word
+    // "So, x = 4 is not a solution.": the working fades, x = 4 red on "x = 4"
     // (the balance stays tipped; come back to with Back, the coins are put in again and it tips once more)
     {
       id: "check-not-sol",
       vars: { v: 4 },
-      s: { rows: verdictRows(4, 6, { cue: "x = 4", cls: "lit-no" }, { text: F.notSolution, cls: "no", cue: "a solution" }), steps: [{ sub: 4 }, { cue: "not a", tilt: true }] },
+      s: { rows: verdictRows(4, 6, { cue: "x = 4", cls: "lit-no" }), steps: [{ sub: 4 }, { cue: "not a", tilt: true }] },
     },
     // "Now, let's check 5…": the 4 coins go and the crown is back (level again), the working for 4 is
     // cleared, and Try x = 5 is written (its 5 as "5" is said)
@@ -1011,9 +1005,8 @@
     // is level!", its hub flashing on "level"
     balanceBeat("check-same", 5, 7, { both: "Both sides" }, [{ cue: "is level", tilt: true, flash: true }]),
     // "A value that makes an equation true is called its solution. So, 5 is the solution.": the working
-    // fades, x = 5 is left under the equation, green on "So, 5", and Solution written under it on "the
-    // solution"
-    { id: "l4-29", s: { rows: verdictRows(5, 7, { cue: "So, 5", cls: "lit-ok" }, { text: F.solution, cls: "ok", cue: "the solution" }), steps: [{ sub: 5 }] }, gem: "solution" },
+    // fades, x = 5 is left under the equation, green on "So, 5"
+    { id: "l4-29", s: { rows: verdictRows(5, 7, { cue: "So, 5", cls: "lit-ok" }), steps: [{ sub: 5 }] }, gem: "solution" },
   ];
 
   // The linear equation is shown in the equation itself, in step with the voice, with no labels
@@ -2169,9 +2162,10 @@
       if (els.includes(tray)) tray = null;
       await glide(() => els.forEach((e) => e.remove()));
     };
-    // The answer asked for: an answer row (left = □) under the working, its number tiles under it, in one
-    // glide (also: a change made with them). Returns the tiles' control (CQ.numberTiles: its box is the
-    // row's).
+    // The answer asked for: an answer row (left = □) under the working, its number tiles' room under it,
+    // in one glide (also: a change made with them). The tiles stay in the box until the child taps it
+    // (asked 2026-11-19: "let the user click the box and then these appear as drop-down menu"). Returns
+    // the tiles' control (CQ.numberTiles: its box is the row's).
     const ask = async (left, choices, also) => {
       const row = makeRow(`${left} = ?`, "ask");
       const t = CQ.el("div", "pr-tray");
@@ -2181,19 +2175,21 @@
         main.appendChild(t);
       }, true);
       tray = t;
-      const ctl = CQ.numberTiles(t, row.querySelector(".pr-box"), choices, { label: C().ui.answers });
+      const ctl = CQ.numberTiles(t, row.querySelector(".pr-box"), choices, { label: C().ui.answers, openLabel: C().ui.showAnswers });
       ctl.row = row;
       await writeRow(row);
-      await CQ.run.when(ctl.in(0));
       return ctl;
     };
     // The answer is in (right, or put in for the child): the tiles go, the box melts away and the number
-    // stands in the row as plain text, green when it is x at last.
+    // stands in the row as plain text, green when it is x at last. The step is done, so its − 7 on both
+    // sides goes back to plain with it: lit only while the step is talked about (asked 2026-11-19: "This
+    // should highlight in start… after this no need to highlight").
     const settle = async (ctl, final) => {
       ctl.done();
       const box = ctl.box;
       box.classList.remove("nt-drop", "nt-empty", "nt-hover", "nt-ok", "nt-no");
       box.classList.add("melt");
+      work.querySelectorAll(".same").forEach((e) => e.classList.add("unmark"));
       if (final) ctl.row.classList.add("final");
       const t = tray;
       tray = null;
@@ -2205,13 +2201,14 @@
       });
       await CQ.run.wait(GLIDE);
     };
-    // Waits for the child's tile; the first time ever they meet the tiles, the hand shows how at once,
-    // and whenever they wait, it shows again (the instruction is not said again).
+    // Waits for the child's tile; the first time ever they meet the box, the hand taps it at once (and
+    // the first time its tiles come out, it shows the drag: js/tiles.js), and whenever they wait, it shows
+    // again (the instruction is not said again).
     const answer = (ctl) => {
       const taking = ctl.take();
       ctl.nudge(8000);
-      if (!CQ.store.get("tileDemoSeen", false)) {
-        CQ.store.set("tileDemoSeen", true);
+      if (!CQ.store.get("tileMenuSeen", false)) {
+        CQ.store.set("tileMenuSeen", true);
         setTimeout(() => ctl.demo(), 700);
       }
       return CQ.run.when(taking);
@@ -2291,15 +2288,10 @@
         await runProblem(i, i === 0);
       }
       CQ.store.set("practiceAt", 0);
-      // a gem for every equation solved
-      await drop([...work.children]);
-      const colors = ["#F2C230", "#2BB673", "#9B5DE5", "#1FA3A3", "#E5484D", "#3D8BFD"];
-      const done = CQ.el("div", "pr-done", main, R(CQ.fmt(P.words.allDone, { n: P.problems.length })));
-      const gems = CQ.el("div", "pr-gems", main, P.problems.map((q, k) => CQ.gem(colors[k % colors.length], 96)).join(""));
-      oneByOne([done, gems], 560);
-      CQ.fx.confetti(CQ.ui.layer, 960, 420, 44);
-      CQ.audio.play("fanfare");
-      await CQ.say("p-done");
+      // the last equation solved, the board fades and the finale begins (no "You solved all 6
+      // equations!" screen with a gem per equation: asked 2026-11-19, "This screen not required"); the
+      // question bar goes with it, so "Find the value of x." isn't left over the scene
+      CQ.caption.hide();
       await closeBoard(wrap);
     } finally {
       CQ.zippy.setVisible(true);

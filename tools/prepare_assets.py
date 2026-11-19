@@ -315,9 +315,9 @@ PROPS = [
     ("startButton", "ui/start button.png", "ui/start-button.png", None, 2),
 ]
 
-FULLSCREEN = [
-    ("startScreen", "ui/start screen.png", "ui/start-screen"),
-]
+# (key, source file, output): whole-screen pictures. None now: the old start screen ("ui/start screen.png")
+# went on 2026-11-19, as the title is built from its pieces in assets/title (tools/make_title.swift).
+FULLSCREEN = []
 
 # zippy bar.png: Zippy holds a blank gold bar by its ends, and the game prints the bar's number on its
 # front face. bar_in_hands() finds the bar in each cut frame by its gold colour and measures, in the cut

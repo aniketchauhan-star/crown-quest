@@ -1,7 +1,7 @@
-NEW ON 2026-11-18 (review of 13 screenshots): 17 LINES STILL TO RECORD
+NEW ON 2026-11-18 (review of 13 screenshots): 17 LINES, RECORDED THE SAME DAY
 ============================================================
-Until they are recorded, the device's own voice reads them (a woman's on most devices).
-Record them like the last ones: one file, read in THIS order, then
+The user recorded them in one file, new.mp3, in this order; they are in the game now
+(vo366 to vo382). To record them again: one file, read in THIS order, then
     ~/.cache/crown-quest/venv/bin/python tools/vo_split.py recording.mp3 vo366 vo367 ... vo382
     ~/.cache/crown-quest/venv/bin/python tools/vo_build.py tools/split_out/split.zip
 (or give the file to Claude). Seventeen more of the review's lines needed no recording: they
