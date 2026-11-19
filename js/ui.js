@@ -627,14 +627,12 @@
         return this.typeSynth(n, pass, v.synth);
       };
     },
-    // the line's letters up to word k (each word's coming in over part of the time it takes to say)
-    showUpTo(chars, k, frac) {
+    // the line's words up to word k, each one whole as the voice gets to it (asked 2026-11-19: "do not make
+    // letter by letter. Just make a word by word come in question template only"; a word's letters used to
+    // come in one after another over the time it took to say). styles.css fades each word in.
+    showUpTo(chars, k) {
       const W = this.wordChars || [];
-      for (let i = 0; i <= Math.min(k, W.length - 1); i++) {
-        const g = W[i];
-        const upto = i < k ? g.length : Math.max(1, Math.ceil(g.length * CQ.clamp(frac, 0, 1)));
-        for (let j = 0; j < upto; j++) g[j].classList.add("on");
-      }
+      for (let i = 0; i <= Math.min(k, W.length - 1); i++) W[i].forEach((c) => c.classList.add("on"));
     },
     typeClip(n, pass, v) {
       this.typing = n;
@@ -650,7 +648,7 @@
         if (t === Infinity) return Infinity;
         return t > 0 ? t : wall > 0.25 ? wall : 0;
       };
-      const per = Math.max(0.016, (v.secs - 0.35) / Math.max(1, String(this.text).length)); // (no word timings: the letters at an even pace)
+      const per = Math.max(0.016, (v.secs - 0.35) / Math.max(1, String(this.text).length)); // (no word timings: the words by their place in the line, at an even pace)
       const step = () => {
         if (n !== this.line) return;
         const T = clock() + LEAD;
@@ -659,10 +657,7 @@
           while (k + 1 < this.words.length && T >= W[2 * (k + 1)]) k++;
         } else k = T === Infinity ? this.words.length - 1 : Math.min(this.words.length - 1, wordAt(this.words, Math.floor(T / per)));
         if (k > this.heard) this.heard = k; // (a replay's voice too: what waits for a word comes as it says it)
-        if (chars && this.chars === chars && k >= 0) {
-          const frac = W && k < this.words.length ? (T - W[2 * k]) / Math.max(0.12, W[2 * k + 1] - W[2 * k]) : 1;
-          this.showUpTo(chars, k, frac);
-        }
+        if (chars && this.chars === chars && k >= 0) this.showUpTo(chars, k);
         const done = T === Infinity || (W ? T >= W[W.length - 1] + 0.1 : k >= this.words.length - 1);
         if (done) {
           if (pass === undefined) this.heard = this.words.length - 1;
@@ -696,11 +691,7 @@
           if (k >= 0) reach(k);
         }
         const chars = this.chars;
-        if (chars && at.length) {
-          const k = at.length - 1;
-          const dur = Math.max(0.12, (plan[k + 1] != null ? plan[k + 1] : plan.end) - plan[k]);
-          this.showUpTo(chars, k, (now - at[k]) / 1000 / dur);
-        }
+        if (chars && at.length) this.showUpTo(chars, at.length - 1);
         if (!over) requestAnimationFrame(step);
       };
       const begin = () => {

@@ -1224,8 +1224,16 @@ html[data-shade] .stage-edge::after {
   white-space: nowrap;
 }
 /* a recorded line types itself out as it is said: letters wait, hidden, in their places */
+/* a line comes in word by word as it is said, each word whole, with a short fade (asked 2026-11-19: "do
+   not make letter by letter. Just make a word by word"): its letters wait, unseen, in their places */
+.cap-text .ch {
+  transition: opacity 160ms ease-out;
+}
 .cap-text.typing .ch:not(.on) {
-  visibility: hidden;
+  opacity: 0;
+}
+html.reduced-motion .cap-text .ch {
+  transition: none;
 }
 /* measures how wide a row would be (js/ui.js, CQ.caption.split): never seen */
 .cap-probe {
