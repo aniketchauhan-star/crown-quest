@@ -10,18 +10,18 @@ Screen reader only: Start   [Name of the play button]
 
 ======== INTRO: MEET ZIPPY AND GRUMBLE ========
 On screen: ZIPPY!  The clever treasure hunter   [Name tag as Zippy arrives]
-Narrator (voice + caption): Meet Zippy! He spots a golden crown.
+Narrator (voice + caption): Meet Zippy! He's spotted a golden crown!
 On screen: GRUMBLE  The treasure guard   [Name tag on the word "Grumble"]
-Narrator (voice + caption): Grumble guards the treasure.
+Narrator (voice + caption): But Grumble guards the treasure.
 Narrator (voice + caption): Luckily, he's asleep!
-Narrator (voice + caption): If the balance tips, the alarm will wake Grumble.
+Narrator (voice + caption): If the balance tips, the alarm will wake him!
 On screen: RING! RING!   [Little picture: the alarm waking Grumble]
-Narrator (voice + caption): Let's replace the crown with something just as heavy. That will keep the balance level!
-Narrator (voice + caption): Each coin has a mass of 1 unit.
+Narrator (voice + caption): Let's swap the crown without tipping the balance!
+Narrator (voice + caption): Each coin weighs 1 unit.
 On screen: 1 unit   [Beside a coin]
 
 ======== LEVEL 1: WHICH BAR? ========
-Narrator (voice + caption): Which bar should Zippy use?
+Narrator (voice + caption): Which bar should Zippy choose?
 Narrator (voice + caption): Drag it to Zippy, then tap Swap.
 Button: SWAP   [Appears when Zippy holds a bar]
 On screen: Gold bars: 3, 5, 7   [Numbers on the three bars]
@@ -30,66 +30,66 @@ On screen: RING! RING!   [Wrong bar: the balance tips]
 Grumble (comic word): GRRRUMBLE!   [Wrong bar: Grumble wakes]
 Zippy (comic word): Hmm?   [Wrong bar: Zippy swings back]
 On screen: Tried   [Wrong bar: tag on the bar]
-Narrator (voice + caption): Oops! That bar is too light — the balance tipped!   [Wrong bar (too light), 1st miss]
-Narrator (voice + caption): Oops! That bar is too heavy — the balance tipped!   [Wrong bar (too heavy), 1st miss]
-Narrator (voice + caption): Drag a gold bar to Zippy.   [After the 1st miss]
-Narrator (voice + caption): Each coin is 1 unit. The crown balances 5 coins, so it is 5 units. Try the 5 bar!   [After the 2nd miss]
+Narrator (voice + caption): Oops! Too light! The balance tipped!   [Wrong bar (too light), 1st miss]
+Narrator (voice + caption): Oops! Too heavy! The balance tipped!   [Wrong bar (too heavy), 1st miss]
+Narrator (voice + caption): Give Zippy a gold bar.   [After the 1st miss]
+Narrator (voice + caption): The crown balances 5 coins. Try the 5-unit bar!   [After the 2nd miss]
 Zippy (voice): Hee hee! Sleep tight, Grumble!   [Right bar: Zippy wins the crown]
-Narrator (voice + caption): Perfect swap! The crown is 5 units — just like the 5 coins.   [Right bar]
+Narrator (voice + caption): Perfect swap! Both weigh 5 units!   [Right bar]
 
 ======== LEVEL 2: ANOTHER CROWN ========
-Narrator (voice + caption): There's another crown! Let's help Zippy collect it too.
+Narrator (voice + caption): Another crown! Let's collect it!
 Button: SWAP   [Appears when Zippy holds a bar]
 On screen: Gold bars: 5, 7, 9   [Numbers on the three bars]
 On screen: RING! RING!   [Wrong bar: the balance tips]
 Grumble (comic word): GRRRUMBLE!   [Wrong bar: Grumble wakes]
 Zippy (comic word): Hmm?   [Wrong bar: Zippy swings back]
 On screen: Tried   [Wrong bar: tag on the bar]
-Narrator (voice + caption): Oops! That bar is too light — the balance tipped!   [Wrong bar (too light), 1st miss]
-Narrator (voice + caption): Oops! That bar is too heavy — the balance tipped!   [Wrong bar (too heavy), 1st miss]
-Narrator (voice + caption): Drag a gold bar to Zippy.   [After the 1st miss]
-Narrator (voice + caption): Each coin is 1 unit. The crown balances 7 coins, so it is 7 units. Try the 7 bar!   [After the 2nd miss]
+Narrator (voice + caption): Oops! Too light! The balance tipped!   [Wrong bar (too light), 1st miss]
+Narrator (voice + caption): Oops! Too heavy! The balance tipped!   [Wrong bar (too heavy), 1st miss]
+Narrator (voice + caption): Give Zippy a gold bar.   [After the 1st miss]
+Narrator (voice + caption): The crown balances 7 coins. Try the 7-unit bar!   [After the 2nd miss]
 Zippy (voice): Hee hee! Sleep tight, Grumble!   [Right bar: Zippy wins the crown]
-Narrator (voice + caption): Perfect swap! The crown is 7 units — just like the 7 coins.   [Right bar]
+Narrator (voice + caption): Perfect! Both weigh 7 units!   [Right bar]
 
 ======== LEVEL 3: ONE MORE CROWN ========
-Narrator (voice + caption): One more crown. Grumble is still asleep!
+Narrator (voice + caption): One more crown! Grumble's still asleep!
 Button: SWAP   [Appears when Zippy holds a bar]
 On screen: Gold bars: 3, 4, 6   [Numbers on the three bars]
 On screen: RING! RING!   [Wrong bar: the balance tips]
 Grumble (comic word): GRRRUMBLE!   [Wrong bar: Grumble wakes]
 Zippy (comic word): Hmm?   [Wrong bar: Zippy swings back]
 On screen: Tried   [Wrong bar: tag on the bar]
-Narrator (voice + caption): Oops! That bar is too light — the balance tipped!   [Wrong bar (too light), 1st miss]
-Narrator (voice + caption): Oops! That bar is too heavy — the balance tipped!   [Wrong bar (too heavy), 1st miss]
-Narrator (voice + caption): Drag a gold bar to Zippy.   [After the 1st miss]
-Narrator (voice + caption): Each coin is 1 unit. The crown balances 4 coins, so it is 4 units. Try the 4 bar!   [After the 2nd miss]
+Narrator (voice + caption): Oops! Too light! The balance tipped!   [Wrong bar (too light), 1st miss]
+Narrator (voice + caption): Oops! Too heavy! The balance tipped!   [Wrong bar (too heavy), 1st miss]
+Narrator (voice + caption): Give Zippy a gold bar.   [After the 1st miss]
+Narrator (voice + caption): The crown balances 4 coins. Try the 4-unit bar!   [After the 2nd miss]
 Zippy (voice): Hee hee! Sleep tight, Grumble!   [Right bar: Zippy wins the crown]
-Narrator (voice + caption): Perfect swap! The crown is 4 units — just like the 4 coins.   [Right bar]
+Narrator (voice + caption): Perfect! Both weigh 4 units!   [Right bar]
 
 ======== LEVEL 4: THE MYSTERY CROWN, X + 2 = 7 ========
-Narrator (voice + caption): Wait… this crown has two coins beside it.
-Narrator (voice + caption): The crown and these two coins together balance seven coins.
-Narrator (voice + caption): But Zippy needs a replacement for just the crown.
-Narrator (voice + caption): How can we find the crown's mass?
+Narrator (voice + caption): Wait! This crown has two coins beside it.
+Narrator (voice + caption): Together, they balance 7 coins.
+Narrator (voice + caption): But Zippy needs to replace only the crown.
+Narrator (voice + caption): How much does the crown weigh?
 Narrator (voice + caption): Let's call the crown's mass x.
-Narrator (voice + caption): The crown and two coins have a total mass of x + 2.
+Narrator (voice + caption): Together, the crown and coins weigh x + 2 units.
 Narrator (voice + caption): They balance 7 units on the other side.
-Narrator (voice + caption): So, we can write x + 2 = 7.
+Narrator (voice + caption): So, x + 2 = 7.
 On screen: x + 2 = 7   [Written under the balance]
 
 ======== LEVEL 4: FORMULA SCREEN (THE WORDS) ========
-Narrator (voice + caption): Let's find x so Zippy can make the swap.
-Narrator (voice + caption): Here, x represents the crown's mass. We need to find its value.
+Narrator (voice + caption): Let's find x to help Zippy swap!
+Narrator (voice + caption): Here, x represents the crown's mass.
 Narrator (voice + caption): A variable is a symbol that represents a value.
-Narrator (voice + caption): Here, x is the variable. Its value is unknown.
+Narrator (voice + caption): x is our variable. Its value is unknown.
 On screen: Variable   [Label under x]
-Narrator (voice + caption): Now look at x + 2. It represents the total mass of the crown and the two coins.
-Narrator (voice + caption): Here x is a variable, and 2 is a constant. We add them together.
+Narrator (voice + caption): x + 2 represents the crown and two coins together.
+Narrator (voice + caption): x is a variable, and 2 is a constant.
 On screen: variable · addition · constant   [Labels under x, + and 2]
-Narrator (voice + caption): Adding x and 2 gives the algebraic expression x + 2.
+Narrator (voice + caption): Together, they form the algebraic expression x + 2.
 On screen: Algebraic expression   [Label under x + 2]
-Narrator (voice + caption): The balance shows that x + 2 equals 7.
+Narrator (voice + caption): The balance shows x + 2 = 7.
 Narrator (voice + caption): A statement that says two expressions have equal values is called an equation.
 On screen: Equation   [Label under x + 2 = 7]
 Narrator (voice + caption): The expression to the left of the equals sign is called the left-hand side, or LHS.
@@ -98,26 +98,26 @@ Narrator (voice + caption): The expression to the right of the equals sign is ca
 On screen: Right-hand side (RHS)   [Label under 7]
 
 ======== LEVEL 4: LABEL THE PARTS ========
-Narrator (voice + caption): Now, can you spot these parts in another equation?
+Narrator (voice + caption): Can you identify these parts in another equation?
 On screen: 4x + 3 = 19   [The equation to label]
-Narrator (voice + caption): Drag each label to the matching box.   [Instruction for the first pair]
+Narrator (voice + caption): Drag each label to the correct box.   [Instruction for the first pair]
 On screen: Variable · Equation   [First two label tiles]
-Narrator (voice + caption): Not quite. x represents the unknown value. It is the variable.   [Wrong box for Variable]
+Narrator (voice + caption): Not quite! x is the unknown value, so it's the variable.   [Wrong box for Variable]
 Narrator (voice + caption): The complete statement is an equation.   [Wrong box for Equation]
-Narrator (voice + caption): Now, label the left-hand side and right-hand side.   [Instruction for the second pair]
+Narrator (voice + caption): Now label the LHS and RHS.   [Instruction for the second pair]
 On screen: LHS · RHS   [Second two label tiles]
-Narrator (voice + caption): Look to the left of the equal sign. 4x + 3 is the left-hand side.   [Wrong box for LHS]
-Narrator (voice + caption): Look to the right of the equal sign. 19 is the right-hand side.   [Wrong box for RHS]
-Narrator (voice + caption): Brilliant! You labelled every part.   [Only if the child put every label in themselves]
+Narrator (voice + caption): 4x + 3 is on the left. That's the LHS.   [Wrong box for LHS]
+Narrator (voice + caption): 19 is on the right. That's the RHS.   [Wrong box for RHS]
+Narrator (voice + caption): Brilliant! You labelled every part!   [Only if the child put every label in themselves]
 Button: Next   [When every label is in]
 
 ======== LEVEL 4: LINEAR EQUATION IN ONE VARIABLE ========
 Narrator (voice + caption): Let's return to the crown's equation.
-Narrator (voice + caption): This equation has one variable: x.
+Narrator (voice + caption): This equation has one variable, x.
 Narrator (voice + caption): The power of x is 1.
-Narrator (voice + caption): We usually leave the 1 unwritten.
-Narrator (voice + caption): This equation has one variable, and its highest power is 1.
-Narrator (voice + caption): This is called a linear equation in one variable.
+Narrator (voice + caption): We usually leave the power 1 unwritten.
+Narrator (voice + caption): It has one variable with a highest power of 1.
+Narrator (voice + caption): This is a linear equation in one variable.
 On screen: Linear equation in one variable   [Label under x + 2 = 7]
 
 ======== LEVEL 4: SORT LINEAR / NONLINEAR ========
@@ -143,62 +143,62 @@ On screen: Right-hand side (RHS)   [Label under 9]
 
 ======== LEVEL 4: FIND THE SOLUTION ========
 Narrator (voice + caption): Now let's find the crown's mass.
-Narrator (voice + caption): We need a value of x that makes both sides equal.
-Narrator (voice + caption): Let's check 4. Replace x with 4 and find the value of each side.
+Narrator (voice + caption): We need x to make both sides equal.
+Narrator (voice + caption): Let's try x = 4. Find the value of each side.
 On screen: Try x = 4   [Written under the equation]
-Narrator (voice + caption): The left-hand side equals 6.
+Narrator (voice + caption): The LHS is 6.
 On screen: LHS = 4 + 2 = 6   [Working row]
-Narrator (voice + caption): The right-hand side equals 7.
+Narrator (voice + caption): The RHS is 7.
 On screen: RHS = 7   [Working row]
-Narrator (voice + caption): The two sides have different values. The balance tips!
+Narrator (voice + caption): The values differ! The balance tips!
 Narrator (voice + caption): So, x = 4 is not a solution.
-Narrator (voice + caption): Now, let's check 5. Replace x with 5 and find the value of each side.
+Narrator (voice + caption): Now try x = 5. Find both sides.
 On screen: Try x = 5   [Written under the equation]
-Narrator (voice + caption): The left-hand side equals 7.
+Narrator (voice + caption): The LHS is 7.
 On screen: LHS = 5 + 2 = 7   [Working row]
-Narrator (voice + caption): The right-hand side equals 7.
+Narrator (voice + caption): The RHS is 7.
 On screen: RHS = 7   [Working row]
-Narrator (voice + caption): Both sides have the same value. The balance is level!
-Narrator (voice + caption): A value that makes an equation true is called its solution. So, 5 is the solution.
+Narrator (voice + caption): Both sides are equal! The balance stays level!
+Narrator (voice + caption): A value that makes an equation true is its solution. So, x = 5!
 On screen: x = 5   [Lit under the equation]
-Narrator (voice + caption): The crown's mass is 5 units. Zippy can use the 5-unit bar!
-Narrator (voice + caption): Drag the 5 bar to Zippy, then tap Swap.
+Narrator (voice + caption): The crown weighs 5 units. Zippy can swap it!
+Narrator (voice + caption): Drag the 5-unit bar to Zippy, then tap Swap.
 Button: SWAP
 Zippy (voice): Hee hee! Sleep tight, Grumble!   [Zippy wins the crown]
 
 ======== LEVEL 5: CHECK IT, STEP BY STEP ========
 On screen: x + 3 = 9   [The equation in the check (crown + 3 coins = 9 coins)]
 Zippy (voice): Let's try 4.
-Narrator (voice + caption): Give the 4 bar to Zippy.
+Narrator (voice + caption): Give Zippy the 4-unit bar.
 Narrator (voice + caption): Replace x with 4.
 On screen: Try x = 4   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 4 + 3 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 4 + 3. Count on from 4: 5, 6, 7.   [Wrong answer for LHS]
-Narrator (voice + caption): Now find the value of the right-hand side.
+Narrator (voice + caption): Add 4 + 3. Count on: 5, 6, 7.   [Wrong answer for LHS]
+Narrator (voice + caption): Now find the RHS.
 On screen: RHS = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): RHS is the number on the right of =.   [Wrong answer for RHS]
-Narrator (voice + caption): The left-hand side equals 7.
-Narrator (voice + caption): The right-hand side equals 9.
-Narrator (voice + caption): The two sides have different values. The balance tips!
+Narrator (voice + caption): The RHS is the number on the right of the equals sign.   [Wrong answer for RHS]
+Narrator (voice + caption): The LHS is 7.
+Narrator (voice + caption): The RHS is 9.
+Narrator (voice + caption): The values differ! The balance tips!
 Narrator (voice + caption): So, x = 4 is not a solution.
 On screen: x = 4   [Lit red under the equation]
 Grumble (comic word): HRRM?   [Grumble stirs]
-Zippy (voice): Phew! Good thing we checked.
-Zippy (voice): Now, let's try 6.
-Narrator (voice + caption): Give the 6 bar to Zippy.
+Zippy (voice): Phew! Good thing we checked!
+Zippy (voice): Now let's try 6.
+Narrator (voice + caption): Give Zippy the 6-unit bar.
 Narrator (voice + caption): Replace x with 6.
 On screen: Try x = 6   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 6 + 3 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 6 + 3. Count on from 6: 7, 8, 9.   [Wrong answer for LHS]
-Narrator (voice + caption): Now find the value of the right-hand side.
+Narrator (voice + caption): Add 6 + 3. Count on: 7, 8, 9.   [Wrong answer for LHS]
+Narrator (voice + caption): Now find the RHS.
 On screen: RHS = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): RHS is the number on the right of =.   [Wrong answer for RHS]
-Narrator (voice + caption): The left-hand side equals 9.
-Narrator (voice + caption): The right-hand side equals 9.
-Narrator (voice + caption): Both sides have the same value. The balance is level!
-Narrator (voice + caption): So, x = 6 is the solution.
+Narrator (voice + caption): The RHS is the number on the right of the equals sign.   [Wrong answer for RHS]
+Narrator (voice + caption): The LHS is 9.
+Narrator (voice + caption): The RHS is 9.
+Narrator (voice + caption): Both sides are equal! The balance stays level!
+Narrator (voice + caption): So, x = 6 is the solution!
 On screen: x = 6   [Lit green under the equation]
 Narrator (voice + caption): Now Zippy can swap. Tap Swap!
 Button: SWAP
@@ -206,61 +206,61 @@ Zippy (voice): Hee hee! Sleep tight, Grumble!   [Zippy wins the crown]
 
 ======== LEVEL 6: YOUR TURN ========
 On screen: x + 4 = 11   [The equation in the check]
-Narrator (voice + caption): Choose a value for x. Check whether both sides are equal.
+Narrator (voice + caption): Choose a value for x. Are both sides equal?
 On screen: Gold bars: 5, 8, 7   [The child picks any bar, in any order]
 
 ======== LEVEL 6: YOUR TURN: IF X = 5 IS TRIED ========
 Narrator (voice + caption): Let's check 5.   [If it is the first value tried]
-Narrator (voice + caption): Now, let's check 5.   [If another value was tried before]
+Narrator (voice + caption): Now try x = 5.   [If another value was tried before]
 On screen: Try x = 5   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 5 + 4 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 5 + 4. Count on from 5: 6, 7, 8, 9.   [Wrong answer for LHS]
-Narrator (voice + caption): Now find the value of the right-hand side.
+Narrator (voice + caption): Add 5 + 4. Count on: 6, 7, 8, 9.   [Wrong answer for LHS]
+Narrator (voice + caption): Now find the RHS.
 On screen: RHS = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): RHS is the number on the right of =.   [Wrong answer for RHS]
-Narrator (voice + caption): The left-hand side equals 9.
-Narrator (voice + caption): The right-hand side equals 11.
-Narrator (voice + caption): The two sides have different values. The balance tips!
+Narrator (voice + caption): The RHS is the number on the right of the equals sign.   [Wrong answer for RHS]
+Narrator (voice + caption): The LHS is 9.
+Narrator (voice + caption): The RHS is 11.
+Narrator (voice + caption): The values differ! The balance tips!
 Narrator (voice + caption): So, x = 5 is not a solution.
 On screen: x = 5   [Lit red under the equation]
 Grumble (comic word): HRRM?   [Grumble stirs]
-Zippy (voice): Phew! Good thing we checked.
-Narrator (voice + caption): Try another value.
+Zippy (voice): Phew! Good thing we checked!
+Narrator (voice + caption): Try another value!
 
 ======== LEVEL 6: YOUR TURN: IF X = 8 IS TRIED ========
 Narrator (voice + caption): Let's check 8.   [If it is the first value tried]
-Narrator (voice + caption): Now, let's check 8.   [If another value was tried before]
+Narrator (voice + caption): Now try x = 8.   [If another value was tried before]
 On screen: Try x = 8   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 8 + 4 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 8 + 4. Count on from 8: 9, 10, 11, 12.   [Wrong answer for LHS]
-Narrator (voice + caption): Now find the value of the right-hand side.
+Narrator (voice + caption): Add 8 + 4. Count on: 9, 10, 11, 12.   [Wrong answer for LHS]
+Narrator (voice + caption): Now find the RHS.
 On screen: RHS = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): RHS is the number on the right of =.   [Wrong answer for RHS]
-Narrator (voice + caption): The left-hand side equals 12.
-Narrator (voice + caption): The right-hand side equals 11.
-Narrator (voice + caption): The two sides have different values. The balance tips!
+Narrator (voice + caption): The RHS is the number on the right of the equals sign.   [Wrong answer for RHS]
+Narrator (voice + caption): The LHS is 12.
+Narrator (voice + caption): The RHS is 11.
+Narrator (voice + caption): The values differ! The balance tips!
 Narrator (voice + caption): So, x = 8 is not a solution.
 On screen: x = 8   [Lit red under the equation]
 Grumble (comic word): HRRM?   [Grumble stirs]
-Zippy (voice): Phew! Good thing we checked.
-Narrator (voice + caption): Try another value.
+Zippy (voice): Phew! Good thing we checked!
+Narrator (voice + caption): Try another value!
 
 ======== LEVEL 6: YOUR TURN: IF X = 7 IS TRIED ========
 Narrator (voice + caption): Let's check 7.   [If it is the first value tried]
-Narrator (voice + caption): Now, let's check 7.   [If another value was tried before]
+Narrator (voice + caption): Now try x = 7.   [If another value was tried before]
 On screen: Try x = 7   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 7 + 4 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 7 + 4. Count on from 7: 8, 9, 10, 11.   [Wrong answer for LHS]
-Narrator (voice + caption): Now find the value of the right-hand side.
+Narrator (voice + caption): Add 7 + 4. Count on: 8, 9, 10, 11.   [Wrong answer for LHS]
+Narrator (voice + caption): Now find the RHS.
 On screen: RHS = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): RHS is the number on the right of =.   [Wrong answer for RHS]
-Narrator (voice + caption): The left-hand side equals 11.
-Narrator (voice + caption): The right-hand side equals 11.
-Narrator (voice + caption): Both sides have the same value. The balance is level!
-Narrator (voice + caption): So, x = 7 is the solution.
+Narrator (voice + caption): The RHS is the number on the right of the equals sign.   [Wrong answer for RHS]
+Narrator (voice + caption): The LHS is 11.
+Narrator (voice + caption): The RHS is 11.
+Narrator (voice + caption): Both sides are equal! The balance stays level!
+Narrator (voice + caption): So, x = 7 is the solution!
 On screen: x = 7   [Lit green under the equation]
 Narrator (voice + caption): Now Zippy can swap. Tap Swap!
 Button: SWAP
@@ -268,61 +268,61 @@ Zippy (voice): Hee hee! Sleep tight, Grumble!   [Zippy wins the crown]
 
 ======== LEVEL 7: YOUR TURN AGAIN ========
 On screen: x + 2 = 10   [The equation in the check]
-Narrator (voice + caption): Another crown and two coins balance ten coins. Which value of x makes both sides equal?
+Narrator (voice + caption): Another crown! Together with two coins, it balances 10 coins. Find x!
 On screen: Gold bars: 10, 8, 12   [The child picks any bar, in any order]
 
 ======== LEVEL 7: YOUR TURN AGAIN: IF X = 10 IS TRIED ========
-Narrator (voice + caption): Replace x with your chosen value. Then compare the two sides.   [If it is the first value tried]
-Narrator (voice + caption): Now, let's check 10.   [If another value was tried before]
+Narrator (voice + caption): Replace x with your value. Compare both sides.   [If it is the first value tried]
+Narrator (voice + caption): Now let's check 10.   [If another value was tried before]
 On screen: Try x = 10   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 10 + 2 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 10 + 2. Count on from 10: 11, 12.   [Wrong answer for LHS]
-Narrator (voice + caption): Now find the value of the right-hand side.
+Narrator (voice + caption): Add 10 + 2. Count on: 11, 12.   [Wrong answer for LHS]
+Narrator (voice + caption): Now find the RHS.
 On screen: RHS = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): RHS is the number on the right of =.   [Wrong answer for RHS]
-Narrator (voice + caption): The left-hand side equals 12.
-Narrator (voice + caption): The right-hand side equals 10.
-Narrator (voice + caption): The two sides have different values. The balance tips!
+Narrator (voice + caption): The RHS is the number on the right of the equals sign.   [Wrong answer for RHS]
+Narrator (voice + caption): The LHS is 12.
+Narrator (voice + caption): The RHS is 10.
+Narrator (voice + caption): The values differ! The balance tips!
 Narrator (voice + caption): So, x = 10 is not a solution.
 On screen: x = 10   [Lit red under the equation]
 Grumble (comic word): HRRM?   [Grumble stirs]
-Zippy (voice): Phew! Good thing we checked.
-Narrator (voice + caption): Try another value.
+Zippy (voice): Phew! Good thing we checked!
+Narrator (voice + caption): Try another value!
 
 ======== LEVEL 7: YOUR TURN AGAIN: IF X = 12 IS TRIED ========
-Narrator (voice + caption): Replace x with your chosen value. Then compare the two sides.   [If it is the first value tried]
-Narrator (voice + caption): Now, let's check 12.   [If another value was tried before]
+Narrator (voice + caption): Replace x with your value. Compare both sides.   [If it is the first value tried]
+Narrator (voice + caption): Now let's check 12.   [If another value was tried before]
 On screen: Try x = 12   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 12 + 2 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 12 + 2. Count on from 12: 13, 14.   [Wrong answer for LHS]
-Narrator (voice + caption): Now find the value of the right-hand side.
+Narrator (voice + caption): Add 12 + 2. Count on: 13, 14.   [Wrong answer for LHS]
+Narrator (voice + caption): Now find the RHS.
 On screen: RHS = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): RHS is the number on the right of =.   [Wrong answer for RHS]
-Narrator (voice + caption): The left-hand side equals 14.
-Narrator (voice + caption): The right-hand side equals 10.
-Narrator (voice + caption): The two sides have different values. The balance tips!
+Narrator (voice + caption): The RHS is the number on the right of the equals sign.   [Wrong answer for RHS]
+Narrator (voice + caption): The LHS is 14.
+Narrator (voice + caption): The RHS is 10.
+Narrator (voice + caption): The values differ! The balance tips!
 Narrator (voice + caption): So, x = 12 is not a solution.
 On screen: x = 12   [Lit red under the equation]
 Grumble (comic word): HRRM?   [Grumble stirs]
-Zippy (voice): Phew! Good thing we checked.
-Narrator (voice + caption): Try another value.
+Zippy (voice): Phew! Good thing we checked!
+Narrator (voice + caption): Try another value!
 
 ======== LEVEL 7: YOUR TURN AGAIN: IF X = 8 IS TRIED ========
-Narrator (voice + caption): Replace x with your chosen value. Then compare the two sides.   [If it is the first value tried]
-Narrator (voice + caption): Now, let's check 8.   [If another value was tried before]
+Narrator (voice + caption): Replace x with your value. Compare both sides.   [If it is the first value tried]
+Narrator (voice + caption): Now let's check 8.   [If another value was tried before]
 On screen: Try x = 8   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 8 + 2 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 8 + 2. Count on from 8: 9, 10.   [Wrong answer for LHS]
-Narrator (voice + caption): Now find the value of the right-hand side.
+Narrator (voice + caption): Add 8 + 2. Count on: 9, 10.   [Wrong answer for LHS]
+Narrator (voice + caption): Now find the RHS.
 On screen: RHS = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): RHS is the number on the right of =.   [Wrong answer for RHS]
-Narrator (voice + caption): The left-hand side equals 10.
-Narrator (voice + caption): The right-hand side equals 10.
-Narrator (voice + caption): Both sides have the same value. The balance is level!
-Narrator (voice + caption): So, x = 8 is the solution.
+Narrator (voice + caption): The RHS is the number on the right of the equals sign.   [Wrong answer for RHS]
+Narrator (voice + caption): The LHS is 10.
+Narrator (voice + caption): The RHS is 10.
+Narrator (voice + caption): Both sides are equal! The balance stays level!
+Narrator (voice + caption): So, x = 8 is the solution!
 On screen: x = 8   [Lit green under the equation]
 Narrator (voice + caption): Now Zippy can swap. Tap Swap!
 Button: SWAP
@@ -335,227 +335,227 @@ Narrator (voice + caption): Let's try x = 10.
 On screen: 10 + 8 = 18    18 ≠ 23   [Card beside the balance]
 Narrator (voice + caption): How about x = 12?
 On screen: 12 + 8 = 20    20 ≠ 23   [Card beside the balance]
-Narrator (voice + caption): Trying different values could take a while.
-Narrator (voice + caption): Can we find the crown's mass without guessing?
+Narrator (voice + caption): Guessing could take a while!
+Narrator (voice + caption): Can we solve this without guessing?
 On screen: x + 8 = 23   [Written on the board]
-Narrator (voice + caption): We can split 23 units into 8 and 15.
+Narrator (voice + caption): Split 23 into 8 and 15.
 On screen: x + 8 = 8 + 15   [Next row]
-Narrator (voice + caption): There are 8 units beside the crown. Let's see how we can remove them.
-Narrator (voice + caption): Let's remove 8 units from both sides.
-Narrator (voice + caption): Drag an 8 bar off each side of the balance.
+Narrator (voice + caption): There are 8 extra units beside the crown. Let's remove them.
+Narrator (voice + caption): Remove 8 units from both sides.
+Narrator (voice + caption): Drag an 8-unit bar off each side.
 Narrator (voice + caption): Now remove 8 from the other side.   [After the first bar is off]
 On screen: x + 8 − 8 = 8 + 15 − 8   [Next row]
-Narrator (voice + caption): Now the crown balances 15 units. So, x = 15.
+Narrator (voice + caption): The crown balances 15 units. So, x = 15!
 On screen: x = 15   [Last row]
-Narrator (voice + caption): Before Zippy swaps, let's check the answer in the original equation.
+Narrator (voice + caption): Before swapping, let's check the original equation.
 Narrator (voice + caption): Replace x with 15.
 On screen: Try x = 15   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 15 + 8 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 15 + 8. Count on from 15: 16, 17, 18, 19, 20, 21, 22, 23.   [Wrong answer for LHS]
+Narrator (voice + caption): Add 15 + 8 to get 23.   [Wrong answer for LHS]
 On screen: RHS = 23   [Working row (given)]
-Narrator (voice + caption): The left-hand side equals 23.
-Narrator (voice + caption): The right-hand side equals 23.
-Narrator (voice + caption): Both sides have the same value. The balance is level!
-Narrator (voice + caption): So, x = 15 is the solution.
+Narrator (voice + caption): The LHS is 23.
+Narrator (voice + caption): The RHS is 23.
+Narrator (voice + caption): Both sides are equal! The balance stays level!
+Narrator (voice + caption): So, x = 15 is the solution!
 On screen: x = 15   [Lit green under the equation]
-Narrator (voice + caption): The crown's mass is 15 units. Zippy can use the 15-unit bar!
-Narrator (voice + caption): Give the 15 bar to Zippy, then tap Swap.
+Narrator (voice + caption): The crown weighs 15 units. Time to swap!
+Narrator (voice + caption): Give Zippy the 15-unit bar, then tap Swap.
 
 ======== LEVEL 8: THE SMART WAY: IF THE 23 BAR IS GIVEN ========
 Narrator (voice + caption): Let's check 23.
 On screen: Try x = 23   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 23 + 8 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 23 + 8. Count on from 23: 24, 25, 26, 27, 28, 29, 30, 31.   [Wrong answer for LHS]
+Narrator (voice + caption): Add 23 + 8 to get 31.   [Wrong answer for LHS]
 On screen: RHS = 23   [Working row (given)]
-Narrator (voice + caption): The left-hand side equals 31.
-Narrator (voice + caption): The right-hand side equals 23.
-Narrator (voice + caption): The two sides have different values. The balance tips!
+Narrator (voice + caption): The LHS is 31.
+Narrator (voice + caption): The RHS is 23.
+Narrator (voice + caption): The values differ! The balance tips!
 Narrator (voice + caption): So, x = 23 is not a solution.
 On screen: x = 23   [Lit red under the equation]
 Grumble (comic word): HRRM?   [Grumble stirs]
-Zippy (voice): Phew! Good thing we checked.
-Caption only (shown again, not said): Give the 15 bar to Zippy, then tap Swap.
+Zippy (voice): Phew! Good thing we checked!
+Caption only (shown again, not said): Give Zippy the 15-unit bar, then tap Swap.
 
 ======== LEVEL 8: THE SMART WAY: IF THE 31 BAR IS GIVEN ========
 Narrator (voice + caption): Let's check 31.
 On screen: Try x = 31   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 31 + 8 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): Add: 31 + 8. Count on from 31: 32, 33, 34, 35, 36, 37, 38, 39.   [Wrong answer for LHS]
+Narrator (voice + caption): Add 31 + 8 to get 39.   [Wrong answer for LHS]
 On screen: RHS = 23   [Working row (given)]
-Narrator (voice + caption): The left-hand side equals 39.
-Narrator (voice + caption): The right-hand side equals 23.
-Narrator (voice + caption): The two sides have different values. The balance tips!
+Narrator (voice + caption): The LHS is 39.
+Narrator (voice + caption): The RHS is 23.
+Narrator (voice + caption): The values differ! The balance tips!
 Narrator (voice + caption): So, x = 31 is not a solution.
 On screen: x = 31   [Lit red under the equation]
 Grumble (comic word): HRRM?   [Grumble stirs]
-Zippy (voice): Phew! Good thing we checked.
-Caption only (shown again, not said): Give the 15 bar to Zippy, then tap Swap.
+Zippy (voice): Phew! Good thing we checked!
+Caption only (shown again, not said): Give Zippy the 15-unit bar, then tap Swap.
 
 ======== LEVEL 8: THE SMART WAY: THE 15 BAR IS GIVEN ========
 Narrator (voice + caption): Now Zippy can swap. Tap Swap!
 Button: SWAP
 Zippy (voice): Hee hee! Sleep tight, Grumble!   [Zippy wins the crown]
 On screen: 15 + 8 = 23   [Sign by the balance]
-Narrator (voice + caption): That works! Zippy collects the crown, and Grumble stays asleep.
+Narrator (voice + caption): It worked! Another crown collected, and Grumble's still asleep!
 
 ======== LEVEL 9: TWO CROWNS ========
 Narrator (voice + caption): Each crown has the same mass, x.
 On screen: x + x + 4 = 18   [Written on the board]
-Narrator (voice + caption): Two lots of x make 2x.
+Narrator (voice + caption): Two crowns together have a mass of 2x.
 On screen: 2x + 4 = 18   [Next row]
-Narrator (voice + caption): We can split 18 units into 4 and 14.
+Narrator (voice + caption): Split 18 into 4 and 14.
 On screen: 2x + 4 = 4 + 14   [Next row]
-Narrator (voice + caption): There are 4 units beside the crowns. Let's see how we can remove them.
-Narrator (voice + caption): Let's remove 4 units from both sides.
-Narrator (voice + caption): Drag a 4 bar off each side of the balance.
+Narrator (voice + caption): There are 4 extra units beside the crowns. Let's remove them.
+Narrator (voice + caption): Remove 4 units from both sides.
+Narrator (voice + caption): Drag a 4-unit bar off each side.
 Narrator (voice + caption): Now remove 4 from the other side.   [After the first bar is off]
 On screen: 2x + 4 − 4 = 4 + 14 − 4   [Next row]
-Narrator (voice + caption): The two crowns balance 14 units.
+Narrator (voice + caption): Two crowns balance 14 units.
 On screen: 2x = 14   [Next row]
-Narrator (voice + caption): We need the mass of one crown.
+Narrator (voice + caption): But what does one crown weigh?
 Narrator (voice + caption): Divide both sides into two equal groups.
 On screen: 2x ÷ 2 = 14 ÷ 2   [Next row]
-Narrator (voice + caption): Each crown has a mass of 7 units. So, x = 7.
+Narrator (voice + caption): Each crown weighs 7 units. So, x = 7!
 On screen: x = 7   [Last row]
-Narrator (voice + caption): Let's check. Put 7 in place of x.
+Narrator (voice + caption): Let's check with x = 7.
 On screen: Try x = 7   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 2 × 7 + 4 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): 2 × 7 = 14. Then add 4.   [Wrong answer for LHS]
+Narrator (voice + caption): 2 × 7 = 14. Add 4 to get 18.   [Wrong answer for LHS]
 On screen: RHS = 18   [Working row (given)]
-Narrator (voice + caption): The left-hand side equals 18.
-Narrator (voice + caption): The right-hand side equals 18.
-Narrator (voice + caption): Both sides have the same value. The balance is level!
-Narrator (voice + caption): So, x = 7 is the solution.
+Narrator (voice + caption): The LHS is 18.
+Narrator (voice + caption): The RHS is 18.
+Narrator (voice + caption): Both sides are equal! The balance stays level!
+Narrator (voice + caption): So, x = 7 is the solution!
 On screen: x = 7   [Lit green under the equation]
-Narrator (voice + caption): Give a 7 bar to Zippy, then tap Swap.
+Narrator (voice + caption): Give Zippy a 7-unit bar, then tap Swap.
 
 ======== LEVEL 9: TWO CROWNS: IF THE 9 BAR IS GIVEN ========
 Narrator (voice + caption): Let's check 9.
 On screen: Try x = 9   [Written under the equation]
-Narrator (voice + caption): Find the value of the left-hand side.
+Narrator (voice + caption): Find the LHS.
 On screen: LHS = 2 × 9 + 4 = ?   [Working row: child chooses the answer]
-Narrator (voice + caption): 2 × 9 = 18. Then add 4.   [Wrong answer for LHS]
+Narrator (voice + caption): 2 × 9 = 18. Add 4 to get 22.   [Wrong answer for LHS]
 On screen: RHS = 18   [Working row (given)]
-Narrator (voice + caption): The left-hand side equals 22.
-Narrator (voice + caption): The right-hand side equals 18.
-Narrator (voice + caption): The two sides have different values. The balance tips!
+Narrator (voice + caption): The LHS is 22.
+Narrator (voice + caption): The RHS is 18.
+Narrator (voice + caption): The values differ! The balance tips!
 Narrator (voice + caption): So, x = 9 is not a solution.
 On screen: x = 9   [Lit red under the equation]
 Grumble (comic word): HRRM?   [Grumble stirs]
-Zippy (voice): Phew! Good thing we checked.
-Caption only (shown again, not said): Give a 7 bar to Zippy, then tap Swap.
+Zippy (voice): Phew! Good thing we checked!
+Caption only (shown again, not said): Give Zippy a 7-unit bar, then tap Swap.
 
 ======== LEVEL 9: TWO CROWNS: THE 7 BARS ARE GIVEN ========
 Narrator (voice + caption): Now Zippy can swap. Tap Swap!   [First 7 bar]
 Button: SWAP
-Narrator (voice + caption): One more crown! Give the other 7 bar to Zippy.   [After the first crown]
+Narrator (voice + caption): One more crown! Give Zippy the other 7-unit bar.   [After the first crown]
 Narrator (voice + caption): Now Zippy can swap. Tap Swap!   [The other 7 bar is given]
 Zippy (voice): Hee hee! Sleep tight, Grumble!   [Zippy wins the second crown]
 On screen: 2 × 7 + 4 = 18   [Sign by the balance]
 
 ======== PRACTICE: SIX EQUATIONS ========
-Narrator (voice + caption): You've helped Zippy find the crowns' masses. Let's try a few equations.
-Narrator (voice + caption): Now, use what you've learned to solve an equation.   [Before the first equation]
+Narrator (voice + caption): You've helped Zippy find the crowns' masses. Now try a few equations!
+Narrator (voice + caption): Your turn! Solve an equation.   [Before the first equation]
 
 ======== PRACTICE: EQUATION 1 OF 6 ========
 On screen: x + 6 = 17   [The equation, big in the middle]
-Narrator (voice + caption): Find the value of x.
+Narrator (voice + caption): Find x.
 Button: Choose  (17, 6, 11, 23)   [Tap the ? box: number tiles drop out]
 Button: Check
-Narrator (voice + caption): Not quite! Let's do it together.   [Wrong answer: solved together, step by step]
+Narrator (voice + caption): Not quite! Let's solve it together.   [Wrong answer: solved together, step by step]
 Narrator (voice + caption): Subtract 6 from both sides.   [Step]
 On screen: x + 6 − 6 = 17 − 6   [Working row written in]
 On screen: x = ?  (17, 6, 11, 23)   [Child chooses what it equals]
-Narrator (voice + caption): Not quite.   [Wrong choice]
+Narrator (voice + caption): Not quite!   [Wrong choice]
 Narrator (voice + caption): 17 − 6 = 11.   [Second wrong choice: the answer is told]
 (no words): Right answer: straight on to the next equation   [Right answer]
 
 ======== PRACTICE: EQUATION 2 OF 6 ========
 On screen: 3x + 5 = 26   [The equation, big in the middle]
-Narrator (voice + caption): Find the value of x.
+Narrator (voice + caption): Find x.
 Button: Choose  (26, 5, 7, 21)   [Tap the ? box: number tiles drop out]
 Button: Check
-Narrator (voice + caption): Not quite! Let's do it together.   [Wrong answer: solved together, step by step]
+Narrator (voice + caption): Not quite! Let's solve it together.   [Wrong answer: solved together, step by step]
 Narrator (voice + caption): Subtract 5 from both sides.   [Step]
 On screen: 3x + 5 − 5 = 26 − 5   [Working row written in]
 On screen: 3x = ?  (26, 21, 5, 31)   [Child chooses what it equals]
-Narrator (voice + caption): Not quite.   [Wrong choice]
+Narrator (voice + caption): Not quite!   [Wrong choice]
 Narrator (voice + caption): 26 − 5 = 21.   [Second wrong choice: the answer is told]
 Narrator (voice + caption): Divide both sides by 3.   [Step]
 On screen: 3x/3 = 21/3   [Working row written in]
 On screen: x = ?  (21, 3, 7, 63)   [Child chooses what it equals]
-Narrator (voice + caption): Not quite.   [Wrong choice]
+Narrator (voice + caption): Not quite!   [Wrong choice]
 Narrator (voice + caption): 21 ÷ 3 = 7.   [Second wrong choice: the answer is told]
 (no words): Right answer: straight on to the next equation   [Right answer]
 
 ======== PRACTICE: EQUATION 3 OF 6 ========
 On screen: x − 7 = 12   [The equation, big in the middle]
-Narrator (voice + caption): Find the value of x.
+Narrator (voice + caption): Find x.
 Button: Choose  (12, 19, 7, 5)   [Tap the ? box: number tiles drop out]
 Button: Check
-Narrator (voice + caption): Not quite! Let's do it together.   [Wrong answer: solved together, step by step]
+Narrator (voice + caption): Not quite! Let's solve it together.   [Wrong answer: solved together, step by step]
 Narrator (voice + caption): Add 7 to both sides.   [Step]
 On screen: x − 7 + 7 = 12 + 7   [Working row written in]
 On screen: x = ?  (12, 19, 7, 5)   [Child chooses what it equals]
-Narrator (voice + caption): Not quite.   [Wrong choice]
+Narrator (voice + caption): Not quite!   [Wrong choice]
 Narrator (voice + caption): 12 + 7 = 19.   [Second wrong choice: the answer is told]
 (no words): Right answer: straight on to the next equation   [Right answer]
 
 ======== PRACTICE: EQUATION 4 OF 6 ========
 On screen: x/4 = 6   [The equation, big in the middle]
-Narrator (voice + caption): Find the value of x.
+Narrator (voice + caption): Find x.
 Button: Choose  (6, 4, 1.5, 24)   [Tap the ? box: number tiles drop out]
 Button: Check
-Narrator (voice + caption): Not quite! Let's do it together.   [Wrong answer: solved together, step by step]
+Narrator (voice + caption): Not quite! Let's solve it together.   [Wrong answer: solved together, step by step]
 Narrator (voice + caption): Multiply both sides by 4.   [Step]
 On screen: x/4 × 4 = 6 × 4   [Working row written in]
 On screen: x = ?  (6, 4, 1.5, 24)   [Child chooses what it equals]
-Narrator (voice + caption): Not quite.   [Wrong choice]
+Narrator (voice + caption): Not quite!   [Wrong choice]
 Narrator (voice + caption): 6 × 4 = 24.   [Second wrong choice: the answer is told]
 (no words): Right answer: straight on to the next equation   [Right answer]
 
 ======== PRACTICE: EQUATION 5 OF 6 ========
 On screen: 2x + 7 = 1   [The equation, big in the middle]
-Narrator (voice + caption): Find the value of x.
+Narrator (voice + caption): Find x.
 Button: Choose  (1, −3, 7, 4)   [Tap the ? box: number tiles drop out]
 Button: Check
-Narrator (voice + caption): Not quite! Let's do it together.   [Wrong answer: solved together, step by step]
+Narrator (voice + caption): Not quite! Let's solve it together.   [Wrong answer: solved together, step by step]
 Narrator (voice + caption): Subtract 7 from both sides.   [Step]
 On screen: 2x + 7 − 7 = 1 − 7   [Working row written in]
 On screen: 2x = ?  (1, −6, 6, 8)   [Child chooses what it equals]
-Narrator (voice + caption): Not quite.   [Wrong choice]
+Narrator (voice + caption): Not quite!   [Wrong choice]
 Narrator (voice + caption): 1 − 7 = −6.   [Second wrong choice: the answer is told]
 Narrator (voice + caption): Divide both sides by 2.   [Step]
 On screen: 2x/2 = −6/2   [Working row written in]
 On screen: x = ?  (−6, −3, 3, −12)   [Child chooses what it equals]
-Narrator (voice + caption): Not quite.   [Wrong choice]
+Narrator (voice + caption): Not quite!   [Wrong choice]
 Narrator (voice + caption): −6 ÷ 2 = −3.   [Second wrong choice: the answer is told]
 (no words): Right answer: straight on to the next equation   [Right answer]
 
 ======== PRACTICE: EQUATION 6 OF 6 ========
 On screen: 3(x + 2) = 21   [The equation, big in the middle]
-Narrator (voice + caption): Find the value of x.
+Narrator (voice + caption): Find x.
 Button: Choose  (21, 7, 2, 5)   [Tap the ? box: number tiles drop out]
 Button: Check
-Narrator (voice + caption): Not quite! Let's do it together.   [Wrong answer: solved together, step by step]
+Narrator (voice + caption): Not quite! Let's solve it together.   [Wrong answer: solved together, step by step]
 Narrator (voice + caption): Divide both sides by 3.   [Step]
 On screen: 3(x + 2)/3 = 21/3   [Working row written in]
 On screen: x + 2 = ?  (21, 7, 3, 63)   [Child chooses what it equals]
-Narrator (voice + caption): Not quite.   [Wrong choice]
+Narrator (voice + caption): Not quite!   [Wrong choice]
 Narrator (voice + caption): 21 ÷ 3 = 7.   [Second wrong choice: the answer is told]
 Narrator (voice + caption): Subtract 2 from both sides.   [Step]
 On screen: x + 2 − 2 = 7 − 2   [Working row written in]
 On screen: x = ?  (7, 2, 5, 9)   [Child chooses what it equals]
-Narrator (voice + caption): Not quite.   [Wrong choice]
+Narrator (voice + caption): Not quite!   [Wrong choice]
 Narrator (voice + caption): 7 − 2 = 5.   [Second wrong choice: the answer is told]
 (no words): Right answer: straight on to the next equation   [Right answer]
 
 ======== FINALE: QUEST COMPLETE ========
-Narrator (voice only, no caption): Quest complete! Zippy collected all 10 crowns — and Grumble is still snoring!   [Zippy dances]
+Narrator (voice only, no caption): Quest complete! Zippy collected all crowns, and Grumble's still snoring!   [Zippy dances]
 On screen: Mission Complete!   [Title across the top]
 Button: Play again   [Plays the quest again from the start]
 
@@ -638,60 +638,60 @@ Screen reader only: Gold bar 8 on the left pan: take it off the balance
 
 
 ======== SPOKEN LINES, EACH ONCE ========
-1. Meet Zippy! He spots a golden crown.
-2. Grumble guards the treasure.
+1. Meet Zippy! He's spotted a golden crown!
+2. But Grumble guards the treasure.
 3. Luckily, he's asleep!
-4. If the balance tips, the alarm will wake Grumble.
-5. Let's replace the crown with something just as heavy. That will keep the balance level!
-6. Each coin has a mass of 1 unit.
-7. Which bar should Zippy use?
+4. If the balance tips, the alarm will wake him!
+5. Let's swap the crown without tipping the balance!
+6. Each coin weighs 1 unit.
+7. Which bar should Zippy choose?
 8. Drag it to Zippy, then tap Swap.
 9. Now tap Swap!
-10. Oops! That bar is too light — the balance tipped!
-11. Oops! That bar is too heavy — the balance tipped!
-12. Drag a gold bar to Zippy.
-13. Each coin is 1 unit. The crown balances 5 coins, so it is 5 units. Try the 5 bar!
+10. Oops! Too light! The balance tipped!
+11. Oops! Too heavy! The balance tipped!
+12. Give Zippy a gold bar.
+13. The crown balances 5 coins. Try the 5-unit bar!
 14. Hee hee! Sleep tight, Grumble!
-15. Perfect swap! The crown is 5 units — just like the 5 coins.
-16. There's another crown! Let's help Zippy collect it too.
-17. Each coin is 1 unit. The crown balances 7 coins, so it is 7 units. Try the 7 bar!
-18. Perfect swap! The crown is 7 units — just like the 7 coins.
-19. One more crown. Grumble is still asleep!
-20. Each coin is 1 unit. The crown balances 4 coins, so it is 4 units. Try the 4 bar!
-21. Perfect swap! The crown is 4 units — just like the 4 coins.
-22. Wait… this crown has two coins beside it.
-23. The crown and these two coins together balance seven coins.
-24. But Zippy needs a replacement for just the crown.
-25. How can we find the crown's mass?
+15. Perfect swap! Both weigh 5 units!
+16. Another crown! Let's collect it!
+17. The crown balances 7 coins. Try the 7-unit bar!
+18. Perfect! Both weigh 7 units!
+19. One more crown! Grumble's still asleep!
+20. The crown balances 4 coins. Try the 4-unit bar!
+21. Perfect! Both weigh 4 units!
+22. Wait! This crown has two coins beside it.
+23. Together, they balance 7 coins.
+24. But Zippy needs to replace only the crown.
+25. How much does the crown weigh?
 26. Let's call the crown's mass x.
-27. The crown and two coins have a total mass of x + 2.
+27. Together, the crown and coins weigh x + 2 units.
 28. They balance 7 units on the other side.
-29. So, we can write x + 2 = 7.
-30. Let's find x so Zippy can make the swap.
-31. Here, x represents the crown's mass. We need to find its value.
+29. So, x + 2 = 7.
+30. Let's find x to help Zippy swap!
+31. Here, x represents the crown's mass.
 32. A variable is a symbol that represents a value.
-33. Here, x is the variable. Its value is unknown.
-34. Now look at x + 2. It represents the total mass of the crown and the two coins.
-35. Here x is a variable, and 2 is a constant. We add them together.
-36. Adding x and 2 gives the algebraic expression x + 2.
-37. The balance shows that x + 2 equals 7.
+33. x is our variable. Its value is unknown.
+34. x + 2 represents the crown and two coins together.
+35. x is a variable, and 2 is a constant.
+36. Together, they form the algebraic expression x + 2.
+37. The balance shows x + 2 = 7.
 38. A statement that says two expressions have equal values is called an equation.
 39. The expression to the left of the equals sign is called the left-hand side, or LHS.
 40. The expression to the right of the equals sign is called the right-hand side, or RHS.
-41. Now, can you spot these parts in another equation?
-42. Drag each label to the matching box.
-43. Not quite. x represents the unknown value. It is the variable.
+41. Can you identify these parts in another equation?
+42. Drag each label to the correct box.
+43. Not quite! x is the unknown value, so it's the variable.
 44. The complete statement is an equation.
-45. Now, label the left-hand side and right-hand side.
-46. Look to the left of the equal sign. 4x + 3 is the left-hand side.
-47. Look to the right of the equal sign. 19 is the right-hand side.
-48. Brilliant! You labelled every part.
+45. Now label the LHS and RHS.
+46. 4x + 3 is on the left. That's the LHS.
+47. 19 is on the right. That's the RHS.
+48. Brilliant! You labelled every part!
 49. Let's return to the crown's equation.
-50. This equation has one variable: x.
+50. This equation has one variable, x.
 51. The power of x is 1.
-52. We usually leave the 1 unwritten.
-53. This equation has one variable, and its highest power is 1.
-54. This is called a linear equation in one variable.
+52. We usually leave the power 1 unwritten.
+53. It has one variable with a highest power of 1.
+54. This is a linear equation in one variable.
 55. Drag each equation into the correct box.
 56. Check the highest power of x.
 57. The highest power of x is 1, so this equation is linear.
@@ -702,133 +702,134 @@ Screen reader only: Gold bar 8 on the left pan: take it off the balance
 62. The expression to the left of the equals sign is the left-hand side.
 63. The expression to the right of the equals sign is the right-hand side.
 64. Now let's find the crown's mass.
-65. We need a value of x that makes both sides equal.
-66. Let's check 4. Replace x with 4 and find the value of each side.
-67. The left-hand side equals 6.
-68. The right-hand side equals 7.
-69. The two sides have different values. The balance tips!
+65. We need x to make both sides equal.
+66. Let's try x = 4. Find the value of each side.
+67. The LHS is 6.
+68. The RHS is 7.
+69. The values differ! The balance tips!
 70. So, x = 4 is not a solution.
-71. Now, let's check 5. Replace x with 5 and find the value of each side.
-72. The left-hand side equals 7.
-73. Both sides have the same value. The balance is level!
-74. A value that makes an equation true is called its solution. So, 5 is the solution.
-75. The crown's mass is 5 units. Zippy can use the 5-unit bar!
-76. Drag the 5 bar to Zippy, then tap Swap.
+71. Now try x = 5. Find both sides.
+72. The LHS is 7.
+73. Both sides are equal! The balance stays level!
+74. A value that makes an equation true is its solution. So, x = 5!
+75. The crown weighs 5 units. Zippy can swap it!
+76. Drag the 5-unit bar to Zippy, then tap Swap.
 77. Let's try 4.
-78. Give the 4 bar to Zippy.
+78. Give Zippy the 4-unit bar.
 79. Replace x with 4.
-80. Find the value of the left-hand side.
-81. Add: 4 + 3. Count on from 4: 5, 6, 7.
-82. Now find the value of the right-hand side.
-83. RHS is the number on the right of =.
-84. The right-hand side equals 9.
-85. Phew! Good thing we checked.
-86. Now, let's try 6.
-87. Give the 6 bar to Zippy.
+80. Find the LHS.
+81. Add 4 + 3. Count on: 5, 6, 7.
+82. Now find the RHS.
+83. The RHS is the number on the right of the equals sign.
+84. The RHS is 9.
+85. Phew! Good thing we checked!
+86. Now let's try 6.
+87. Give Zippy the 6-unit bar.
 88. Replace x with 6.
-89. Add: 6 + 3. Count on from 6: 7, 8, 9.
-90. The left-hand side equals 9.
-91. So, x = 6 is the solution.
+89. Add 6 + 3. Count on: 7, 8, 9.
+90. The LHS is 9.
+91. So, x = 6 is the solution!
 92. Now Zippy can swap. Tap Swap!
-93. Choose a value for x. Check whether both sides are equal.
+93. Choose a value for x. Are both sides equal?
 94. Let's check 5.
-95. Now, let's check 5.
-96. Add: 5 + 4. Count on from 5: 6, 7, 8, 9.
-97. The right-hand side equals 11.
+95. Now try x = 5.
+96. Add 5 + 4. Count on: 6, 7, 8, 9.
+97. The RHS is 11.
 98. So, x = 5 is not a solution.
-99. Try another value.
+99. Try another value!
 100. Let's check 8.
-101. Now, let's check 8.
-102. Add: 8 + 4. Count on from 8: 9, 10, 11, 12.
-103. The left-hand side equals 12.
+101. Now try x = 8.
+102. Add 8 + 4. Count on: 9, 10, 11, 12.
+103. The LHS is 12.
 104. So, x = 8 is not a solution.
 105. Let's check 7.
-106. Now, let's check 7.
-107. Add: 7 + 4. Count on from 7: 8, 9, 10, 11.
-108. The left-hand side equals 11.
-109. So, x = 7 is the solution.
-110. Another crown and two coins balance ten coins. Which value of x makes both sides equal?
-111. Replace x with your chosen value. Then compare the two sides.
-112. Now, let's check 10.
-113. Add: 10 + 2. Count on from 10: 11, 12.
-114. The right-hand side equals 10.
+106. Now try x = 7.
+107. Add 7 + 4. Count on: 8, 9, 10, 11.
+108. The LHS is 11.
+109. So, x = 7 is the solution!
+110. Another crown! Together with two coins, it balances 10 coins. Find x!
+111. Replace x with your value. Compare both sides.
+112. Now let's check 10.
+113. Add 10 + 2. Count on: 11, 12.
+114. The RHS is 10.
 115. So, x = 10 is not a solution.
-116. Now, let's check 12.
-117. Add: 12 + 2. Count on from 12: 13, 14.
-118. The left-hand side equals 14.
+116. Now let's check 12.
+117. Add 12 + 2. Count on: 13, 14.
+118. The LHS is 14.
 119. So, x = 12 is not a solution.
-120. Add: 8 + 2. Count on from 8: 9, 10.
-121. The left-hand side equals 10.
-122. So, x = 8 is the solution.
-123. Zippy spots another crown!
-124. The crown and 8 units balance 23 units.
-125. Let's try x = 10.
-126. How about x = 12?
-127. Trying different values could take a while.
-128. Can we find the crown's mass without guessing?
-129. We can split 23 units into 8 and 15.
-130. There are 8 units beside the crown. Let's see how we can remove them.
-131. Let's remove 8 units from both sides.
-132. Drag an 8 bar off each side of the balance.
-133. Now remove 8 from the other side.
-134. Now the crown balances 15 units. So, x = 15.
-135. Before Zippy swaps, let's check the answer in the original equation.
-136. Replace x with 15.
-137. Add: 15 + 8. Count on from 15: 16, 17, 18, 19, 20, 21, 22, 23.
-138. The left-hand side equals 23.
-139. The right-hand side equals 23.
-140. So, x = 15 is the solution.
-141. The crown's mass is 15 units. Zippy can use the 15-unit bar!
-142. Give the 15 bar to Zippy, then tap Swap.
-143. Let's check 23.
-144. Add: 23 + 8. Count on from 23: 24, 25, 26, 27, 28, 29, 30, 31.
-145. The left-hand side equals 31.
-146. So, x = 23 is not a solution.
-147. Let's check 31.
-148. Add: 31 + 8. Count on from 31: 32, 33, 34, 35, 36, 37, 38, 39.
-149. The left-hand side equals 39.
-150. So, x = 31 is not a solution.
-151. That works! Zippy collects the crown, and Grumble stays asleep.
-152. Each crown has the same mass, x.
-153. Two lots of x make 2x.
-154. We can split 18 units into 4 and 14.
-155. There are 4 units beside the crowns. Let's see how we can remove them.
-156. Let's remove 4 units from both sides.
-157. Drag a 4 bar off each side of the balance.
-158. Now remove 4 from the other side.
-159. The two crowns balance 14 units.
-160. We need the mass of one crown.
-161. Divide both sides into two equal groups.
-162. Each crown has a mass of 7 units. So, x = 7.
-163. Let's check. Put 7 in place of x.
-164. 2 × 7 = 14. Then add 4.
-165. The left-hand side equals 18.
-166. The right-hand side equals 18.
-167. Give a 7 bar to Zippy, then tap Swap.
-168. Let's check 9.
-169. 2 × 9 = 18. Then add 4.
-170. The left-hand side equals 22.
-171. So, x = 9 is not a solution.
-172. One more crown! Give the other 7 bar to Zippy.
-173. You've helped Zippy find the crowns' masses. Let's try a few equations.
-174. Now, use what you've learned to solve an equation.
-175. Find the value of x.
-176. Not quite! Let's do it together.
-177. Subtract 6 from both sides.
-178. Not quite.
-179. 17 − 6 = 11.
-180. Subtract 5 from both sides.
-181. 26 − 5 = 21.
-182. Divide both sides by 3.
-183. 21 ÷ 3 = 7.
-184. Add 7 to both sides.
-185. 12 + 7 = 19.
-186. Multiply both sides by 4.
-187. 6 × 4 = 24.
-188. Subtract 7 from both sides.
-189. 1 − 7 = −6.
-190. Divide both sides by 2.
-191. −6 ÷ 2 = −3.
-192. Subtract 2 from both sides.
-193. 7 − 2 = 5.
-194. Quest complete! Zippy collected all 10 crowns — and Grumble is still snoring!
+120. Now let's check 8.
+121. Add 8 + 2. Count on: 9, 10.
+122. The LHS is 10.
+123. So, x = 8 is the solution!
+124. Zippy spots another crown!
+125. The crown and 8 units balance 23 units.
+126. Let's try x = 10.
+127. How about x = 12?
+128. Guessing could take a while!
+129. Can we solve this without guessing?
+130. Split 23 into 8 and 15.
+131. There are 8 extra units beside the crown. Let's remove them.
+132. Remove 8 units from both sides.
+133. Drag an 8-unit bar off each side.
+134. Now remove 8 from the other side.
+135. The crown balances 15 units. So, x = 15!
+136. Before swapping, let's check the original equation.
+137. Replace x with 15.
+138. Add 15 + 8 to get 23.
+139. The LHS is 23.
+140. The RHS is 23.
+141. So, x = 15 is the solution!
+142. The crown weighs 15 units. Time to swap!
+143. Give Zippy the 15-unit bar, then tap Swap.
+144. Let's check 23.
+145. Add 23 + 8 to get 31.
+146. The LHS is 31.
+147. So, x = 23 is not a solution.
+148. Let's check 31.
+149. Add 31 + 8 to get 39.
+150. The LHS is 39.
+151. So, x = 31 is not a solution.
+152. It worked! Another crown collected, and Grumble's still asleep!
+153. Each crown has the same mass, x.
+154. Two crowns together have a mass of 2x.
+155. Split 18 into 4 and 14.
+156. There are 4 extra units beside the crowns. Let's remove them.
+157. Remove 4 units from both sides.
+158. Drag a 4-unit bar off each side.
+159. Now remove 4 from the other side.
+160. Two crowns balance 14 units.
+161. But what does one crown weigh?
+162. Divide both sides into two equal groups.
+163. Each crown weighs 7 units. So, x = 7!
+164. Let's check with x = 7.
+165. 2 × 7 = 14. Add 4 to get 18.
+166. The LHS is 18.
+167. The RHS is 18.
+168. Give Zippy a 7-unit bar, then tap Swap.
+169. Let's check 9.
+170. 2 × 9 = 18. Add 4 to get 22.
+171. The LHS is 22.
+172. So, x = 9 is not a solution.
+173. One more crown! Give Zippy the other 7-unit bar.
+174. You've helped Zippy find the crowns' masses. Now try a few equations!
+175. Your turn! Solve an equation.
+176. Find x.
+177. Not quite! Let's solve it together.
+178. Subtract 6 from both sides.
+179. Not quite!
+180. 17 − 6 = 11.
+181. Subtract 5 from both sides.
+182. 26 − 5 = 21.
+183. Divide both sides by 3.
+184. 21 ÷ 3 = 7.
+185. Add 7 to both sides.
+186. 12 + 7 = 19.
+187. Multiply both sides by 4.
+188. 6 × 4 = 24.
+189. Subtract 7 from both sides.
+190. 1 − 7 = −6.
+191. Divide both sides by 2.
+192. −6 ÷ 2 = −3.
+193. Subtract 2 from both sides.
+194. 7 − 2 = 5.
+195. Quest complete! Zippy collected all crowns, and Grumble's still snoring!

@@ -819,23 +819,24 @@
     // on both; the Variable label comes in under x as the voice says "x is the variable" (as it came on
     // "…our variable is x" when this was one line: review, 2026-11-07)
     { id: "l4-11", s: { hl: ["x"], bal: "crown" } },
-    { id: "l4-11b", s: { hl: ["x"], bal: "crown", tags: [{ ids: "x", text: F.variable, color: "var", cue: "x is the variable" }] }, gem: "variable" },
+    { id: "l4-11b", s: { hl: ["x"], bal: "crown", tags: [{ ids: "x", text: F.variable, color: "var", cue: "x is our variable" }] }, gem: "variable" },
     // No box round x + 2, so its labels read clearly; each label comes in as the voice names it (review,
     // 2026-11-07: "We don't need a box around x + 2 so that the labelling becomes clear. Labelling
     // should come synced with VO.")
     // x + 2 lights up together with the crown and the two coins, all in the same soft gold, and no copy
     // of them stands over the equation (review, 2026-11-13: "Highlight x + 2 together with the crown and
     // two coins. Remove the duplicate crown and coins above the equation"; s.mini is no longer used)
-    { id: "l4-12", s: { hl: ["x", "plus", "two"], bal: "left", cue: { hl: "at x", bal: "at x" } } },
-    // each label comes in as the voice names it (variable, constant, addition), lighting its sign in its
-    // colour and what it stands for on the balance: the crown for x, then the two coins for 2, then both
-    // as "We add them together" is said (review, 2026-11-13)
+    { id: "l4-12", s: { hl: ["x", "plus", "two"], bal: "left", cue: { hl: "x", bal: "x" } } },
+    // each label comes in as the voice names it, lighting its sign in its colour and what it stands for
+    // on the balance: variable and the crown for x, addition and both for + as the voice joins them
+    // ("and"), then constant and the two coins for 2 (review, 2026-11-13; the line's "We add them
+    // together", on which addition came last, is not in the text of 2026-11-19)
     {
       id: "l4-13",
       s: {
         tags: [
           { ids: "x", text: F.variableWord, color: "var", cue: "x is a variable", lights: { tok: "var", pan: "crown" } },
-          { ids: "plus", text: F.addition, color: "op", row: 1, cue: "We add", lights: { tok: "op", pan: "both" } },
+          { ids: "plus", text: F.addition, color: "op", row: 1, cue: "variable, and", lights: { tok: "op", pan: "both" } },
           { ids: "two", text: F.constant, color: "const", cue: "2 is a constant", lights: { tok: "const", pan: "coins" } },
         ],
       },
@@ -849,7 +850,7 @@
     // the level beam and = light up together, in gold, as the voice says "equals" (review, 2026-11-13:
     // "Highlight the level beam and = together when the VO says 'equals'"; the whole balance used to
     // glow, and = to pulse, from the start of the line)
-    { id: "l4-15", s: { hl: ["eq"], cue: { hl: "equals" }, beam: "equals" } },
+    { id: "l4-15", s: { hl: ["eq"], cue: { hl: "2 =" }, beam: "2 =" } },
     // "…says two expressions have equal values…": the two expressions light up one after the other, x + 2
     // on "two", then 7 on "have" (review, 2026-11-18: "when we are saying the two expressions have equal
     // values, highlight first x + 2 and then 7"), then = as the voice says "equal values"; at the end of
@@ -900,8 +901,8 @@
   // all along, like on a board; the working goes under it.
   // Each row of the working is written in by hand as the voice says it, every number as it is said
   // (review, 2026-11-16: "animation se dikhao likhte hue: LHS: 4 + 2 = 6", "ekdum appear kyu horha hai",
-  // "jab VO bole 7 tb 7 aana chahie"): "Try x =" on "check", its 4 on "4"; LHS on "left-hand", 4 + 2
-  // straight after, = on "equals", 6 on "6". The side the voice is on lights up with its pan and its part
+  // "jab VO bole 7 tb 7 aana chahie"): "Try x =" on "try", its 4 on "4"; LHS on "LHS", 4 + 2
+  // straight after, = on "is", 6 on "6". The side the voice is on lights up with its pan and its part
   // of the equation, and the side before fades a little ("jab RHS ki baat hoti toh LHS thda fade ho skta
   // hai"). "Try x = 4", LHS and RHS stand on one = under another (review, 2026-11-18: "Check the alignment
   // of text in x = 8 for all equations"). The crown is only replaced once both sides have been worked
@@ -916,9 +917,9 @@
   const lhsText = (v, s) => `${UI.lhs} = ${v} + 2 = ${s}`;
   const rhsText = `${UI.rhs} = 7`;
   const tryRow = (v, more) => Object.assign({ t: tryText(v), cls: "try side" }, more);
-  const tryWrite = (v) => tryRow(v, { write: [{ cue: "check", text: `${UI.tryWord} x =` }, { cue: `${v}.`, text: String(v) }] });
-  const lhsWrite = (v, s) => ({ t: lhsText(v, s), cls: "side lit lhs", write: [{ cue: "left-hand", text: `${UI.lhs} =` }, { text: `${v} + 2` }, { cue: "equals", text: "=" }, { cue: `${s}.`, text: String(s) }] });
-  const rhsWrite = { t: rhsText, cls: "side lit rhs", write: [{ cue: "right-hand", text: `${UI.rhs} =` }, { cue: "7.", text: "7" }] };
+  const tryWrite = (v) => tryRow(v, { write: [{ cue: "try", text: `${UI.tryWord} x =` }, { cue: `${v}.`, text: String(v) }] });
+  const lhsWrite = (v, s) => ({ t: lhsText(v, s), cls: "side lit lhs", write: [{ cue: "LHS", text: `${UI.lhs} =` }, { text: `${v} + 2` }, { cue: "LHS is", text: "=" }, { cue: `${s}.`, text: String(s) }] });
+  const rhsWrite = { t: rhsText, cls: "side lit rhs", write: [{ cue: "RHS", text: `${UI.rhs} =` }, { cue: "7.", text: "7" }] };
   // the ending's first screen: the working as it is, both sides lit with their pans on "two sides" ("Both
   // sides"), the balance as the voice says it (cue: its word)
   const balanceBeat = (id, v, s, cue, steps) => ({
@@ -944,38 +945,38 @@
         hl: ["x"],
         lhs: true,
         rhs: true,
-        cue: { hl: "a value of x", lhs: "makes both sides", rhs: "makes both sides" },
+        cue: { hl: "need x", lhs: "make both sides", rhs: "make both sides" },
         steps: [
-          { cue: "a value of x", bal: "crown" },
-          { cue: "makes both sides", bal: null, pans: true },
+          { cue: "need x", bal: "crown" },
+          { cue: "make both sides", bal: null, pans: true },
         ],
       },
     },
     // "Let's check 4. Replace x with 4…": Try x = 4 written under the equation (its 4 as "4" is said); x
     // lights up as "Replace x" is said (the x that gets the 4), until "find the value"
-    { id: "l4-25", s: { hl: ["x"], cue: { hl: "Replace x", hlOut: "find the" }, rows: [tryWrite(4)], steps: [{ restore: true }] } },
+    { id: "l4-25", s: { hl: ["x"], cue: { hl: "try x", hlOut: "Find the" }, rows: [tryWrite(4)], steps: [{ restore: true }] } },
     // "The left-hand side equals 6.": LHS = 4 + 2 = 6 written as it is said; x + 2 and the left pan's things
-    // (the crown and its two coins) light up teal on "left-hand"
+    // (the crown and its two coins) light up teal on "LHS"
     {
       id: "l4-26",
-      s: { lhs: true, cue: { lhs: "left-hand" }, rows: [tryRow(4), lhsWrite(4, 6)], steps: [{ restore: true }, { cue: "left-hand", side: "left" }] },
+      s: { lhs: true, cue: { lhs: "LHS" }, rows: [tryRow(4), lhsWrite(4, 6)], steps: [{ restore: true }, { cue: "LHS", side: "left" }] },
     },
     // "The right-hand side equals 7.": RHS = 7 written as it is said; 7 and the right pan's coins light up
-    // orange on "right-hand", while the left side (its row, x + 2, its pan) fades back a little
+    // orange on "RHS", while the left side (its row, x + 2, its pan) fades back a little
     {
       id: "l4-26b",
       s: {
         lhs: true,
         rhs: true,
-        cue: { rhs: "right-hand" },
-        fade: { cue: "right-hand", ids: LHS },
-        rows: [tryRow(4), { t: lhsText(4, 6), cls: "side", lit: { cue: "right-hand", cls: "faded" } }, rhsWrite],
-        steps: [{ restore: true }, { cue: "right-hand", side: "right" }],
+        cue: { rhs: "RHS" },
+        fade: { cue: "RHS", ids: LHS },
+        rows: [tryRow(4), { t: lhsText(4, 6), cls: "side", lit: { cue: "RHS", cls: "faded" } }, rhsWrite],
+        steps: [{ restore: true }, { cue: "RHS", side: "right" }],
       },
     },
     // both sides worked out: the crown makes way for 4 coins; "The two sides have different values. The
     // balance tips!", the balance tipping on "tips"
-    balanceBeat("check-diff", 4, 6, { both: "two sides" }, [{ cue: "balance tips", tilt: true }]),
+    balanceBeat("check-diff", 4, 6, { both: "The values" }, [{ cue: "balance tips", tilt: true }]),
     // "So, x = 4 is not a solution.": the working fades, x = 4 red on "x = 4"
     // (the balance stays tipped; come back to with Back, the coins are put in again and it tips once more)
     {
@@ -985,28 +986,28 @@
     },
     // "Now, let's check 5…": the 4 coins go and the crown is back (level again), the working for 4 is
     // cleared, and Try x = 5 is written (its 5 as "5" is said)
-    { id: "l4-27", clear: true, s: { hl: ["x"], cue: { hl: "Replace x", hlOut: "find the" }, rows: [tryWrite(5)], steps: [{ restore: true }] } },
+    { id: "l4-27", clear: true, s: { hl: ["x"], cue: { hl: "try x", hlOut: "Find both" }, rows: [tryWrite(5)], steps: [{ restore: true }] } },
     {
       id: "l4-28",
-      s: { lhs: true, cue: { lhs: "left-hand" }, rows: [tryRow(5), lhsWrite(5, 7)], steps: [{ restore: true }, { cue: "left-hand", side: "left" }] },
+      s: { lhs: true, cue: { lhs: "LHS" }, rows: [tryRow(5), lhsWrite(5, 7)], steps: [{ restore: true }, { cue: "LHS", side: "left" }] },
     },
     {
       id: "l4-28b",
       s: {
         lhs: true,
         rhs: true,
-        cue: { rhs: "right-hand" },
-        fade: { cue: "right-hand", ids: LHS },
-        rows: [tryRow(5), { t: lhsText(5, 7), cls: "side", lit: { cue: "right-hand", cls: "faded" } }, rhsWrite],
-        steps: [{ restore: true }, { cue: "right-hand", side: "right" }],
+        cue: { rhs: "RHS" },
+        fade: { cue: "RHS", ids: LHS },
+        rows: [tryRow(5), { t: lhsText(5, 7), cls: "side", lit: { cue: "RHS", cls: "faded" } }, rhsWrite],
+        steps: [{ restore: true }, { cue: "RHS", side: "right" }],
       },
     },
     // both sides worked out: the crown makes way for 5 coins; "Both sides have the same value. The balance
     // is level!", its hub flashing on "level"
-    balanceBeat("check-same", 5, 7, { both: "Both sides" }, [{ cue: "is level", tilt: true, flash: true }]),
+    balanceBeat("check-same", 5, 7, { both: "Both sides" }, [{ cue: "stays level", tilt: true, flash: true }]),
     // "A value that makes an equation true is called its solution. So, 5 is the solution.": the working
     // fades, x = 5 is left under the equation, green on "So, 5"
-    { id: "l4-29", s: { rows: verdictRows(5, 7, { cue: "So, 5", cls: "lit-ok" }), steps: [{ sub: 5 }] }, gem: "solution" },
+    { id: "l4-29", s: { rows: verdictRows(5, 7, { cue: "So, x = 5", cls: "lit-ok" }), steps: [{ sub: 5 }] }, gem: "solution" },
   ];
 
   // The linear equation is shown in the equation itself, in step with the voice, with no labels
