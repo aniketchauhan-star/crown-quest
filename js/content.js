@@ -170,7 +170,6 @@ window.CONTENT = {
 
     // Practice: try a few equations (the words for each equation are in `practice` below)
     "p-intro": "You've helped Zippy find the crowns' masses. Let's try a few equations.",
-    "p-done": "Great work! You solved every equation.",
 
     // Finale (heard, not shown in the question bar: Zippy dances; the title and the replay button are
     // in `finale`, below)
@@ -219,7 +218,8 @@ window.CONTENT = {
     lhs: "LHS",
     rhs: "RHS",
     // read by screen readers only (not shown): the question bar's hear-it-again button, the gold bars ({v} = the
-    // bar's number; {side} = left or right), the boxes to fill in, and practice's list of answers
+    // bar's number; {side} = left or right), the boxes to fill in, practice's list of answers and its answer box
+    // before its tiles are out
     hearAgain: "Hear it again",
     goldBar: "Gold bar {v}",
     goldBarTried: "Gold bar {v}, already tried",
@@ -229,6 +229,7 @@ window.CONTENT = {
     rhsValue: "Right-hand side value",
     emptyBox: "Empty label box",
     answers: "Answers",
+    showAnswers: "Answer box: tap to see the numbers",
   },
 
   // The words written on Level 4's formula screen, each as the voice names its part (js/activities.js:
@@ -243,10 +244,6 @@ window.CONTENT = {
     lhs: "Left-hand side (LHS)",
     rhs: "Right-hand side (RHS)",
     linear: "Linear equation in one variable",
-    // what a value tried turns out to be, written under it once the working has faded (review, 2026-11-18:
-    // "change 'Try x = 6' to a clear x = 6"): on the formula screen and in every check of Levels 5–9
-    solution: "Solution",
-    notSolution: "Not a solution",
   },
 
   // Every screen of the quest, in order: the list in the top left corner jumps to any of them (and
@@ -432,7 +429,6 @@ window.CONTENT = {
     words: {
       choose: "Choose", // the list, before a number is chosen
       check: "Check",
-      allDone: "You solved all {n} equations!",
     },
     problems: [
       {

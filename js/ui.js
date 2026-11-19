@@ -1947,8 +1947,7 @@
     // value"), the value plain, with no box round it (review, 2026-11-18: "4 is not required to put in a
     // box. SAME WHEN WE TRY FOR x = 6 and other values"); LHS = 4 + 3 = □, when the left side is worked
     // out; RHS = □ under it, when the right side is (or RHS = 23, when it is given); then the ending's two
-    // screens (flow.js, checkRoutine; confirm, below). The name under x = 4 (Solution, Not a solution)
-    // hangs from the = of its row.
+    // screens (flow.js, checkRoutine; confirm, below).
     async show(eq) {
       this.eq = eq;
       const k = eq.k || 1;
@@ -1957,12 +1956,15 @@
       this.eqRow.className = "cp-side eqn";
       this.eqRow.innerHTML = `<span class="lab">${CQ.rich(`${k > 1 ? k : ""}x + ${eq.a}`)}</span><span class="op e1">=</span><span class="rest">${CQ.num(eq.b)}</span>`;
       this.xRow.className = "cp-side try";
-      this.xRow.innerHTML = `<span class="lab"><span class="tw">${U.tryWord}</span> <i class="v">x</i></span><span class="op e1">=<span class="cp-name"></span></span><span class="rest"><span class="xval"></span></span>`;
+      this.xRow.innerHTML = `<span class="lab"><span class="tw">${U.tryWord}</span> <i class="v">x</i></span><span class="op e1">=</span><span class="rest"><span class="xval"></span></span>`;
       // each side: its name, =, then the rest (its expression, = and its value; or only its value), the
       // sides' first = signs under the equation's, so the right side's box stands under the 4 (same review:
       // "After the answer, reveal RHS = □ directly below, with the first equals signs aligned", "place a
       // single input box directly after RHS:, aligned beneath the 4 in the LHS row"; it was RHS: 9 = ?).
-      // x in the left side is plain too: the value takes its place, unboxed.
+      // x in the left side is plain too: the value takes its place, unboxed. The left side's value stays on
+      // its own line, after the expression, all on one baseline: LHS = 15 + 8 = 23 (review, 2026-11-19:
+      // "23 is equal to should same line in 15 is equal to"; = 23 put on a line of its own under it, left
+      // of 15 + 8, was turned down the same day: "Please don't do this like this… in all game").
       this.lhs.className = "cp-side lhs";
       this.rhs.className = "cp-side rhs";
       this.lhs.innerHTML = `<span class="lab">${U.lhs}</span><span class="op e1">=</span><span class="rest"><span class="ex">${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a}</span></span><span class="eqv"><span class="op">=</span><button type="button" class="blank" data-k="lhs" aria-label="${U.lhsValue}">?</button></span></span>`;
@@ -2006,7 +2008,7 @@
         this.isOpen = false;
         document.body.classList.remove("checking");
         this.el.classList.add("hidden");
-        [this.lhs, this.rhs, this.xRow].forEach((s) => s.classList.remove("lit", "faded", "gone", "sure", "lit-ok", "lit-no"));
+        [this.lhs, this.rhs, this.xRow].forEach((s) => s.classList.remove("lit", "faded", "sure", "lit-ok", "lit-no"));
         return Promise.resolve();
       }
       return CQ.anim(this.el, [{ transform: "translate(-50%, 0)", opacity: 1 }, { transform: "translate(-50%, 60px)", opacity: 0 }], {
@@ -2063,26 +2065,18 @@
     cells() {
       return [...this.eqRow.children, ...this.xRow.children, ...this.pieces(this.lhs), ...this.pieces(this.rhs)];
     },
-    // Screen 2 of the check's ending (review, 2026-11-18: "Confirm the solution. Fade the calculations and
-    // change 'Try x = 6' to a clear x = 6"): the two sides fade away, and "Try" with them, leaving x = 6
-    // under the equation, its = under the equation's; it lights green as the voice says "x = 6" (red for a
-    // value that is not a solution: "So, x = 4 is not a solution."), and its name, Solution (or Not a
-    // solution), is written in under it as the voice gets to "solution". No tick: the name says it ("See
-    // if tick is not required"). cue = { lit, name }: the words they wait for in line.
+    // Screen 2 of the check's ending (review, 2026-11-18: "change 'Try x = 6' to a clear x = 6"): "Try"
+    // fades, leaving x = 6 under the equation, its = under the equation's; it lights green as the voice
+    // says "x = 6" (red for a value that is not a solution: "So, x = 4 is not a solution."). The working
+    // under it, LHS and RHS, stays in full view, unlit (review, 2026-11-19: "before we remove LHS and RHS
+    // part, so please add this part again"; it faded away, 2026-11-18). Nothing is written under x = 6,
+    // no Solution / Not a solution (review, 2026-11-19: "do not write not a solution and this kind of
+    // things in this game"): the voice says it. cue = { lit }: the words the light waits for in line.
     async confirm(ok, line, cue) {
       this.lightSide(null);
-      this.lhs.classList.add("gone");
-      this.rhs.classList.add("gone");
       this.xRow.classList.add("sure");
       if (cue.lit) await CQ.run.when(CQ.caption.when(line, cue.lit));
       this.xRow.classList.add(ok ? "lit-ok" : "lit-no");
-      if (cue.name) await CQ.run.when(CQ.caption.when(line, cue.name));
-      const name = this.xRow.querySelector(".cp-name");
-      name.className = "cp-name " + (ok ? "ok" : "no");
-      name.textContent = ok ? C().formula.solution : C().formula.notSolution;
-      CQ.audio.play("ui.pop", { volume: 0.5 });
-      CQ.anim(name, [{ opacity: 0, transform: "scale(.85)" }, { opacity: 1, transform: "scale(1)" }], { duration: 320, easing: CQ.EASE.out, keep: false });
-      await CQ.run.wait(CQ.writeIn(name, 120, 45) + 60);
     },
     // The side the voice is saying the value of glows in its colour; the other side's glow fades, the
     // row itself staying as it is, in full view ("The left-hand side equals 7" with LHS = 4 + 3 = 7 lit:
@@ -2170,6 +2164,7 @@
       const before = row ? null : Array.from(this.el.children).map((r) => [r, r.getBoundingClientRect().top]);
       if (!row) {
         this.el.querySelectorAll(".eb-row").forEach((r) => r.classList.add("done"));
+        this.unmark(); // the step before is done: its − 8 / ÷ 2 marks go back to plain
         row = CQ.el("div", "eb-row", this.el);
       }
       // its left side, =, its right side: every row's = stands in the middle of the board, under the
@@ -2222,6 +2217,11 @@
         n = next;
       }
       return span;
+    },
+    // The {{…}} marks of the rows so far (− 8 on both sides, ÷ 2) back to plain, their boxes fading: lit
+    // only while their step is talked about (asked 2026-11-19: "after this no need to highlight").
+    unmark() {
+      this.el.querySelectorAll(".same").forEach((e) => e.classList.add("unmark"));
     },
     // Parts of the last row left out by set's hold come in, gently: what stands beside them glides
     // over to make room (the left side grows to the left, its = staying under the others).

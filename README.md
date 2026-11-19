@@ -208,7 +208,7 @@ All text, voice lines, level numbers, answer choices and feedback live in **`js/
 
 ## Voice and sound
 
-**Voice:** every line is a recorded voice-over in `assets/vo/` (348 Ogg Opus clips, 35 minutes, 6.6 MB), but for 17 new lines of the review of 2026-11-18 that wait for a recording and are read by the device voice meanwhile (`docs/VO_LINES_TO_MAKE.txt` lists them, in the order to read them; 17 more of that review's lines were cut from the user's own recordings by `tools/vo_cut.py`). Since 2026-11-18 every line, Zippy's too, is in one man's voice, from the user's own recordings (the studio's woman teacher and boy voices before that are in the git history, commit 9d2ffad). 63 of the lines (the newer Level 4 lines, the label activity's, the checks' "The left-hand side equals …" lines and much of Levels 8–9's working) are in a man's voice: the TTS studio was out of credit, so the user recorded them on 2026-11-18 and chose to use those recordings (docs/VOICEOVER.md, "The lines from the user's recording", also says how to give them the woman's voice later). A recorded line types itself into the caption word by word as it is said, and everything a line names (a number, a label, a highlight, a row of working) comes in as the voice says that word ("when the VO says 7, 7 should appear": review, 2026-11-16). The game knows when each word of every clip is said (`js/vo_lines.js`, worked out by `tools/vo_timing.py` with an offline speech recogniser); a line read by the device voice follows the words that voice says it has got to. How the clips were made, how the game plays them, how the word timings are worked out, and how to remake a line are in **[docs/VOICEOVER.md](docs/VOICEOVER.md)**. A line without a recording, or a browser that can't play the clips (an older Safari, on an iPad or Mac that hasn't been updated), uses the device's built-in voice instead. `?vo=0` in the address turns the recordings off.
+**Voice:** every line is a recorded voice-over in `assets/vo/` (197 Ogg Opus clips, 12 minutes, 2.4 MB). Of the review of 2026-11-18's new lines, 17 were recorded by the user (`new.mp3`, cut by `tools/vo_split.py`) and 17 were cut from their earlier recordings by `tools/vo_cut.py`. Since 2026-11-18 every line, Zippy's too, is in one man's voice, from the user's own recordings (the studio's woman teacher and boy voices before that are in the git history, commit 9d2ffad). 63 of the lines (the newer Level 4 lines, the label activity's, the checks' "The left-hand side equals …" lines and much of Levels 8–9's working) are in a man's voice: the TTS studio was out of credit, so the user recorded them on 2026-11-18 and chose to use those recordings (docs/VOICEOVER.md, "The lines from the user's recording", also says how to give them the woman's voice later). A recorded line types itself into the caption word by word as it is said, and everything a line names (a number, a label, a highlight, a row of working) comes in as the voice says that word ("when the VO says 7, 7 should appear": review, 2026-11-16). The game knows when each word of every clip is said (`js/vo_lines.js`, worked out by `tools/vo_timing.py` with an offline speech recogniser); a line read by the device voice follows the words that voice says it has got to. How the clips were made, how the game plays them, how the word timings are worked out, and how to remake a line are in **[docs/VOICEOVER.md](docs/VOICEOVER.md)**. A line without a recording, or a browser that can't play the clips (an older Safari, on an iPad or Mac that hasn't been updated), uses the device's built-in voice instead. `?vo=0` in the address turns the recordings off.
 
 If you change the words of a line in `js/content.js`, its recording no longer matches, so the device voice reads it until you make a new one (docs/VOICEOVER.md, "Remaking a line").
 
@@ -223,6 +223,7 @@ If you change the words of a line in `js/content.js`, its recording no longer ma
 ```
 git fetch --unshallow            # (this folder keeps only the latest version of the history)
 git checkout f4b01c4 -- art      # f4b01c4: the last version with art/ in it
+git checkout 7f4da8a -- "art/zippy/zippy dance.png"   # added later (the finale's dance); taken out 2026-11-19
 ```
 
 or download the `art` folder from GitHub at that commit (https://github.com/aniketchauhan-star/crown-quest/tree/f4b01c4/art).
@@ -329,6 +330,10 @@ assets/elements/    the pieces cut from art/ui/elements.png (generated)
 manifest.webmanifest      lets a phone or tablet open the game full screen from its home screen
 (art/                the original pictures: taken out of the folder on 2026-11-13, kept in the git history;
                     see "Replace the artwork" to bring it back)
+(the voice recordings: the user's own readings the clips were cut from ("part 1.mp3" … "part 6 (1).mp3",
+                    "1 (1).mp3", "2 (1).mp3", "new.mp3") moved out of the game on 2026-11-19 to the folder
+                    "crown quest recordings" beside it; all but new.mp3 are also in the git history, 7f4da8a.
+                    tools/vo_split.py takes a recording's path, so give it the one there)
 docs/VOICEOVER.md         how the voice-over was made, how the game plays it, how to remake a line
 docs/prompts/             the prompts that made the art sheets (ChatGPT-*.md) and the game's first build prompt
 tools/prepare_assets.py   rebuilds assets/ from the original PNGs in art/

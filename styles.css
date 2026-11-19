@@ -720,7 +720,12 @@ html[data-shade] .stage-edge::after {
   border-radius: 0.08em;
   transform: translate(-50%, -50%) rotate(35deg);
 }
+/* The x's bottom stands on the same line as the numbers' bottoms (review, 2026-11-19: "x in downside, 4
+   in upside, they should in one line… in bottom"): its curled feet dip 0.023em under the baseline, the
+   numbers' 0–0.008em, so it is lifted 0.02em, everywhere (a nudge that takes no room). */
 .v {
+  position: relative;
+  top: -0.02em;
   font-family: var(--math);
   font-style: italic;
   font-weight: 400; /* its own weight (it is drawn heavy), never a made-up bold */
@@ -2242,8 +2247,8 @@ html.reduced-motion .hand-ring.b {
    plain, in full view ("Keep the previous calculation visible"). All three on one grid, name | = | the
    rest, every = under the one above (review, 2026-11-18: "Check the alignment of text in x = 8"). At the
    end the working fades away (gone), "Try" with it (sure), and x = 4 is left, lit red (not a solution)
-   or green (the solution), its name under its = (review, 2026-11-18: "Fade the calculations and change
-   'Try x = 6' to a clear x = 6"). */
+   or green (the solution) (review, 2026-11-18: "Fade the calculations and change 'Try x = 6' to a clear
+   x = 6"), with nothing written under it (review, 2026-11-19). */
 .notebook .nb-row.try {
   color: #ffd84d;
 }
@@ -2257,41 +2262,16 @@ html.reduced-motion .hand-ring.b {
 .notebook .nb-row.try.sure .tw {
   opacity: 0;
 }
-.notebook .nb-row.try .se {
-  position: relative;
-}
 .notebook .nb-row.gone {
   opacity: 0;
 }
-.notebook .nb-name {
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  translate: -50% 0;
-  margin-top: 22px;
-  padding: 8px 22px 2px;
-  border-radius: 18px;
-  font: 800 40px/1.1 var(--font);
-  white-space: nowrap;
-  text-shadow: none;
-}
-.notebook .nb-name:empty {
-  display: none;
-}
-.notebook .nb-row .nb-name.ok {
-  color: #07301d;
-  background: #74f0ac;
-  text-shadow: none;
-}
-.notebook .nb-row .nb-name.no {
-  color: #3d0c06;
-  background: #ff8f80;
-  text-shadow: none;
-}
+/* every part of a row on one baseline: "Try x" (its smaller italic "Try" and the x's own face made its
+   cell's line sit 4 px lower than "= 4"; review, 2026-11-19: "they should in one line") */
 .notebook .nb-row.side {
   display: grid;
   grid-template-columns: 200px auto 400px;
   column-gap: 20px;
+  align-items: baseline;
 }
 .notebook .nb-row.side .sl {
   justify-self: end;
@@ -2626,9 +2606,6 @@ body.checking .cp-side.lhs .lab,
 body.checking .cp-side.rhs .lab {
   font-size: 58px;
 }
-body.checking .cp-side .e1 {
-  position: relative; /* the name under x = 4 hangs from it */
-}
 body.checking .cp-side .rest,
 body.checking .cp-side .ex,
 body.checking .cp-side .eqv {
@@ -2647,7 +2624,8 @@ body.checking .cp-side.eqn > * {
 }
 /* "Try x = 4": the value tried for x, clearly a try (review, 2026-11-13), all in gold, the value plain
    with no box round it (review, 2026-11-18: "4 is not required to put in a box"). At the end "Try" fades
-   and x = 4 is left, lit with what it turns out to be (green: the solution; red: not a solution). */
+   and x = 4 is lit with what it turns out to be (green: the solution; red: not a solution), the LHS and
+   RHS working kept under it (review, 2026-11-19). */
 body.checking .cp-side.try > * {
   color: #ffd84d;
   transition: color 0.5s ease, text-shadow 0.5s ease, opacity 0.6s ease;
@@ -2673,32 +2651,6 @@ body.checking .cp-side.try.lit-no > * {
   color: #ff8f80;
   text-shadow: 0 0 18px rgba(255, 143, 128, 0.7);
 }
-/* its name under it, written in: Solution (green) or Not a solution (red), like Level 4's */
-body.checking .cp-name {
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  translate: -50% 0;
-  margin-top: 26px;
-  padding: 8px 24px 2px;
-  border-radius: 18px;
-  font: 800 44px/1.1 var(--font);
-  white-space: nowrap;
-  text-shadow: none;
-}
-body.checking .cp-name:empty {
-  display: none;
-}
-body.checking .cp-side.try .cp-name.ok {
-  color: #07301d;
-  background: #74f0ac;
-  text-shadow: none;
-}
-body.checking .cp-side.try .cp-name.no {
-  color: #3d0c06;
-  background: #ff8f80;
-  text-shadow: none;
-}
 /* as each side's value is said, it glows softly in its colour; the glow of the side before fades, the
    row staying in full view (review, 2026-11-13: "Fade the previous highlight") */
 body.checking .cp-side > *,
@@ -2709,10 +2661,6 @@ body.checking .cp-side .blank {
    ki baat hoti toh LHS thda fade ho skta hai") */
 body.checking .cp-side.faded > * {
   opacity: 0.45;
-}
-/* the working done with, on the ending's second screen ("Fade the calculations"): both sides fade away */
-body.checking .cp-side.gone > * {
-  opacity: 0;
 }
 body.checking .cp-side.lit > * {
   text-shadow: 0 0 16px currentColor;
@@ -2742,6 +2690,7 @@ body.checking .check-panel .blank {
   border: none;
   font-size: inherit;
   line-height: inherit;
+  text-shadow: inherit; /* (a button has none of its own) it glows with its side, LHS = 15 + 8 = 23 lit as one */
 }
 /* x in the left side, and the value put in for it: plain like the rest of the row */
 body.checking .check-panel .xslot {
@@ -2806,6 +2755,15 @@ body.solving .eb-row {
   transition: color 0.5s ease, background-color 0.5s ease, border-color 0.5s ease;
 }
 .mark-new.unmark {
+  color: inherit;
+  background: transparent;
+  border-color: transparent;
+}
+/* {{…}}, the same thing done to both sides (− 7, ÷ 2), likewise: lit while its step is talked about,
+   plain like the rest of its row once the step is done (asked 2026-11-19: "This should highlight in
+   start… after this no need to highlight… Do this where these type of things come"): its box fades, the
+   numbers stay where they are. (body: it outranks the lit and activity colours of .same.) */
+body .same.unmark {
   color: inherit;
   background: transparent;
   border-color: transparent;
@@ -3360,29 +3318,6 @@ body.solving .eb-row.final {
   min-width: 0;
   padding: 0;
   border: none;
-}
-.pr-done {
-  font: 800 76px/1.1 var(--font);
-  color: var(--ok);
-  text-align: center;
-}
-.pr-gems {
-  display: flex;
-  gap: 22px;
-}
-.pr-gems .gem {
-  animation: gemBob 1.2s ease-in-out infinite alternate;
-}
-.pr-gems .gem:nth-child(even) {
-  animation-delay: 0.3s;
-}
-@keyframes gemBob {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-14px);
-  }
 }
 
 /* ---------------------------------------------------------------- title + loading + rotate */
@@ -4366,9 +4301,6 @@ html.lite #title .t-drift {
   opacity: 0.8;
   box-shadow: none;
 }
-.activity .pr-done {
-  color: #74f0ac;
-}
 .activity .same {
   color: #8fc0ff;
   background: rgba(143, 192, 255, 0.16);
@@ -4616,6 +4548,15 @@ html.reduced-motion .thought.tip .ms-alarm {
   background: url(assets/elements/tile.webp) center / 100% 100% no-repeat;
   opacity: 0.14;
   filter: grayscale(0.7);
+  transition: opacity 0.3s ease-out;
+}
+/* the tiles still in the box (asked 2026-11-19: they come out as a drop-down when the box is tapped):
+   unseen, their room kept, so nothing moves when they come */
+.nt-tray.nt-shut .nt-tile {
+  visibility: hidden;
+}
+.nt-tray.nt-shut .nt-slot::before {
+  opacity: 0;
 }
 .nt-tile {
   position: absolute;
@@ -4687,7 +4628,45 @@ html.reduced-motion .thought.tip .ms-alarm {
 }
 /* the answer box: it breathes while it waits, and lights up gold while a tile is held over it */
 .nt-drop {
+  position: relative;
   transition: scale 0.15s ease-out, border-color 0.2s ease, background-color 0.2s ease, color 0.3s ease;
+}
+/* with its tiles still in it, it is a button with a little gold arrow under it, nodding down: tap, and
+   they drop out (the arrow fades as they come) */
+.nt-drop.nt-shut {
+  cursor: pointer;
+}
+.nt-drop.nt-shut:focus-visible {
+  outline: 4px solid #ffd84d;
+  outline-offset: 8px;
+}
+.nt-drop::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 22px;
+  height: 22px;
+  margin: 2px 0 0 -11px;
+  border-right: 7px solid #ffd84d;
+  border-bottom: 7px solid #ffd84d;
+  border-radius: 0 0 5px 0;
+  rotate: 45deg;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in;
+}
+.nt-drop.nt-shut::after {
+  opacity: 1;
+  animation: ntNod 0.8s ease-in-out infinite alternate;
+}
+@keyframes ntNod {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 0 10px;
+  }
 }
 .nt-drop.nt-empty {
   animation: blankPulse 0.9s ease-in-out infinite alternate;

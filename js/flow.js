@@ -1009,9 +1009,9 @@
   // ending into two screens… as one screen currently looks cluttered", for every value tried): the
   // working stays as it is while "Both sides have the same value. The balance is level!" is said (or
   // "The two sides have different values. The balance tips!"), both sides lit on "Both sides", the hub
-  // flashing on "level" (the balance tipping on "tips"); then the working fades away, "Try" with it,
-  // and x = 6 is left under the equation, green ("So, x = 6 is the solution.", its name written under
-  // it on "solution"; red, "Not a solution", for a value that isn't).
+  // flashing on "level" (the balance tipping on "tips"); then "Try" fades and x = 6 is lit green under the
+  // equation ("So, x = 6 is the solution."; red for a value that isn't), the LHS and RHS working staying
+  // under it (review, 2026-11-19).
   // o: { from, line, find, rhsGiven }  (line ids from content.js)
   async function checkRoutine(L, v, o) {
     o = o || {};
@@ -1133,13 +1133,13 @@
     tip(); // (the line was skipped before its word)
     lights(null);
     cp.lightSide(null);
-    // Screen 2, what the value is: the working fades away, "Try" with it, and x = 6 is left under the
-    // equation, green as the voice says "x = 6" (red for a value that isn't a solution), its name written
-    // in under it on "solution".
+    // Screen 2, what the value is: "Try" fades and x = 6 lights green under the equation as the voice says
+    // "x = 6" (red for a value that isn't a solution), the LHS and RHS working staying in full view under
+    // it (review, 2026-11-19: "please add this part again"); nothing written under x = 6 (same day).
     const solId = eq ? "check-sol" : "check-not-sol";
     const solText = CQ.T(solId, vars);
     const saidSol = say(solId, { vars, hold: 1800 });
-    await R.when(cp.confirm(eq, solText, { lit: `x = ${CQ.num(v)}`, name: eq ? "the solution" : "a solution" }));
+    await R.when(cp.confirm(eq, solText, { lit: `x = ${CQ.num(v)}` }));
     await saidSol;
     b.clearCounts();
     // the crown back on its pan before the view goes back to the scene
@@ -1614,7 +1614,9 @@
     b.flashEmblem();
     await R.wait(600);
     // The removal done, the trays go, with the 8 bars on them: the crown stands opposite the 15 bar on
-    // their own (review, 2026-11-08: "hide the drop trays once the removal is complete").
+    // their own (review, 2026-11-08: "hide the drop trays once the removal is complete"); the − 8s in
+    // the working go back to plain with them, the removal talked about no more (asked 2026-11-19).
+    eb.unmark();
     await R.when(hideTrays(trays));
     await R.wait(400);
     // "Now the crown balances 15 units. So, x = 15." (review, 2026-11-08): the crown lights up as it is
