@@ -426,14 +426,17 @@
       if (s.rows) {
         const rows = CQ.el("div", "nb-rows", c);
         s.rows.forEach((r) => {
-          // a side worked out (cls "side": LHS = 4 + 2 = 6): its name, =, and the rest, in columns, so
-          // the two sides' first = signs stand one under the other (review, 2026-11-13); "Try x = 4" too,
-          // its = over theirs (review, 2026-11-18: "Check the alignment of text in x = 8 for all
-          // equations"), its "Try" by itself, to fade when the try's verdict comes (cls "sure"). A side's
-          // value stays on its line, after its expression: LHS = 4 + 2 = 6 (review, 2026-11-19: "23 is
-          // equal to should same line in 15 is equal to"; = 6 on a line of its own under it, left of
-          // 4 + 2, was turned down the same day: "Please don't do this like this… in all game").
-          const i = /\bside\b/.test(r.cls || "") ? r.t.indexOf(" = ") : -1;
+          // a side worked out (cls "side": LHS = 4 + 2 = 6): what comes before its last =, that =, and
+          // its value, in columns, so the rows' last = signs stand one under the other, and under the
+          // equation's (below), the values in one column: x + 2 = 7 / Try x = 4 / LHS = 4 + 2 = 6 /
+          // RHS = 7 (review, 2026-11-19, the user's picture; it was their first = signs, LHS = 4 + 2 = 6
+          // sticking out to the right: review, 2026-11-13). "Try x = 4" too (review, 2026-11-18: "Check
+          // the alignment of text in x = 8 for all equations"), its "Try" by itself, to fade when the
+          // try's verdict comes (cls "sure"). A side's value stays on its line, after its expression:
+          // LHS = 4 + 2 = 6 (review, 2026-11-19: "23 is equal to should same line in 15 is equal to"; = 6
+          // on a line of its own under it, left of 4 + 2, was turned down the same day: "Please don't do
+          // this like this… in all game").
+          const i = /\bside\b/.test(r.cls || "") ? r.t.lastIndexOf(" = ") : -1;
           let left = i > 0 ? CQ.rich(r.t.slice(0, i)) : "";
           if (/\btry\b/.test(r.cls || "")) left = left.replace(UI.tryWord, `<span class="tw">${UI.tryWord}</span>`);
           const html = i > 0 ? `<span class="sl">${left}</span><span class="se">=</span><span class="sr">${CQ.rich(r.t.slice(i + 3))}</span>` : CQ.rich(r.t);
@@ -463,6 +466,16 @@
             CQ.writeOut(el, r.write, this.lineText, r.each || 75, () => this.renders === n).catch(() => {});
           }
         });
+        // the rows' column of = signs under the equation's = (where they are laid out: no transforms)
+        const se = rows.querySelector(".nb-row.side .se");
+        if (se) {
+          const mid = (el) => {
+            let v = el.offsetWidth / 2;
+            for (let e = el; e && e !== c; e = e.offsetParent) v += e.offsetLeft;
+            return v;
+          };
+          rows.style.translate = `${Math.round(mid(tok("eq")) - mid(se))}px 0`;
+        }
       }
       // a tag hangs under its part on a straight line that starts with a dot on the part (or on the
       // middle of the part's bracket, or on the bottom of the box round it), like the labels of the
