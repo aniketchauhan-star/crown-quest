@@ -1957,8 +1957,12 @@
       // One grid, a row each, every row's = under the one above (review, 2026-11-18: "Check the alignment
       // of text in x = 8 for all equations": the equation and "Try x = 8" stood centred by themselves,
       // and only the two sides were lined up with each other): the equation, kept in sight all through
-      // the check; Try x = 4; LHS = 4 + 3 = □; RHS = □. A row's parts are the grid's cells: its name (or
-      // left side) | = | the rest.
+      // the check; Try x = 4; LHS = 4 + 3 = □; RHS = □. A row's parts are the grid's cells: what comes
+      // before its last = | that = | its value.
+      // The column of = signs is each row's LAST = (review, 2026-11-19, the user's picture: "x + 3 = 9 /
+      // Try x = 4 / LHS = 4 + 3 = 7 / RHS = ?"): the answers 9, 4, 7 and ? stand one under another,
+      // "LHS = 4 + 3" reaching out to the left, its 4 under the equation's x; until then it was the first
+      // =, LHS = 4 + 3 = 7 sticking out to the right.
       this.row = CQ.el("div", "cp-row", this.el);
       this.eqRow = CQ.el("div", "cp-side eqn", this.row);
       this.xRow = CQ.el("div", "cp-side try", this.row); // Try x = 4: the value put in for x
@@ -2010,20 +2014,20 @@
       this.eqRow.innerHTML = `<span class="lab">${CQ.rich(`${k > 1 ? k : ""}x + ${eq.a}`)}</span><span class="op e1">=</span><span class="rest">${CQ.num(eq.b)}</span>`;
       this.xRow.className = "cp-side try";
       this.xRow.innerHTML = `<span class="lab"><span class="tw">${U.tryWord}</span> <i class="v">x</i></span><span class="op e1">=</span><span class="rest"><span class="xval"></span></span>`;
-      // each side: its name, =, then the rest (its expression, = and its value; or only its value), the
-      // sides' first = signs under the equation's, so the right side's box stands under the 4 (same review:
-      // "After the answer, reveal RHS = □ directly below, with the first equals signs aligned", "place a
-      // single input box directly after RHS:, aligned beneath the 4 in the LHS row"; it was RHS: 9 = ?).
-      // x in the left side is plain too: the value takes its place, unboxed. The left side's value stays on
-      // its own line, after the expression, all on one baseline: LHS = 15 + 8 = 23 (review, 2026-11-19:
-      // "23 is equal to should same line in 15 is equal to"; = 23 put on a line of its own under it, left
-      // of 15 + 8, was turned down the same day: "Please don't do this like this… in all game").
+      // each side: what comes before its last =, that =, then its value. The left side: LHS = 4 + 3 | = |
+      // □ (its name, =, its expression in the first cell); the right side: RHS | = | □ (or RHS = 23,
+      // given), its box under the left side's and under the 4 (review, 2026-11-13: "place a single input
+      // box directly after RHS:, aligned beneath the 4"). x in the left side is plain too: the value takes
+      // its place, unboxed. The left side's value stays on its line, after the expression, all on one
+      // baseline: LHS = 15 + 8 = 23 (review, 2026-11-19: "23 is equal to should same line in 15 is equal
+      // to"; = 23 put on a line of its own under it, left of 15 + 8, was turned down the same day:
+      // "Please don't do this like this… in all game").
       this.lhs.className = "cp-side lhs";
       this.rhs.className = "cp-side rhs";
-      this.lhs.innerHTML = `<span class="lab">${U.lhs}</span><span class="op e1">=</span><span class="rest"><span class="ex">${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a}</span></span><span class="eqv"><span class="op">=</span><button type="button" class="blank" data-k="lhs" aria-label="${U.lhsValue}">?</button></span></span>`;
+      this.lhs.innerHTML = `<span class="lab"><span class="ln">${U.lhs}</span><span class="op e0">=</span><span class="ex">${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a}</span></span></span><span class="op e1">=</span><span class="rest"><span class="eqv"><button type="button" class="blank" data-k="lhs" aria-label="${U.lhsValue}">?</button></span></span>`;
       this.rhs.innerHTML = eq.rhsGiven
-        ? `<span class="lab">${U.rhs}</span><span class="op e1">=</span><span class="rest"><span class="ex"><span class="op">${CQ.num(eq.b)}</span></span></span>`
-        : `<span class="lab">${U.rhs}</span><span class="op e1">=</span><span class="rest"><span class="eqv"><button type="button" class="blank" data-k="rhs" aria-label="${U.rhsValue}">?</button></span></span>`;
+        ? `<span class="lab"><span class="ln">${U.rhs}</span></span><span class="op e1">=</span><span class="rest"><span class="ex"><span class="op">${CQ.num(eq.b)}</span></span></span>`
+        : `<span class="lab"><span class="ln">${U.rhs}</span></span><span class="op e1">=</span><span class="rest"><span class="eqv"><button type="button" class="blank" data-k="rhs" aria-label="${U.rhsValue}">?</button></span></span>`;
       const old = this.el.querySelector(":scope > .cp-picker");
       if (old) old.classList.add("hidden");
       this.el.style.opacity = "";
@@ -2037,9 +2041,10 @@
       });
       await CQ.run.wait(660);
     },
-    // a side's pieces, one by one (its name, =, the parts of its expression, =, its value)
+    // a side's pieces, one by one, in the order they are written (its name, =, the parts of its
+    // expression, =, its value; the right side: its name, =, its value)
     pieces(side) {
-      return [...side.querySelectorAll(":scope > .lab, :scope > .e1, :scope > .rest > .ex > *, :scope > .rest > .eqv > *")];
+      return [...side.querySelectorAll(":scope > .lab > .ln, :scope > .lab > .e0, :scope > .lab > .ex > *, :scope > .e1, :scope > .rest > .ex > *, :scope > .rest > .eqv > *")];
     },
     // The left side is written in as the voice names it (line: the line being said; cue: its words,
     // "LHS"), with the value already in for x.

@@ -2273,8 +2273,9 @@ html.reduced-motion .hand-ring.b {
 }
 /* Trying a value (review, 2026-11-13): "Try x = 4" under the equation, in gold, clearly a try; each side
    worked out under it, LHS then RHS, the side being said lit in its colour, the one before back to
-   plain, in full view ("Keep the previous calculation visible"). All three on one grid, name | = | the
-   rest, every = under the one above (review, 2026-11-18: "Check the alignment of text in x = 8"). At the
+   plain, in full view ("Keep the previous calculation visible"). All three on one grid, what comes
+   before the last = | = | the value, every last = under the one above (review, 2026-11-18: "Check the
+   alignment of text in x = 8") and under the equation's (review, 2026-11-19, the user's picture). At the
    end the working fades away (gone), "Try" with it (sure), and x = 4 is left, lit red (not a solution)
    or green (the solution) (review, 2026-11-18: "Fade the calculations and change 'Try x = 6' to a clear
    x = 6"), with nothing written under it (review, 2026-11-19). */
@@ -2298,7 +2299,7 @@ html.reduced-motion .hand-ring.b {
    cell's line sit 4 px lower than "= 4"; review, 2026-11-19: "they should in one line") */
 .notebook .nb-row.side {
   display: grid;
-  grid-template-columns: 200px auto 400px;
+  grid-template-columns: 400px auto 120px; /* LHS = 5 + 2 | = | 7 (the column of = put under the equation's: js/activities.js) */
   column-gap: 20px;
   align-items: baseline;
 }
@@ -2608,12 +2609,15 @@ body.checking .check-panel {
 }
 /* One grid for all its rows (review, 2026-11-18: "Check the alignment of text in x = 8 for all
    equations"; the equation and "Try x = 8" stood centred by themselves): each row's left part ends at
-   its =, every = under the one above, the rest starts after it, and each row's parts stand on one
-   baseline (the x of the maths face, the words and the numbers alike). The right side's box still
-   stands under the 4 (review, 2026-11-13). */
+   its LAST =, every such = under the one above, its value after it, so the answers stand in one column
+   and "LHS = 4 + 3" reaches out to the left (review, 2026-11-19, the user's picture); each row's parts
+   stand on one baseline (the x of the maths face, the words and the numbers alike). The right side's
+   box still stands under the 4 (review, 2026-11-13). */
 body.checking .cp-row {
   display: grid;
-  grid-template-columns: auto auto auto;
+  /* the values' column as wide as a box (.blank's 156 px) all through, so the rows stand still as a
+     box melts into its number (the block would glide over by half the difference) */
+  grid-template-columns: auto auto minmax(156px, auto);
   justify-content: center;
   align-items: baseline;
   column-gap: 18px;
@@ -2633,7 +2637,8 @@ body.checking .cp-side .lab {
 }
 body.checking .cp-side .rest,
 body.checking .cp-side .ex,
-body.checking .cp-side .eqv {
+body.checking .cp-side .eqv,
+body.checking .cp-side.lhs .lab {
   display: flex;
   align-items: baseline;
   gap: 16px;
