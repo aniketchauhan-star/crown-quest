@@ -439,7 +439,9 @@
       this.busy = false;
       const n = ++this.line;
       this.el.classList.remove("hidden");
+      this.el.style.width = ""; // at its widest (styles.css) to cut the line into rows, then fitted to them
       this.rows = this.split(text);
+      this.fit();
       this.sr.textContent = CQ.speakable(text);
       this.words = wordsOf(text);
       this.heard = -1;
@@ -532,6 +534,21 @@
         i = j;
         return r;
       });
+    },
+    // The bar as wide as its line (asked 2026-11-19, of "Meet Zippy!" in the long bar: "resize the box
+    // according to the sentence. Width of the box"): its widest row and the frame round it, from where the
+    // bar starts at the left, never wider than styles.css has it. It changes with the line, as the new
+    // line comes in (set's fade), not as a slide: the bar's width itself is never animated.
+    fit() {
+      const full = this.el.offsetWidth;
+      const room = this.txt.clientWidth;
+      if (!(full > 0 && room > 0)) return;
+      let w = 0;
+      this.rows.forEach((r) => {
+        this.probe.innerHTML = CQ.rich(r);
+        w = Math.max(w, this.probe.getBoundingClientRect().width / CQ.stage.scale);
+      });
+      this.el.style.width = Math.min(full, Math.ceil(full - room + w + 4)) + "px";
     },
     // Show the whole line, row under row: its letters hidden, to be typed with the voice (typed), or in full.
     render(typed) {
