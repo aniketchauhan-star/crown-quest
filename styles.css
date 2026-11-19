@@ -1178,7 +1178,8 @@ html[data-shade] .stage-edge::after {
 /* ---------------------------------------------------------------- caption, bubbles, comic words */
 .caption {
   position: absolute;
-  left: 470px; /* clear of Zippy's tail at the left, and of the Next button at the right */
+  left: 470px; /* clear of Zippy's tail at the left, and of the Next button at the right; js/ui.js stands a
+    bar narrower than this room in the middle between the top-left buttons and Next (CAP_ROOM) */
   top: 18px;
   /* as wide as there is room for (up to 40 px from the Next button), so that a line that can be one row
      is one row (review, 2026-11-16, on "This equation has one variable, / and its highest power is 1.":
