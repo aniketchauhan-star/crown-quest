@@ -2192,7 +2192,7 @@
       return CQ.run.when(taking);
     };
     const isRight = (v, want) => v != null && Math.abs(v - want) < 1e-9;
-    // An equation solved, x's value in (the child's, or put in with them): Next comes in, top right, and
+    // An equation solved, x's value in (the child's, or put in with them): Next comes in, bottom right, and
     // the next equation waits for its tap, or → (asked 2026-11-19: "next button add krdo x is value aane
     // pr… Next button tap, next question"). As after the last equation (its Next leads into the finale:
     // below), the question bar goes meanwhile, and the hand taps Next if the child waits. Next goes again
@@ -2200,7 +2200,7 @@
     const nextQuestion = async () => {
       CQ.caption.hide();
       CQ.next.showNext(true);
-      const nudge = () => CQ.hand.tapAt(CQ.centerOf(CQ.next.nextBtn));
+      const nudge = () => CQ.hand.tapAt(CQ.next.tapPoint());
       CQ.idle.arm(nudge, 8000);
       const next = CQ.next.listen();
       try {
@@ -2299,7 +2299,7 @@
         CQ.anim(l, [{ opacity: 1 }, { opacity: 0 }], { duration: 600, easing: CQ.EASE.in, keep: false, essential: true });
       });
       CQ.next.showNext(true); // (hidden while an equation is being solved)
-      const nudge = () => CQ.hand.tapAt(CQ.centerOf(CQ.next.nextBtn));
+      const nudge = () => CQ.hand.tapAt(CQ.next.tapPoint());
       CQ.idle.arm(nudge, 8000);
       const next = CQ.next.listen();
       try {
