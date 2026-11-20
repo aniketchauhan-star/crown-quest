@@ -486,7 +486,9 @@ window.CONTENT = {
   // Sound effects: map any sound cue to a recorded file, e.g. overrides: { "zippy.laugh": "assets/audio/zippy-laugh.mp3" }.
   // (The voice lines are in assets/vo/, see docs/VOICEOVER.md.) The recordings here are made from the
   // ones in art/audio/ by tools/make_sounds.py (asked 2026-11-09: Grumble's snore, Zippy's laugh when
-  // he wins a crown, and the wooden ring of the alarm when the balance tips).
+  // he wins a crown, and the wooden ring of the alarm when the balance tips). Since 2026-11-20 EVERY
+  // sound is a real recording, never a made one (asked: "In all game you are using AI generated voice,
+  // replace with natural... Sound effects. With same sound effects"; Freesound CC0, make_sounds.py SFX).
   audio: {
     overrides: {
       "zippy.win": "assets/audio/zippy-win-laugh.mp3", // Zippy laughs when he has won the crown
@@ -509,24 +511,63 @@ window.CONTENT = {
       "zippy.hmm": "assets/audio/zippy-hmm.mp3",
       "zippy.catch": "assets/audio/zippy-catch.mp3",
       "zippy.gulp": "assets/audio/zippy-gulp.mp3",
+      // Grumble's sounds: a real man snoring in a studio, a real yawn, a cartoon grumble performed by a
+      // person, a heavy stomp and a body falling on dirt (asked 2026-11-20: "The voice you are using for
+      // grumble like he sleep again... should also add a natural voice. Not AI generated voice")
       "grumble.snore1": "assets/audio/grumble-snore-1.mp3",
       "grumble.snore2": "assets/audio/grumble-snore-2.mp3",
       "grumble.snore3": "assets/audio/grumble-snore-3.mp3",
       "grumble.snore4": "assets/audio/grumble-snore-4.mp3",
       "grumble.snore5": "assets/audio/grumble-snore-5.mp3",
-      "grumble.snore6": "assets/audio/grumble-snore-6.mp3",
+      "grumble.mumble": "assets/audio/grumble-mumble.mp3",
+      "grumble.yawn": "assets/audio/grumble-yawn.mp3",
+      "grumble.stomp": "assets/audio/grumble-stomp.mp3",
+      "grumble.flop": "assets/audio/grumble-flop.mp3",
+      "dust.puff": "assets/audio/dust-puff.mp3",
+      "zippy.blink": "assets/audio/zippy-blink.mp3", // two real mouth pops, "bwip-bwip"
+      "slide.up": "assets/audio/slide-up.mp3", // a real slide whistle
+      "slide.down": "assets/audio/slide-down.mp3",
+      // every other sound effect: real recordings of the real things (gold ingots, coins, wood, metal,
+      // a glockenspiel, a marimba, a triangle, wind chimes, a jaw harp, a torch, a trumpet, a timpani…)
+      "bar.pick": "assets/audio/bar-pick.mp3",
+      "bar.place": "assets/audio/bar-place.mp3",
+      "bar.return": "assets/audio/bar-return.mp3",
+      "bar.crack": "assets/audio/bar-crack.mp3",
+      "bar.merge": "assets/audio/bar-merge.mp3",
+      "coin.clink": "assets/audio/coin-clink.mp3", // a little higher with each coin counted (js/audio.js, play)
+      "balance.creak": "assets/audio/balance-creak.mp3",
+      "balance.clang": "assets/audio/balance-clang.mp3",
+      "balance.level": "assets/audio/balance-level.mp3",
+      "ui.tap": "assets/audio/ui-tap.mp3",
+      "ui.pop": "assets/audio/ui-pop.mp3",
+      "ui.swoosh": "assets/audio/ui-swoosh.mp3",
+      "thought.pop": "assets/audio/thought-pop.mp3",
+      "name.burst": "assets/audio/name-burst.mp3",
+      "torch.fwoom": "assets/audio/torch-fwoom.mp3",
+      correct: "assets/audio/correct.mp3",
+      "focus.in": "assets/audio/focus-in.mp3",
+      tryagain: "assets/audio/tryagain.mp3",
+      "crown.sparkle": "assets/audio/crown-sparkle.mp3",
+      fanfare: "assets/audio/fanfare.mp3",
+      "scroll.open": "assets/audio/scroll-open.mp3",
+      "chest.open": "assets/audio/chest-open.mp3",
+      "title.boom": "assets/audio/title-boom.mp3",
+      "title.absorb": "assets/audio/title-absorb.mp3",
     },
     // Grumble's recorded snores, one after another: each is a snore in, a pause and a snore out, which
     // starts `out` s in; it lasts `len` s. His breathing follows each one (js/world.js, sleep).
     // tools/make_sounds.py prints this list.
     snores: [
-      { cue: "grumble.snore1", out: 2.46, len: 3.47 },
-      { cue: "grumble.snore2", out: 3.29, len: 4.33 },
-      { cue: "grumble.snore3", out: 3.3, len: 4.17 },
-      { cue: "grumble.snore4", out: 3.19, len: 4.1 },
-      { cue: "grumble.snore5", out: 3.33, len: 4.37 },
-      { cue: "grumble.snore6", out: 3.26, len: 4.53 },
+      { cue: "grumble.snore1", out: 2.49, len: 3.92 },
+      { cue: "grumble.snore2", out: 3.23, len: 5.28 },
+      { cue: "grumble.snore3", out: 2.98, len: 4.49 },
+      { cue: "grumble.snore4", out: 3.16, len: 4.88 },
+      { cue: "grumble.snore5", out: 2.92, len: 4.52 },
     ],
+    // The jungle behind the game: a real recording of tropical birds and insects (Freesound CC0 423711),
+    // looped from `from` to `to` s (the file has a little of the loop on each side), in place of the made
+    // breeze and birds (asked 2026-11-20). tools/make_sounds.py, jungle.
+    jungle: { src: "assets/audio/jungle.mp3", from: 0.1, to: 30.1 },
     // Zippy's win laugh lasts this long (s): he laughs only while it is heard, and his next line waits for
     // it (reviews of 2026-11-13 and 2026-11-18: "reduce the timing of Zippy's laugh"; it was 5.6, then 2.77)
     winLaugh: 1.75,

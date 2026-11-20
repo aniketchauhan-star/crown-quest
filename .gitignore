@@ -7,3 +7,6 @@ __pycache__/
 # Clips the studio made, or cut from a long recording (tools/vo_split.py), waiting for tools/vo_build.py
 tools/studio_out/
 tools/split_out/
+
+# Freesound recordings the sounds are cut from: python3 tools/make_sounds.py fetch downloads them again
+art/audio/freesound/

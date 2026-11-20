@@ -3,10 +3,18 @@
 (art/ was taken out of the folder on 2026-11-13 to keep it small: bring it back first, README.md,
 "Replace the artwork".)
 
-- art/audio/snore.mp3 -> assets/audio/grumble-snore-1.mp3 ... (one file per snore): the recording is
-  cut on its silences into its snores, each a snore in, a pause and a snore out, and each is levelled
-  to -20 LUFS (under the voice). It prints each snore's timing: paste the list into `snores` in the
-  `audio` section of js/content.js (Grumble's breathing follows each sound: js/world.js, sleep).
+- Grumble's snores -> assets/audio/grumble-snore-1.mp3 ... (one file per snore): a real man snoring in a
+  studio (Freesound CC0 432996, "Male Snore 2", ribbon mic: asked 2026-11-20, Grumble's sounds "should
+  add a natural voice, not AI generated"; until then art/audio/snore.mp3), played 10 % slower (a bigger
+  snorer, like a slowed tape: no other change), cut on its silences into its five snores, each a snore
+  in, a pause and a snore out, and each levelled to -20 LUFS (under the voice). It prints each snore's
+  timing: paste the list into `snores` in the `audio` section of js/content.js (Grumble's breathing
+  follows each sound: js/world.js, sleep).
+- Every other sound effect, and the jungle's background (birds and insects), is a real recording too
+  (asked 2026-11-20: "In all game you are using AI generated voice, replace with natural... Sound
+  effects. With same sound effects"): see FREESOUND, SFX and jungle() below. Their sources are Freesound
+  CC0 (public domain) "HQ previews": `python3 tools/make_sounds.py fetch` downloads any missing one to
+  art/audio/freesound/<id>.mp3.
 - art/audio/monkey laugh.mp3 -> assets/audio/zippy-win-laugh.mp3: Zippy's laugh when he wins a crown,
   short (reviews of 2026-11-13 and 2026-11-18: "reduce the timing of Zippy's laugh"): its first loud
   "ha"s, from 0.55 s (after the quiet first ones) to 2.30 s (the clear gap after the eighth "ha"), the
@@ -29,7 +37,8 @@
 - art/audio/monkey little.mp3, monkey low.mp3, gulp.mp3 -> assets/audio/zippy-*.mp3: Zippy's voice sounds
   (giggle, laugh, whee, eek, hmm, catch, gulp), real recordings (asked 2026-11-20): see ZIPPY.
 
-Run from the project folder:  python3 tools/make_sounds.py   (only one: ... make_sounds.py confetti | roar | zippy)
+Run from the project folder:  python3 tools/make_sounds.py   (only one: ... make_sounds.py confetti | roar |
+zippy | snores | jungle | sfx [name])
 """
 import json
 import re
@@ -39,6 +48,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "art" / "audio"
+FS = SRC / "freesound"  # the Freesound recordings, by id (fetch)
 OUT = ROOT / "assets" / "audio"
 
 
@@ -86,7 +96,13 @@ def encode(src, dst, start, dur, gain, fade_from, mono, rate):
 
 
 def snores():
-    src = SRC / "snore.mp3"
+    # the studio snore, 10 % slower (asetrate: pitch and pace together, as a slowed tape)
+    src = OUT / "_snore.wav"
+    run(["ffmpeg", "-v", "error", "-y", "-i", str(FS / "432996.mp3"), "-af",
+         "aformat=sample_fmts=fltp:channel_layouts=mono,aresample=44100,asetrate=39690,aresample=44100,highpass=f=40",
+         "-c:a", "pcm_f32le", str(src)])
+    for old in OUT.glob("grumble-snore-*.mp3"):
+        old.unlink()
     out = run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(src), "-af", "silencedetect=noise=-42dB:d=0.25", "-f", "null", "-"]).stderr
     total = float(re.search(r"Duration: (\d+):(\d+):([\d.]+)", out).groups()[2]) + 60 * int(re.search(r"Duration: (\d+):(\d+)", out).groups()[1])
     starts = [float(x) for x in re.findall(r"silence_start: ([\d.]+)", out)]
@@ -106,6 +122,7 @@ def snores():
         n = k // 2 + 1
         make(src, OUT / f"grumble-snore-{n}.mp3", start, end - start, -20.0, rate=24000)
         timing.append({"cue": f"grumble.snore{n}", "out": round(o - start, 2), "len": round(end - start, 2)})
+    src.unlink()
     return timing
 
 
@@ -229,16 +246,225 @@ def zippy(only=None):
         cut.unlink()
 
 
+# ---- every other sound: real recordings (asked 2026-11-20) -------------------------------------------
+# The Freesound CC0 (public domain) recordings they are cut from: id -> (HQ preview path under
+# https://cdn.freesound.org/previews/, its title). The page of each is https://freesound.org/s/<id>/.
+FREESOUND = {
+    "432996": ("432/432996_897016-hq.mp3", "Male Snore 2.wav"),  # studio ribbon mic: Grumble's snores
+    "272030": ("272/272030_5165013-hq.mp3", "Male Yawn"),
+    "400783": ("400/400783_3516609-hq.mp3", "grrr.aif"),  # "dissatisfied grumbling for a cartoon character"
+    "812538": ("812/812538_16797267-hq.mp3", "Big Monster Stomp"),
+    "504626": ("504/504626_4437257-hq.mp3", "BODY FALL - V HVY - DIRT"),
+    "215850": ("215/215850_4034520-hq.mp3", "Puff blow 01.MP3"),
+    "47498": ("47/47498_210407-hq.mp3", "mouthPop_02.wav"),
+    "517633": ("517/517633_8031303-hq.mp3", "SLIDE WHISTLE - 1"),  # a real slide whistle, Zoom H4n Pro
+    "347149": ("347/347149_5501146-hq.mp3", "Stone,Block,Drag,Wood,Grind.wav"),
+    "179721": ("179/179721_93137-hq.mp3", "dropping_aluminum_ingots3.flac"),
+    "60013": ("60/60013_71257-hq.mp3", "Whoosh"),  # a bamboo stick swung through the air
+    "539973": ("539/539973_12029332-hq.mp3", "Flint Strike"),
+    "361427": ("361/361427_5337613-hq.mp3", "Wind_Chime_Monte_00.wav"),
+    "343462": ("343/343462_1400623-hq.mp3", "Real Coin Drop"),
+    "502511": ("502/502511_4921277-hq.mp3", "Wood Creak Single V3"),
+    "405665": ("405/405665_5923045-hq.mp3", "metal bowl - hit - with wooden spoon 01.wav"),
+    "349503": ("349/349503_5450487-hq.mp3", "Triangle_Open_02"),
+    "218460": ("218/218460_3344538-hq.mp3", "Wood block hit"),
+    "447910": ("447/447910_9159316-hq.mp3", "Plop!"),
+    "82545": ("82/82545_1266020-hq.mp3", "jharp2.wav"),  # a jaw harp: the "boing"
+    "249809": ("249/249809_3756348-hq.mp3", "Waving Torch.wav"),
+    "11088": ("11/11088_29540-hq.mp3", "g1.wav"),  # one glockenspiel note (G6), AKG C3000B
+    "185833": ("185/185833_2567799-hq.mp3", "Marimba note struck"),
+    "350428": ("350/350428_4557960-hq.mp3", "Trumpet Fanfare"),
+    "185051": ("185/185051_3050308-hq.mp3", "Scroll.wav"),
+    "202092": ("202/202092_3756348-hq.mp3", "Chest Opening.wav"),
+    "369394": ("369/369394_5622625-hq.mp3", "Timpani C2"),
+    "181889": ("181/181889_3386153-hq.mp3", "Whosh - Reversed/Reverbed breath"),
+    "423711": ("423/423711_1451873-hq.mp3", "Jungle, Tropical birds and insects"),
+}
+
+
+def fetch():
+    FS.mkdir(parents=True, exist_ok=True)
+    for i, (path, title) in FREESOUND.items():
+        dst = FS / f"{i}.mp3"
+        if not dst.exists() or dst.stat().st_size < 1000:
+            run(["curl", "-sf", "-o", str(dst), "https://cdn.freesound.org/previews/" + path])
+            print("fetched", i, title)
+
+
+# A layer: (Freesound id, start s, length s, at s, gain dB, extra) with extra keys rate (played faster
+# or slower, pitch with it, as a tape), tempo (pace only), hp / lp (Hz), fin / fout (fade s), rev.
+# name: (file, layers, loudest moment LUFS). The loudest 400 ms is levelled (a short sound measured with
+# silence after it), peaks under -1 dBFS. Each replaces the made sound of the same cue (js/audio.js).
+G6 = 1568.0  # the glockenspiel note's pitch (11088)
+SFX = {
+    # Grumble (a wrong swap: he mumbles, stands, roars and stomps, yawns, flops down asleep again)
+    "grumble.mumble": ("grumble-mumble", [("400783", 0.13, 0.76, 0, 0, {"rate": 0.9, "fout": 0.1})], -19.0),
+    "grumble.yawn": ("grumble-yawn", [("272030", 0.14, 1.2, 0, 0, {"rate": 0.9, "fout": 0.3})], -18.0),
+    "grumble.stomp": ("grumble-stomp", [("812538", 0.09, 0.66, 0, 0, {"fout": 0.3})], -17.0),
+    "grumble.flop": ("grumble-flop", [("504626", 0.3, 0.62, 0, 0, {"fout": 0.2})], -18.0),
+    "dust.puff": ("dust-puff", [("215850", 0.0, 0.38, 0, 0, {"rate": 0.85, "lp": 1800, "fout": 0.1})], -23.0),
+    # Zippy: a double mouth pop as he blinks at Grumble ("bwip-bwip"); a real slide whistle
+    "zippy.blink": ("zippy-blink", [("47498", 0.18, 0.12, 0, 0, {}), ("47498", 0.18, 0.12, 0.17, 0, {"rate": 1.12})], -21.0),
+    "slide.up": ("slide-up", [("517633", 0.42, 1.85, 0, 0, {"tempo": 3.0, "fout": 0.06})], -21.0),
+    "slide.down": ("slide-down", [("517633", 3.52, 2.1, 0, 0, {"tempo": 2.1, "fout": 0.15})], -21.0),
+    # the gold bars, the coins, the balance
+    "bar.pick": ("bar-pick", [("347149", 0.1, 0.38, 0, 0, {"fout": 0.12})], -22.0),
+    "bar.place": ("bar-place", [("179721", 0.06, 0.4, 0, 0, {"fout": 0.2})], -20.0),
+    "bar.return": ("bar-return", [("60013", 0.0, 0.43, 0, 0, {"rate": 0.85, "hp": 150, "lp": 4000})], -23.0),
+    "bar.crack": ("bar-crack", [("539973", 0.0, 0.45, 0, 0, {"fout": 0.2}),
+                                ("361427", 0.66, 0.6, 0.05, -9, {"fout": 0.4})], -19.0),
+    "bar.merge": ("bar-merge", [("361427", 0.18, 0.9, 0, 0, {"fout": 0.3}), ("60013", 0.0, 0.43, 0, -8, {})], -20.0),
+    "coin.clink": ("coin-clink", [("343462", 0.0, 0.164, 0, 0, {"fout": 0.03})], -21.0),
+    "balance.creak": ("balance-creak", [("502511", 0.02, 0.75, 0, 0, {"fout": 0.15})], -21.0),
+    "balance.clang": ("balance-clang", [("405665", 0.0, 1.0, 0, 0, {"rate": 0.8, "fout": 0.4})], -19.0),
+    "balance.level": ("balance-level", [("349503", 0.0, 1.1, 0, 0, {"fout": 0.5})], -21.0),
+    # taps, pops and swooshes of the screens
+    "ui.tap": ("ui-tap", [("218460", 0.0, 0.2, 0, 0, {"fout": 0.08})], -25.0),
+    "ui.pop": ("ui-pop", [("47498", 0.18, 0.14, 0, 0, {"fout": 0.04})], -23.0),
+    "thought.pop": ("thought-pop", [("447910", 0.0, 0.24, 0, 0, {"rate": 0.9, "fout": 0.05})], -22.0),
+    "ui.swoosh": ("ui-swoosh", [("60013", 0.0, 0.43, 0, 0, {"hp": 300})], -25.0),
+    "name.burst": ("name-burst", [("82545", 0.0, 0.75, 0, 0, {"fout": 0.3})], -20.0),
+    "torch.fwoom": ("torch-fwoom", [("249809", 1.88, 0.6, 0, 0, {"fin": 0.02, "fout": 0.15})], -20.0),
+    # chimes: a real glockenspiel (E6 then A6), a marimba, a triangle, wind chimes
+    "correct": ("correct", [("11088", 0.0, 0.7, 0, 0, {"rate": 1318.5 / G6, "fout": 0.3}),
+                            ("11088", 0.0, 0.8, 0.13, 0, {"rate": 1760.0 / G6, "fout": 0.4})], -19.0),
+    "focus.in": ("focus-in", [("11088", 0.0, 0.5, 0, -2, {"rate": 1318.5 / G6, "fout": 0.25}),
+                              ("11088", 0.0, 0.5, 0.11, -1, {"fout": 0.25}),
+                              ("11088", 0.0, 0.6, 0.22, 0, {"rate": 2093.0 / G6, "fout": 0.3})], -23.0),
+    "tryagain": ("tryagain", [("185833", 0.0, 0.45, 0, 0, {"rate": 0.6, "fout": 0.15})], -22.0),
+    "crown.sparkle": ("crown-sparkle", [("361427", 0.86, 0.85, 0, 0, {"fout": 0.3})], -20.0),
+    "fanfare": ("fanfare", [("350428", 0.04, 1.85, 0, 0, {"fout": 0.3})], -17.0),
+    "scroll.open": ("scroll-open", [("185051", 0.18, 0.8, 0, 0, {"fout": 0.25})], -21.0),
+    "chest.open": ("chest-open", [("202092", 0.62, 1.0, 0, 0, {"fout": 0.35}),
+                                  ("361427", 0.66, 0.7, 0.25, -8, {"fout": 0.3})], -19.0),
+    # the title: a real timpani "boom"; the play button drawing it all in (a breath rushing in, reversed,
+    # cut off by a low mouth pop as the button vanishes, GULP = 0.845 s in js/audio.js, and a glint)
+    "title.boom": ("title-boom", [("369394", 0.0, 1.6, 0, 0, {"fout": 0.8})], -15.0),
+    "title.absorb": ("title-absorb", [("181889", 0.85, 0.85, 0, 0, {"fin": 0.1, "fout": 0.02}),
+                                      ("47498", 0.18, 0.14, 0.845, 0, {"rate": 0.7, "fout": 0.04}),
+                                      ("11088", 0.0, 0.35, 0.915, -14, {"rate": 2637.0 / G6, "fout": 0.2})], -18.0),
+}
+
+
+def layer_chain(ss, dur, ex):
+    f = ["aformat=sample_fmts=fltp:channel_layouts=mono", "aresample=44100"]
+    if ex.get("rev"):
+        f.append("areverse")
+    rate, tempo = ex.get("rate", 1.0), ex.get("tempo", 1.0)
+    if rate != 1.0:
+        f += [f"asetrate={44100 * rate:.1f}", "aresample=44100"]
+    while tempo > 2.0:
+        f.append("atempo=2.0")
+        tempo /= 2.0
+    if tempo != 1.0:
+        f.append(f"atempo={tempo:.4f}")
+    if ex.get("hp"):
+        f.append(f"highpass=f={ex['hp']}")
+    if ex.get("lp"):
+        f.append(f"lowpass=f={ex['lp']}")
+    length = dur / rate / ex.get("tempo", 1.0)
+    f.append(f"afade=t=in:d={ex.get('fin', 0.004)}")
+    fout = ex.get("fout", 0.02)
+    f.append(f"afade=t=out:st={max(0.0, length - fout):.3f}:d={fout:.3f}")
+    return f
+
+
+def level(mix, dst, target):
+    """Its loudest moment at `target` LUFS (a short sound measured with silence after it, as it is heard),
+    peaks under -1 dBFS, written as a mono MP3."""
+    probe = OUT / "_probe.wav"
+    run(["ffmpeg", "-v", "error", "-y", "-i", str(mix), "-af", "apad=pad_dur=0.5", "-c:a", "pcm_f32le", str(probe)])
+    gain = target - loudest_moment(probe)
+    probe.unlink()
+    for _ in range(4):
+        run(["ffmpeg", "-v", "error", "-y", "-i", str(mix), "-af", f"volume={gain:.2f}dB",
+             "-ac", "1", "-ar", "44100", "-c:a", "libmp3lame", "-q:a", "4", str(dst)])
+        over = true_peak(dst) + 1.0
+        if over <= 0:
+            break
+        gain -= over + 0.1
+
+
+def sfx(only=None):
+    for cue, (name, layers, target) in SFX.items():
+        if only and only not in (cue, name):
+            continue
+        args, graph, labels = ["ffmpeg", "-v", "error", "-y"], [], []
+        for k, (i, ss, dur, at, db, ex) in enumerate(layers):
+            args += ["-ss", f"{ss:.3f}", "-t", f"{dur:.3f}", "-i", str(FS / f"{i}.mp3")]
+            chain = layer_chain(ss, dur, ex) + [f"volume={db}dB"]
+            if at:
+                chain.append(f"adelay={int(at * 1000)}")
+            graph.append(f"[{k}]" + ",".join(chain) + f"[l{k}]")
+            labels.append(f"[l{k}]")
+        if len(layers) > 1:
+            graph.append("".join(labels) + f"amix=inputs={len(layers)}:duration=longest:normalize=0[out]")
+        else:
+            graph[-1] = graph[-1][: -len(labels[0])] + "[out]"
+        mix = OUT / "_sfx.wav"
+        run(args + ["-filter_complex", ";".join(graph), "-map", "[out]", "-c:a", "pcm_f32le", str(mix)])
+        level(mix, OUT / f"{name}.mp3", target)
+        mix.unlink()
+        print(cue, "->", f"assets/audio/{name}.mp3")
+
+
+def jungle(start=4.0, length=30.0, cross=3.0, handle=0.1, target=-26.0):
+    """The jungle behind the game (birds and insects, Freesound CC0 423711), in place of the made breeze
+    and birds: a 30 s loop whose end runs into its start (its last 3 s cross-faded into what comes just
+    before its start), with `handle` s of what comes before and after it at each end, so the game loops
+    it from `handle` to `handle + length` (CONTENT.audio.jungle) clear of the MP3's own edges.
+    Levelled to `target` LUFS; the game plays it quietly under everything (js/audio.js, ambStart)."""
+    import array
+    raw = run_bytes(["ffmpeg", "-v", "error", "-i", str(FS / "423711.mp3"), "-ac", "1", "-ar", "44100", "-f", "f32le", "-"])
+    a = array.array("f")
+    a.frombytes(raw)
+    sr = 44100
+    s0, n, x, h = int(start * sr), int(length * sr), int(cross * sr), int(handle * sr)
+    # loop body: [s0, s0 + n); its last x samples fade out while [s0 - x, s0) fades in, so the sample
+    # after the body's end is exactly s0 again
+    body = a[s0:s0 + n]
+    for j in range(x):
+        w = j / x
+        body[n - x + j] = body[n - x + j] * (1 - w) + a[s0 - x + j] * w
+    out = array.array("f", body[n - h:]) + body + array.array("f", body[:h])
+    pcm = OUT / "_jungle.raw"
+    pcm.write_bytes(out.tobytes())
+    wav = OUT / "_jungle.wav"
+    run(["ffmpeg", "-v", "error", "-y", "-f", "f32le", "-ar", "44100", "-ac", "1", "-i", str(pcm),
+         "-af", "highpass=f=120", "-c:a", "pcm_f32le", str(wav)])
+    gain = target - loudness(wav)
+    run(["ffmpeg", "-v", "error", "-y", "-i", str(wav), "-af", f"volume={gain:.2f}dB",
+         "-ac", "1", "-ar", "44100", "-c:a", "libmp3lame", "-q:a", "7", str(OUT / "jungle.mp3")])
+    pcm.unlink()
+    wav.unlink()
+    print("jungle -> assets/audio/jungle.mp3: loop", handle, "to", handle + length)
+
+
+def run_bytes(args):
+    return subprocess.run(args, capture_output=True, check=True).stdout
+
+
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
-    if sys.argv[1:] in (["confetti"], ["roar"], ["zippy"]):
-        {"confetti": confetti, "roar": roar, "zippy": zippy}[sys.argv[1]]()
+    one = {"confetti": confetti, "roar": roar, "zippy": zippy, "fetch": fetch, "jungle": jungle,
+           "snores": lambda: print("snores:", json.dumps(snores()))}
+    if sys.argv[1:2] == ["sfx"]:
+        fetch()
+        sfx(sys.argv[2] if len(sys.argv) > 2 else None)
         sys.exit(0)
+    if len(sys.argv) == 2 and sys.argv[1] in one:
+        if sys.argv[1] in ("jungle", "snores"):
+            fetch()
+        one[sys.argv[1]]()
+        sys.exit(0)
+    fetch()
     t = snores()
     laugh()
     alarm()
     confetti()
     roar()
     zippy()
+    sfx()
+    jungle()
     print("snores:", json.dumps(t))
     sys.exit(0)
