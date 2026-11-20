@@ -1188,6 +1188,9 @@
   function onVisibility() { // pause everything while the tab is hidden (saves battery, no stale bursts)
     if (!ctx) return;
     try {
+      if (amb && amb.el) {
+        try { if (doc.hidden) amb.el.pause(); else { var q = amb.el.play(); if (q && q.catch) q.catch(noop); } } catch (e) { /* ignore */ }
+      }
       if (doc.hidden) {
         if (ctx.state === 'running') {
           autoSuspended = true;
@@ -1340,12 +1343,13 @@
   // Each override file is fetched and decoded once, after the start tap, and then plays like a made
   // sound, through the effects volume, with no tap needed each time (iPads block new audio elements a
   // tap didn't start). Opened straight from the folder, the audio element above plays them instead.
-  var recBuf = {}, recTried = {}, recLive = [];
+  var recBuf = {}, recTried = {}, recFail = {}, recLive = [];
   function loadRecorded() {
-    var a = contentAudio(), m = a && a.overrides;
+    var a = contentAudio(), m = a && a.overrides, J = jungleRec();
     if (!ctx || !m || typeof m !== 'object' || typeof win.fetch !== 'function' || !/^https?:$/.test(win.location.protocol)) return;
-    Object.keys(m).forEach(function (name) {
-      var path = m[name];
+    var paths = Object.keys(m).map(function (name) { return m[name]; });
+    if (J) paths.push(J.src); // the jungle's loop too
+    paths.forEach(function (path) {
       if (typeof path !== 'string' || !path || recTried[path]) return;
       recTried[path] = true;
       win.fetch(path).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); })
@@ -1356,7 +1360,7 @@
           });
         })
         .then(function (buf) { recBuf[path] = buf; })
-        .catch(function () { /* the audio element plays it instead */ });
+        .catch(function () { recFail[path] = true; /* the audio element plays it instead */ });
     });
   }
   function playRecorded(path, o) {
@@ -1378,7 +1382,15 @@
     if (!enabled.sfx) return;
     name = String(name);
     var o = normOpts(opts), path = overridePath(name);
-    if (path && (playRecorded(path, o) || playOverride(name, path, o))) return;
+    if (path) {
+      var r = o;
+      if (name === 'coin.clink' && o.index) { // each coin counted a little higher, as the made clink did
+        r = {};
+        for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) r[k] = o[k];
+        r.pitch = o.pitch * Math.pow(1.045, o.index);
+      }
+      if (playRecorded(path, r) || playOverride(name, path, r)) return;
+    }
     playSynth(name, o);
   }
 
@@ -1405,6 +1417,44 @@
     if (ctx) switchMusic(name);
   }
 
+  // The jungle behind the game is a real recording of birds and insects, looped (CONTENT.audio.jungle:
+  // asked 2026-11-20, every sound real, never made); only without one, the made breeze and birds below.
+  function jungleRec() {
+    var a = contentAudio(), j = a && a.jungle;
+    return j && typeof j === 'object' && typeof j.src === 'string' && j.src ? j : null;
+  }
+  // Starts the recording once it is loaded (it loads after the start tap), fading in: through the sound
+  // engine, looped seamlessly from `from` to `to`; opened straight from the folder, an audio element
+  // loops it, its volume following the jungle's (the voice ducking it, effects off, a fade out).
+  function jungleTick() {
+    var a = amb, J = a.rec;
+    if (!a.src && !a.el) {
+      var buf = recBuf[J.src];
+      if (buf) {
+        var t = ctx.currentTime, s = ctx.createBufferSource(), g = G(ctx, 0, a.out);
+        s.buffer = buf;
+        s.loop = true;
+        s.loopStart = num(J.from, 0);
+        s.loopEnd = Math.min(num(J.to, buf.duration), buf.duration);
+        s.connect(g);
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(1, t + 1.5);
+        s.start(t, s.loopStart);
+        a.src = s;
+        a.nodes.push(s, g);
+        a.srcs.push(s);
+      } else if ((recFail[J.src] || !/^https?:$/.test(win.location.protocol)) && typeof win.Audio === 'function') {
+        a.el = new win.Audio(J.src);
+        a.el.loop = true;
+        a.el.volume = 0;
+        if (!(doc && doc.hidden)) { try { var p = a.el.play(); if (p && p.catch) p.catch(noop); } catch (e) { /* ignore */ } }
+      }
+    }
+    if (a.el) {
+      var want = a.stopAt === null && enabled.sfx ? ambTarget() * LV.sfx * LV.master : 0;
+      a.el.volume = clamp(a.el.volume + clamp(want - a.el.volume, -0.01, 0.01), 0, 1);
+    }
+  }
   function ambStart() {
     if (!ctx) return;
     if (amb) {
@@ -1412,10 +1462,12 @@
       disposeAmb(); // was fading out: replace it
     }
     var t = ctx.currentTime, a = { stopAt: null, nextChirp: t + 1 + Math.random() * 2, nextCall: t + 4 + Math.random() * 5 };
+    a.rec = jungleRec();
     var bag = hold(function () {
       a.out = G(ctx, 0, sfxBus);
       a.out.gain.setValueAtTime(0, t);
       a.out.gain.linearRampToValueAtTime(ambTarget(), t + 1.5);
+      if (a.rec) return; // the recording: started by jungleTick
       // a soft breeze in the leaves: band-limited noise, rising and falling slowly
       var src = NL(ctx, t, null), bedG = G(ctx, 0.1, a.out);
       src.connect(F(ctx, 'highpass', 220, null, F(ctx, 'lowpass', 900, null, bedG)));
@@ -1441,6 +1493,7 @@
   }
   function disposeAmb() {
     if (!amb) return;
+    if (amb.el) { try { amb.el.pause(); } catch (e) { /* ignore */ } }
     stopAll(amb.srcs, 0);
     disposeAll(amb.nodes);
     amb = null;
@@ -1471,7 +1524,12 @@
     });
   }
   function ambTick(now, horizon) {
-    if (amb.stopAt !== null) { if (now > amb.stopAt + 0.1) disposeAmb(); return; }
+    if (amb.stopAt !== null) {
+      if (amb.el) jungleTick(); // (its fade out)
+      if (now > amb.stopAt + 0.1) disposeAmb();
+      return;
+    }
+    if (amb.rec) { jungleTick(); return; }
     if (!enabled.sfx) { // skip work while effects are muted
       amb.nextChirp = Math.max(amb.nextChirp, horizon + 2);
       amb.nextCall = Math.max(amb.nextCall, horizon + 4);
