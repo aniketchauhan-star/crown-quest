@@ -521,8 +521,9 @@
       }
     },
     // A light mode for slow devices: no blur behind a "look here" or a formula screen (the dark fade
-    // stays), and no idle motion in the background. Chosen at once on a device with little memory or
-    // few cores, or later if the game keeps running below about 40 frames a second.
+    // stays), and no idle motion in the background. Chosen at once on a phone (a touch screen under
+    // 600 px on its short side: there the blur costs the most and shows the least) or a device with
+    // little memory or few cores, or later if the game keeps running below about 40 frames a second.
     lite(on) {
       document.documentElement.classList.toggle("lite", on !== false);
     },
@@ -540,11 +541,12 @@
     },
   };
   try {
-    if ((navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2)) CQ.screen.lite(true);
+    const phone = window.matchMedia && matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) < 600;
+    if (phone || (navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2)) CQ.screen.lite(true);
   } catch (e) {
     /* unknown: assume a capable device */
   }
-  // the frame-rate watch: two slow 4-second spells in a row (while the game is on screen) mean lite
+  // the frame-rate watch: two slow 2-second spells in a row (while the game is on screen) mean lite
   (function () {
     let t = 0;
     let frames = 0;
@@ -553,7 +555,7 @@
       if (document.hidden || document.documentElement.classList.contains("lite")) return;
       t += dt;
       frames++;
-      if (t < 4) return;
+      if (t < 2) return;
       const fps = frames / t;
       t = 0;
       frames = 0;

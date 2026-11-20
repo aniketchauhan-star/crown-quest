@@ -1269,7 +1269,9 @@
     var v = { cue: name, gain: vg, c: null, done: false };
     list.push(v);
     try {
-      v.c = collect(function () { return fn(ctx, vg, now + 0.005 - o.ago, o); }, function () { finishVoice(v); });
+      // (ago never reaches back before the context's start: a sound timed below 0 throws, as when the
+      // Play tap is also the tap that starts the sound, on an iPhone or iPad)
+      v.c = collect(function () { return fn(ctx, vg, now + 0.005 - Math.min(o.ago, now), o); }, function () { finishVoice(v); });
     } catch (e) {
       finishVoice(v);
       throw e;

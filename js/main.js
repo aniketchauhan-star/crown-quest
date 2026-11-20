@@ -256,6 +256,7 @@
       this.flareT = setTimeout(() => this.root.classList.remove("t-flare"), ms);
     },
     // Grumble's roar: he swells, the screen shakes, rings burst from his mouth, leaves fall, the fires flare.
+    // No "ROAR!" word on screen: only the monster roars (2026-11-20).
     roar() {
       CQ.audio.play("grumble.roar", { volume: 1 });
       CQ.anim(this.grumble, [{ transform: "scale(1)" }, { transform: "scale(1.13) rotate(-2deg)", offset: 0.25 }, { transform: "scale(1.09) rotate(2deg)", offset: 0.55 }, { transform: "scale(1)" }], {
@@ -267,13 +268,6 @@
       this.flare(900);
       const m = this.at("tGrumble", 0.5, 0.36); // his mouth
       [0, 160, 320].forEach((d) => setTimeout(() => this.ring(m.x, m.y), d));
-      const word = CQ.el("div", "t-roar", this.fx, C().title.roar || "ROAR!");
-      CQ.pos(word, m.x - 30, m.y - 230);
-      CQ.anim(word, [{ transform: "translate(-50%,-50%) scale(.2) rotate(-12deg)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1.15) rotate(-6deg)", opacity: 1, offset: 0.25 }, { transform: "translate(-50%,-50%) scale(1) rotate(-6deg)", opacity: 1, offset: 0.75 }, { transform: "translate(-50%,-60%) scale(1.05) rotate(-6deg)", opacity: 0 }], {
-        duration: 1100,
-        keep: false,
-        essential: true,
-      }).then(() => word.remove());
       for (let i = 0; i < 12; i++) this.leaf(160 + i * 140 + Math.random() * 80, -20 - Math.random() * 60, i * 60);
     },
     ring(x, y) {

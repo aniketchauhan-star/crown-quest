@@ -1825,7 +1825,8 @@
   // When a change of layout moves things (a box melting into its number, a row coming in under others),
   // they glide from where they were to where they now stand instead of jumping: change() is run, then
   // each of els (none of them inside another) slides over (the translate property, so its own transform is
-  // left alone; ms long, easing out). opts.scale: a thing that changed size grows or shrinks to it too.
+  // left alone; ms long, easing out). opts.scale: a thing that changed size grows or shrinks to it too
+  // (a number: all of them were that many times their new size, as when the text they are in is resized).
   CQ.flip = function (els, change, ms, opts) {
     opts = opts || {};
     const k = CQ.stage.scale || 1;
@@ -1838,7 +1839,7 @@
       if (!r.width && !r.height) return;
       const dx = (a.left + a.width / 2 - (r.left + r.width / 2)) / k;
       const dy = (a.top + a.height / 2 - (r.top + r.height / 2)) / k;
-      const s = opts.scale ? a.width / r.width : 1;
+      const s = typeof opts.scale === "number" ? opts.scale : opts.scale ? a.width / r.width : 1;
       if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(s - 1) < 0.01) return;
       const from = { translate: `${dx}px ${dy}px` };
       const to = { translate: "0px 0px" };
@@ -2022,9 +2023,8 @@
       const U = C().ui;
       this.el.classList.remove("hidden");
       this.eqRow.className = "cp-side eqn";
-      // (its terms apart, to be spread out over the left side's width: spread, below)
-      const terms = [`${k > 1 ? k : ""}x`, "+", String(CQ.num(eq.a))];
-      this.eqRow.innerHTML = `<span class="lab">${terms.map((t) => `<span class="t">${CQ.rich(t)}</span>`).join("")}</span><span class="op e1">=</span><span class="rest">${CQ.num(eq.b)}</span>`;
+      // written plainly, its own spacing, big (styles.css): never spread out over the rows under it
+      this.eqRow.innerHTML = `<span class="lab">${CQ.rich(`${k > 1 ? k : ""}x + ${eq.a}`)}</span><span class="op e1">=</span><span class="rest">${CQ.num(eq.b)}</span>`;
       this.solRow.className = "cp-side sol";
       this.solRow.innerHTML = "";
       this.xRow.className = "cp-side try";
@@ -2047,7 +2047,7 @@
       if (old) old.classList.add("hidden");
       this.el.style.opacity = "";
       this.el.style.transform = "";
-      this.spread(eq.v);
+      this.steady(eq.v);
       // the equation comes in; Try x = …, the left side and the right side wait for their turns
       [...this.xRow.children, ...this.pieces(this.lhs), ...this.pieces(this.rhs)].forEach((e) => (e.style.opacity = "0"));
       CQ.audio.play("ui.pop");
@@ -2057,39 +2057,20 @@
       });
       await CQ.run.wait(660);
     },
-    // The equation, a little bigger than the rows (styles.css), spread out over the left side's width
-    // (review, 2026-11-20: "x + 3 = 9 should big… stretch to the down side 7", the user's choice "B: a bit
-    // bigger, spread"): its x over the L of LHS, x, +, 3 and = evenly apart, its = over the left side's
-    // last =, so its value stands over the left side's value (x + 3 = 9 over LHS = 4 + 3 = 7). Measured
-    // where the rows are laid out (no transforms), with the value tried (v) already in for the left
-    // side's x, as it will be when that row is written. Too little room: the equation keeps its own gaps.
-    spread(v) {
-      const [lab, e1] = this.eqRow.children;
-      const to = this.lhs.querySelector(":scope > .e1");
+    // The block of rows (centred) kept as wide as the left side will ever be, so nothing slides over as
+    // the value tried (v) takes x's place in it. Measured where the rows are laid out (no transforms).
+    // (2026-11-20 the equation was spread out over the left side here; the user turned that down the same
+    // day: "Do not make a spacing on x + 3 = 9, just make it bigger", choosing D, 144 px.)
+    steady(v) {
       const slot = this.lhs.querySelector(".xslot");
-      if (!lab || !to || !slot) return;
-      const at = (e) => {
-        let x = 0;
-        for (; e && e !== this.el; e = e.offsetParent) x += e.offsetLeft;
-        return x;
-      };
+      if (!slot) return;
       this.row.style.gridTemplateColumns = "";
       const was = slot.innerHTML;
       const wideX = this.lhs.offsetWidth;
       if (v != null) slot.innerHTML = `<span class="subbed">${CQ.num(v)}</span>`;
-      const terms = [...lab.children];
-      const w = terms.reduce((a, t) => a + t.offsetWidth, 0);
-      const end = at(to) + to.offsetWidth / 2 - e1.offsetWidth / 2; // where the equation's = begins
-      const g = (end - at(terms[0]) - w) / terms.length; // each gap: x | + | 3 | =
       const wideV = this.lhs.offsetWidth;
       slot.innerHTML = was;
-      // the block of rows (centred) as wide as the left side will ever be, so nothing slides over as 4
-      // takes x's place in it
       this.row.style.gridTemplateColumns = `minmax(${Math.ceil(Math.max(wideX, wideV))}px, auto)`;
-      const gap = parseFloat(getComputedStyle(this.eqRow).columnGap) || 0;
-      if (!(g > gap)) return;
-      lab.style.gap = `${g}px`;
-      e1.style.marginLeft = `${g - gap}px`;
     },
     // a side's pieces, one by one, in the order they are written (its name, =, the parts of its
     // expression, =, its value; the right side: its name, =, its value)

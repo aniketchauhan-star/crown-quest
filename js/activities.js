@@ -2101,6 +2101,45 @@
       row.cells.forEach((c) => (c.style.opacity = "0"));
       return row;
     };
+    // The working fills the board (asked 2026-11-19, of a solved board small in the middle of the dark:
+    // "utilize the empty space"): its size is the biggest at which what the board will hold fits it, BIG
+    // at most and the CSS's 80 px at least, found by putting those rows into an unseen copy of the
+    // working. It changes only as a new part of the equation begins, never while a row comes in: one size
+    // for the equation and x = □ (the tiles' room under them); one for each step, as its working row comes
+    // in, for the rows so far and its answer row with the tiles' room (so a second step zooms the board
+    // out); and, the tiles gone at last, one for the solved board, the working growing to it.
+    const BASE = 80;
+    const BIG = 150;
+    const TRAY = 124 + 52; // the tiles' row and the gap over it (.nt-slot, .pr-main)
+    const probe = CQ.el("div", "pr-work pr-probe", main);
+    let size = BASE;
+    const fit = (rows, tiles) => {
+      probe.style.fontSize = BASE + "px";
+      probe.replaceChildren(...rows.map((r) => makeRow(r[0], r[1])));
+      const w = probe.offsetWidth;
+      const h = probe.offsetHeight;
+      probe.replaceChildren();
+      if (!w || !h) return BASE;
+      const s = Math.min(main.clientWidth / w, (main.clientHeight - (tiles ? TRAY : 0)) / h);
+      return CQ.clamp(Math.floor(BASE * s), BASE, BIG);
+    };
+    // what those boards hold, as rows of [text, cls]: the equation and its first n steps, the last of
+    // them asked (asking) or all of them answered
+    const upTo = (p, n, asking) =>
+      p.steps.slice(0, n).reduce((a, st, j) => a.concat([[st.work], asking && j === n - 1 ? [`${st.get} = ?`, "ask"] : [`${st.get} = ${CQ.num(st.answer)}`]]), [[p.eq]]);
+    const sizes = (p) => ({
+      ask: fit([[p.eq], ["x = ?", "ask"]], true),
+      right: fit([[p.eq], [`x = ${CQ.num(p.x)}`]], false),
+      steps: p.steps.map((st, k) => fit(upTo(p, k + 1, true), true)),
+      solved: fit(upTo(p, p.steps.length), false),
+    });
+    // the working takes size f; returns how many times bigger it was (the glide's scale)
+    const resize = (f) => {
+      const k = size / f;
+      size = f;
+      work.style.fontSize = f + "px";
+      return k;
+    };
     // a row written in by hand, one cell after another (each: ms per letter); the box pops in. Resolves
     // when it is all in.
     const writeRow = async (row, each) => {
@@ -2115,13 +2154,16 @@
       });
       await CQ.run.wait(at);
     };
-    // a new row of the working under the others, written in (also: a change made in the same glide)
-    const addRow = async (text, cls, also) => {
+    // a new row of the working under the others, written in (also: a change made in the same glide; f:
+    // the working's new size, from then on)
+    const addRow = async (text, cls, also, f) => {
       const row = makeRow(text, cls);
+      const k = f && f !== size ? size / f : true;
       await glide(() => {
         if (also) also();
+        if (k !== true) resize(f);
         work.appendChild(row);
-      }, true);
+      }, k);
       await writeRow(row, cls === "hero" ? 60 : 45);
       return row;
     };
@@ -2156,8 +2198,9 @@
     // The answer is in (right, or put in for the child): the tiles go, the box melts away and the number
     // stands in the row as plain text, green when it is x at last. The step is done, so its − 7 on both
     // sides goes back to plain with it: lit only while the step is talked about (asked 2026-11-19: "This
-    // should highlight in start… after this no need to highlight").
-    const settle = async (ctl, final) => {
+    // should highlight in start… after this no need to highlight"). f (the last answer): the size of the
+    // solved board, the working growing to it as the tiles' room goes.
+    const settle = async (ctl, final, f) => {
       ctl.done();
       const box = ctl.box;
       box.classList.remove("nt-drop", "nt-empty", "nt-hover", "nt-ok", "nt-no");
@@ -2168,10 +2211,12 @@
       tray = null;
       if (t) CQ.anim(t, [{ opacity: 1 }, { opacity: 0 }], { duration: 340, easing: CQ.EASE.in, essential: true });
       await CQ.run.wait(340);
+      const k = f && f !== size ? size / f : null;
       await glide(() => {
         box.classList.add("plain");
         if (t) t.remove();
-      });
+        if (k) resize(f);
+      }, k);
       await CQ.run.wait(GLIDE);
     };
     // Waits for the child's tile; the first time ever they meet the box, the hand taps it at once (and
@@ -2211,6 +2256,9 @@
 
     async function runProblem(i, first) {
       const p = P.problems[i];
+      // the sizes of its boards; the empty board takes the first one's
+      const sz = sizes(p);
+      resize(sz.ask);
       // the equation: before the first one, written in big by itself as the voice gets to "equation"
       let eq;
       if (first) {
@@ -2229,7 +2277,7 @@
       CQ.track("answer", { activity: "practice", eq: p.eq, choice: v, correct: right });
       if (right) {
         await CQ.run.when(ctl.right());
-        await settle(ctl, true);
+        await settle(ctl, true, sz.right);
         praise(1150, 420); // each equation solved: praise, over a shower of confetti
         await CQ.run.wait(1400);
         return;
@@ -2242,25 +2290,26 @@
       await CQ.run.wait(450);
       ctl.done();
       await drop([ctl.row, tray]);
-      for (let k = 0; k < p.steps.length; k++) await solveStep(p.steps[k], k === p.steps.length - 1);
+      for (let k = 0; k < p.steps.length; k++) await solveStep(p.steps[k], sz.steps[k], k === p.steps.length - 1 && sz.solved);
       await CQ.run.wait(1600);
     }
     // One step, said in the question bar: its working row written in as the voice says it, then its
     // answer row and tiles as the line ends. A wrong tile: the screen shakes and red light glows in from
     // its corners, the number goes back to its tile, struck out, and the child tries again, the step
     // staying in the bar; nothing is said or written (asked 2026-11-19; it was "Not quite!", and after a
-    // second wrong tile "26 − 5 = 21." with the answer put in). After two, the right tile glows.
-    async function solveStep(st, last) {
+    // second wrong tile "26 − 5 = 21." with the answer put in). After two, the right tile glows. f: the
+    // working's size for the step; last: the solved board's, for the last step (false for the others).
+    async function solveStep(st, f, last) {
       CQ.say("", { text: st.say, advance: "none" });
       await CQ.run.when(CQ.caption.when(st.say, st.say.split(" ")[0]));
-      await addRow(st.work);
+      await addRow(st.work, null, null, f);
       await CQ.run.when(CQ.caption.when(st.say, st.say));
       const ctl = await ask(st.get, st.choices);
       for (let miss = 0; ; miss++) {
         const v = await answer(ctl);
         if (isRight(v, st.answer)) {
           await CQ.run.when(ctl.right());
-          await settle(ctl, last);
+          await settle(ctl, !!last, last || null);
           if (last) praise(1150, 420);
           return;
         }

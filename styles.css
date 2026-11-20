@@ -2628,16 +2628,12 @@ body.checking .cp-side .rest {
   white-space: nowrap;
 }
 /* the equation itself, kept in sight at the top all through the check (reviews, 2026-11-08 and 11-20),
-   a little bigger than the rows and spread out over the left side's width, its = over the left side's
-   last = (js/ui.js, spread; review, 2026-11-20: "x + 3 = 9 should big… stretch to the down side 7") */
+   big, the heading of the screen, written with its own plain spacing (asked 2026-11-20: "Do not make a
+   spacing on x + 3 = 9, just make it bigger", the user's choice D, 144 px; it was 96 px spread out over
+   the rows that morning, 76 px before that) */
 body.checking .cp-side.eqn > * {
-  font-size: 96px;
+  font-size: 144px;
   color: #fffaf0;
-}
-body.checking .cp-side.eqn .lab {
-  display: flex;
-  align-items: baseline;
-  gap: 0.25em;
 }
 /* "Try x = 4": the value tried for x, clearly a try (review, 2026-11-13), all in gold, the value plain
    with no box round it (review, 2026-11-18: "4 is not required to put in a box"). */
@@ -3280,15 +3276,24 @@ body.solving .eb-row.final {
   gap: 52px;
 }
 /* The working, one row under another (review, 2026-11-18: "All steps will be visible one after the
-   other"): each row's left side ends at its =, every = under the equation's, each row on one baseline. */
+   other"): each row's left side ends at its =, every = under the equation's, each row on one baseline.
+   It fills the board (asked 2026-11-19: "utilize the empty space"): js/activities.js sets its size, for
+   each part of an equation, to the biggest at which what the board then holds fits (80–150 px); its gaps
+   and the answer box are in em, so all of it grows and shrinks together. */
 .pr-work {
   display: grid;
   grid-template-columns: auto auto auto;
   align-items: baseline;
-  column-gap: 26px;
-  row-gap: 12px;
+  column-gap: 0.325em;
+  row-gap: 0.15em;
   font: 800 80px/1.2 var(--font);
   color: #fffaf0;
+}
+/* (the same working, unseen, measured to find that size) */
+.pr-work.pr-probe {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
 }
 .pr-row {
   display: contents;
@@ -3307,7 +3312,7 @@ body.solving .eb-row.final {
 /* the equation big by itself before the first one ("Now, use what you've learned to solve an
    equation."), then at its place at the top */
 .pr-row.hero > * {
-  font-size: 124px;
+  font-size: min(1.3em, 180px);
 }
 /* x, found: green */
 .pr-row.final > * {
@@ -3321,10 +3326,10 @@ body.solving .eb-row.final {
    of the working). */
 .pr-box {
   display: inline-block;
-  min-width: 156px;
-  padding: 0 20px;
+  min-width: 1.5em;
+  padding: 0 0.2em;
   border: 5px dashed rgba(255, 250, 240, 0.8);
-  border-radius: 20px;
+  border-radius: 0.25em;
   background-color: rgba(255, 250, 240, 0.07);
   color: #fffaf0;
   line-height: 1.15;
@@ -3576,15 +3581,6 @@ body.solving .eb-row.final {
   border-radius: 50%;
   border: 10px solid rgba(255, 236, 200, 0.85);
   box-shadow: 0 0 30px rgba(255, 200, 120, 0.6);
-}
-.t-roar {
-  position: absolute;
-  font: 800 110px/1 var(--font);
-  color: #ffd84d;
-  white-space: nowrap;
-  -webkit-text-stroke: 6px #4a1d6e;
-  paint-order: stroke fill;
-  text-shadow: 0 10px 0 #4a1d6e, 0 18px 24px rgba(0, 0, 0, 0.45);
 }
 .t-leaf {
   position: absolute;
