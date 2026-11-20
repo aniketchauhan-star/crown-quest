@@ -1051,9 +1051,12 @@ html[data-shade] .stage-edge::after {
   border: 4px solid rgba(255, 244, 214, 0.7);
   border-radius: 999px;
 }
+/* the intro's Skip: top right, in line with the buttons at the top left (their middle at 34 + 92 / 2 =
+   80 px), where the Next button stood until 2026-11-19 (the question bar keeps clear of that place); it
+   was at the bottom right, the corner Next is in now */
 .pill.skip {
-  right: 34px;
-  bottom: 34px;
+  right: 36px;
+  top: 49px;
 }
 .btn-wood {
   display: inline-flex;
@@ -1080,9 +1083,12 @@ html[data-shade] .stage-edge::after {
   transform: translateY(5px);
 }
 .next-btn {
-  position: absolute; /* top right, beside the question bar (CQ.next in js/ui.js) */
+  /* bottom right, in the corner, as far from the edges as the buttons at the top left (asked 2026-11-19:
+     "The next button add inner down right corner"; it stood at the top right, beside the question bar,
+     until then). CQ.next in js/ui.js. */
+  position: absolute;
   right: 36px;
-  top: 34px;
+  bottom: 34px;
   min-width: 190px;
   font-size: 46px;
   pointer-events: auto;
@@ -1178,8 +1184,9 @@ html[data-shade] .stage-edge::after {
 /* ---------------------------------------------------------------- caption, bubbles, comic words */
 .caption {
   position: absolute;
-  left: 470px; /* clear of Zippy's tail at the left, and of the Next button at the right; js/ui.js stands a
-    bar narrower than this room in the middle between the top-left buttons and Next (CAP_ROOM) */
+  left: 470px; /* clear of Zippy's tail at the left, and at the right of where the Next button stood (it is
+    at the bottom right since 2026-11-19; the bar kept its place); js/ui.js stands a bar narrower than this
+    room in the middle between the top-left buttons and that place (CAP_ROOM) */
   top: 18px;
   /* as wide as there is room for (up to 34 px from the Next button: review, 2026-11-16, on "This equation
      has one variable, / and its highest power is 1.": "text aise ni aana chahie next line mei..same line

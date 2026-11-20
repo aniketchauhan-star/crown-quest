@@ -397,15 +397,18 @@
   // too long for the bar at its own size is shown a little smaller, just small enough to fit (layout).
   const LEAD = 0.08; // s: a word counts as said this much before its sound begins (what it names has a moment to come in)
   // The room the bar stands in the middle of (stage px, styles.css): from the right of the two buttons at
-  // the top left (.nav: 36 + 140 + 14 + 140) to the left of Next (.next-btn: 1920 − 36 − 190). It stays
-  // put when Next is hidden, so the bar doesn't move between screens.
+  // the top left (.nav: 36 + 140 + 14 + 140) to where Next's left end was while it stood at the top right
+  // (1920 − 36 − 190). Next is in the bottom-right corner since 2026-11-19; the bar keeps the place it had
+  // beside it (reviewed that day), so it doesn't move. (The same room on every screen: the bar never moves
+  // between screens.)
   const CAP_ROOM = { from: 330, to: 1694 };
   // How far the bar may reach (stage px), so that as long a line as can be keeps the bar's own size. In
   // the jungle: from 470, clear of Zippy's vine and the curl of his tail at the top left (x ≈ 396–450,
-  // y 0–180), to 1660, 34 px short of Next (styles.css). On a dark screen, where Zippy isn't (the formula
-  // screen, the check, Levels 8–9's working, an activity: CAP_DARK_BY, CQ.soft's owners), from 364, as
-  // clear of the buttons at the top left as of Next (asked 2026-11-19 of "A value that makes an equation
-  // true is its solution. / So, x = 5!": "text panel ko thda lamba krdo..neeche So, x=5. ajeeb lgra").
+  // y 0–180), to 1660, 34 px short of where Next stood (styles.css). On a dark screen, where Zippy isn't
+  // (the formula screen, the check, Levels 8–9's working, an activity: CAP_DARK_BY, CQ.soft's owners), from
+  // 364, as clear of the buttons at the top left as of that place (asked 2026-11-19 of "A value that makes
+  // an equation true is its solution. / So, x = 5!": "text panel ko thda lamba krdo..neeche So, x=5. ajeeb
+  // lgra").
   const CAP_SCENE = { from: 470, to: 1660 };
   const CAP_DARK = { from: 364, to: 1660 };
   const CAP_DARK_BY = ["notebook", "check", "solve", "activity"];
@@ -865,8 +868,18 @@
       const hidden = this.nextBtn.classList.contains("hidden");
       if (on && hidden) {
         this.nextBtn.classList.remove("hidden");
-        CQ.anim(this.nextBtn, [{ opacity: 0, transform: "translateY(-10px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 300, easing: CQ.EASE.out, keep: false });
+        // (it rises into its corner at the bottom right, from just below)
+        CQ.anim(this.nextBtn, [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 300, easing: CQ.EASE.out, keep: false });
       } else if (!on) this.nextBtn.classList.add("hidden");
+    },
+    // Where the hand taps Next (CQ.hand.tapAt, when a child waits on it): on its upper part, over the word,
+    // not its middle. The hand hangs below its fingertip and Next is in the bottom-right corner: from its
+    // middle most of the hand would be off the screen; from here it comes up from the bottom edge, only the
+    // heel of its palm cut off.
+    tapPoint() {
+      const r = this.nextBtn.getBoundingClientRect();
+      if (!r.width && !r.height) return null;
+      return CQ.stage.toStage(r.left + r.width / 2, r.top + r.height * 0.12);
     },
     tapNext() {
       if (this.resolver) return this.fire("next"); // a line is on: the next line
