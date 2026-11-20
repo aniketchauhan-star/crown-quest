@@ -2627,10 +2627,17 @@ body.checking .cp-side .rest {
   min-width: 156px;
   white-space: nowrap;
 }
-/* the equation itself, kept in sight at the top all through the check (reviews, 2026-11-08 and 11-20) */
+/* the equation itself, kept in sight at the top all through the check (reviews, 2026-11-08 and 11-20),
+   a little bigger than the rows and spread out over the left side's width, its = over the left side's
+   last = (js/ui.js, spread; review, 2026-11-20: "x + 3 = 9 should big… stretch to the down side 7") */
 body.checking .cp-side.eqn > * {
-  font-size: 76px;
+  font-size: 96px;
   color: #fffaf0;
+}
+body.checking .cp-side.eqn .lab {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25em;
 }
 /* "Try x = 4": the value tried for x, clearly a try (review, 2026-11-13), all in gold, the value plain
    with no box round it (review, 2026-11-18: "4 is not required to put in a box"). */
