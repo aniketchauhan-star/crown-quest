@@ -78,7 +78,6 @@
   {"id":"vo400","line":"Now try x = 8.","spoken":"Now try x equals eight."},
   {"id":"vo108","line":"Now try x = 7.","spoken":"Now try x equals seven."},
   {"id":"vo109","line":"Add 7 + 4. Count on: 8, 9, 10, 11.","spoken":"Add seven plus four. Count on: eight, nine, ten, eleven."},
-  {"id":"vo111","line":"Another crown! Together with two coins, it balances 10 coins. Find x!","spoken":"Another crown! Together with two coins, it balances ten coins. Find x!"},
   {"id":"vo113","line":"Replace x with your value. Compare both sides.","spoken":"Replace x with your value. Compare both sides."},
   {"id":"vo114","line":"Add 10 + 2. Count on: 11, 12.","spoken":"Add ten plus two. Count on: eleven, twelve."},
   {"id":"vo116","line":"Add 12 + 2. Count on: 13, 14.","spoken":"Add twelve plus two. Count on: thirteen, fourteen."},

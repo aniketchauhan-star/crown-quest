@@ -128,7 +128,6 @@ window.CONTENT = {
     // Level 6's question, with the user's own recording (2026-11-19; it was "Choose a value for x. Are both
     // sides equal?"): the crown glows on "Another crown!", the gold bars on "Which gold bar" (flow.js)
     "l6-prompt": "Another crown! Which gold bar will keep the balance level?",
-    "l7-prompt": "Another crown! Together with two coins, it balances 10 coins. Find x!",
     "l7-support": "Replace x with your value. Compare both sides.",
     // (a wrong number in a check gets no hint, only the screen's shake and its red corners: asked
     // 2026-11-19; "Add 4 + 3. Count on: 5, 6, 7.", "2 × 7 = 14. Add 4 to get 18." and the right-hand side's
@@ -320,7 +319,9 @@ window.CONTENT = {
     L7: {
       n: 7, kind: "independent", crown: 8, left: 2, right: [4, 4, 2], bars: [10, 8, 12],
       intro: [],
-      say: { prompt: "l7-prompt", firstTry: "l7-support", nextTry: "check-next" },
+      // the same question as Level 6, with its voice (user, 2026-11-20; it was "Another crown! Together
+      // with two coins, it balances 10 coins. Find x!")
+      say: { prompt: "l6-prompt", firstTry: "l7-support", nextTry: "check-next" },
       chips: {
         10: { lhs: [11, 12, 13], rhs: [2, 10, 12] },
         12: { lhs: [13, 14, 15], rhs: [2, 10, 12] },

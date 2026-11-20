@@ -262,7 +262,6 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo400 | Now try x = 8. | Now try x equals eight. |  | 2.4 |
 | vo108 | Now try x = 7. | Now try x equals seven. |  | 3.0 |
 | vo109 | Add 7 + 4. Count on: 8, 9, 10, 11. | Add seven plus four. Count on: eight, nine, ten, eleven. |  | 6.2 |
-| vo111 | Another crown! Together with two coins, it balances 10 coins. Find x! | Another crown! Together with two coins, it balances ten coins. Find x! |  | 7.0 |
 | vo113 | Replace x with your value. Compare both sides. | = |  | 4.2 |
 | vo114 | Add 10 + 2. Count on: 11, 12. | Add ten plus two. Count on: eleven, twelve. |  | 5.1 |
 | vo116 | Add 12 + 2. Count on: 13, 14. | Add twelve plus two. Count on: thirteen, fourteen. |  | 5.2 |
