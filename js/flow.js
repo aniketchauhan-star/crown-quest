@@ -1207,11 +1207,12 @@
     const S = L.say;
     CQ.balance.setSign(`x + ${L.left} = ${sum(L.right)}`);
     for (const id of L.intro) await say(id, { advance: "auto" });
-    // Level 6's question, "Another crown! Which gold bar will keep the balance level?" (user, 2026-11-19):
-    // as the voice says them, the crown glows on "Another crown!", then the gold bars on "Which gold bar"
-    // to the end of the question, as in Level 1's "Which bar…"; then the whole scene is back for the child
-    // to choose. (Not after the line: a line skipped with Next lets its cues go at once.)
-    const cued = key === "L6";
+    // Levels 6 and 7's question, "Another crown! Which gold bar will keep the balance level?" (user,
+    // 2026-11-19; Level 7 too since 2026-11-20): as the voice says them, the crown glows on "Another
+    // crown!", then the gold bars on "Which gold bar" to the end of the question, as in Level 1's "Which
+    // bar…"; then the whole scene is back for the child to choose. (Not after the line: a line skipped
+    // with Next lets its cues go at once.)
+    const cued = S.prompt === "l6-prompt";
     let asked = false;
     if (cued) {
       const q = CQ.T(S.prompt);

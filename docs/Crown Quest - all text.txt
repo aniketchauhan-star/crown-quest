@@ -242,7 +242,7 @@ Narrator (voice + caption): Woohoo! Zippy got another crown!   [Zippy wins the c
 
 ======== LEVEL 7: YOUR TURN AGAIN ========
 On screen: x + 2 = 10   [The equation in the check]
-Narrator (voice + caption): Another crown! Together with two coins, it balances 10 coins. Find x!
+Narrator (voice + caption): Another crown! Which gold bar will keep the balance level?   [As in Level 6: the crown glows on "Another crown!", the gold bars on "Which gold bar"]
 On screen: Gold bars: 10, 8, 12   [The child picks any bar, in any order]
 
 ======== LEVEL 7: YOUR TURN AGAIN: IF X = 10 IS TRIED ========
@@ -684,88 +684,87 @@ Screen reader only: Gold bar 8 on the left pan: take it off the balance
 102. Add 7 + 4. Count on: 8, 9, 10, 11.
 103. The left-hand side is 11.
 104. So, x = 7 is the solution!
-105. Another crown! Together with two coins, it balances 10 coins. Find x!
-106. Replace x with your value. Compare both sides.
-107. Now let's check 10.
-108. Add 10 + 2. Count on: 11, 12.
-109. The right-hand side is 10.
-110. So, x = 10 is not a solution.
-111. Now let's check 12.
-112. Add 12 + 2. Count on: 13, 14.
-113. The left-hand side is 14.
-114. So, x = 12 is not a solution.
-115. Now let's check 8.
-116. Add 8 + 2. Count on: 9, 10.
-117. The left-hand side is 10.
-118. So, x = 8 is the solution!
-119. Zippy spots another crown!
-120. The crown and 8 units balance 23 units.
-121. Let's try x = 10.
-122. How about x = 12?
-123. Guessing could take a while!
-124. Can we solve this without guessing?
-125. Split 23 into 8 and 15.
-126. There are 8 extra units beside the crown. Let's remove them.
-127. Remove 8 units from both sides.
-128. Drag an 8-unit bar off each side.
-129. Now remove 8 from the other side.
-130. The crown balances 15 units. So, x = 15!
-131. Before swapping, let's check the original equation.
-132. Replace x with 15.
-133. Add 15 + 8 to get 23.
-134. The left-hand side is 23.
-135. The right-hand side is 23.
-136. So, x = 15 is the solution!
-137. The crown weighs 15 units. Time to swap!
-138. Give Zippy the 15-unit bar, then tap Swap.
-139. Let's check 23.
-140. Add 23 + 8 to get 31.
-141. The left-hand side is 31.
-142. So, x = 23 is not a solution.
-143. Let's check 31.
-144. Add 31 + 8 to get 39.
-145. The left-hand side is 39.
-146. So, x = 31 is not a solution.
-147. Each crown has the same mass, x.
-148. Two crowns together have a mass of 2x.
-149. Split 18 into 4 and 14.
-150. There are 4 extra units beside the crowns. Let's remove them.
-151. Remove 4 units from both sides.
-152. Drag a 4-unit bar off each side.
-153. Now remove 4 from the other side.
-154. Two crowns balance 14 units.
-155. But what does one crown weigh?
-156. Divide both sides into two equal groups.
-157. Each crown weighs 7 units. So, x = 7!
-158. Let's check with x = 7.
-159. 2 × 7 = 14. Add 4 to get 18.
-160. The left-hand side is 18.
-161. The right-hand side is 18.
-162. Give Zippy a 7-unit bar, then tap Swap.
-163. Let's check 9.
-164. 2 × 9 = 18. Add 4 to get 22.
-165. The left-hand side is 22.
-166. So, x = 9 is not a solution.
-167. One more crown! Give Zippy the other 7-unit bar.
-168. You've helped Zippy find the crowns' masses. Now try a few equations!
-169. Your turn! Solve an equation.
-170. Find the value of x.
-171. Not quite! Let's solve it together.
-172. Subtract 6 from both sides.
-173. Not quite!
-174. 17 − 6 = 11.
-175. Subtract 5 from both sides.
-176. 26 − 5 = 21.
-177. Divide both sides by 3.
-178. 21 ÷ 3 = 7.
-179. Add 7 to both sides.
-180. 12 + 7 = 19.
-181. Multiply both sides by 4.
-182. 6 × 4 = 24.
-183. Subtract 7 from both sides.
-184. 1 − 7 = −6.
-185. Divide both sides by 2.
-186. −6 ÷ 2 = −3.
-187. Subtract 2 from both sides.
-188. 7 − 2 = 5.
-189. Quest complete! Zippy collected all crowns, and Grumble's still snoring!
+105. Replace x with your value. Compare both sides.
+106. Now let's check 10.
+107. Add 10 + 2. Count on: 11, 12.
+108. The right-hand side is 10.
+109. So, x = 10 is not a solution.
+110. Now let's check 12.
+111. Add 12 + 2. Count on: 13, 14.
+112. The left-hand side is 14.
+113. So, x = 12 is not a solution.
+114. Now let's check 8.
+115. Add 8 + 2. Count on: 9, 10.
+116. The left-hand side is 10.
+117. So, x = 8 is the solution!
+118. Zippy spots another crown!
+119. The crown and 8 units balance 23 units.
+120. Let's try x = 10.
+121. How about x = 12?
+122. Guessing could take a while!
+123. Can we solve this without guessing?
+124. Split 23 into 8 and 15.
+125. There are 8 extra units beside the crown. Let's remove them.
+126. Remove 8 units from both sides.
+127. Drag an 8-unit bar off each side.
+128. Now remove 8 from the other side.
+129. The crown balances 15 units. So, x = 15!
+130. Before swapping, let's check the original equation.
+131. Replace x with 15.
+132. Add 15 + 8 to get 23.
+133. The left-hand side is 23.
+134. The right-hand side is 23.
+135. So, x = 15 is the solution!
+136. The crown weighs 15 units. Time to swap!
+137. Give Zippy the 15-unit bar, then tap Swap.
+138. Let's check 23.
+139. Add 23 + 8 to get 31.
+140. The left-hand side is 31.
+141. So, x = 23 is not a solution.
+142. Let's check 31.
+143. Add 31 + 8 to get 39.
+144. The left-hand side is 39.
+145. So, x = 31 is not a solution.
+146. Each crown has the same mass, x.
+147. Two crowns together have a mass of 2x.
+148. Split 18 into 4 and 14.
+149. There are 4 extra units beside the crowns. Let's remove them.
+150. Remove 4 units from both sides.
+151. Drag a 4-unit bar off each side.
+152. Now remove 4 from the other side.
+153. Two crowns balance 14 units.
+154. But what does one crown weigh?
+155. Divide both sides into two equal groups.
+156. Each crown weighs 7 units. So, x = 7!
+157. Let's check with x = 7.
+158. 2 × 7 = 14. Add 4 to get 18.
+159. The left-hand side is 18.
+160. The right-hand side is 18.
+161. Give Zippy a 7-unit bar, then tap Swap.
+162. Let's check 9.
+163. 2 × 9 = 18. Add 4 to get 22.
+164. The left-hand side is 22.
+165. So, x = 9 is not a solution.
+166. One more crown! Give Zippy the other 7-unit bar.
+167. You've helped Zippy find the crowns' masses. Now try a few equations!
+168. Your turn! Solve an equation.
+169. Find the value of x.
+170. Not quite! Let's solve it together.
+171. Subtract 6 from both sides.
+172. Not quite!
+173. 17 − 6 = 11.
+174. Subtract 5 from both sides.
+175. 26 − 5 = 21.
+176. Divide both sides by 3.
+177. 21 ÷ 3 = 7.
+178. Add 7 to both sides.
+179. 12 + 7 = 19.
+180. Multiply both sides by 4.
+181. 6 × 4 = 24.
+182. Subtract 7 from both sides.
+183. 1 − 7 = −6.
+184. Divide both sides by 2.
+185. −6 ÷ 2 = −3.
+186. Subtract 2 from both sides.
+187. 7 − 2 = 5.
+188. Quest complete! Zippy collected all crowns, and Grumble's still snoring!
