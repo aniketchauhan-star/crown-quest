@@ -152,7 +152,7 @@ So that whatever a line names comes in on screen as the voice says it ("when the
 - **Without it** the tool cuts each clip by its loudness alone (the pauses at full stops and commas, the dips between words, and how long each word should take by its syllables): good to about half a second (`"how": "loudness"`).
 - **To check a clip by eye:** `python3 tools/vo_timing.py vo038` prints its loudness with a mark where each word starts.
 
-**Older Safari versions** (older iPads and Macs that have not been updated) cannot play Ogg Opus. The game checks (`canPlayType('audio/ogg; codecs="opus"')`), and on those it reads every line with the device's own voice, as it did before it had recordings. No other file format is shipped. Chrome and the Safari engine on an up-to-date Mac both play the clips (tested).
+**Apple devices get an AAC copy (since 2026-11-20).** Older iPhones, iPads and Macs can't play Ogg Opus, and used to read every line with the device's own voice. Now every `voNNN.ogg` has a `voNNN.m4a` next to it (HE-AAC, 24 kbps, mono, made from the .ogg by `tools/vo_build.py`'s `make_m4a`, so both start and end together and the word timings fit both; 3.1 MB). `js/voice.js` picks `.m4a` on Apple devices (`navigator.vendor` "Apple…": every browser on an iPhone or iPad), `.ogg` everywhere else, the other one if the first won't play, and the device voice only if neither will. Each device fetches only its own copy. Tested: Chromium fetches the .ogg, the Safari engine (WebKit) the .m4a, both play. To remake the copies after changing clips: run `tools/vo_build.py` (it makes any missing or older .m4a).
 
 ## How the game uses the clips
 

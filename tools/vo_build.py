@@ -8,6 +8,7 @@ What it does
 - Every voNNN.mp3 in the zip(s) becomes assets/vo/voNNN.ogg: Ogg Opus, 24 kbps, mono. With several
   zips, a later one wins, so a zip of re-made lines can go last. It uses ffmpeg when that is
   installed, and otherwise macOS's own afconvert (its Opus packets are copied into an Ogg file).
+- Each .ogg also gets a voNNN.m4a copy (HE-AAC, 24 kbps) for iPhones, iPads and Safari (needs ffmpeg).
 - Rebuilds js/vo_lines.js from tools/vo_script.json: { "<line as shown>": ["voNNN", seconds, words] },
   words being when each word of the line starts and ends in its clip (tools/vo_timing.py works them
   out, and keeps them in tools/vo_timing.json): the question bar types each word as it is said, and
@@ -164,6 +165,39 @@ def convert(mp3, ogg):
         caf_to_ogg(caf, ogg, mp3_rate(mp3))
 
 
+def make_m4a(ogg, m4a):
+    """The same clip for Apple devices (iPhone, iPad, Safari): HE-AAC, 24 kbps, mono, in .m4a.
+    Older iPhones and iPads can't play Ogg Opus; AAC plays on every one of them, decoded by the
+    chip itself. The game picks this copy on Apple devices (js/voice.js). Made from the .ogg, so
+    both copies start and end at the same moment and the word timings fit both."""
+    with tempfile.TemporaryDirectory() as tmp:
+        wav = os.path.join(tmp, "clip.wav")
+        subprocess.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", ogg, "-ar", "44100", "-ac", "1", wav], check=True)
+        if shutil.which("afconvert"):
+            subprocess.run(["afconvert", "-f", "m4af", "-d", "aach", "-b", str(BITRATE), wav, m4a], check=True)
+        else:  # no macOS: plain AAC from ffmpeg (a little bigger)
+            subprocess.run(["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", wav, "-c:a", "aac", "-b:a", "40k",
+                            "-map_metadata", "-1", "-movflags", "+faststart", m4a], check=True)
+
+
+def make_all_m4a():
+    """An .m4a next to every .ogg that has none, or an older one."""
+    if not shutil.which("ffmpeg"):
+        print("  no ffmpeg: the .m4a copies for Apple devices were not made")
+        return
+    made = 0
+    for name in sorted(os.listdir(VO_DIR)):
+        if not name.endswith(".ogg"):
+            continue
+        ogg = os.path.join(VO_DIR, name)
+        m4a = ogg[:-4] + ".m4a"
+        if not os.path.exists(m4a) or os.path.getmtime(m4a) < os.path.getmtime(ogg):
+            make_m4a(ogg, m4a)
+            made += 1
+    if made:
+        print("%d .m4a copies made for Apple devices" % made)
+
+
 def write_table(script, secs_of):
     """The table of every line in docs/VOICEOVER.md, between <!-- vo-table --> and <!-- /vo-table -->."""
     if not os.path.exists(DOC):
@@ -204,13 +238,15 @@ def main(zips):
                 convert(mp3, os.path.join(VO_DIR, m.group(1) + ".ogg"))
                 made += 1
         print("%s: %d clips" % (z, made))
-    # assets/vo holds one file per voiced line and nothing else
+    # assets/vo holds one clip per voiced line (.ogg, and its .m4a copy for Apple devices) and nothing else
     for name in sorted(os.listdir(VO_DIR)):
         if name.startswith("."):
             continue
-        if not (name.endswith(".ogg") and name[:-4] in ids):
+        stem, ext = os.path.splitext(name)
+        if not (ext in (".ogg", ".m4a") and stem in ids and os.path.exists(os.path.join(VO_DIR, stem + ".ogg"))):
             os.remove(os.path.join(VO_DIR, name))
             print("  removed assets/vo/%s (no line uses it)" % name)
+    make_all_m4a()
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import vo_timing
     words_of = vo_timing.timings()

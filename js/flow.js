@@ -1042,7 +1042,7 @@
     // sight at the top.
     await R.when(cp.open());
     CQ.frameBalance("crown");
-    await R.when(cp.show({ k, a, b: bb, rhsGiven: o.rhsGiven, v })); // (v: to spread the equation over the left side)
+    await R.when(cp.show({ k, a, b: bb, rhsGiven: o.rhsGiven, v })); // (v: the value tried, to keep the rows' width steady)
     // "Try x = 4" is written under the equation as the line is said, and the value flies into it out of
     // the crown (x is the crown's mass) as the voice says it. The crown stays on the balance for now.
     const lineText = o.line ? CQ.T(o.line, vars) : null;
