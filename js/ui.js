@@ -1967,20 +1967,18 @@
   CQ.checkPanel = {
     build(ui) {
       this.el = CQ.el("div", "check-panel hidden", ui);
-      // One grid, a row each, every row's = under the one above (review, 2026-11-18: "Check the alignment
-      // of text in x = 8 for all equations": the equation and "Try x = 8" stood centred by themselves,
-      // and only the two sides were lined up with each other): the equation, kept in sight all through
-      // the check; Try x = 4; LHS = 4 + 3 = □; RHS = □. A row's parts are the grid's cells: what comes
-      // before its last = | that = | its value.
-      // The column of = signs is each row's LAST = (review, 2026-11-19, the user's picture: "x + 3 = 9 /
-      // Try x = 4 / LHS = 4 + 3 = 7 / RHS = ?"): the answers 9, 4, 7 and ? stand one under another,
-      // "LHS = 4 + 3" reaching out to the left, its 4 under the equation's x; until then it was the first
-      // =, LHS = 4 + 3 = 7 sticking out to the right.
+      // A row each, one under another, all starting at the left, under the equation's x (review,
+      // 2026-11-20, the user's picture and choice: "downside 3 equations need to be left side"; styles.css,
+      // body.checking .cp-row): the equation, kept in sight all through the check; Try x = 4;
+      // LHS = 4 + 3 = □; RHS = □. A row's parts: what comes before its last = | that = | its value.
+      // (Until then the rows stood in columns: every row's first =, then its last =, one under another;
+      // reviews, 2026-11-18 and 11-19.)
       this.row = CQ.el("div", "cp-row", this.el);
       this.eqRow = CQ.el("div", "cp-side eqn", this.row);
       this.xRow = CQ.el("div", "cp-side try", this.row); // Try x = 4: the value put in for x
       this.lhs = CQ.el("div", "cp-side lhs", this.row);
       this.rhs = CQ.el("div", "cp-side rhs", this.row);
+      this.solRow = CQ.el("div", "cp-side sol", this.row); // the ending: x = 4 written under it all, red or green
       this.isOpen = false;
     },
     // The view glides: the balance to the left, the rest dark, the check at the right (CQ.ASIDE).
@@ -2025,6 +2023,8 @@
       this.el.classList.remove("hidden");
       this.eqRow.className = "cp-side eqn";
       this.eqRow.innerHTML = `<span class="lab">${CQ.rich(`${k > 1 ? k : ""}x + ${eq.a}`)}</span><span class="op e1">=</span><span class="rest">${CQ.num(eq.b)}</span>`;
+      this.solRow.className = "cp-side sol";
+      this.solRow.innerHTML = "";
       this.xRow.className = "cp-side try";
       this.xRow.innerHTML = `<span class="lab"><span class="tw">${U.tryWord}</span> <i class="v">x</i></span><span class="op e1">=</span><span class="rest"><span class="xval"></span></span>`;
       // each side: what comes before its last =, that =, then its value. The left side: LHS = 4 + 3 | = |
@@ -2079,8 +2079,8 @@
         this.isOpen = false;
         document.body.classList.remove("checking");
         this.el.classList.add("hidden");
-        [this.lhs, this.rhs, this.xRow].forEach((s) => s.classList.remove("lit", "faded", "sure", "lit-ok", "lit-no"));
-        this.eqRow.classList.remove("gone");
+        [this.lhs, this.rhs].forEach((s) => s.classList.remove("lit", "faded"));
+        this.solRow.innerHTML = "";
         return Promise.resolve();
       }
       return CQ.anim(this.el, [{ transform: "translate(-50%, 0)", opacity: 1 }, { transform: "translate(-50%, 60px)", opacity: 0 }], {
@@ -2137,21 +2137,20 @@
     cells() {
       return [...this.eqRow.children, ...this.xRow.children, ...this.pieces(this.lhs), ...this.pieces(this.rhs)];
     },
-    // Screen 2 of the check's ending (review, 2026-11-18: "change 'Try x = 6' to a clear x = 6"): "Try"
-    // fades, leaving x = 6 under the equation, its = under the equation's; it lights green as the voice
-    // says "x = 6" (red for a value that is not a solution: "So, x = 4 is not a solution."). The working
-    // under it, LHS and RHS, stays in full view, unlit (review, 2026-11-19: "before we remove LHS and RHS
-    // part, so please add this part again"; it faded away, 2026-11-18). Nothing is written under x = 6,
-    // no Solution / Not a solution (review, 2026-11-19: "do not write not a solution and this kind of
-    // things in this game"): the voice says it. The equation over it fades away as "Try" does (review,
-    // 2026-11-19: "No need the first line. Only x is equal to 4 and then other things… x + 2 = 7 will not
-    // come"), the rows staying where they stand. cue = { lit }: the words the light waits for in line.
+    // The check's last line, on the same screen (review, 2026-11-20: "Do not make separate screen… X is
+    // equal to 4 come downside in red. So that user can understand this is not a correct"): everything
+    // stays where it is, the equation, Try x = 4, LHS and RHS, and x = 4 is written in under them as the
+    // voice says "x = 4", red for a value that is not a solution ("So, x = 4 is not a solution."), green
+    // for the solution. Nothing else is written, no Solution / Not a solution (review, 2026-11-19: "do not
+    // write not a solution and this kind of things in this game"): the voice says it. (Since 2026-11-18
+    // the equation and "Try" had faded away, leaving x = 4 lit where the try stood.)
+    // cue = { lit: the words the row waits for in line, v: the value }.
     async confirm(ok, line, cue) {
       this.lightSide(null);
-      this.xRow.classList.add("sure");
-      this.eqRow.classList.add("gone");
-      if (cue.lit) await CQ.run.when(CQ.caption.when(line, cue.lit));
-      this.xRow.classList.add(ok ? "lit-ok" : "lit-no");
+      const r = this.solRow;
+      r.className = "cp-side sol " + (ok ? "lit-ok" : "lit-no");
+      r.innerHTML = `<span class="lab"><i class="v">x</i></span><span class="op e1">=</span><span class="rest">${CQ.num(cue.v)}</span>`;
+      await writePieces([...r.children], line, cue.lit);
     },
     // The side the voice is saying the value of glows in its colour; the other side's glow fades, the
     // row itself staying as it is, in full view ("The left-hand side equals 7" with LHS = 4 + 3 = 7 lit:

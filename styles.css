@@ -2258,16 +2258,12 @@ html.reduced-motion .hand-ring.b {
   color: #fffaf0;
   transition: opacity 0.5s ease;
 }
-/* a try's verdict: the equation fades away with the working, x = 4 left by itself (review, 2026-11-19:
-   "No need the first line. Only x is equal to 4") */
-.notebook .eqn.big.gone {
-  opacity: 0;
-}
-/* lines worked out under the equation (trying a value): LHS: 4 + 2 = 6, 6 ≠ 7, 7 = 7 */
+/* lines worked out under the equation (trying a value): Try x = 4, LHS = 4 + 2 = 6, RHS = 7, each
+   starting at the left, under the equation's x (js/activities.js puts them there; review, 2026-11-20) */
 .notebook .nb-rows {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
 }
 .notebook .eqn.big + .nb-rows {
   margin-top: 10px;
@@ -2280,12 +2276,12 @@ html.reduced-motion .hand-ring.b {
 }
 /* Trying a value (review, 2026-11-13): "Try x = 4" under the equation, in gold, clearly a try; each side
    worked out under it, LHS then RHS, the side being said lit in its colour, the one before back to
-   plain, in full view ("Keep the previous calculation visible"). All three on one grid, what comes
-   before the last = | = | the value, every last = under the one above (review, 2026-11-18: "Check the
-   alignment of text in x = 8") and under the equation's (review, 2026-11-19, the user's picture). At the
-   end the working fades away (gone), "Try" with it (sure), and x = 4 is left, lit red (not a solution)
-   or green (the solution) (review, 2026-11-18: "Fade the calculations and change 'Try x = 6' to a clear
-   x = 6"), with nothing written under it (review, 2026-11-19). */
+   plain, in full view ("Keep the previous calculation visible"). All three written plainly, flush left
+   under the equation's x (review, 2026-11-20, the user's picture; they were in columns, their last =
+   signs one under another: reviews, 2026-11-18 and 11-19). At the end, on the same screen, x = 4 is
+   written in under it all, red (not a solution) or green (the solution) (review, 2026-11-20: "Do not
+   make separate screen… X is equal to 4 come downside in red"; the working had faded away, leaving
+   x = 4 by itself: 2026-11-18/19). */
 .notebook .nb-row.try {
   color: #ffd84d;
 }
@@ -2294,27 +2290,6 @@ html.reduced-motion .hand-ring.b {
   margin-right: 0.12em;
   font-size: 0.8em;
   font-style: italic;
-  transition: opacity 0.5s ease;
-}
-.notebook .nb-row.try.sure .tw {
-  opacity: 0;
-}
-.notebook .nb-row.gone {
-  opacity: 0;
-}
-/* every part of a row on one baseline: "Try x" (its smaller italic "Try" and the x's own face made its
-   cell's line sit 4 px lower than "= 4"; review, 2026-11-19: "they should in one line") */
-.notebook .nb-row.side {
-  display: grid;
-  grid-template-columns: 400px auto 120px; /* LHS = 5 + 2 | = | 7 (the column of = put under the equation's: js/activities.js) */
-  column-gap: 20px;
-  align-items: baseline;
-}
-.notebook .nb-row.side .sl {
-  justify-self: end;
-}
-.notebook .nb-row.side .sr {
-  justify-self: start;
 }
 .notebook .nb-row.lit.lhs {
   color: #5ee6dc;
@@ -2324,11 +2299,11 @@ html.reduced-motion .hand-ring.b {
   color: #ffc35c;
   text-shadow: 0 0 14px rgba(255, 195, 92, 0.55);
 }
-.notebook .nb-row.try.lit-no {
+.notebook .nb-row.sol.lit-no {
   color: #ff8f80;
   text-shadow: 0 0 16px rgba(255, 143, 128, 0.75);
 }
-.notebook .nb-row.try.lit-ok {
+.notebook .nb-row.sol.lit-ok {
   color: #74f0ac;
   text-shadow: 0 0 16px rgba(116, 240, 172, 0.7);
 }
@@ -2614,28 +2589,24 @@ body.checking .check-panel {
   top: 262px;
   width: 820px;
 }
-/* One grid for all its rows (review, 2026-11-18: "Check the alignment of text in x = 8 for all
-   equations"; the equation and "Try x = 8" stood centred by themselves): each row's left part ends at
-   its LAST =, every such = under the one above, its value after it, so the answers stand in one column
-   and "LHS = 4 + 3" reaches out to the left (review, 2026-11-19, the user's picture); each row's parts
-   stand on one baseline (the x of the maths face, the words and the numbers alike). The right side's
-   box still stands under the 4 (review, 2026-11-13). */
+/* Its rows one under another, each written plainly and starting at the left, under the equation's x:
+   x + 3 = 9 / Try x = 4 / LHS = 4 + 3 = 7 / RHS = 9 (review, 2026-11-20, the user's picture and
+   choice: "downside 3 equations need to be left side"; they were in columns, their last = signs one
+   under another: reviews, 2026-11-18 and 11-19). The block of rows stands in the middle of the room;
+   each row's parts stand on one baseline (the x of the maths face, the words and the numbers alike). */
 body.checking .cp-row {
   display: grid;
-  /* the values' column as wide as a box (.blank's 156 px) all through, so the rows stand still as a
-     box melts into its number (the block would glide over by half the difference) */
-  grid-template-columns: auto auto minmax(156px, auto);
   justify-content: center;
-  align-items: baseline;
-  column-gap: 18px;
+  justify-items: start;
   row-gap: 34px;
   font: 800 82px/1.1 var(--font);
 }
 body.checking .cp-side {
-  display: contents;
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
 }
 body.checking .cp-side .lab {
-  justify-self: end;
   white-space: nowrap;
   padding-top: 0;
   /* the row's own size: "Try x" as big as its = 4, and LHS and RHS as big as the numbers after them
@@ -2650,24 +2621,19 @@ body.checking .cp-side.lhs .lab {
   align-items: baseline;
   gap: 16px;
 }
+/* a value's place as wide as a box (.blank's 156 px) all through, so the rows stand still as a box melts
+   into its number (the block, centred, would glide over by half the difference) */
 body.checking .cp-side .rest {
-  justify-self: start;
+  min-width: 156px;
   white-space: nowrap;
 }
-/* the equation itself, kept in sight at the top (review, 2026-11-08) until the ending's second screen,
-   where it fades away and x = 4 is left with its working under it, everything else staying where it
-   stands (review, 2026-11-19: "No need the first line. Only x is equal to 4 and then other things") */
+/* the equation itself, kept in sight at the top all through the check (reviews, 2026-11-08 and 11-20) */
 body.checking .cp-side.eqn > * {
   font-size: 76px;
   color: #fffaf0;
 }
-body.checking .cp-side.eqn.gone > * {
-  opacity: 0;
-}
 /* "Try x = 4": the value tried for x, clearly a try (review, 2026-11-13), all in gold, the value plain
-   with no box round it (review, 2026-11-18: "4 is not required to put in a box"). At the end "Try" fades
-   and x = 4 is lit with what it turns out to be (green: the solution; red: not a solution), the LHS and
-   RHS working kept under it (review, 2026-11-19). */
+   with no box round it (review, 2026-11-18: "4 is not required to put in a box"). */
 body.checking .cp-side.try > * {
   color: #ffd84d;
   transition: color 0.5s ease, text-shadow 0.5s ease, opacity 0.6s ease;
@@ -2679,17 +2645,16 @@ body.checking .cp-side.try .tw {
   font-style: italic;
   transition: opacity 0.5s ease;
 }
-body.checking .cp-side.try.sure .tw {
-  opacity: 0;
-}
 body.checking .cp-side.try .xval {
   display: inline-block;
 }
-body.checking .cp-side.try.lit-ok > * {
+/* the ending, under all the working on the same screen: x = 4 in red, not a solution; x = 6 in green,
+   the solution (review, 2026-11-20: "X is equal to 4 come downside in red") */
+body.checking .cp-side.sol.lit-ok > * {
   color: #74f0ac;
   text-shadow: 0 0 18px rgba(116, 240, 172, 0.65);
 }
-body.checking .cp-side.try.lit-no > * {
+body.checking .cp-side.sol.lit-no > * {
   color: #ff8f80;
   text-shadow: 0 0 18px rgba(255, 143, 128, 0.7);
 }

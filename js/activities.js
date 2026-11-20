@@ -304,14 +304,6 @@
       // first beat, a part waits in its plain look. Done before anything below measures the page, so a
       // new look is never drawn too early.)
       const before = this.shown || { keys: new Set(), toks: {} };
-      // s.eqOut: the equation fades away, with the working, and the try's x = 4 is left by itself (review,
-      // 2026-11-19, on "So, x = 4 is not a solution.": "No need the first line. Only x is equal to 4…
-      // x + 2 = 7 will not come"); it fades back in on the beat after (or before)
-      if (!!before.eqOut !== !!s.eqOut) {
-        eqn.classList.toggle("gone", !s.eqOut);
-        void eqn.offsetWidth; // the old look is drawn first, so the change runs as a CSS transition
-      }
-      eqn.classList.toggle("gone", !!s.eqOut);
       const toks = {};
       // (s.cue.hlBy: a sign's own word for its highlight, ahead of s.cue.hl: on "A statement that says two
       // expressions have equal values…", x + 2 lights on "two", then 7 on "have", then = on "equal
@@ -426,20 +418,16 @@
       if (s.rows) {
         const rows = CQ.el("div", "nb-rows", c);
         s.rows.forEach((r) => {
-          // a side worked out (cls "side": LHS = 4 + 2 = 6): what comes before its last =, that =, and
-          // its value, in columns, so the rows' last = signs stand one under the other, and under the
-          // equation's (below), the values in one column: x + 2 = 7 / Try x = 4 / LHS = 4 + 2 = 6 /
-          // RHS = 7 (review, 2026-11-19, the user's picture; it was their first = signs, LHS = 4 + 2 = 6
-          // sticking out to the right: review, 2026-11-13). "Try x = 4" too (review, 2026-11-18: "Check
-          // the alignment of text in x = 8 for all equations"), its "Try" by itself, to fade when the
-          // try's verdict comes (cls "sure"). A side's value stays on its line, after its expression:
+          // each row written plainly, all of them starting under the equation's x (below): x + 2 = 7 /
+          // Try x = 4 / LHS = 4 + 2 = 6 / RHS = 7, flush left (review, 2026-11-20, the user's picture and
+          // choice: "downside 3 equations need to be left side"; until then they stood in columns, their
+          // last = signs under the equation's: review, 2026-11-19). "Try" smaller, by itself (.tw). A
+          // side's value stays on its line, after its expression:
           // LHS = 4 + 2 = 6 (review, 2026-11-19: "23 is equal to should same line in 15 is equal to"; = 6
           // on a line of its own under it, left of 4 + 2, was turned down the same day: "Please don't do
           // this like this… in all game").
-          const i = /\bside\b/.test(r.cls || "") ? r.t.lastIndexOf(" = ") : -1;
-          let left = i > 0 ? CQ.rich(r.t.slice(0, i)) : "";
-          if (/\btry\b/.test(r.cls || "")) left = left.replace(UI.tryWord, `<span class="tw">${UI.tryWord}</span>`);
-          const html = i > 0 ? `<span class="sl">${left}</span><span class="se">=</span><span class="sr">${CQ.rich(r.t.slice(i + 3))}</span>` : CQ.rich(r.t);
+          let html = CQ.rich(r.t);
+          if (/\btry\b/.test(r.cls || "")) html = html.replace(UI.tryWord, `<span class="tw">${UI.tryWord}</span>`);
           const key = "row:" + r.t;
           const el = add(CQ.el("div", "nb-row " + (r.cls || ""), rows, html), key);
           if (r.cue) el.dataset.cue = r.cue; // it waits until the voice says this
@@ -466,15 +454,17 @@
             CQ.writeOut(el, r.write, this.lineText, r.each || 75, () => this.renders === n).catch(() => {});
           }
         });
-        // the rows' column of = signs under the equation's = (where they are laid out: no transforms)
-        const se = rows.querySelector(".nb-row.side .se");
-        if (se) {
-          const mid = (el) => {
-            let v = el.offsetWidth / 2;
+        // the rows' left edge under the left edge of the equation's x (its letter, inside the token's
+        // padding), where they are laid out (no transforms)
+        const x = tok("x");
+        if (x) {
+          const left = (el) => {
+            let v = 0;
             for (let e = el; e && e !== c; e = e.offsetParent) v += e.offsetLeft;
             return v;
           };
-          rows.style.translate = `${Math.round(mid(tok("eq")) - mid(se))}px 0`;
+          const pad = parseFloat(getComputedStyle(x).paddingLeft) || 0;
+          rows.style.translate = `${Math.round(left(x) + pad - left(rows))}px 0`;
         }
       }
       // a tag hangs under its part on a straight line that starts with a dot on the part (or on the
@@ -634,7 +624,7 @@
         });
         at += 500;
       });
-      this.shown = { sig, keys, toks, bal: s.bal, rowCls, eqOut: !!s.eqOut };
+      this.shown = { sig, keys, toks, bal: s.bal, rowCls };
       // things a beat does as the voice gets to its words (s.steps: { cue, bal, pans, side, sub, gather,
       // restore, tilt, flash }; a step with no cue happens at once): bal moves the frame to that part of
       // the balance (null: no frame); pans: the left pan glows like the LHS and the right pan like the
@@ -937,9 +927,9 @@
   // equation as one screen currently looks cluttered"; it was one screen, with 6 ≠ 7 and "4 is not a
   // solution." written under the working): first the balance, the working kept as it is, both sides lit
   // with their pans on "two sides" and the balance tipping on "tips" (for 5: level, its hub flashing, on
-  // "level"); then the working fades away, "Try" and the equation with it, and x = 4 is left by itself,
-  // lit red as the voice says it (for 5: green, on "So, x = 5"; nothing written under it, and no
-  // equation over it: reviews, 2026-11-19).
+  // "level"); then, on the same screen, everything staying as it is, x = 4 is written in under it all in
+  // red as the voice says it (for 5: green, on "So, x = 5"; review, 2026-11-20: "Do not make separate
+  // screen… X is equal to 4 come downside in red"; nothing else written: review, 2026-11-19).
   const tryText = (v) => `${UI.tryWord} x = ${v}`;
   const lhsText = (v, s) => `${UI.lhs} = ${v} + 2 = ${s}`;
   const rhsText = `${UI.rhs} = 7`;
@@ -957,9 +947,14 @@
       steps: [{ cue: cue.both, pans: true }].concat(steps),
     },
   });
-  // the second: the working fades away, "Try" and the equation with it (eqOut), and x = v is lit on
-  // lit.cue (nothing written under it, nor x + 2 = 7 over it: reviews, 2026-11-19)
-  const verdictRows = (v, s, lit) => [tryRow(v, { cls: "try side sure", lit }), { t: lhsText(v, s), cls: "side gone" }, { t: rhsText, cls: "side gone" }];
+  // the second, the same screen: the equation and the working stay (the sides unlit), and x = v is written
+  // in under them on cue, red (cls "lit-no": not a solution) or green ("lit-ok": the solution)
+  const verdictRows = (v, s, cue, cls) => [
+    tryRow(v),
+    { t: lhsText(v, s), cls: "side" },
+    { t: rhsText, cls: "side" },
+    { t: `x = ${v}`, cls: "sol " + cls, write: [{ cue, text: `x = ${v}` }] },
+  ];
   CQ.NB_TRY = [
     // the crown lights up as the voice names it
     { id: "l4-23", s: { bal: "crown", cue: { bal: "crown's" } } },
@@ -1004,12 +999,12 @@
     // both sides worked out: the crown makes way for 4 coins; "The two sides have different values. The
     // balance tips!", the balance tipping on "tips"
     balanceBeat("check-diff", 4, 6, { both: "The values" }, [{ cue: "balance tips", tilt: true }]),
-    // "So, x = 4 is not a solution.": the working fades, x = 4 red on "x = 4"
+    // "So, x = 4 is not a solution.": x = 4 written in red under the working on "x = 4"
     // (the balance stays tipped; come back to with Back, the coins are put in again and it tips once more)
     {
       id: "check-not-sol",
       vars: { v: 4 },
-      s: { eqOut: true, rows: verdictRows(4, 6, { cue: "x = 4", cls: "lit-no" }), steps: [{ sub: 4 }, { cue: "not a", tilt: true }] },
+      s: { rows: verdictRows(4, 6, "x = 4", "lit-no"), steps: [{ sub: 4 }, { cue: "not a", tilt: true }] },
     },
     // "Now, let's check 5…": the 4 coins go and the crown is back (level again), the working for 4 is
     // cleared, and Try x = 5 is written (its 5 as "5" is said)
@@ -1032,9 +1027,9 @@
     // both sides worked out: the crown makes way for 5 coins; "Both sides have the same value. The balance
     // is level!", its hub flashing on "level"
     balanceBeat("check-same", 5, 7, { both: "Both sides" }, [{ cue: "stays level", tilt: true, flash: true }]),
-    // "A value that makes an equation true is called its solution. So, 5 is the solution.": the working
-    // fades, x = 5 is left under the equation, green on "So, 5"
-    { id: "l4-29", s: { eqOut: true, rows: verdictRows(5, 7, { cue: "So, x = 5", cls: "lit-ok" }), steps: [{ sub: 5 }] }, gem: "solution" },
+    // "A value that makes an equation true is its solution. So, x = 5!": x = 5 written in green under the
+    // working on "So, x = 5"
+    { id: "l4-29", s: { rows: verdictRows(5, 7, "So, x = 5", "lit-ok"), steps: [{ sub: 5 }] }, gem: "solution" },
   ];
 
   // The linear equation is shown in the equation itself, in step with the voice, with no labels
