@@ -1013,9 +1013,9 @@
   // ending into two screens… as one screen currently looks cluttered", for every value tried): the
   // working stays as it is while "Both sides have the same value. The balance is level!" is said (or
   // "The two sides have different values. The balance tips!"), both sides lit on "Both sides", the hub
-  // flashing on "level" (the balance tipping on "tips"); then "Try" fades and x = 6 is lit green under the
-  // equation ("So, x = 6 is the solution."; red for a value that isn't), the LHS and RHS working staying
-  // under it (review, 2026-11-19).
+  // flashing on "level" (the balance tipping on "tips"); then x = 6 is written in green under all the
+  // working, on the same screen ("So, x = 6 is the solution."; red for a value that isn't: review,
+  // 2026-11-20).
   // o: { from, line, find, rhsGiven }  (line ids from content.js)
   async function checkRoutine(L, v, o) {
     o = o || {};
@@ -1136,13 +1136,13 @@
     tip(); // (the line was skipped before its word)
     lights(null);
     cp.lightSide(null);
-    // Screen 2, what the value is: "Try" fades and x = 6 lights green under the equation as the voice says
-    // "x = 6" (red for a value that isn't a solution), the LHS and RHS working staying in full view under
-    // it (review, 2026-11-19: "please add this part again"); nothing written under x = 6 (same day).
+    // Then what the value is, on the same screen: x = 6 written in green under all the working as the
+    // voice says "x = 6" (red for a value that isn't a solution), nothing else changing (review,
+    // 2026-11-20: "Do not make separate screen… X is equal to 4 come downside in red").
     const solId = eq ? "check-sol" : "check-not-sol";
     const solText = CQ.T(solId, vars);
     const saidSol = say(solId, { vars, hold: 1800 });
-    await R.when(cp.confirm(eq, solText, { lit: `x = ${CQ.num(v)}` }));
+    await R.when(cp.confirm(eq, solText, { lit: `x = ${CQ.num(v)}`, v }));
     await saidSol;
     b.clearCounts();
     // the crown back on its pan before the view goes back to the scene
