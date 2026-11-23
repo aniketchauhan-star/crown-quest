@@ -15,8 +15,9 @@ What it does
     Grumble -> bottom-centre (he sits on the floor)
 - Props: crops away empty margins and downsizes oversized images.
 - Full-screen art: re-saved as JPEG when fully opaque (much smaller), otherwise copied.
-- The background: copies the layers made by art/background/tools/make_background.py into
-  assets/bg/jungle/ (see art/background/README.md; that tool needs numpy, Pillow and scipy).
+- The background: copies the layers made by tools/make_background.py into assets/bg/jungle/
+  (that tool needs numpy, Pillow and scipy; the old copy in art/background/tools/, from the git
+  history, still draws the stone arch that was taken out on 2026-11-23: don't use it).
 - Writes assets/sprites.js with the sizes and anchors the game needs.
 - Then saves every picture as WebP (tools/compress_assets.py, needs cwebp), so the game loads quickly.
 
@@ -442,7 +443,7 @@ def copy_background(images):
     """Copies the background layers into assets/bg/jungle/ and returns their placements."""
     layout_path = os.path.join(ROOT, BACKGROUND_DIR, "layout.json")
     if not os.path.exists(layout_path):
-        sys.exit(f"Missing {BACKGROUND_DIR}/layout.json: run art/background/tools/make_background.py first.")
+        sys.exit(f"Missing {BACKGROUND_DIR}/layout.json: run tools/make_background.py first.")
     layout = json.load(open(layout_path))
     out_dir = os.path.join(OUT, "bg", "jungle")
     if os.path.isdir(out_dir):
@@ -455,6 +456,8 @@ def copy_background(images):
         key = "bg" + "".join(part.capitalize() for part in ly["id"].split("-"))
         images[key] = {"src": f"assets/bg/jungle/{name}", "w": ly["w"], "h": ly["h"]}
         layers.append({"key": key, "x": ly["x"], "y": ly["y"], "w": ly["w"], "h": ly["h"], "anim": ly["anim"]})
+        if ly.get("flip"):
+            layers[-1]["flip"] = True  # drawn from a mirrored piece (the tree at the right sways about its own trunk)
     print(f"background: {len(layers)} layers -> assets/bg/jungle/")
     # a small copy of the whole scene for the bands round the stage on a screen that isn't 16:9: they
     # show the same jungle, blurred (styles.css, #viewport::before)

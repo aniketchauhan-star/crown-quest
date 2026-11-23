@@ -333,7 +333,10 @@
       const z = CQ.centerOf(box);
       if (!a || !b || !z) return;
       const one = open.length === 1;
-      CQ.hand.drag({ x: (a.x + b.x) / 2 + GRIP.x, y: (a.y + b.y) / 2 + GRIP.y }, { x: z.x + GRIP.x, y: z.y + GRIP.y }, 1, {
+      // (it comes up from just under the row, so the hand doesn't rest on the tiles while it shows the drag:
+      // design review, 2026-11-23, "the tutorial hand sits on top of the 6 and 11 tiles. Point at them from
+      // below")
+      CQ.hand.drag({ x: (a.x + b.x) / 2 + GRIP.x, y: (a.y + b.y) / 2 + GRIP.y + 96 }, { x: z.x + GRIP.x, y: z.y + GRIP.y }, 1, {
         carry: () => {
           const w = CQ.el("div", "hand-carry");
           CQ.el("div", "nt-tile nt-carried", w, one ? CQ.num(open[0].num) : "");

@@ -25,6 +25,10 @@
 }
 
 :root {
+  /* the colour link (design review, 2026-11-23): on the maths screens (below, "the colour link") a plain
+     number is the coins' silver and x the crown's gold; everywhere else these are the text's own colour */
+  --num-ink: currentColor;
+  --x-ink: currentColor;
   --ink: #1b3a44;
   --lhs: #177070;
   --rhs: #b97a16;
@@ -299,36 +303,70 @@ html[data-shade] .stage-edge::after {
   }
 }
 
-/* the water: soft wave lines roll slowly across it and fade, and glints of light come and go */
-.bg-wave {
+/* the water (js/world.js, bgWater): the light on its ripples is two sheets of thin bright streaks that
+   drift slowly past each other, one each way, rise and fall a little and brighten and fade in turns, so
+   it shifts all the time; and glints of light come and go. The water's box fades in from its left
+   edge, past the bushes on the lake's left bank; the paving and everything else in front covers the
+   rest. (Asked 2026-11-23: "make a movements of the water"; until then a few faint wave lines rolled
+   across it.) */
+.bg-water {
   position: absolute;
-  border-radius: 3px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.7) 35%, rgba(255, 255, 255, 0.7) 65%, rgba(255, 255, 255, 0));
-  opacity: 0;
-  animation: bgWave 12s ease-in-out infinite;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 90px);
+  mask-image: linear-gradient(90deg, transparent, #000 90px);
 }
-@keyframes bgWave {
-  0% {
-    opacity: 0;
-    transform: translateX(-40px) scaleX(0.6);
+.bg-ripples {
+  position: absolute;
+  opacity: 0.7; /* when they stand still (Reduced motion, light mode) */
+}
+.bg-ripples i {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(90deg, rgba(236, 252, 255, 0), #ecfcff 28%, #ecfcff 72%, rgba(236, 252, 255, 0));
+}
+/* (a sheet is two widths of the water wide: -50% is one width, after which it looks as it began) */
+.bg-ripples.a {
+  animation: bgRipplesLeft 100s linear infinite, bgRippleBob 4.1s ease-in-out infinite alternate, bgRippleGlow 6.8s ease-in-out infinite alternate;
+}
+.bg-ripples.b {
+  animation: bgRipplesRight 150s linear infinite, bgRippleBob 5.3s ease-in-out -2s infinite alternate, bgRippleGlow 8.6s ease-in-out -4.3s infinite alternate-reverse;
+}
+@keyframes bgRipplesLeft {
+  from {
+    transform: translateX(0);
   }
-  35% {
-    opacity: 0.55;
-    transform: translateX(0) scaleX(1);
+  to {
+    transform: translateX(-50%);
   }
-  70% {
-    opacity: 0.4;
-    transform: translateX(34px) scaleX(0.9);
+}
+@keyframes bgRipplesRight {
+  from {
+    transform: translateX(-50%);
   }
-  100% {
-    opacity: 0;
-    transform: translateX(60px) scaleX(0.6);
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes bgRippleBob {
+  from {
+    translate: 0 -1px;
+  }
+  to {
+    translate: 0 1.5px;
+  }
+}
+@keyframes bgRippleGlow {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
   }
 }
 .bg-glint {
   position: absolute;
-  border-radius: 3px;
-  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #fff, rgba(255, 255, 255, 0.55) 45%, rgba(255, 255, 255, 0));
   opacity: 0;
   animation: bgGlint 5s ease-in-out infinite;
 }
@@ -348,6 +386,184 @@ html[data-shade] .stage-edge::after {
   100% {
     opacity: 0;
     transform: translateX(16px) scaleX(0.4);
+  }
+}
+
+/* birds, far off over the lake (js/world.js, bgBirds; asked 2026-11-23: "make some birds"). A flock is
+   only seen while its flight runs: three come in from the right, below the crown count, and climb into
+   the big tree's leaves (out of sight there by x 870, where the leaves are solid), fly on behind them out
+   of the scene, and the sky stays empty until the next flight; two fly out from behind the leaves and
+   away to the right. Each bird flaps three times and glides, its body lifting on each downstroke. */
+.bg-birds {
+  position: absolute;
+  inset: 0;
+}
+.bird-flock {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0; /* hidden but in flight, and with Reduced motion and in light mode */
+  color: #22364c;
+}
+.bird-flock.f1 {
+  animation: birdsF1 84s linear -76s infinite;
+}
+.bird-flock.f2 {
+  color: #2d4660; /* further off: a little hazier */
+  animation: birdsF2 106s linear -56s infinite;
+}
+/* (the same speed all the way, about 65 px a second) */
+@keyframes birdsF1 {
+  0% {
+    transform: translate(1990px, 262px);
+    opacity: 1;
+  }
+  20.4% {
+    transform: translate(880px, 160px);
+    opacity: 1;
+  }
+  37.5% {
+    transform: translate(-60px, 140px);
+    opacity: 1;
+  }
+  37.6%,
+  100% {
+    transform: translate(-60px, 140px);
+    opacity: 0;
+  }
+}
+/* (from behind the solid leaves at the top left; about 60 px a second) */
+@keyframes birdsF2 {
+  0% {
+    transform: translate(300px, 188px);
+    opacity: 1;
+  }
+  26.9% {
+    transform: translate(2010px, 236px);
+    opacity: 1;
+  }
+  27%,
+  100% {
+    transform: translate(2010px, 236px);
+    opacity: 0;
+  }
+}
+.bird-drift {
+  animation: birdDrift 6.4s ease-in-out infinite alternate;
+}
+.f2 .bird-drift {
+  animation-duration: 7.9s;
+}
+@keyframes birdDrift {
+  from {
+    translate: 0 6px;
+  }
+  to {
+    translate: 0 -6px;
+  }
+}
+.bird {
+  position: absolute;
+  animation: birdSway 5.2s ease-in-out infinite alternate;
+}
+@keyframes birdSway {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 4px -3px;
+  }
+}
+.bird-bob {
+  position: absolute;
+  animation: birdBob var(--flap) ease-in-out var(--at) infinite;
+}
+.f2 .bird-bob {
+  transform: scaleX(-1); /* they fly the other way */
+}
+.bird svg {
+  position: absolute;
+  overflow: visible;
+  fill: currentColor;
+}
+.bird-body {
+  left: -6px;
+  top: -3.4px;
+  width: 12px;
+  height: 6px;
+}
+.bird-wing {
+  position: absolute;
+  top: -6.7px;
+  width: 18px;
+  height: 8px;
+}
+.bird-wing svg {
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+.bird-wing.l {
+  left: -18.5px;
+  transform-origin: 17.5px 5.5px; /* its shoulder */
+  animation: birdWingL var(--flap) ease-in-out var(--at) infinite;
+}
+.bird-wing.r {
+  left: 0.5px;
+  transform-origin: 0.5px 5.5px;
+  animation: birdWingR var(--flap) ease-in-out var(--at) infinite;
+}
+/* three wingbeats, then a glide with the wings held out, a little raised */
+@keyframes birdWingL {
+  0%,
+  64%,
+  100% {
+    rotate: 6deg;
+  }
+  9%,
+  27%,
+  45% {
+    rotate: 36deg;
+  }
+  18%,
+  36%,
+  54% {
+    rotate: -30deg;
+  }
+}
+@keyframes birdWingR {
+  0%,
+  64%,
+  100% {
+    rotate: -6deg;
+  }
+  9%,
+  27%,
+  45% {
+    rotate: -36deg;
+  }
+  18%,
+  36%,
+  54% {
+    rotate: 30deg;
+  }
+}
+@keyframes birdBob {
+  0%,
+  64%,
+  100% {
+    translate: 0 0;
+  }
+  9%,
+  27%,
+  45% {
+    translate: 0 1.2px;
+  }
+  18%,
+  36%,
+  54% {
+    translate: 0 -1.4px;
   }
 }
 
@@ -549,6 +765,18 @@ html[data-shade] .stage-edge::after {
   border-radius: 50%;
   background: radial-gradient(closest-side, rgba(3, 20, 26, 0.42), rgba(3, 20, 26, 0));
 }
+/* the warm pool of light on the floor round the balance (design review, 2026-11-23); faint on a dark side
+   view, where it would show as a grey patch */
+.bal-pool {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 244, 196, 0.6), rgba(255, 236, 170, 0.3) 55%, rgba(255, 236, 170, 0));
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+#world.presenting .bal-pool {
+  opacity: 0.25;
+}
 .bal-side {
   left: 0;
   top: 0;
@@ -569,7 +797,8 @@ html[data-shade] .stage-edge::after {
   filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.3));
 }
 .pan-item.coin .one {
-  font: 800 29px/1 var(--font);
+  font: 800 33px/1 var(--font); /* (29 px until the coins grew, 2026-11-23) */
+  /* (the old gold coin: a silver one was tried on 2026-11-23 and the user asked for the gold back) */
   color: #8a5a00;
   text-shadow: 0 1px 0 #ffeeb0;
   transform: translateY(2px);
@@ -579,21 +808,21 @@ html[data-shade] .stage-edge::after {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 45px;
-  height: 45px;
+  width: 50px;
+  height: 50px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(circle at 38% 32%, #43c486, var(--ok) 70%);
   border: 3px solid #0c3d29;
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35);
   color: #fff;
-  font: 800 29px/1 var(--font);
+  font: 800 32px/1 var(--font);
   padding-top: 4px;
   place-items: center;
   display: none;
 }
 .pan-item.coin .count.two {
-  font-size: 22px; /* 10, 11… */
+  font-size: 25px; /* 10, 11… */
   letter-spacing: -0.03em;
 }
 .pan-item.coin.counted .one {
@@ -773,6 +1002,15 @@ html[data-shade] .stage-edge::after {
 .bar-slot.locked {
   cursor: default;
 }
+/* not the child's turn (a line is being said, a hint is on): the bars rest a little paler, and brighten
+   when they can be picked (design review, 2026-11-23: "Inputs are blocked during hints with no signal…
+   Show a disabled state") */
+.gbar {
+  transition: filter 0.35s ease;
+}
+.bar-slot.locked:not(.tried):not(.looked):not(.glow):not(.dragging) .gbar {
+  filter: saturate(0.6) brightness(0.86) drop-shadow(0 6px 4px rgba(0, 0, 0, 0.3));
+}
 .bar-slot.dragging {
   cursor: grabbing;
   z-index: 50;
@@ -822,8 +1060,10 @@ html[data-shade] .stage-edge::after {
   }
 }
 .bar-slot.tried .gbar {
-  filter: grayscale(0.65) brightness(0.8);
-  opacity: 0.65;
+  /* (it can be given again since 2026-11-23, design review: a little paler, not greyed out like a
+     disabled one) */
+  filter: grayscale(0.4) brightness(0.9);
+  opacity: 0.85;
   animation: none;
 }
 .tried-tag {
@@ -959,6 +1199,18 @@ html[data-shade] .stage-edge::after {
   color: var(--scene-ink);
   text-shadow: var(--scene-line);
 }
+/* the pans' numbers on the balance after a wrong swap, "7 > 5" (design review, 2026-11-23: "Show weight
+   on the scale itself"): on the post under the hub, bright letters in the scene's dark outline. (Not on
+   a won level: "7 = 7 ✓" was taken off, user 2026-11-23.) */
+.wlabel.beam-verdict {
+  font: 800 78px/1 var(--font);
+  color: var(--scene-ink);
+  text-shadow: var(--scene-line);
+  z-index: 22;
+}
+.beam-verdict .bv-s.no {
+  color: #ff7a6b;
+}
 /* Level 4's x + 2 under the left pan, built with the voice: x, then + 2 (js/flow.js, runL4a) */
 .wlabel .xl-x,
 .wlabel .xl-rest {
@@ -1054,9 +1306,14 @@ html[data-shade] .stage-edge::after {
 /* the intro's Skip: top right, in line with the buttons at the top left (their middle at 34 + 92 / 2 =
    80 px), where the Next button stood until 2026-11-19 (the question bar keeps clear of that place); it
    was at the bottom right, the corner Next is in now */
+.pill.skip.turn-hidden {
+  display: none;
+}
 .pill.skip {
-  right: 36px;
-  top: 49px;
+  /* bottom right, beside Next (design review, 2026-11-23: the top right corner holds the sound button
+     and the crown counter now); it was at the top right */
+  right: 250px;
+  bottom: 49px;
 }
 .btn-wood {
   display: inline-flex;
@@ -1111,6 +1368,13 @@ html[data-shade] .stage-edge::after {
 .nav-btn {
   min-width: 140px;
 }
+/* Zippy swinging past the corner: the buttons fade back (js/ui.js, CQ.nav.dodge) */
+.nav {
+  transition: opacity 0.25s ease;
+}
+.nav.dodge {
+  opacity: 0.18;
+}
 .panel.nav-list {
   /* under the caption bar (it ends at 163 px); all 15 screens fit (826 px tall), with no scrolling */
   position: absolute;
@@ -1157,6 +1421,137 @@ html[data-shade] .stage-edge::after {
 }
 .nav-item.now .ni-n {
   background: #8a5a00;
+}
+/* a screen not reached yet (design review, 2026-11-23): greyed, with a padlock, not tappable */
+.ni-t {
+  flex: 1;
+}
+.ni-lock {
+  display: none;
+  flex: 0 0 34px;
+  height: 34px;
+  color: #8b8578;
+}
+.ni-lock svg {
+  width: 100%;
+  height: 100%;
+}
+.nav-item.locked {
+  cursor: default;
+  color: #9a9384;
+}
+.nav-item.locked:hover {
+  background: none;
+}
+.nav-item.locked .ni-n {
+  background: #b9b2a3;
+}
+.nav-item.locked .ni-lock {
+  display: block;
+}
+/* the crowns won, "3/10", under the sound button (design review, 2026-11-23: "Add a crown counter or
+   progress bar in the HUD"): a small wooden plaque, like the buttons */
+.crown-count {
+  position: absolute;
+  right: 36px;
+  top: 140px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 76px;
+  padding: 4px 0 0;
+  border-style: solid;
+  border-width: 0 38px;
+  border-image: url(assets/elements/pillWood.webp) 0 51 0 51 fill / 0 38px stretch;
+  filter: drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
+  pointer-events: none;
+  z-index: 21;
+}
+.crown-count {
+  transition: opacity 0.4s ease;
+}
+.crown-count.aside {
+  opacity: 0;
+}
+.cc-crown {
+  width: 62px;
+  height: auto;
+  margin: -6px 0 0 -10px;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+.cc-num {
+  font: 800 38px/1 var(--font);
+  color: var(--cream);
+  text-shadow: 0 3px 0 #4a2300;
+  white-space: nowrap;
+}
+/* a first-try win: bigger stars flying out, and coins bursting up (js/engine.js, CQ.fx) */
+.sparkle.fx-star {
+  width: 64px;
+  height: 64px;
+}
+.coin-pop {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  background: url(assets/props/coin.webp) center / contain no-repeat;
+  pointer-events: none;
+  z-index: 60;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.3));
+}
+/* the sound button: top right, where the question bar never reaches (design review, 2026-11-23: "Add an
+   audio control") */
+.sound-btn {
+  position: absolute;
+  right: 36px;
+  top: 34px;
+  min-width: 120px;
+}
+/* ↻ asks first: "Start this screen again?" with Yes and No, under the button (design review,
+   2026-11-23) */
+.panel.nav-confirm {
+  position: absolute;
+  transform: translate(-50%, 0);
+  min-width: 0;
+  width: 470px;
+  padding: 22px 26px 24px;
+  text-align: center;
+  pointer-events: auto;
+  z-index: 76;
+}
+.nc-q {
+  font: 800 36px/1.15 var(--font);
+  color: var(--ink);
+}
+.nc-row {
+  display: flex;
+  justify-content: center;
+  gap: 34px;
+  margin-top: 20px;
+}
+.nc-btn {
+  width: 112px;
+  height: 92px;
+  border-radius: 24px;
+  border: 5px solid rgba(0, 0, 0, 0.25);
+  color: #fff;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
+  transition: transform 0.12s;
+}
+.nc-btn svg {
+  width: 52px;
+  height: 52px;
+}
+.nc-btn.yes {
+  background: var(--ok);
+}
+.nc-btn.no {
+  background: var(--no);
+}
+.nc-btn:active {
+  transform: translateY(4px);
 }
 .swap-btn {
   position: absolute; /* placed under the left pan from js/ui.js */
@@ -1470,14 +1865,73 @@ html.reduced-motion .cap-text .ch {
 .mini-bal .mb-pan {
   transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.thought.tip .mb-beam {
+.thought.tip .mb-beam,
+.pr-scale.tip .mb-beam {
   transform: rotate(14deg);
 }
-.thought.tip .mb-pan-l {
+.thought.tip .mb-pan-l,
+.pr-scale.tip .mb-pan-l {
   transform: var(--tl); /* where the pan goes when the beam tips (set in js/world.js) */
 }
-.thought.tip .mb-pan-r {
+.thought.tip .mb-pan-r,
+.pr-scale.tip .mb-pan-r {
   transform: var(--tr);
+}
+/* Practice's balance, at the right of the board (design review, 2026-11-23: "keep a scale visible in
+   Practice"): level, and a moment tipped at a wrong answer */
+.pr-scale {
+  position: absolute;
+  left: 1662px;
+  top: 470px;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.35));
+}
+/* the side of the equation on each of its pans, and what a step does rising off both (design review,
+   2026-11-23) */
+.mini-tag {
+  position: absolute;
+  left: 0;
+  top: -18px;
+  transform: translate(-50%, -100%);
+  font: 800 150px/1 var(--font);
+  color: #fffaf0;
+  text-shadow: var(--scene-line);
+  white-space: nowrap;
+}
+.mini-tag .frac {
+  font-size: 0.8em;
+}
+.pr-scale-mark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font: 800 40px/1 var(--font);
+  color: #8fd3ff;
+  text-shadow: var(--scene-line);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.pr-slash {
+  position: absolute;
+  height: 0.07em;
+  min-height: 5px;
+  margin-top: -0.035em;
+  background: #ff7a6b;
+  border-radius: 4px;
+  transform-origin: 50% 50%;
+  pointer-events: none;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+}
+/* the small Zippy in the corner of an activity screen, reacting to the answers (js/ui.js, CQ.buddy) */
+.buddy {
+  position: absolute;
+  left: 112px;
+  top: 1068px;
+  pointer-events: none;
+  z-index: 6;
+}
+.buddy .sprite {
+  position: absolute;
+  transform-origin: 50% 100%; /* (his shake turns about his feet) */
 }
 .ms-grumble {
   position: absolute;
@@ -1674,7 +2128,7 @@ html.reduced-motion .hand-ring.b {
   white-space: nowrap;
 }
 .menu-panel {
-  width: 1440px;
+  width: 980px; /* (the sound toggles only: no chapter list since 2026-11-23) */
   text-align: center;
 }
 .btn-wood.resume {
@@ -1728,48 +2182,6 @@ html.reduced-motion .hand-ring.b {
 .toggle.on .t-knob {
   left: 48px;
 }
-.chapter-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-}
-.chapter {
-  display: grid;
-  grid-template-columns: 60px 1fr;
-  grid-template-rows: auto auto;
-  align-items: center;
-  column-gap: 14px;
-  padding: 14px 18px 10px;
-  text-align: left;
-  border: 4px solid var(--parch-b);
-  border-radius: 20px;
-  background: #fff;
-  cursor: pointer;
-}
-.chapter:active {
-  transform: translateY(3px);
-}
-.ch-n {
-  grid-row: 1 / 3;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--wood);
-  color: var(--cream);
-  display: grid;
-  place-items: center;
-  font: 800 34px/1 var(--font);
-  border: 4px solid var(--wood-rim);
-}
-.ch-t {
-  font: 800 32px/1.05 var(--font);
-  color: var(--ink);
-}
-.ch-s {
-  font: 600 24px/1.1 var(--font);
-  color: #5e6b70;
-}
-
 /* ---------------------------------------------------------------- check panel + equation board */
 /* The check, under the balance, as plain text (no panel): the two sides worked out, then compared. */
 .check-panel {
@@ -2067,7 +2479,10 @@ html.reduced-motion .hand-ring.b {
 }
 /* behind an activity (no board): darkest behind its content, a little of the jungle at the edges */
 .activity > .nb-dim:not(.light) {
-  background: radial-gradient(ellipse 64% 60% at 52% 52%, rgba(5, 16, 24, 0.94) 0%, rgba(5, 16, 24, 0.91) 62%, rgba(5, 16, 24, 0.88) 100%);
+  /* (lighter since the design review of 2026-11-23, "The theme disappears… plain dark panels with no
+     Zippy, scale or jungle": the blurred jungle shows through, most at the edges; it was 0.88–0.94 dark.
+     The bright words and numbers have the scene's dark outline, so they stay easy to read) */
+  background: radial-gradient(ellipse 64% 60% at 52% 52%, rgba(5, 16, 24, 0.8) 0%, rgba(5, 16, 24, 0.68) 62%, rgba(5, 16, 24, 0.5) 100%);
 }
 .nb-content {
   position: absolute;
@@ -3050,6 +3465,91 @@ body.solving .eb-row.final {
   cursor: default;
   box-shadow: none;
 }
+/* a card or label in its place lets taps through to the panel under it (a child choosing by taps: tap a
+   card, then a panel, even where a placed card lies; found 2026-11-23) */
+.eq-card.placed,
+.label-chip.placed {
+  pointer-events: none;
+}
+/* Level 4's one-tap checks on the formula screen (design review, 2026-11-23): every sign can be tapped
+   (a soft dotted line under it says so); after two misses the right part glows */
+.nb-content .tok.tappable {
+  cursor: pointer;
+  pointer-events: auto;
+  text-decoration: underline dotted rgba(255, 250, 240, 0.55);
+  text-decoration-thickness: 0.05em;
+  text-underline-offset: 0.12em;
+}
+.nb-content .tok.tappable:hover {
+  color: #ffe27a;
+}
+.nb-content .tok.hint {
+  animation: tokHint 0.9s ease-in-out infinite alternate;
+}
+@keyframes tokHint {
+  from {
+    text-shadow: 0 0 0 rgba(255, 216, 77, 0);
+  }
+  to {
+    text-shadow: 0 0 22px rgba(255, 216, 77, 0.95), 0 0 8px rgba(255, 216, 77, 0.9);
+  }
+}
+/* Level 4d: the values to try, golden tiles under the working (design review, 2026-11-23) */
+.nb-pick {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  margin-top: 40px;
+  pointer-events: auto;
+}
+.nb-pick .nb-pick-tile {
+  position: relative;
+  inset: auto;
+  width: 128px;
+  height: 128px;
+  border: none;
+  font-size: 64px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.nb-pick .nb-pick-tile.struck {
+  opacity: 0.45;
+  cursor: default;
+}
+.nb-pick .nb-pick-tile.struck::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 50%;
+  height: 6px;
+  background: #ff7a6b;
+  border-radius: 3px;
+  transform: rotate(-18deg);
+}
+/* the sort's opening: what a power is, x² = x × x and x = x¹, big in the middle (design review,
+   2026-11-23); the lit power gold */
+.pow-demo {
+  position: absolute;
+  left: 960px;
+  top: 560px;
+  transform: translate(-50%, -50%);
+  display: grid;
+  justify-items: start;
+  gap: 36px;
+  font: 800 120px/1.1 var(--font);
+  color: #fffaf0;
+  text-shadow: var(--scene-line);
+  white-space: nowrap;
+}
+.pow-demo sup {
+  font-size: 0.55em;
+  transition: color 0.4s ease, text-shadow 0.4s ease;
+}
+.pow-demo sup.lit {
+  color: #ffd84d;
+  text-shadow: var(--scene-line), 0 0 22px rgba(255, 216, 77, 0.85);
+}
 /* a sorted nonlinear card shows its power 2 in orange (no "power 1" / "power 2" badges: asked 2026-11-05),
    a deep orange that stands out on the cream card (2026-11-17) */
 .eq-card.show-2 sup {
@@ -3160,14 +3660,71 @@ body.solving .eb-row.final {
 .finale-title .nb-ch {
   -webkit-text-stroke: 15px var(--nb-ink);
 }
-/* Play again, between the title and Zippy's crown: it pops up, then breathes gently */
+/* the results under the title (design review, 2026-11-23): three small wooden plaques in a row */
+.fin-sum {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 22px;
+  z-index: 13;
+}
+.fs-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 84px;
+  padding: 4px 0 0;
+  border-style: solid;
+  border-width: 0 40px;
+  border-image: url(assets/elements/pillWood.webp) 0 51 0 51 fill / 0 40px stretch;
+  filter: drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
+  white-space: nowrap;
+}
+.fs-ic {
+  width: 52px;
+  height: auto;
+  margin-left: -14px;
+  flex: 0 0 auto;
+}
+.fs-ic .gem {
+  display: block;
+}
+.fs-tick {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font: 800 32px/1 var(--font);
+  padding-top: 3px;
+}
+.fs-n {
+  font: 800 40px/1 var(--font);
+  color: #ffe27a;
+  text-shadow: 0 3px 0 #4a2300;
+}
+.fs-l {
+  font: 700 28px/1 var(--font);
+  color: var(--cream);
+  text-shadow: 0 2px 0 #4a2300;
+}
+/* Home and Play again, together at the bottom, right of Zippy (design review, 2026-11-23; Play again
+   stood alone between the title and his crown): they pop up, then Play again breathes gently */
 .finale-again {
   position: absolute;
   transform: translate(-50%, -50%);
+  display: flex;
+  gap: 26px;
   pointer-events: auto;
   z-index: 14;
 }
-.finale-again.on {
+.finale-again .btn-wood.fin-home {
+  min-width: 220px;
+  filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.35));
+}
+.finale-again.on .fin-again {
   animation: againBreath 1.1s ease-in-out infinite alternate;
 }
 .finale-again .btn-wood {
@@ -3233,15 +3790,14 @@ body.solving .eb-row.final {
   padding-top: 92px; /* room for the labels over the equation */
 }
 .rc-panel.labels-below .rc-eq-wrap {
-  padding-bottom: 76px; /* and under it (LHS, RHS) */
+  padding-bottom: 138px; /* and under it (LHS, and RHS a step lower) */
 }
 .rc-eq {
   font: 800 84px/1.1 var(--font);
   color: var(--ink);
 }
-.rc-eq .tok.eq {
-  padding: 0 0.72em; /* room for the LHS and RHS labels side by side, each under its own side */
-}
+/* (the = has the spacing it has everywhere since 2026-11-23: RHS's label stands a step lower than LHS's
+   instead of the = making room between them) */
 .rc-tag {
   position: absolute;
   transform: translate(-50%, -100%);
@@ -3298,9 +3854,30 @@ body.solving .eb-row.final {
 .pr-row {
   display: contents;
 }
+/* a wrong answer's check under it, "23 + 6 = 29 ≠ 17" (design review, 2026-11-23), its ≠ red */
+.pr-row.why > * {
+  color: #ffb3a8;
+}
+/* the two that cancel in a step, "+ 6 − 6", struck through and faded (design review, 2026-11-23) */
+.pr-strike {
+  position: absolute;
+  height: 0.08em;
+  min-height: 6px;
+  margin-top: -0.04em;
+  background: #ff7a6b;
+  border-radius: 4px;
+  transform-origin: 0 50%;
+  pointer-events: none;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+}
+.pr-row .cancelled {
+  opacity: 0.45;
+  transition: opacity 0.4s ease;
+}
 .pr-row > .pl {
   justify-self: end;
   white-space: nowrap;
+  position: relative; /* (its strike-through, when terms cancel) */
 }
 .pr-row > .pr {
   justify-self: start;
@@ -4014,7 +4591,10 @@ html.lite #title .t-drift {
 .activity .label-eq,
 .activity .rc-eq {
   color: #fffaf0;
-  text-shadow: none;
+  text-shadow: var(--scene-line);
+}
+.activity .pr-work {
+  text-shadow: var(--scene-line);
 }
 .activity .tok.glow-var {
   color: #2b2100; /* on its gold highlight */
@@ -4185,9 +4765,35 @@ html.lite #title .t-drift {
    pair once LHS and RHS come in ("Fade the completed Variable and Equation labels"), the recap's earlier
    labels ("LHS: Fade earlier labels") */
 .activity .settled {
-  opacity: 0.5;
-  filter: saturate(0.55);
-  transition: opacity 0.7s ease, filter 0.7s ease;
+  /* (in their own colours since 2026-11-23, design review: "the Variable and Equation chips turn grey,
+     which reads as wrong or disabled. Keep them coloured, or use a 'locked ✓' style"; they were half
+     faded and greyed) */
+  opacity: 0.8;
+  transition: opacity 0.7s ease;
+}
+/* a label done with keeps its colour, with a green tick after it: locked in, right */
+.activity .label-chip.placed.settled {
+  white-space: nowrap;
+}
+.activity .label-chip.placed.settled::after {
+  content: " ✓";
+  color: #2fbf7a;
+}
+/* a label put wrong twice: its own box glows softly until it is in (design review, 2026-11-23) */
+.activity .drop-box.hinted {
+  animation: boxHint 0.9s ease-in-out infinite alternate;
+}
+@keyframes boxHint {
+  from {
+    box-shadow: 0 0 0 0 rgba(255, 216, 77, 0);
+  }
+  to {
+    box-shadow: 0 0 0 10px rgba(255, 216, 77, 0.65), 0 0 28px rgba(255, 216, 77, 0.8);
+  }
+}
+html.reduced-motion .activity .drop-box.hinted {
+  animation: none;
+  box-shadow: 0 0 0 8px rgba(255, 216, 77, 0.7);
 }
 /* x lit in the label activity and the recap: the x itself turns gold and glows softly, like x on the
    formula screen (review, 2026-11-13: soft glows, not boxes; it was dark on a gold box), also inside the
@@ -4722,4 +5328,57 @@ html.reduced-motion .thought.tip .ms-alarm {
   border-color: #ff8f80;
   color: #ff8f80;
   background-color: rgba(255, 143, 128, 0.14);
+}
+
+/* ---------------------------------------------------------------- the colour link (design review, 2026-11-23) */
+/* "Colour x the same as the crown and the constant the same as the coins, everywhere": on the dark maths
+   screens (the formula screen, the check, Levels 8–9's working, the activities' equations, practice and its
+   balance) x is the crown's gold and every plain number (js/engine.js, CQ.rich: .cn) the silver of the
+   coins (a silver coin that day; the coins went back to the old gold one the same day, the numbers kept
+   the silver). A part that is lit or coloured keeps its own
+   colour, numbers and x too (the LHS teal, the RHS orange, a highlight, a verdict). */
+.cn {
+  color: var(--num-ink);
+}
+.v {
+  color: var(--x-ink);
+}
+.nb-content,
+body.checking .check-panel,
+.eq-board,
+.activity .pr-work,
+.activity .label-eq,
+.activity .rc-eq,
+.eq-strip,
+.mini-tag,
+.pow-demo {
+  --num-ink: #c3d0dc;
+  --x-ink: #ffd84d;
+}
+.hl,
+.lit,
+.lhs,
+.rhs,
+.faded,
+.same:not(.unmark),
+.hot:not(.unmark),
+.mark-new:not(.unmark),
+.final,
+.pulse,
+.x-lit,
+.c-lit,
+.lit-ok,
+.lit-no,
+.why,
+.try,
+.subbed,
+.xval,
+.glow-var,
+.glow-lhs,
+.glow-rhs,
+.glow-const,
+.look-eq,
+.cancelled {
+  --num-ink: currentColor;
+  --x-ink: currentColor;
 }

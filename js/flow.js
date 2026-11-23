@@ -19,7 +19,11 @@
   const WORD_ORDER = ["variable", "constant", "expression", "equation", "lhs", "rhs", "linear", "solution"];
   const WORDS_AT = { L4c: 6, L4e: 7, L4g: 7, L5: 8, L6: 8, L7: 8, L8: 8, L9: 8, P: 8, finale: 8 };
   // The gold bars wait off screen while the balance is being explained or solved.
-  const BARS_HIDDEN = ["L4a", "L4c", "L4e", "L4g", "L8", "L9", "P", "finale"];
+  // (the intro too: its gold bars come in as "Let's swap the crown…" says "swap", not before: design review,
+  // 2026-11-23, "The 3 / 5 / 7 bars show while the intro is still playing, so the child taps them early")
+  // (and Level 1's, until its question says "Which bar": second round of that review, "Reveal them only when
+  // the question is asked")
+  const BARS_HIDDEN = ["intro", "L1", "L4a", "L4c", "L4e", "L4g", "L8", "L9", "P", "finale"];
   // Where a level begins when a chapter is opened straight away (Grumble snores twice there; a level
   // reached in the story gets its two snores as Zippy peeks at him, see sneakBack)
   const SNORE_AT = ["L1", "L2", "L3", "L4a", "L5", "L6", "L7", "L8", "L9"];
@@ -40,6 +44,7 @@
       this.started = true;
       let start = ORDER.indexOf(cp);
       this.handOver = null;
+      this.at = opts.at || null; // (where in its chapter to start: Level 4d's "give", after Skip)
       try {
         if (veil) await R.when(CQ.veil.cover());
         for (let i = start; i < ORDER.length; i++) {
@@ -57,14 +62,22 @@
           if (i > start && !(carry && id === "finale")) await R.hold(CQ.PACE.between);
           if (change) await outro();
           this.current = id;
-          CQ.next.showNext(id !== "finale");
+          // no Next button: the quest moves on by itself; only practice's 6 equations bring it in, each
+          // solved one waiting for its tap (asked 2026-11-23: "no need to tap always in the next button…
+          // need next button only 6 questions"). A test build (?qa=1) keeps it, to jump ahead.
+          CQ.next.showNext(CQ.qa && id !== "finale");
           CQ.nav.show(true); // the screens list and replay, top left
+          // the furthest screen reached in this game: the screens list opens up to it (design review,
+          // 2026-11-23: "Lock levels that haven't been reached")
+          if (i > (CQ.store.get("reached", 0) || 0)) CQ.store.set("reached", i);
           CQ.nav.setCurrent(id);
           CQ.store.set("progress", { cp: id });
           resetScene(id, { animate: change, keepSpot: change, carry });
           if (i === start && SNORE_AT.includes(id)) CQ.grumble.snore(1); // a level begins: he snores once
           if (veil && i === start) CQ.veil.reveal();
           if (change) await arrive();
+          // (a level won goes on by itself after a pause, Zippy swinging off: no tap on Next. The design
+          // review's wait on a glowing Next was taken out on 2026-11-23, the same day)
           await STEPS[id]();
         }
       } catch (e) {
@@ -111,7 +124,14 @@
     // (the label activity fades the balance out while it is on.) The finale is only the jungle and Zippy
     // dancing: the balance, Grumble, the bars and the hanging Zippy are gone from its first moment,
     // however it is reached (asked 2026-11-19: the last balance showed a moment before "Mission Complete!")
-    [CQ.world.balanceLayer, CQ.world.grumbleLayer, CQ.world.barLayer, CQ.world.zippyLayer].forEach((l) => (l.style.opacity = finale ? "0" : ""));
+    // (since 2026-11-23 the finale keeps sleeping Grumble and, faint behind Zippy, the level balance: design
+    // review, "Story payoff. Bring back Grumble and the scale… with the scale still level behind him")
+    [
+      [CQ.world.balanceLayer, "0.55"],
+      [CQ.world.grumbleLayer, ""],
+      [CQ.world.barLayer, "0"],
+      [CQ.world.zippyLayer, "0"],
+    ].forEach(([l, op]) => (l.style.opacity = finale ? op : ""));
     CQ.world.dark.style.opacity = 0;
     CQ.screen.shade("dark", false);
     CQ.Give.disable();
@@ -128,14 +148,15 @@
     CQ.hud.setLevel(LEVEL_OF[cp] || 1);
     CQ.gems.set(WORD_ORDER.slice(0, WORDS_AT[cp] || 0));
     const intro = cp === "intro";
-    CQ.hud.show(!intro);
+    if (intro) CQ.hud.firstTries = 0; // (a new game)
+    CQ.hud.show(!intro && !finale); // (the crown counter: the finale has its own summary)
     CQ.audio.music(intro ? "title" : "game");
     CQ.audio.ambience(true);
     const lv = LV()[SCENE_OF[cp]];
     if (!carry) CQ.balance.setup(lv); // (handed over, it is already set up, in sight)
     // a new level's crown, coins and gold bars are simply there when it begins (set up behind the fade):
     // nothing pops in by magic
-    CQ.bars.setup(lv.bars);
+    CQ.bars.setup(lv.bars, { answer: lv.crown });
     CQ.bars.setVisible(!BARS_HIDDEN.includes(cp));
     if (["L4c", "L4e", "L4g"].includes(cp)) CQ.balance.setSign("x + 2 = 7");
     if (cp === "P" || cp === "finale") {
@@ -176,6 +197,16 @@
     CQ.audio.play("ui.pop");
     return e;
   }
+  // A label that stays just above a thing on a pan, wherever the beam takes it (design review, 2026-11-23:
+  // "the floating x x labels aren't attached to anything… pin the labels to each crown")
+  function pinLabel(e, it, dy) {
+    const off = CQ.ticker.add(() => {
+      if (!e.isConnected) return off();
+      const c = CQ.balance.itemCenter(it);
+      CQ.pos(e, c.x, c.y + dy);
+    });
+    return e;
+  }
   function removeLabel(e) {
     if (!e) return;
     CQ.anim(e, [{ opacity: 1 }, { opacity: 0 }], { duration: 250 }).then(() => e.remove());
@@ -191,7 +222,7 @@
     z.pose("swing");
     CQ.audio.play("zippy.whee");
     setTimeout(() => CQ.audio.play("slide.up"), 300);
-    await R.when(z.swingAway());
+    await dodging(R.when(z.swingAway()));
     // no fade to dark (asked 2026-11-09: "no need to come screen of transition"): the light closes in on
     // the tree and sleeping Grumble, the rest of the scene dims and blurs, and the next level is set up
     // there, unseen, while Zippy peeks out (arrive)
@@ -208,6 +239,8 @@
   async function arrive() {
     const z = CQ.zippy;
     CQ.flow.arriving = true;
+    const cp = CQ.flow.current;
+    CQ.ui.showSkip(() => CQ.flow.chapter(cp)); // (Skip: the level starts at once, without his entrance)
     try {
       z.offstage();
       await R.wait(500);
@@ -215,6 +248,7 @@
       z.pose("idle");
     } finally {
       CQ.flow.arriving = false;
+      CQ.ui.hideSkip();
     }
   }
   // Zippy's smiling head leans out from behind the tree trunk ("hmm?"), blinks at Grumble twice with a
@@ -240,7 +274,16 @@
     z.pose(opts.pose || "swing");
     CQ.audio.play(opts.sound || "zippy.whee");
     if (opts.giggle) setTimeout(() => CQ.audio.play("zippy.giggle"), 700);
-    await R.when(z.swingBack());
+    await dodging(R.when(z.swingBack()));
+  }
+  // while Zippy swings past the top left corner, its buttons fade back (CQ.nav.dodge)
+  async function dodging(p) {
+    CQ.nav.dodge(true);
+    try {
+      return await p;
+    } finally {
+      CQ.nav.dodge(false);
+    }
   }
   function glowCrown(on) {
     CQ.balance.glowItems("left", (it) => it.type === "crown", on);
@@ -297,9 +340,31 @@
     const to = CQ.camera.toScreen(CQ.zippy.holdPoint("zippy_swap", 1)); // into his open hands
     return CQ.hand.drag(from, to, 2, { carry: () => CQ.bars.carried(v), carryScale: CQ.zippy.barBox(1).w / CQ.L.BAR_W });
   }
+  // As the child picks up a bar (design review, 2026-11-23): the coins counted by a hint go back to plain
+  // gold ("Coins stay in the counting style… Reset them to gold"), and a line about the bar before goes
+  // ("Old subtitles stay on screen… Clear or replace the subtitle when the state changes").
+  let feedback = null; // the text of the last "that bar was wrong" line, while it may still be up
+  function onPick() {
+    CQ.balance.clearCounts();
+    if (feedback && CQ.caption.text === feedback) CQ.caption.hide();
+    feedback = null;
+  }
+  // a line about a wrong bar (or a hint), said; it goes when the next bar is picked up
+  function sayFeedback(id, o) {
+    feedback = CQ.T(id, o && o.vars);
+    return say(id, o);
+  }
+  // The gold bars bright, the rest of the scene calm behind them for a moment, as the child's turn begins
+  // (design review, 2026-11-23: "The dim and blur on 'Which bar should Zippy choose?' works well. Use it
+  // every time a question is asked, not just the first time").
+  function askBars() {
+    look(barEls, { quiet: true });
+    CQ.focus.offAfter(2400);
+  }
   // The child gives one of `values` to Zippy. Resolves with the value once he has caught it.
   // A child who does nothing for a while gets the hand showing how, and only that: the instruction is
   // not said again (review, 2026-11-07: "do not repeat the instruction. Give hand nudge only").
+  // It is the child's turn meanwhile: Next is hidden (CQ.next.turn).
   function giveBar(values, opts) {
     opts = opts || {};
     CQ.balance.counting = true; // coins can be tapped to count them while the child decides
@@ -308,21 +373,24 @@
       const v = values.find((x) => CQ.bars.get(x) && CQ.bars.get(x).state === "idle");
       if (v != null) demoGive(v);
     }, 8000);
+    const endTurn = CQ.next.turn();
+    CQ.Give.onPick = onPick;
     const given = R.when(
       new Promise((res) =>
         CQ.Give.enable(values, (v) => {
           CQ.Give.disable();
           CQ.bars.clearGlow();
           CQ.idle.disarm();
+          endTurn();
           res(v);
         })
       )
     );
     return given;
   }
-  // The child gives a bar to Zippy, then taps SWAP (they may change bars before tapping). Idle: the
-  // hand only (as in giveBar), with the `show` bar if it is still on its stand (Level 1: the right one,
-  // as in the first demo).
+  // The child gives a bar to Zippy, then taps SWAP (they may change bars before tapping, or give the one
+  // he holds back by tapping him). Idle: the hand only (as in giveBar), with the `show` bar if it is
+  // still on its stand (Level 1: the right one, as in the first demo). The child's turn: Next is hidden.
   function giveThenSwap(values, show) {
     let firstSwap = !CQ.store.get("swapDemoSeen", false);
     CQ.idle.arm(() => {
@@ -332,6 +400,8 @@
         if (v != null) demoGive(v);
       }
     }, 8000);
+    const endTurn = CQ.next.turn();
+    CQ.Give.onPick = onPick;
     return R.when(
       new Promise((res) => {
         CQ.Give.enable(values, () => {
@@ -341,6 +411,7 @@
             CQ.focus.off();
             CQ.Give.disable();
             CQ.idle.disarm();
+            endTurn();
             res(held.value);
           });
           if (firstSwap) {
@@ -477,7 +548,7 @@
       CQ.fx.sparkle(CQ.world.fx, hp.x, hp.y, 16, 100);
       CQ.audio.play("crown.sparkle");
       CQ.audio.play("correct");
-      CQ.hud.setCrowns(CQ.hud.crowns + 1);
+      CQ.hud.crowns++; // (the counter, top right, shows it when a crown flies in: crownLine)
       await R.wait(700);
       z.pose("proud");
       await R.wait(450);
@@ -497,6 +568,8 @@
   // 9's first one too), "Woohoo! Zippy got another crown!". It goes by the crowns he has (CQ.hud.crowns,
   // counted as the crown is collected; a screen started from the list has the crowns of the levels
   // before it), so it is Level 1's crown that is his first. If he is wearing it, it sparkles on "crown".
+  // On "crown" a crown flies from his head into the counter at the top right (design review, 2026-11-23),
+  // which counts it.
   async function crownLine() {
     const id = CQ.hud.crowns > 1 ? "crown-another" : "crown-first";
     const z = CQ.zippy;
@@ -504,17 +577,33 @@
       onSaid(CQ.T(id), "crown", () => {
         const hp = z.headPoint();
         CQ.fx.sparkle(CQ.world.fx, hp.x, hp.y, 10, 70);
+        if (CQ.hud.shown < CQ.hud.crowns) CQ.hud.gain(hp, 96);
       });
     }
     await say(id);
+    if (CQ.hud.shown < CQ.hud.crowns) CQ.hud.render(CQ.hud.crowns); // (the line was skipped before its word)
   }
   // Equal masses: celebration. He puts the crown on and laughs; the crown line (crownLine) follows. (Until
   // 2026-11-19 he said "Hee hee! Sleep tight, Grumble!" after the laugh, with a snore from Grumble, and
   // the narrator went on with "Perfect! Both weigh 7 units!" in Levels 1–3 and "It worked! Another
   // crown collected…" in Level 8: the user asked for the Woohoo line alone.)
-  async function celebrate() {
+  // A first-try win is celebrated more (design review, 2026-11-23: "First-try success and third-try success
+  // look the same. Reward first-try wins with more (stars, a bigger Zippy celebration, a coin burst)"):
+  // the fanfare, a ring of stars round him, coins bursting up from the balance, and more confetti. (The
+  // level's three stars under the question bar, 3 for a first try, 2 for a second, 1 after that, counted
+  // in the finale, were taken off the same day: user, 2026-11-23, "remove this text and the stars".)
+  async function celebrate(o) {
+    o = o || {};
     const z = CQ.zippy;
     await collectCrown({ wear: true }); // he puts the crown on, and keeps it on until he swings away
+    if (o.firstTry) {
+      CQ.hud.firstTries = (CQ.hud.firstTries || 0) + 1;
+      const hp = z.headPoint();
+      CQ.audio.play("fanfare", { volume: 0.8 });
+      CQ.fx.stars(CQ.world.fx, hp.x, hp.y + 40, 10);
+      CQ.fx.coins(CQ.world.fx, CQ.L.BX, CQ.L.PIVOT_Y + 120, 14);
+      CQ.fx.confetti(CQ.world.fx, 960, 380, 50);
+    }
     // He has won the crown: he laughs, in his own recorded laugh (asked 2026-11-09: "use this voice when
     // monkey win"), and only for as long as the laugh is heard (review, 2026-11-18: "Reduce the timing
     // of Zippy's laugh when Zippy collects the crown"), then stands proud, wearing it, while the line is
@@ -522,7 +611,7 @@
     const laugh = ((C().audio && C().audio.winLaugh) || 1.2) * 1000;
     z.pose("laugh");
     CQ.audio.play("zippy.win", { volume: 1.3 });
-    CQ.fx.confetti(CQ.world.fx, 700, 420, 44);
+    CQ.fx.confetti(CQ.world.fx, 700, 420, o.firstTry ? 70 : 44);
     CQ.audio.play("confetti");
     await R.wait(laugh);
     z.pose("idle");
@@ -587,7 +676,7 @@
           // ...and he swings away to the left!
           z.pose("hide");
           CQ.audio.play("slide.up");
-          await z.swingAway();
+          await dodging(z.swingAway());
         },
       })
     );
@@ -604,30 +693,36 @@
     const z = CQ.zippy;
     const g = CQ.grumble;
     const b = CQ.balance;
-    CQ.ui.skip.classList.remove("hidden");
+    CQ.ui.showSkip(() => CQ.flow.skipIntro());
     z.setVisible(false);
     CQ.world.dark.style.opacity = 0.92;
     CQ.screen.shade("dark", 2);
     CQ.camera.set(600, 400, 1.3); // the corner Zippy drops into
-    g.snore(1, 1.2); // Grumble's snoring is heard in the dark, then the jungle fades in
-    await R.wait(1300);
-    CQ.world.darkness(0, 1400);
-    await R.wait(800);
+    // (the intro is trimmed to about 25 s, design review, 2026-11-23: "The intro premise is good… make it
+    // tighter: cut the beats to about 20–25 seconds": the beats overlap instead of following one another,
+    // his name and line come as he lands while he still swings to a stop, the views glide as the lines
+    // begin, the pauses between lines are shorter, and "Grumble guards the treasure" no longer waits for a
+    // second snore; it took about 33 s). Since the second round of that review the opening is silent too: the
+    // snore heard in the dark kept the first line waiting (a line never comes over a snore: asked
+    // 2026-11-09); he only breathes, and snores once Level 1 begins. About 24 s now.
+    await R.wait(450);
+    CQ.world.darkness(0, 1000);
+    await R.wait(250);
     // Meet Zippy! He's spotted a golden crown!
-    const drop = z.dropIn();
+    z.dropIn();
     await R.wait(650);
     CQ.spot.on(() => z.center(), 270, CQ.world.zippyLayer);
-    await R.when(drop);
+    await R.wait(300); // (he has landed: the rest of his swing settles meanwhile)
     const zp = CQ.camera.toScreen(z.center());
     const zb = CQ.nameBurst(C().names.zippy, C().names.zippyTag, zp.x + 640, zp.y - 110, "orange");
     z.pose("celebrate");
     CQ.audio.play("zippy.giggle");
-    const meet = say("intro-1", { advance: "auto", pause: 700 });
+    const meet = say("intro-1", { advance: "auto", pause: 0 });
     await R.wait(1500);
     CQ.hideBurst(zb);
     CQ.spot.off();
     z.pose("idle");
-    await R.when(CQ.camera.to(960, 540, 1, 1100));
+    await R.when(CQ.camera.to(960, 540, 1, 950));
     const crown = b.find("left", (it) => it.type === "crown");
     const cc = b.itemCenter(crown);
     await R.when(untilSaid(CQ.T("intro-1"), "golden crown")); // (it glints as the voice says it)
@@ -641,16 +736,17 @@
     // matching with what we are showing on screen": his snore keeps the next line waiting, and "Meet
     // Zippy! He spots a golden crown." stayed in the bar under his name meanwhile).
     CQ.caption.hide();
-    await R.when(CQ.camera.to(300, 760, 1.65, 1300));
+    const toGrumble = R.when(CQ.camera.to(300, 760, 1.65, 1000));
+    await R.wait(450); // (the line starts as the view glides over to him)
     g.hush();
-    g.snore(1, 2.2, true); // Grumble guards the treasure. Luckily, he's asleep! (the line waits for it)
     CQ.spot.on(() => g.center(), 430, CQ.world.grumbleLayer); // the same spotlight as Zippy's
     const named = R.when(untilSaid(CQ.T("intro-2"), "Grumble")).then(() => CQ.nameBurst(C().names.grumble, C().names.grumbleTag, 1250, 400, "purple"));
-    await say("intro-2", { advance: "auto" });
-    await say("intro-3", { advance: "auto", pause: 700 });
+    await say("intro-2", { advance: "auto", pause: 100 });
+    await toGrumble;
+    await say("intro-3", { advance: "auto", pause: 0 });
     await CQ.hideBurst(await named);
     CQ.spot.off();
-    await R.when(CQ.camera.to(960, 540, 1, 1300));
+    await R.when(CQ.camera.to(960, 540, 1, 900));
     // If the balance tips, the alarm will wake Grumble: a cloud above sleeping Grumble's head, its trail
     // pointing at him, shows it (the balance tips, RING! RING!, and he wakes up roaring). Everything else
     // fades back, so the cloud is all there is to look at.
@@ -667,23 +763,25 @@
     onSaid(i4, "balance tips", () => th.isConnected && th.classList.add("tip"));
     onSaid(i4, "the alarm", () => th.isConnected && CQ.audio.play("alarm", { volume: 0.45 }));
     onSaid(i4, "wake him", () => th.isConnected && CQ.audio.play("grumble.roar", { volume: 0.35 }));
-    await say("intro-4", { advance: "auto", pause: 1000 });
+    await say("intro-4", { advance: "auto", pause: 300 });
     look(null);
     await CQ.hideThought(th);
     // Let's swap the crown without tipping the balance! (the swap arrow comes on "swap")
-    const bar = CQ.bars.list[0];
     let arrow = null;
     const i5 = CQ.T("intro-5");
-    const said5 = say("intro-5", { advance: "auto", pause: 700 });
+    const said5 = say("intro-5", { advance: "auto", pause: 0 });
     await R.when(untilSaid(i5, "swap"));
-    arrow = swapArrow(cc, { x: bar.home.x, y: bar.home.y - 50 });
+    // (the arrow runs between the crown and Zippy, who makes the swap: the gold bars only come in with the
+    // question, "Which bar should Zippy choose?"; it pointed at a bar until the design review of 2026-11-23)
+    const zh = z.holdPoint();
+    arrow = swapArrow(cc, { x: zh.x + 60, y: zh.y + 10 });
     await said5;
     arrow.remove();
     // Each coin weighs 1 unit.
     const coin = b.items.right[b.items.right.length - 1];
     const ccoin = b.itemCenter(coin);
     const i6 = CQ.T("intro-6");
-    const said6 = say("intro-6", { advance: "auto", pause: 700 });
+    const said6 = say("intro-6", { advance: "auto", pause: 0 });
     await R.when(untilSaid(i6, "Each coin")); // the coin pops up as it is named...
     coin.el.classList.add("demo-pop");
     CQ.audio.play("coin.clink", { index: 3 });
@@ -695,7 +793,7 @@
     look(null);
     coin.el.classList.remove("demo-pop");
     removeLabel(unit);
-    CQ.ui.skip.classList.add("hidden");
+    CQ.ui.hideSkip();
   }
   function miniTipScene() {
     // the mini balance is added after; when it tips, the alarm word shows and an arrow points at Grumble
@@ -714,14 +812,45 @@
     return e;
   }
 
+  // ------------------------------------------------------------------ a swap, right or wrong
+  // The two pans' numbers on the balance as it tips, "7 > 5" (design review, 2026-11-23: "Show weight on
+  // the scale itself. When the bar goes on, show '5 = 5 ✓' or '7 > 5' on the beam so the child links the
+  // number to the tip"): under the hub, on the post between the pans, in the scene's bright letters in a
+  // dark outline, the sign red. Only for a wrong bar: "7 = 7 ✓" on a won level was taken off (user,
+  // 2026-11-23: "remove this text").
+  function beamVerdict(L, v) {
+    const lv = v + (L.left || 0);
+    const rv = sum(L.right);
+    const left = L.left ? `${CQ.num(v)} + ${CQ.num(L.left)}` : CQ.num(v);
+    const html = `${left} <span class="bv-s no">${lv > rv ? ">" : "<"}</span> ${CQ.num(rv)}`;
+    return worldLabel(html, CQ.L.BX, CQ.L.PIVOT_Y + 150, "beam-verdict");
+  }
+  // A wrong bar on the pan (Levels 1–4): the numbers stand on the balance as it tips, and the narrator
+  // says which way it went (design review, 2026-11-23: "'7 is more than 5. Too heavy!' / '3 is less than
+  // 5. Too light!'"; it was "Oops! The balance tipped. Try another bar!" for both, asked 2026-11-19); then
+  // the alarm wakes Grumble and the bar goes back to its stand, marked Tried, for the child to try again.
+  async function wrongSwap(L, v, barItem) {
+    const verdict = beamVerdict(L, v);
+    const heavy = v + (L.left || 0) > sum(L.right);
+    await sayFeedback(heavy ? "swap-heavy" : "swap-light", { advance: "auto", pause: 200 });
+    removeLabel(verdict);
+    await wakeAndUndo(v, barItem); // the bar is back on its stand, marked Tried
+  }
+
   // ------------------------------------------------------------------ LEVELS 1–3: the swap
   async function runSwapLevel(key) {
     const L = LV()[key];
     const b = CQ.balance;
     b.counting = true;
-    if (key === "L1") onSaid(CQ.T("l1-1"), "Which bar", () => look(barEls)); // which bar? these! (as it is said)
+    // which bar? these! (as it is said: they rise in on "Which bar", hidden until the question)
+    if (key === "L1")
+      onSaid(CQ.T("l1-1"), "Which bar", () => {
+        CQ.bars.setVisible(true, 500);
+        look(barEls);
+      });
     if (key === "L3") CQ.grumble.snore(1); // One more crown. Grumble is still asleep!
     for (let i = 0; i < L.intro.length; i++) await say(L.intro[i], { advance: i < L.intro.length - 1 ? "auto" : "none" });
+    if (key !== "L1") askBars(); // (Level 1's look came with "Which bar")
     // Level 1: the hand shows how with the right bar, the crown's mass (review, 2026-11-07: "for the
     // first time when we are explaining what to do, do it with the correct answer, 5")
     const show = key === "L1" ? L.crown : null;
@@ -738,38 +867,36 @@
     }
     let attempts = 0;
     for (;;) {
-      const v = await giveThenSwap(L.bars.filter((x) => CQ.bars.get(x).state !== "tried"), show);
+      // every bar can be given, the ones tried already too (marked Tried), so the right one is never the
+      // only one left (design review, 2026-11-23: "After two wrong picks only one bar remains, so the
+      // child wins by elimination")
+      const v = await giveThenSwap(L.bars, show);
       b.counting = false;
       b.clearCounts();
       const { d, barItem } = await swapOnPan(v);
       if (d === 0) {
         CQ.Give.useHeld();
-        await celebrate();
+        await celebrate({ firstTry: attempts === 0 });
         await crownLine();
         return;
       }
-      await wakeAndUndo(v, barItem); // the bar is back on its stand, marked Tried
+      await wrongSwap(L, v, barItem);
       attempts++;
       CQ.track("hint_shown", { level: L.n, tier: attempts >= 2 ? 2 : 1 });
-      // after every wrong bar: "Oops! The balance tipped. Try another bar!" (user, 2026-11-19; no "Oops!
-      // Too light/heavy!" any more). After the first it stays up while the child picks again (it was
-      // "Give Zippy a gold bar."); after the second, the hint follows it.
-      if (attempts === 1) {
-        say("wrong-bar", { advance: "none" });
-      } else {
-        await say("wrong-bar", { advance: "auto" });
-        // each as the voice says it: the crown on "The crown", its coins are counted as "balances" is
-        // said, and the bar lights up on "bar"
-        const h2 = CQ.T("swap-hint2", { n: L.crown });
-        say("swap-hint2", { vars: { n: L.crown }, advance: "none" });
+      // From the second wrong bar on, the coins are counted (same review: "2nd miss: highlight and count
+      // the coins (the 1–5 count animation already exists, so use it here)"), as the voice says it: the
+      // crown glows on "The crown", its coins are counted on "balances". The bar is not named, and none
+      // glows: the child works it out. The counts stay until a bar is picked up.
+      if (attempts >= 2) {
+        const h2 = CQ.T("swap-count", { n: L.crown });
+        const said = sayFeedback("swap-count", { vars: { n: L.crown }, advance: "none" });
         await R.when(untilSaid(h2, "The crown"));
         look(crownEls);
         await R.when(untilSaid(h2, "balances"));
         look(panEls("right"));
         await R.when(b.autoCount("right"));
-        await R.when(untilSaid(h2, `the ${L.crown}-unit bar`));
-        look(null);
-        CQ.bars.glow(L.crown, true);
+        await said;
+        CQ.focus.offAfter(900);
       }
       b.counting = true;
     }
@@ -781,10 +908,12 @@
   // until the balance stands in the middle, a little bigger (its art spans x 726–1445, y 311–840 at 1:
   // on screen x 529–1392, y 197–832), between the question bar and the x + 2 = 7 strip under it; Zippy
   // and Grumble stay at the left, in the faded scene.
-  const LEARN_VIEW = { x: 1085, y: 597, z: 1.2 };
+  // (zoomed in less since the balance is drawn bigger, BAL.GROW: it looks as it did, x 1085, y 597, z 1.2)
+  const LEARN_VIEW = { x: CQ.L.BX, y: CQ.L.PIVOT_Y - (CQ.L.PIVOT_Y - 597) * CQ.BAL.GROW, z: 1.2 / CQ.BAL.GROW };
   async function runL4a() {
     const z = CQ.zippy;
     const b = CQ.balance;
+    CQ.ui.showSkip(() => CQ.flow.chapter("L4c")); // (Skip: straight to the label activity)
     z.pose("curious");
     CQ.camera.to(LEARN_VIEW.x, LEARN_VIEW.y, LEARN_VIEW.z, 1100);
     // Everything here comes as the voice names it (review, 2026-11-16: "Things are not appearing according
@@ -958,34 +1087,70 @@
     CQ.flow.handOver = "L4c";
   }
   async function runL4c() {
+    CQ.ui.hideSkip(); // (handed over from 4a's lesson, its Skip goes: the child's turn)
     await CQ.activityLabel();
     // the formula screen comes in as the board fades, the balance coming back (the activity faded it
     // out); when it was kept open under the activity (from Level 4's: runL4a), it is already there
     const kept = CQ.notebook.isOpen;
     CQ.balanceTo(1, 900);
+    CQ.ui.showSkip(() => CQ.flow.chapter("L4e")); // (Skip: on to the sort)
     await R.when(CQ.notebook.open());
     if (kept) await R.wait(1100); // (the board fades over it meanwhile)
     await CQ.notebook.run(CQ.NB_LINEAR, { lower: true });
     await R.when(CQ.notebook.close());
+    CQ.ui.hideSkip();
   }
   async function runL4e() {
     await CQ.activitySort();
+    CQ.ui.showSkip(() => CQ.flow.chapter("L4g")); // (Skip: past the recap)
     await CQ.activityRecap();
+    CQ.ui.hideSkip();
   }
   // Finding the crown's mass, like the PPT: on the formula screen, try 4 (6 ≠ 7, not a solution), then
   // 5 (7 = 7, the solution). Back in the room: the crown's mass is 5 units, so the child gives Zippy
   // the 5 bar and he makes the swap.
   async function runL4g() {
-    await R.when(CQ.notebook.open());
-    await CQ.notebook.run(CQ.NB_TRY);
-    await R.when(CQ.notebook.restore()); // the crown back on its pan (5 was put in for it), for the swap
-    await R.when(CQ.notebook.close());
+    const at = CQ.flow.at;
+    CQ.flow.at = null;
+    if (at !== "give") {
+      CQ.ui.showSkip(() => CQ.flow.chapter("L4g", { at: "give" })); // (Skip: straight to the swap)
+      await R.when(CQ.notebook.open());
+      await CQ.notebook.run(CQ.NB_TRY);
+      // the child picks the values to try, 4, 5 or 6, until the balance is level (design review,
+      // 2026-11-23: "Let the child do the trial and check"; it used to try 4, then 5, by itself)
+      const tried = [];
+      for (;;) {
+        const v = await CQ.notebook.pick([4, 5, 6], tried);
+        await CQ.notebook.run(CQ.tryBeats(v, tried.length === 0));
+        tried.push(v);
+        if (v + 2 === 7) break;
+      }
+      await R.when(CQ.notebook.restore()); // the crown back on its pan (5 was put in for it), for the swap
+      await R.when(CQ.notebook.close());
+      CQ.ui.hideSkip();
+    }
     CQ.bars.setVisible(true, 700); // the gold bars come back for the swap
-    CQ.bars.glow(5, true); // x = 5 is the solution: the 5 bar glows as it comes back, "this one"
     await say("l4-30", { advance: "auto" });
-    say("l4-give", { advance: "none" }); // Drag the 5 bar to Zippy, then tap Swap.
-    const v = await giveThenSwap([5]);
-    await swapAndCollect(v);
+    // "Give Zippy a gold bar.": the child picks it, any of the three (design review, 2026-11-23: "'Drag the
+    // 5-unit bar to Zippy'… name the answer, so the child isn't thinking"; it was that line, with the 5
+    // bar glowing and the only one that could be given). A wrong one tips the balance, as in Levels 1–3.
+    say("give-bar", { advance: "none" });
+    askBars();
+    const L = LV().L4;
+    let attempts = 0;
+    for (;;) {
+      const v = await giveThenSwap(L.bars);
+      const { d, barItem } = await swapOnPan(v);
+      if (d === 0) {
+        CQ.Give.useHeld();
+        await celebrate({ firstTry: attempts === 0 });
+        CQ.balance.setSign(`x = ${v}`);
+        await crownLine();
+        return;
+      }
+      attempts++;
+      await wrongSwap(L, v, barItem);
+    }
   }
 
   // ------------------------------------------------------------------ the Check routine (Levels 5–9)
@@ -1066,7 +1231,16 @@
     // and the child picks again, the instruction staying in the question bar; no hint is said or
     // written (asked 2026-11-19: "glat krne pr yh text ki need ni… bs shake krdo"; it was "2 × 7 = 14.
     // Add 4 to get 18.", "Add 4 + 3. Count on: 5, 6, 7.", with the left pan's coins counted after two).
-    await cp.fill("lhs", ch.lhs, s);
+    // The child's turn: Next is hidden meanwhile.
+    const fillTurn = async (which, options, right) => {
+      const endTurn = CQ.next.turn();
+      try {
+        await cp.fill(which, options, right);
+      } finally {
+        endTurn();
+      }
+    };
+    await fillTurn("lhs", ch.lhs, s);
     // Then the right side, under it: RHS = □ (or RHS = 23, given) as the voice says "right-hand",
     // the right pan's things lit; its box under the 4.
     if (!o.rhsGiven) {
@@ -1074,7 +1248,7 @@
       say("check-find-rhs", { vars, advance: "none" });
       onSaid(rhsText, "right-hand", () => lights("right"));
       await R.when(cp.side(rhsText, "right-hand"));
-      await cp.fill("rhs", ch.rhs, bb);
+      await fillTurn("rhs", ch.rhs, bb);
     } else {
       lights("right");
       await R.when(cp.side(null, null));
@@ -1168,7 +1342,9 @@
     o = o || {};
     say(o.tapLine || "check-now-swap", { advance: "none" });
     CQ.idle.arm(() => CQ.hand.tapAt(CQ.centerOf(CQ.swapBtn.el)), 8000);
+    const endTurn = CQ.next.turn(); // (the child's turn: Next is hidden)
     await R.when(CQ.swapBtn.wait());
+    endTurn();
     CQ.idle.disarm();
     return swapAndCollect(v, o);
   }
@@ -1180,24 +1356,36 @@
     if (d !== 0) return d;
     CQ.Give.useHeld();
     if (o.oneOfTwo) await collectCrown();
-    else await celebrate();
+    else await celebrate({ firstTry: o.firstTry });
     if (o.sign !== false) CQ.balance.setSign(o.sign || `x = ${v}`);
     await crownLine();
     return d;
   }
 
   // ------------------------------------------------------------------ LEVEL 5: guided practice
+  // The first try is shown step by step with a value that isn't the answer (Zippy: "Let's try 4.", "Give
+  // Zippy the 4-unit bar."); then the child picks the next bar to check (design review, 2026-11-23:
+  // "'Give Zippy the 4-unit bar' name the answer… Let the child pick the value and watch the scale tip or
+  // balance"; until then the second try was named too: "Now let's try 6.", "Give Zippy the 6-unit bar.").
   async function runL5() {
     const L = LV().L5;
     const z = CQ.zippy;
     CQ.balance.setSign(`x + ${L.left} = ${sum(L.right)}`);
-    for (let i = 0; i < L.tries.length; i++) {
-      const v = L.tries[i];
-      await R.when(z.say(CQ.fmt(i ? C().zippy.tryNext : C().zippy.tryN, { v })));
-      say("l5-give", { vars: { v }, advance: "none" });
-      await giveBar([v], { glow: true });
+    const v0 = L.tries[0];
+    await R.when(z.say(CQ.fmt(C().zippy.tryN, { v: v0 })));
+    say("l5-give", { vars: { v: v0 }, advance: "none" });
+    await giveBar([v0], { glow: true });
+    if (await checkRoutine(L, v0, { line: "check-replace" })) return swapAfterCheck(v0);
+    say("give-bar", { advance: "none" }); // (said once: after a wrong bar, "Try another bar!")
+    askBars();
+    let misses = 0; // (the child's own picks: the guided first try isn't one)
+    for (;;) {
+      const v = await giveBar(L.bars); // (the one tried too: it is marked Tried)
       const ok = await checkRoutine(L, v, { line: "check-replace" });
-      if (ok) return swapAfterCheck(v);
+      if (ok) return swapAfterCheck(v, { firstTry: misses === 0 });
+      misses++;
+      say("wrong-bar", { advance: "none" });
+      askBars();
     }
   }
 
@@ -1224,16 +1412,18 @@
     if (cued) look(null);
     let misses = 0;
     for (;;) {
-      const left = L.bars.filter((x) => CQ.bars.get(x).state !== "tried");
-      const v = await giveBar(left);
+      // every bar can be given, tried ones too (design review, 2026-11-23: the right one is never the only
+      // one left)
+      const v = await giveBar(L.bars);
       // the same check whichever bar it is, the right one first too: the child works out each side (review,
       // 2026-11-08: "Do not automatically fill in 10 for the LHS… Compare both sides only after the learner
       // completes these steps")
       const ok = await checkRoutine(L, v, { line: misses === 0 ? S.firstTry : S.nextTry });
-      if (ok) return swapAfterCheck(v);
+      if (ok) return swapAfterCheck(v, { firstTry: misses === 0 });
       misses++;
       CQ.track("hint_shown", { level: L.n, tier: misses });
       say("wrong-bar", { advance: "none" }); // after every wrong bar (user, 2026-11-19; it was "Try another value!")
+      askBars();
     }
   }
 
@@ -1245,7 +1435,7 @@
     const b = CQ.balance;
     const w = 150;
     const h = (w * IMAGES.brickStand.h) / IMAGES.brickStand.w;
-    const restY = 822; // where a bar rests on it (world y): a pan tipped right down ends ~780
+    const restY = CQ.L.PIVOT_Y + (822 - CQ.L.PIVOT_Y) * CQ.BAL.GROW; // where a bar rests on it (world y): a pan tipped right down ends ~780 (×GROW below the pivot)
     const mk = (side) => {
       const x = b.panCenter(side).x;
       const t = CQ.el("div", "ledge tray " + side, CQ.world.drag);
@@ -1387,6 +1577,7 @@
     });
     CQ.idle.arm(demo, 7000);
     const demoTimer = setTimeout(demo, 600);
+    const endTurn = CQ.next.turn(); // (the child's turn: Next is hidden until both bars are off)
     return R.when(
       new Promise((res) => {
         let held = null; // the bar being carried: { s, proxy, grab }
@@ -1439,7 +1630,10 @@
             .then(() => opts.off && opts.off(s, k))
             .then(() => landed)
             .then(() => {
-              if (k === 2) return res();
+              if (k === 2) {
+                endTurn();
+                return res();
+              }
               if (!onPan(o)) return;
               if (opts.next) opts.next(o);
               CQ.idle.arm(demo, 7000);
@@ -1522,6 +1716,15 @@
     const z = CQ.zippy;
     const b = CQ.balance;
     const eb = CQ.eqBoard;
+    // Skip jumps past the lesson to the swap (design review, 2026-11-23: "Make Skip / Replay consistent on
+    // every narrated sequence"; it hides by itself while it is the child's turn, as the bars come off)
+    const at = CQ.flow.at;
+    CQ.flow.at = null;
+    if (at === "give") {
+      CQ.bars.setVisible(true, 600);
+      return l8Give(L);
+    }
+    CQ.ui.showSkip(() => CQ.flow.chapter("L8", { at: "give" }));
     b.setSign("x + 8 = 23");
     z.pose("curious");
     await say("l8-1", { advance: "auto" });
@@ -1530,7 +1733,7 @@
     // (until the working opens); the parts light up as the voice says them: the crown and the 8 bar
     // together, then the level beam, briefly, on "balance", then the 23 bar. (Grumble's sleepy Zs don't
     // float up over the dimmed scene: no stray Z under Zippy.)
-    await R.when(CQ.camera.to(CQ.L.BX, 560, 1.15, 900));
+    await R.when(CQ.camera.to(CQ.L.BX, CQ.L.PIVOT_Y - (CQ.L.PIVOT_Y - 560) * CQ.BAL.GROW, 1.15 / CQ.BAL.GROW, 900)); // (as it looked before the balance was drawn bigger)
     const l82 = CQ.T("l8-2");
     const saying = say("l8-2");
     const leftEls = () => b.items.left.filter((it) => !it.ghost).map((it) => it.el);
@@ -1602,6 +1805,7 @@
     const lhs8 = lightTerm(row, "left", 8, eb);
     look(leftBarEls);
     await said86;
+    await say("remove-them", { advance: "auto" }); // (its own line since 2026-11-23: lines of 8–10 words)
     // "Let's remove 8 units from both sides." (same review: "Highlight both 8-unit weights and both
     // matching 8s in the equation"): the 8 bar on each pan, and the 8 of x + 8 at the left with the 8 of
     // 8 + 15 at the right, the right ones joining on "both sides".
@@ -1660,17 +1864,27 @@
     const crown = b.find("left", (it) => it.type === "crown");
     await checkRoutine(L, 15, { from: b.itemCenter(crown), rhsGiven: true, line: "l8-11" });
     // The swap: only a checked value gets the SWAP button.
+    CQ.ui.hideSkip();
+    await l8Give(L);
+  }
+  // Level 8's swap, after the lesson (or straight after Skip): "Give Zippy a gold bar."
+  async function l8Give(L) {
     await say("l8-14", { advance: "auto" });
-    say("l8-give", { advance: "none" });
+    // "Give Zippy a gold bar.": the bar is not named (design review, 2026-11-23; it was "Give Zippy the
+    // 15-unit bar, then tap Swap.")
+    say("give-bar", { advance: "none" });
+    askBars();
+    let missed = 0; // (a first-try win: no bar tried before the right one)
     for (;;) {
       const v = await giveBar(L.bars.filter((x) => CQ.bars.get(x).state !== "tried"));
       if (v !== 15) {
+        missed++;
         await checkRoutine(L, v, { line: "check-lets", rhsGiven: true });
         await say("wrong-bar", { advance: "auto" }); // after every wrong bar (user, 2026-11-19)
-        say("l8-give", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
+        say("give-bar", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
         continue;
       }
-      await swapAfterCheck(15, { sign: "15 + 8 = 23" });
+      await swapAfterCheck(15, { sign: "15 + 8 = 23", firstTry: missed === 0 });
       return;
     }
   }
@@ -1681,6 +1895,14 @@
     const z = CQ.zippy;
     const b = CQ.balance;
     const eb = CQ.eqBoard;
+    // Skip jumps past the lesson to the two swaps (design review, 2026-11-23), as in Level 8
+    const at = CQ.flow.at;
+    CQ.flow.at = null;
+    if (at === "give") {
+      CQ.bars.setVisible(true, 600);
+      return l9Give(L);
+    }
+    CQ.ui.showSkip(() => CQ.flow.chapter("L9", { at: "give" }));
     z.pose("curious");
     // The working, like the formula screen, from the start, and the whole solving sequence stays on it,
     // the bars taken off here too (review, 2026-11-08: "Keep the whole solving sequence on the same
@@ -1708,7 +1930,8 @@
             el.classList.add("x-lit");
             crowns[i].el.classList.add("glow");
             const c = b.itemCenter(crowns[i]);
-            xs[i] = worldLabel('<i class="v">x</i>', c.x, c.y - 80, "xlabel small");
+            const dy = -(crowns[i].h * CQ.BAL.S) / 2 - 34; // (just above the crown's top)
+            xs[i] = pinLabel(worldLabel('<i class="v">x</i>', c.x, c.y + dy, "xlabel small"), crowns[i], dy);
           },
         ],
       })
@@ -1760,6 +1983,7 @@
     const lit4l = lightTerm(row9, "left", 4, eb);
     look(leftBarEls);
     await said93;
+    await say("remove-them", { advance: "auto" }); // (its own line since 2026-11-23)
     // "Let's remove 4 units from both sides.": the 4 bar on each pan, and the 4 of 2x + 4 at the left with
     // the 4 of 4 + 14 at the right, the right ones joining on "both sides".
     const l95 = CQ.T("l9-5");
@@ -1870,29 +2094,44 @@
     await putBack(ledges, 4, 18);
     b.setSign("2x + 4 = 18");
     await checkRoutine(L, 7, { from: b.itemCenter(crowns[0]), rhsGiven: true, line: "l9-9" });
-    // Two swaps, one 7 bar for each crown.
-    say("l9-give", { advance: "none" });
+    CQ.ui.hideSkip();
+    await l9Give(L);
+  }
+  // Level 9's two swaps, after the lesson (or straight after Skip)
+  async function l9Give(L) {
+    // Two swaps, one 7 bar for each crown. "Give Zippy a gold bar.", and for the second crown "One more
+    // crown!" first: the bar is not named (design review, 2026-11-23; they were "Give Zippy a 7-unit bar,
+    // then tap Swap." and "One more crown! Give Zippy the other 7-unit bar.")
+    say("give-bar", { advance: "none" });
+    askBars();
     let swapped = 0;
+    let missed = 0; // (a first-try win: no bar tried before the right ones)
     while (swapped < 2) {
       const v = await giveBar(L.bars.filter((x) => CQ.bars.list.some((bar) => bar.value === x && bar.state === "idle")));
       if (v !== 7) {
+        missed++;
         await checkRoutine(L, v, { line: "check-lets", rhsGiven: true });
         await say("wrong-bar", { advance: "auto" }); // after every wrong bar (user, 2026-11-19)
-        say(swapped ? "l9-give2" : "l9-give", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
+        say("give-bar", { advance: "none", quiet: true }); // the same prompt again: shown, not said again
         continue;
       }
       swapped++;
       if (swapped === 1) {
         await swapAfterCheck(7, { oneOfTwo: true, sign: false });
-        say("l9-give2", { advance: "none" });
-      } else await swapAfterCheck(7, { sign: "2 × 7 + 4 = 18" });
+        await say("one-more", { advance: "auto", pause: 150 });
+        say("give-bar", { advance: "none" });
+        askBars();
+      } else await swapAfterCheck(7, { sign: "2 × 7 + 4 = 18", firstTry: missed === 0 });
     }
   }
 
   // ------------------------------------------------------------------ Practice: try a few equations
   async function runPractice() {
     const start = CQ.store.get("practiceAt", 0) || 0;
-    if (!start) await say("p-intro");
+    if (!start) {
+      await say("p-intro", { advance: "auto" });
+      await say("p-intro-b"); // (its own line since 2026-11-23: lines of 8–10 words)
+    }
     await CQ.activityPractice(start);
   }
 

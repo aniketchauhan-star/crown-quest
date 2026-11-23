@@ -27,7 +27,7 @@
     // sizes of things on the pans, in balance units (the whole balance is drawn at BAL.S)
     PAN_BAR_W: 126,
     CROWN_W: 150,
-    COIN_W: 56,
+    COIN_W: 62, // (56 until 2026-11-23: design review, "Coins are too small… make them bigger")
   };
   // Crowns to collect: one per level, two in Level 9 (shown as the crown row under the level sign).
   CQ.CROWNS_TOTAL = Object.values(window.CONTENT.levels).reduce((n, l) => n + (l.crowns || 1), 0);
@@ -94,7 +94,13 @@
       .replace(/\^(\d)/g, "<sup>$1</sup>")
       .replace(/²/g, "<sup>2</sup>")
       .replace(/(^|[^A-Za-z])x(?![A-Za-z])/g, '$1<i class="v">x</i>')
-      .replace(/≠/g, '<span class="neq">=</span>');
+      .replace(/≠/g, '<span class="neq">=</span>')
+      // every plain number in a span of its own (.cn), a power (sup) left as it is: on the maths screens a
+      // number is the coins' silver and x the crown's gold (design review, 2026-11-23: "Link colours between
+      // the scale and the equation"; styles.css). (None of the marks above has a digit in its tags.)
+      .split(/(<sup>[^<]*<\/sup>)/)
+      .map((part, i) => (i % 2 ? part : part.replace(/\d+(?:\.\d+)?/g, '<span class="cn">$&</span>')))
+      .join("");
   };
   // Text for the speech engine: read maths the way a teacher would say it.
   CQ.speakable = function (s) {
@@ -213,6 +219,8 @@
     ambience: (on) => safe(() => A() && A().ambience(on)),
     duck: (on) => safe(() => A() && A().duck(on)),
     stopSpeech: () => safe(() => A() && A().stopSpeech()),
+    pauseSpeech: () => safe(() => A() && A().pauseSpeech && A().pauseSpeech()),
+    resumeSpeech: () => safe(() => A() && A().resumeSpeech && A().resumeSpeech()),
     speaking: () => safe(() => !!(A() && A().speaking && A().speaking()), false), // a voice line is being spoken
     setEnabled: (k, on) => safe(() => A() && A().setEnabled(k, on)),
     isEnabled: (k) => safe(() => (A() ? !!A().isEnabled(k) : false), false),
@@ -324,7 +332,12 @@
   };
 
   // ------------------------------------------------------------------ frame ticker + tweens
+  // The tickers run on the game's own clock (CQ.clock), which stands still while the game is paused (a
+  // menu is open: CQ.run.pause): Zippy, Grumble, the camera and every tween stop where they are, and go on
+  // from there (design review, 2026-11-23: "Pause everything while the menu is showing").
   const tickers = new Set();
+  let gameT = performance.now();
+  CQ.clock = () => gameT;
   CQ.ticker = {
     add(fn) {
       tickers.add(fn);
@@ -333,15 +346,19 @@
   };
   let last = performance.now();
   function loop(now) {
-    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+    const real = Math.max(0, now - last);
+    const dt = Math.min(0.05, real / 1000);
     last = now;
-    tickers.forEach((fn) => {
-      try {
-        fn(dt, now);
-      } catch (e) {
-        console.error(e);
-      }
-    });
+    if (!CQ.run.gate) {
+      gameT += real;
+      tickers.forEach((fn) => {
+        try {
+          fn(dt, gameT);
+        } catch (e) {
+          console.error(e);
+        }
+      });
+    }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
@@ -354,7 +371,7 @@
     return new Promise((res) => {
       let off = null;
       let done = false;
-      const start = performance.now();
+      const start = CQ.clock();
       const ctl = {
         stop() {
           if (done) return;
@@ -802,6 +819,47 @@
           { duration: CQ.rand(600, 1000), delay: CQ.rand(0, 400), easing: "ease-out", keep: false, essential: true }
         ).then(() => s.remove());
       }
+    },
+    // A ring of stars flying out from (x, y) and fading (a first-try win: design review, 2026-11-23)
+    stars(layer, x, y, n) {
+      n = CQ.motion.reduced ? 5 : n || 10;
+      for (let i = 0; i < n; i++) {
+        const s = CQ.el("div", "sparkle fx-star", layer);
+        CQ.pos(s, x, y);
+        const a = (i / n) * Math.PI * 2 + CQ.rand(-0.2, 0.2);
+        const r = CQ.rand(150, 230);
+        CQ.anim(
+          s,
+          [
+            { transform: "translate(-50%,-50%) translate(0,0) scale(.3) rotate(0deg)", opacity: 0 },
+            { transform: `translate(-50%,-50%) translate(${Math.cos(a) * r * 0.6}px, ${Math.sin(a) * r * 0.6}px) scale(1.5) rotate(120deg)`, opacity: 1, offset: 0.35 },
+            { transform: `translate(-50%,-50%) translate(${Math.cos(a) * r}px, ${Math.sin(a) * r}px) scale(.6) rotate(240deg)`, opacity: 0 },
+          ],
+          { duration: CQ.rand(900, 1200), delay: i * 30, easing: "ease-out", keep: false, essential: true }
+        ).then(() => s.remove());
+      }
+    },
+    // Coins bursting up from (x, y) and falling away, turning (a first-try win)
+    coins(layer, x, y, n) {
+      n = CQ.motion.reduced ? 5 : n || 12;
+      for (let i = 0; i < n; i++) {
+        const c = CQ.el("div", "coin-pop", layer);
+        CQ.pos(c, x + CQ.rand(-40, 40), y);
+        const dx = CQ.rand(-330, 330);
+        const up = CQ.rand(220, 420);
+        const fall = CQ.rand(160, 360);
+        const r = CQ.rand(-540, 540);
+        CQ.anim(
+          c,
+          [
+            { transform: "translate(-50%,-50%) translate(0,0) rotate(0deg) scale(.6)", opacity: 0 },
+            { transform: `translate(-50%,-50%) translate(${dx * 0.5}px, ${-up}px) rotate(${r * 0.5}deg) scale(1)`, opacity: 1, offset: 0.4 },
+            { transform: `translate(-50%,-50%) translate(${dx}px, ${fall - up * 0.2}px) rotate(${r}deg) scale(.9)`, opacity: 0 },
+          ],
+          { duration: CQ.rand(1100, 1600), delay: i * 25, easing: "cubic-bezier(.2,.6,.4,1)", keep: false, essential: true }
+        ).then(() => c.remove());
+      }
+      CQ.audio.play("coin.clink", { index: 8 });
     },
     dust(layer, x, y, n) {
       n = n || 7;

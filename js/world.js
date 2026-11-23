@@ -51,35 +51,37 @@
     },
   };
 
-  // The background layers, back to front (BG_LAYERS in assets/sprites.js). Some have a gentle idle
-  // motion: the clouds drift, the branch and the bushes sway (off with Reduced motion).
-  // The jungle lake, layer by layer (BG_LAYERS, back to front), each with its own idle motion, so the
-  // scene looks alive and natural (asked 2026-11-06):
+  // The jungle lake, layer by layer (BG_LAYERS in assets/sprites.js, back to front), each with its own
+  // idle motion, so the scene looks alive and natural (asked 2026-11-06):
   //  - "drift": the clouds glide slowly across the sky, and come round again (bgClouds);
-  //  - "shimmer": soft wave lines roll slowly across the water, and glints of light come and go on it (bgWater);
-  //  - "crown": the tree's leafy top sways in the breeze, bending from the middle of the trunk, while the
-  //    trunk and roots stay put (bgCrown);
+  //  - "shimmer": the light on the lake's ripples shifts all the time, and glints come and go (bgWater);
+  //  - "crown": a tree's leafy top sways in the breeze, bending from the middle of the trunk, while the
+  //    trunk and roots stay put (bgCrown): the big tree, and since 2026-11-23 the tree at the right edge
+  //    (the same picture mirrored: "flip");
   //  - "branch": the leafy branch overhead sways from where it joins the tree, in gusts;
   //  - "sway": a plant sways from its foot.
+  // Birds fly across the sky now and then, behind the branch and the tree (bgBirds). (Since 2026-11-23
+  // there is no stone arch at the right: tools/make_background.py.)
   // It all rests while the scene is blurred, and stays still with Reduced motion and in light mode.
   function buildBackground(layer) {
     const imgs = {};
     (window.BG_LAYERS || []).forEach((ly, i) => {
       if (ly.anim === "drift") return (imgs[ly.key] = bgClouds(layer, ly));
-      if (ly.anim === "crown") return (imgs[ly.key] = bgCrown(layer, ly));
+      if (ly.anim === "crown") return (imgs[ly.key] = bgCrown(layer, ly, i));
       const img = CQ.img(ly.key, ly.anim && ly.anim !== "shimmer" ? "anim-" + ly.anim : "", layer);
       CQ.box(img, ly.x, ly.y, ly.w, ly.h);
       if (ly.anim) img.style.animationDelay = (-(i * 1.37) % 6).toFixed(2) + "s"; // no two sway in step
       if (ly.anim === "shimmer") bgWater(layer, ly);
       imgs[ly.key] = img;
     });
+    bgBirds(layer, imgs.bgBranch);
     return imgs;
   }
   // Past the scene's right edge, its mirror image: still copies of its layers, flipped, so it carries on
   // there with no seam. It is only built when a side view looks past the edge (CQ.ASIDE.free: the
   // balance at the left of the screen, as from 2026-11-07 to 11-08 and again since 11-13), and there it
-  // is blurred and dark, under the maths. (The clouds, the tree and its branch are nowhere near that
-  // edge.)
+  // is blurred and dark, under the maths. (The clouds, the big tree and its branch are nowhere near that
+  // edge; the tree at the right edge, since 2026-11-23, is left out too: there it ends at the edge.)
   function mirrorBackground(layer) {
     (window.BG_LAYERS || []).forEach((ly) => {
       if (["drift", "crown", "branch"].includes(ly.anim)) return;
@@ -98,55 +100,127 @@
     [0, -CQ.W].forEach((x) => CQ.box(CQ.img(ly.key, "", strip), x, 0, ly.w, ly.h));
     return strip;
   }
-  // The water: soft wave lines roll slowly across it and fade, and short glints of light come and go,
-  // each at its own pace, all on the open water (stage px: the lake shows between the forest and the
-  // paving, y 640 to 746; the balance stands in front of its middle).
-  const WAVES = [
-    // stage x, y, width, seconds, delay
-    [520, 664, 190, 11, 0],
-    [640, 712, 240, 13, 4.5],
-    [1080, 690, 210, 12, 8],
-    [1290, 722, 180, 10.5, 2.5],
-    [1440, 668, 230, 14, 6.5],
-    [1530, 704, 160, 11.5, 10],
+  // The water (asked 2026-11-23: "make a movements of the water"; until then a few faint wave lines and
+  // glints): the light on the lake's ripples is two sheets of thin bright streaks that drift slowly past
+  // each other, one each way, rising and falling a little and brightening and fading in turns, so the
+  // light on the water shifts all the time; and now and then a glint where the sun catches it. Far out
+  // the streaks are thin and short, near the shore longer and brighter. They are drawn just after the
+  // lake, so the paving, the lawn and everything in front of the water still covers them, and they fade
+  // in past the bushes on its left bank (styles.css, .bg-water).
+  const WATER = { x: 610, y: 643, w: 1310, h: 106 }; // stage px: the open water, out to the frame's right edge
+  const RIPPLES = [
+    // sheet, streaks in a frame's width, seed (the same streaks every time)
+    ["a", 24, 11],
+    ["b", 17, 29],
   ];
   const GLINTS = [
-    [560, 686, 60, 5.6, 0],
-    [700, 666, 44, 4.8, 1.9],
-    [880, 728, 70, 6.2, 3.4],
-    [1170, 670, 52, 5.1, 0.8],
-    [1330, 694, 64, 6.6, 2.6],
-    [1470, 730, 48, 4.6, 4.1],
-    [1590, 684, 56, 5.9, 1.3],
+    // stage x, y, width, seconds, delay: on water that shows round the balance
+    [646, 712, 52, 5.6, 0],
+    [1000, 670, 40, 4.8, 1.9],
+    [992, 728, 58, 6.2, 3.4],
+    [1168, 690, 46, 5.1, 0.8],
+    [1530, 668, 56, 6.6, 2.6],
+    [1612, 724, 66, 4.6, 4.1],
+    [1722, 686, 50, 5.9, 1.3],
+    [1818, 712, 60, 5.3, 3.0],
+    [1886, 664, 42, 6.0, 4.6],
   ];
   function bgWater(layer) {
-    const add = (cls, [x, y, w, secs, delay], h) => {
-      const e = CQ.el("div", cls, layer);
-      CQ.box(e, x - w / 2, y - h / 2, w, h);
-      e.style.animationDuration = secs + "s";
-      e.style.animationDelay = -delay + "s";
-    };
-    WAVES.forEach((w) => add("bg-wave", w, 5));
-    GLINTS.forEach((g) => add("bg-glint", g, 6));
+    const box = CQ.el("div", "bg-water", layer);
+    CQ.box(box, WATER.x, WATER.y, WATER.w, WATER.h);
+    RIPPLES.forEach(([cls, n, seed]) => {
+      // two frames' widths of streaks, the same in both halves, so the sheet drifts round without a jump
+      const sheet = CQ.el("div", "bg-ripples " + cls, box);
+      CQ.box(sheet, 0, 0, WATER.w * 2, WATER.h);
+      const rnd = seeded(seed);
+      for (let i = 0; i < n; i++) {
+        const near = rnd(); // 0 far out, 1 by the shore
+        const w = 24 + 70 * near + 50 * near * rnd();
+        const h = 1.5 + 2.4 * near;
+        const x = w / 2 + rnd() * (WATER.w - w);
+        const y = 7 + near * (WATER.h - 16);
+        const alpha = (0.35 + 0.4 * near).toFixed(2);
+        [0, WATER.w].forEach((dx) => {
+          const s = CQ.el("i", "", sheet);
+          CQ.box(s, x + dx - w / 2, y - h / 2, w, h);
+          s.style.opacity = alpha;
+        });
+      }
+    });
+    GLINTS.forEach(([x, y, w, secs, delay]) => {
+      const g = CQ.el("i", "bg-glint", box);
+      CQ.box(g, x - WATER.x - w / 2, y - WATER.y - 3, w, 6);
+      g.style.animationDuration = secs + "s";
+      g.style.animationDelay = -delay + "s";
+    });
   }
-  // The tree: the leafy top sways in the breeze and the trunk and roots stay put. The picture is drawn
-  // twice, cut across the middle of the trunk (CROWN.cut, in the picture's pixels, where the trunk is
-  // solid and nothing else is near): the lower copy keeps the trunk and roots, the upper one the top,
-  // fading out over CROWN.blend px across the cut. The top bends about the cut, so where the two meet
-  // nothing moves and no join shows. (The returned picture is the lower one: Zippy peeks out from
-  // behind both.)
-  const CROWN = { cut: 650, blend: 70, pivotX: 300 };
-  function bgCrown(layer, ly) {
-    const k = ly.h / IM()[ly.key].h;
-    const top = (CROWN.cut - CROWN.blend / 2) * k;
-    const end = (CROWN.cut + CROWN.blend / 2) * k;
+  // a small seeded random number generator (mulberry32): the same numbers for the same seed
+  function seeded(seed) {
+    let t = seed >>> 0;
+    return () => {
+      t = (t + 0x6d2b79f5) >>> 0;
+      let r = Math.imul(t ^ (t >>> 15), 1 | t);
+      r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // Birds (asked 2026-11-23: "make some birds"): now and then a few fly across the sky, far off over the
+  // lake. Three come in from the right, below the crown count, and climb into the big tree's leaves;
+  // later two fly out of the leaves and away to the right. Each bird flaps a few times and glides, at its
+  // own pace, and each flock rises and falls a little as it goes. A flight is a CSS animation with a long
+  // wait after it (styles.css, .bird-flock), so the birds rest with the rest of the scene while it is
+  // blurred, and stay away with Reduced motion and in light mode. They fly behind the branch and the tree
+  // (and Zippy), in front of the clouds and the hills.
+  const FLOCKS = [
+    // flock, its birds: x, y from the leader, size, seconds to flap and glide, delay
+    ["f1", [[0, 0, 1, 2.4, 0.3], [34, -13, 0.88, 2.7, 1.2], [62, 10, 0.8, 2.2, 0.7]]],
+    ["f2", [[0, 0, 0.8, 2.6, 0.5], [-30, 12, 0.72, 2.3, 1.6]]],
+  ];
+  // one bird, facing left: two wings (each turns about its shoulder) and the body over them. A wing's
+  // picture sits in a plain element that does the turning: Chrome can't turn an <svg> itself on the
+  // compositor, and would paint it again every frame.
+  const BIRD =
+    '<div class="bird-bob">' +
+    '<i class="bird-wing l"><svg viewBox="0 0 18 8" aria-hidden="true"><path d="M17.5 4.6C14.5 2.2 11.8 1.1 9 1.4 6 1.7 3 2.9 0 4.2 3.2 3.9 6 3.7 8.8 3.8 12 3.9 14.8 5 17.5 6.6Z"/></svg></i>' +
+    '<i class="bird-wing r"><svg viewBox="0 0 18 8" aria-hidden="true"><path d="M0.5 4.6C3.5 2.2 6.2 1.1 9 1.4 12 1.7 15 2.9 18 4.2 14.8 3.9 12 3.7 9.2 3.8 6 3.9 3.2 5 0.5 6.6Z"/></svg></i>' +
+    '<svg class="bird-body" viewBox="0 0 12 6" aria-hidden="true"><ellipse cx="6.6" cy="3.5" rx="3.6" ry="1.9"/><circle cx="3.2" cy="2.9" r="1.55"/><path d="M1.9 2.7 0.3 3.1 1.9 3.5Z"/><path d="M9.2 3.1 12 2.2 11.3 3.6 12 5 9.2 4.1Z"/></svg>' +
+    "</div>";
+  function bgBirds(layer, before) {
+    const sky = CQ.el("div", "bg-birds");
+    layer.insertBefore(sky, before || null);
+    FLOCKS.forEach(([cls, birds]) => {
+      const drift = CQ.el("div", "bird-drift", CQ.el("div", "bird-flock " + cls, sky));
+      birds.forEach(([x, y, size, secs, delay]) => {
+        const b = CQ.el("div", "bird", drift);
+        b.innerHTML = BIRD;
+        Object.assign(b.style, { left: x + "px", top: y + "px", scale: String(size), animationDelay: (-2.3 * delay).toFixed(2) + "s" });
+        b.style.setProperty("--flap", secs + "s");
+        b.style.setProperty("--at", -delay + "s");
+      });
+    });
+  }
+  // A tree: the leafy top sways in the breeze and the trunk and roots stay put. The picture is drawn
+  // twice, cut across the middle of the trunk (CROWN.cut, where the trunk is solid and nothing else is
+  // near): the lower copy keeps the trunk and roots, the upper one the top, fading out over CROWN.blend
+  // across the cut. The top bends about the trunk at the cut (CROWN.pivotX; in a mirrored picture, as
+  // far from its right side), so where the two meet nothing moves and no join shows. CROWN is in parts
+  // of the picture's width and height, as the tree is drawn at more than one size (since 2026-11-23:
+  // 1040 x 1096 px until then, cut at 650 px, pivot 300 px). The two trees sway a little out of step.
+  // (The returned picture is the lower one: Zippy peeks out from behind both of the big tree's.)
+  const CROWN = { cut: 650 / 1096, blend: 70 / 1096, pivotX: 300 / 1040 };
+  function bgCrown(layer, ly, i) {
+    const top = (CROWN.cut - CROWN.blend / 2) * ly.h;
+    const end = (CROWN.cut + CROWN.blend / 2) * ly.h;
     const trunk = CQ.img(ly.key, "bg-trunk", layer);
     CQ.box(trunk, ly.x, ly.y, ly.w, ly.h);
     softMask(trunk, `linear-gradient(to bottom, transparent ${top - 1}px, #000 ${top}px)`);
     const crown = CQ.img(ly.key, "bg-crown", layer);
     CQ.box(crown, ly.x, ly.y, ly.w, ly.h);
     softMask(crown, `linear-gradient(to bottom, #000 ${top}px, transparent ${end}px)`);
-    crown.style.transformOrigin = `${CROWN.pivotX * k}px ${CROWN.cut * k}px`;
+    const pivotX = ly.flip ? 1 - CROWN.pivotX : CROWN.pivotX;
+    crown.style.transformOrigin = `${pivotX * ly.w}px ${CROWN.cut * ly.h}px`;
+    crown.style.animationDelay = (-(i * 1.37) % 6).toFixed(2) + "s";
     return trunk;
   }
 
@@ -159,8 +233,9 @@
     face: { x: 210, y: 300 }, // his face centre in that frame (sprite pixels)
     mask: { x: 180, y: 278, rx: 170, ry: 125 }, // the oval kept around his head (sprite pixels)
     y: 412, // stage: where his face is
-    hidden: 150, // stage x of his face when he is fully behind the trunk
-    out: 300, // ...and when he leans out (the trunk's edge is at x ~285 here)
+    hidden: 115, // stage x of his face when he is fully behind the trunk
+    out: 264, // ...and when he leans out (the trunk's edge is at x ~249 here: 150 / 300 / ~285 until the
+    // trees were drawn smaller, 2026-11-23)
   };
   CQ.peek = {
     build(layer, before) {
@@ -897,6 +972,11 @@
       if (owner != null) CQ.bubble.hide(false, owner);
     }
     tapped() {
+      // holding a bar the child gave him, before SWAP is tapped: he gives it back (CQ.Give.putBack)
+      if (this.held && this.held.type === "bar" && CQ.Give.heldBar && CQ.swapBtn.cb && !CQ.Give.busy) {
+        CQ.Give.putBack();
+        return;
+      }
       const now = performance.now();
       if (now - this.lastTap < 2500 || CQ.Give.dragging) return;
       if (!["idle", "hold"].includes(this.poseName)) return;
@@ -1061,7 +1141,11 @@
     feet: { x: 200, y: 922, k: 0.62, dx: 95, at: 683 }, // the three leaves (bottom centre), twice beside the post's foot; the post hides each inner leaf
   };
   const BAL = {
-    S: 0.7, // drawn size (1 = full size)
+    // drawn size (1 = full size): 0.77 since 2026-11-23 (design review: "Make the scale the hero. Make it
+    // ~10–15% bigger"; it was 0.7). GROW: how much bigger than before; the side views that frame the
+    // balance zoom in that much less (CQ.ASIDE, Level 4's and 8's views, js/flow.js), so they look as
+    // they did.
+    S: 0.77,
     R: ART.R * ART_K, // pivot to each hanging point
     HANG_Y: ART.hangY * ART_K,
     PLATE_TOP: (ART.ropeEnd - ART.knot.y - 5 - (ART.plate.top - ART.plate.y)) * ART_K, // hanging point down to the plate's top edge
@@ -1071,9 +1155,14 @@
   BAL.PAN_BOTTOM = BAL.PLATE_TOP + IM().balPlate.h * ART_K; // hanging point down to the plate's bottom
   BAL.FLOOR = (ART.base.at + IM().balBase.h) * ART_K; // pivot down to the bottom of the base
   BAL.HUB_R = (IM().balHub.w / 2) * ART_K;
-  // Coins: stacked rows overlap a little, like a heap; spacing in a row.
+  BAL.GROW = BAL.S / 0.7;
+  // Coins: spacing in a row. On the pans they stand in rows of 5, one row straight above another, like a
+  // ten-frame (design review, 2026-11-23: "At 4–10 coins they stack in tight clusters that are hard to
+  // count… Lay them out in a clear grid (rows of 5, like a ten-frame)"): COIN_GRID, a row's height, with no
+  // overlap. The coins put in for x in the check still gather in a heap (COIN_ROW: rows overlap a little).
   BAL.COIN_ROW = Math.round(L.COIN_W * 0.78);
   BAL.COIN_STEP = L.COIN_W + 2;
+  BAL.COIN_GRID = L.COIN_W + 3;
   CQ.BAL = BAL;
   // On-pan sizes in stage pixels (for bars and crowns flying to and from the pans).
   L.PAN_BAR_PX = L.PAN_BAR_W * BAL.S;
@@ -1161,8 +1250,12 @@
     CQ.pos(items, 0, BAL.ITEMS_Y);
     return items;
   }
-  // A soft shadow on the floor under the base.
+  // A soft shadow on the floor under the base, in a warm pool of light that spreads round the balance
+  // (design review, 2026-11-23: "Make the scale the hero… add a soft vignette or a light pool under it").
   function shadows(parent) {
+    const pool = CQ.el("div", "bal-pool", parent);
+    const pr = (IM().balBase.w / 2) * ART_K * 3.1;
+    CQ.box(pool, -pr, BAL.FLOOR - 120, pr * 2, 240);
     const sh = CQ.el("div", "bal-shadow", parent);
     const rx = (IM().balBase.w / 2) * ART_K * 1.05;
     CQ.box(sh, -rx, BAL.FLOOR - 18, rx * 2, 36);
@@ -1195,7 +1288,14 @@
       const y = BAL.HANG_Y;
       box.style.setProperty(`--t${n}`, `translate(${(x * Math.cos(th) - y * Math.sin(th) - x).toFixed(1)}px, ${(x * Math.sin(th) + y * Math.cos(th) - y).toFixed(1)}px)`);
       const items = panParts(g);
-      if (what === "bar") {
+      if (what && what.tag != null) {
+        // (practice's balance, design review 2026-11-23: the side of the equation written on its pan)
+        CQ.el("div", "mini-tag", items, CQ.rich(String(what.tag)));
+      } else if (what === "crown") {
+        // (practice's balance, design review 2026-11-23: the crown on one side)
+        const cr = CQ.img("crown", "mini-item", items);
+        Object.assign(cr.style, { width: "170px", left: "-85px", top: "-104px" });
+      } else if (what === "bar") {
         const b = CQ.img("bar", "mini-item", items);
         Object.assign(b.style, { width: "160px", left: "-80px", top: "-74px" });
       } else if (what === "coins3") {
@@ -1439,7 +1539,8 @@
         const row = Math.floor(i / 2);
         const inRow = Math.min(2, coins.length - row * 2);
         const rowW = inRow * step - (step - L.COIN_W);
-        res.set(c, { x: x0 + (extraW - rowW) / 2 + (i % 2) * step + L.COIN_W / 2, y: -row * BAL.COIN_ROW, z: 3 + row });
+        // (beside the crown, two to a row, one row straight above another: no overlap, easy to count)
+        res.set(c, { x: x0 + (extraW - rowW) / 2 + (i % 2) * step + L.COIN_W / 2, y: -row * (two ? BAL.COIN_ROW : BAL.COIN_GRID), z: 3 + row });
       });
       bars.forEach((b, i) => res.set(b, { x: x0 + extraW / 2, y: -i * 64, z: 3 + i }));
       return items.map((it) => res.get(it));
@@ -1457,14 +1558,15 @@
           x += b.w + 12;
         });
       }
-      let idx = 0;
-      this.rows.forEach((n, r) => {
-        const rowW = n * cw - (cw - L.COIN_W);
-        for (let i = 0; i < n && idx < coins.length; i++) {
-          res.set(coins[idx++], { x: -rowW / 2 + i * cw + L.COIN_W / 2, y: -r * BAL.COIN_ROW, z: 3 + r });
-        }
+      // rows of 5 like a ten-frame, the bottom row first, each filled from the left, every row in the same
+      // five columns (fewer than 5: one row, in the middle)
+      const per = 5;
+      const cols = Math.min(per, coins.length);
+      const frameW = cols * cw - (cw - L.COIN_W);
+      coins.forEach((c, i) => {
+        const r = Math.floor(i / per);
+        res.set(c, { x: -frameW / 2 + (i % per) * cw + L.COIN_W / 2, y: -r * BAL.COIN_GRID, z: 3 + r });
       });
-      while (idx < coins.length) res.set(coins[idx++], { x: 0, y: -this.rows.length * BAL.COIN_ROW, z: 9 });
       return items.map((it) => res.get(it));
     }
     // World position of an item's centre (follows the beam).
@@ -1628,10 +1730,16 @@
       this.layer = layer;
       this.list = [];
     }
+    // (opts.answer: the bar that balances; it never stands where the last level's stood, so its place
+    // can't be guessed: design review, 2026-11-23, "vary which slot holds the answer")
     setup(values, opts) {
       opts = opts || {};
       this.clear();
-      const order = opts.shuffle === false ? values.slice() : CQ.shuffle(values);
+      let order = opts.shuffle === false ? values.slice() : CQ.shuffle(values);
+      if (opts.answer != null && opts.shuffle !== false && values.filter((v) => v === opts.answer).length === 1) {
+        for (let i = 0; i < 12 && order.indexOf(opts.answer) === this.answerAt; i++) order = CQ.shuffle(values);
+        this.answerAt = order.indexOf(opts.answer);
+      }
       const xs = [L.BX - 270, L.BX, L.BX + 270];
       order.forEach((v, i) => {
         const x = xs[i];
@@ -1741,14 +1849,25 @@
       this.onGive = null;
       CQ.bars.refresh();
     },
+    // (a bar tried already can be given again: it is marked Tried, but the right one is never the only one
+    // left to pick; design review, 2026-11-23)
     can(bar) {
-      return !!(this.allowed && this.allowed.has(bar.value) && bar.state === "idle" && !this.busy);
+      return !!(this.allowed && this.allowed.has(bar.value) && (bar.state === "idle" || bar.state === "tried") && !this.busy);
+    },
+    // a bar is picked up (dragged, tapped or chosen with the keyboard): the flow's onPick, if any
+    picked() {
+      try {
+        if (this.onPick) this.onPick();
+      } catch (e) {
+        console.error(e);
+      }
     },
     bind(bar) {
       let grab = null;
       CQ.drag(bar.slot, {
         enabled: () => this.can(bar),
         start: (pt) => {
+          this.picked();
           const w = CQ.camera.toWorld(pt);
           grab = { dx: bar.home.x - w.x, dy: bar.home.y - w.y };
           bar.cur = { x: bar.home.x, y: bar.home.y };
@@ -1778,9 +1897,13 @@
         },
         tap: () => {
           this.dragging = false;
+          this.picked();
           this.catch(bar);
         },
-        key: () => this.catch(bar),
+        key: () => {
+          this.picked();
+          this.catch(bar);
+        },
       });
     },
     inZone(bar) {
@@ -1817,6 +1940,27 @@
       CQ.bars.refresh();
       const cb = this.onGive;
       if (cb) cb(bar.value);
+    },
+    // The child gives the bar back before tapping SWAP (a tap on Zippy while he holds it): it goes home to
+    // its stand, and SWAP goes until he holds a bar again (design review, 2026-11-23: "Ideally the child
+    // can put the bar back before tapping Swap").
+    async putBack() {
+      const bar = this.heldBar;
+      const z = CQ.zippy;
+      if (!bar || this.busy || !this.allowed || !z.held || z.held.type !== "bar") return false;
+      this.busy = true;
+      CQ.swapBtn.hide();
+      CQ.bars.refresh();
+      CQ.hand.stop();
+      z.pose("giveBack"); // "not this one": he holds it out
+      await CQ.sleep(260);
+      const from = z.barBox();
+      z.setHeld(null);
+      z.pose("idle");
+      await this.tossBack(bar, { from, scaleFrom: from.w / L.BAR_W });
+      this.busy = false;
+      CQ.bars.refresh();
+      return true;
     },
     // After a level swap the held bar is on the pan for good.
     useHeld() {

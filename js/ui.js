@@ -17,6 +17,11 @@
     next: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M15 8l26 16-26 16z" fill="currentColor" stroke="#6B3E00" stroke-width="3.5" stroke-linejoin="round"/></svg>',
     back: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M33 8L7 24l26 16z" fill="currentColor" stroke="#6B3E00" stroke-width="3.5" stroke-linejoin="round"/></svg>',
     swap: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 17h28M28 9l9 8-9 8M40 31H12M20 23l-9 8 9 8" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    sound:
+      '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 18h8l11-9v30l-11-9H7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M32 17a9 9 0 0 1 0 14M36.5 11.5a16 16 0 0 1 0 25" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/></svg>',
+    lock: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="21" width="28" height="21" rx="4" fill="currentColor"/><path d="M16 21v-6a8 8 0 0 1 16 0v6" fill="none" stroke="currentColor" stroke-width="5"/></svg>',
+    yes: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 25l9 9 19-20" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    no: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13 13l22 22M35 13L13 35" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/></svg>',
   };
   CQ.ICON = ICON;
   // A gem from elements.png, picked by a word's colour (see CONTENT.words).
@@ -178,7 +183,26 @@
       CQ.treasure.build(modal);
       CQ.menu.build(modal);
       CQ.veil.build(CQ.stage.el);
-      this.skip = button("pill skip hidden", `${C().ui.skip} ⏭`, C().ui.skip, uiLayer, () => CQ.flow && CQ.flow.skipIntro());
+      // Skip, on every narrated stretch (design review, 2026-11-23: "Skip shows up only sometimes. It's on the
+      // first intro but not on the Level 2 and Level 4 lesson cutscenes. Make Skip / Replay consistent on
+      // every narrated sequence"): the intro, Zippy swinging into a level, Level 4's lessons and recap;
+      // showSkip(fn) says where it goes from each
+      this.skip = button("pill skip hidden", `${C().ui.skip} ⏭`, C().ui.skip, uiLayer, () => {
+        const fn = this.onSkip;
+        if (!fn) return;
+        this.hideSkip();
+        CQ.audio.stopSpeech();
+        fn();
+      });
+      this.onSkip = null;
+    },
+    showSkip(fn) {
+      this.onSkip = fn;
+      this.skip.classList.remove("hidden");
+    },
+    hideSkip() {
+      this.onSkip = null;
+      this.skip.classList.add("hidden");
     },
     // Remove every transient piece of UI (used when a level or chapter starts).
     // opts.keepSpot: the spotlight stays on (a new level set up while Zippy peeks: js/flow.js, outro);
@@ -187,6 +211,9 @@
       const keepSpot = !!(opts && opts.keepSpot);
       CQ.caption.hide(true);
       CQ.next.clear();
+      CQ.next.resetTurns();
+      CQ.nav.dodging = 0;
+      CQ.nav.el.classList.remove("dodge");
       CQ.swapBtn.hide(true);
       CQ.bubble.hide(true);
       if (!keepSpot) CQ.spot.off(true);
@@ -199,7 +226,7 @@
       // and anything a step left behind when a chapter jump cut it short (Level 4's x + 2 = 7 strip)
       this.layer.querySelectorAll(".comic, .nameburst, .thought, .flyer, .eq-strip, .answer-tick").forEach((e) => e.remove());
       this.overlay.querySelectorAll(".thought, .flyer").forEach((e) => e.remove());
-      this.skip.classList.add("hidden");
+      this.hideSkip();
     },
   };
 
@@ -222,32 +249,65 @@
     },
   };
 
-  // ------------------------------------------------------------------ crowns (no on-screen HUD)
-  // The screen has no level sign or crown row. (Its only corner buttons are the screens list and Play
-  // this screen again, top left: CQ.nav.) The game still counts the crowns; a collected crown flies up
-  // out of the picture with a sparkle. (Esc opens the menu.)
+  // ------------------------------------------------------------------ crowns: the counter, top right
+  // The crowns Zippy has won, "3/10", under the sound button (design review, 2026-11-23: "There's no
+  // progress or collection display. Add a crown counter… so each round adds to something"; until then
+  // the screen had none). crowns counts them at once (the crown line goes by it); the counter shows a
+  // new one when it flies in (gain: from Zippy's head as the line says "crown"; flyCrown: Level 9's
+  // first crown, from his hands), with a pop, a sparkle and its sound (same review: "a crown 'collected'
+  // fly-to-HUD animation and a sound sting").
   CQ.hud = {
     crowns: 0,
     level: 1,
-    build() {},
-    show() {},
+    shown: 0,
+    total: 10,
+    build(ui) {
+      this.total = Object.values(C().levels).reduce((a, l) => a + (l.crowns || 1), 0);
+      this.el = CQ.el("div", "crown-count hidden", ui);
+      this.el.setAttribute("role", "status");
+      this.icon = CQ.img("crown", "cc-crown", this.el);
+      this.num = CQ.el("span", "cc-num", this.el);
+      this.render(0);
+    },
+    show(on) {
+      this.el.classList.toggle("hidden", !on);
+    },
     setLevel(n) {
       this.level = n;
     },
+    // (a screen started afresh: the crowns of the levels before it, at once)
     setCrowns(n) {
       this.crowns = n;
+      this.render(n);
     },
-    async flyCrown(fromWorld, width) {
+    render(n) {
+      this.shown = n;
+      this.num.textContent = `${n}/${this.total}`;
+      this.el.setAttribute("aria-label", CQ.fmt(C().ui.crowns, { n, t: this.total }));
+    },
+    // where a crown flying in lands (stage px)
+    target() {
+      return CQ.centerOf(this.icon) || { x: CQ.W - 160, y: 175 };
+    },
+    // a crown flies from fromWorld into the counter, which counts it (up to the crowns won)
+    async gain(fromWorld, width) {
       const from = CQ.camera.toScreen(fromWorld);
-      const to = { x: CQ.clamp(from.x + 240, 200, CQ.W - 200), y: 70 };
-      const w = width || 120; // its width as it sets off; it ends 54 px wide
+      const to = this.target();
+      const w = width || 120;
+      const land = this.icon.getBoundingClientRect().width / CQ.stage.scale || 54;
       CQ.audio.play("crown.sparkle");
-      await CQ.fly(CQ.ui.layer, CQ.crownFlyer(w), from, to, { duration: 1000, arc: -140, scaleTo: 54 / w, spin: 360, fadeOut: true });
+      await CQ.fly(CQ.ui.layer, CQ.crownFlyer(w), from, to, { duration: 950, arc: -120, scaleTo: land / w, spin: 360 });
+      this.render(Math.min(this.crowns, this.shown + 1));
       CQ.fx.sparkle(CQ.ui.layer, to.x, to.y, 12, 50);
+      CQ.audio.play("coin.clink", { index: 6 });
+      CQ.anim(this.el, [{ transform: "scale(1)" }, { transform: "scale(1.25)", offset: 0.35 }, { transform: "scale(1)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
+    },
+    // Level 9's first crown: from his hands into the counter
+    async flyCrown(fromWorld, width) {
       this.crowns++;
+      await this.gain(fromWorld, width);
     },
   };
-
 
   // ------------------------------------------------------------------ when the voice says each word
   // How long the words of a line take to say, roughly: their syllables as they are said ("7" is
@@ -839,12 +899,23 @@
   };
 
   // ------------------------------------------------------------------ pacing: Next, → and Back
-  // Narrated screens move on by themselves (see CQ.say). The Next button (top right) is always there
-  // during the quest: while a line is on it moves on to the next line at once (so do → and PageDown);
-  // at any other moment (the child's turn, an animation) it goes on to the next part of the quest
-  // (CQ.flow.next). On formula screens Back (or ←) goes back a line.
+  // Narrated screens move on by themselves (see CQ.say). The Next button (bottom right) is shown only in
+  // practice, once an equation is solved, for the next one (asked 2026-11-23: "no need to tap always in the
+  // next button… need next button only 6 questions"; js/flow.js and activityPractice), and all the time in
+  // a test build (?qa=1). → and PageDown move on to the next line at once. While it is shown, it is
+  // hidden while it is the child's turn (a question waits for an answer: turn(), below), so a round is
+  // never skipped without being answered (design review, 2026-11-23, P0: "Next button skips questions…
+  // Hide or disable it until the round is solved"). Tapped with no line on, it does nothing, except
+  // while Zippy swings into a level (then the level starts at once) and in a test build (?qa=1), where
+  // it still jumps to the next part of the quest (CQ.flow.next), as it did for everyone until then.
+  // Back (or ←) goes back a line on formula screens in a test build only (same review: "The ◀ button
+  // appears on some lesson beats but not others. Make it consistent, or remove it and rely on Replay").
+  CQ.qa = new URLSearchParams(location.search).get("qa") === "1";
   CQ.next = {
     seq: 0,
+    turns: 0, // the child's turns open now (Next is hidden while any is)
+    gen: 0, // a new screen: turns opened for the screen before are forgotten
+    wanted: false, // the quest wants Next shown (practice's solved equations; any screen but the finale with ?qa=1)
     build(ui) {
       this.backBtn = button("wbtn back-btn hidden", "", C().ui.back, ui, () => this.fire("back"));
       this.nextBtn = button("btn-wood next-btn hidden", `<span>${C().ui.next}</span>`, C().ui.next, ui, () => this.tapNext());
@@ -858,19 +929,46 @@
     },
     listen(opts) {
       const id = ++this.seq;
-      this.allowBack = !!(opts && opts.back);
+      this.allowBack = !!(opts && opts.back) && CQ.qa;
       this.backBtn.classList.toggle("hidden", !this.allowBack);
       const promise = new Promise((res) => (this.resolver = res));
       return { id, promise };
     },
     // The Next button is shown from the first chapter on, and hidden on the finale (it has its own buttons).
     showNext(on) {
+      this.wanted = !!on;
+      this.update();
+    },
+    // The child's turn: Next goes while a question waits for its answer. Returns the function that ends
+    // that turn (calling it twice, or after the screen changed, does nothing).
+    turn() {
+      const gen = this.gen;
+      let open = true;
+      this.turns++;
+      this.update();
+      return () => {
+        if (!open || gen !== this.gen) return;
+        open = false;
+        this.turns = Math.max(0, this.turns - 1);
+        this.update();
+      };
+    },
+    // a new screen (CQ.ui.reset): no turn is open
+    resetTurns() {
+      this.gen++;
+      this.turns = 0;
+      this.update();
+    },
+    update() {
+      // (Skip goes too while it is the child's turn: it skips narration, never the child's own task)
+      if (CQ.ui.skip) CQ.ui.skip.classList.toggle("turn-hidden", this.turns > 0);
+      const on = this.wanted && !this.turns;
       const hidden = this.nextBtn.classList.contains("hidden");
       if (on && hidden) {
         this.nextBtn.classList.remove("hidden");
         // (it rises into its corner at the bottom right, from just below)
         CQ.anim(this.nextBtn, [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 300, easing: CQ.EASE.out, keep: false });
-      } else if (!on) this.nextBtn.classList.add("hidden");
+      } else if (!on && !hidden) this.nextBtn.classList.add("hidden");
     },
     // Where the hand taps Next (CQ.hand.tapAt, when a child waits on it): on its upper part, over the word,
     // not its middle. The hand hangs below its fingertip and Next is in the bottom-right corner: from its
@@ -883,9 +981,10 @@
     },
     tapNext() {
       if (this.resolver) return this.fire("next"); // a line is on: the next line
-      if (CQ.pauser.count) return;
+      if (CQ.pauser.count || this.turns) return;
       CQ.audio.play("ui.tap");
-      if (CQ.flow) CQ.flow.next(); // otherwise: the next part of the quest
+      // otherwise: Zippy's entrance into a level is skipped; in a test build, the next part of the quest
+      if (CQ.flow && (CQ.qa || CQ.flow.arriving)) CQ.flow.next();
     },
     unlisten(id) {
       if (id === this.seq) this.clear(); // otherwise a newer screen is listening now
@@ -921,8 +1020,10 @@
         cb();
       });
       this.cb = null;
-      const B = CQ.BAL;
-      CQ.pos(this.el, CQ.L.BX - B.R * B.S, CQ.L.PIVOT_Y + (B.HANG_Y + B.PAN_BOTTOM) * B.S + 52); // between the left plate and the bars
+      // next to Zippy, under him as he hangs at home with the bar, above sleeping Grumble's head (design
+      // review, 2026-11-23: "The Swap button covers the crown pan. It sits on top of the left pan's rim.
+      // Move it below the scale, or next to Zippy"; it stood under the left plate, between it and the bars)
+      CQ.pos(this.el, CQ.L.ZIPPY.ax + 10, 568);
     },
     show(cb) {
       this.cb = cb;
@@ -1120,6 +1221,8 @@
       CQ.screen.shade("soft:" + owner, keep === false ? false : shade != null ? shade : keep.length ? 1 : 2);
       this.apply();
       CQ.caption.roomChanged(); // (a dark screen lifting: the question bar keeps clear of Zippy's vine)
+      // the crown counter steps aside on an activity board (its panels reach the top right corner)
+      if (CQ.hud && CQ.hud.el) CQ.hud.el.classList.toggle("aside", this.owners.has("activity"));
     },
     // every owner but except (one owner or a list of them)
     clear(except) {
@@ -1302,6 +1405,21 @@
       this.seq = 0;
       this.active = false; // a gesture is being shown (between its repeats too)
       ["pointerdown", "keydown"].forEach((t) => window.addEventListener(t, () => this.active && this.stop(), true));
+      // it goes as soon as the child moves too (design review, 2026-11-23: "The hint hand covers options…
+      // fade the hand out once the child moves")
+      let from = null;
+      window.addEventListener(
+        "pointermove",
+        (e) => {
+          if (!this.active) return (from = null);
+          if (!from) return (from = { x: e.clientX, y: e.clientY });
+          if (Math.hypot(e.clientX - from.x, e.clientY - from.y) > 30) {
+            from = null;
+            this.stop();
+          }
+        },
+        true
+      );
     },
     placeAt(p) {
       CQ.pos(this.el, p.x - this.tip.x, p.y - this.tip.y);
@@ -1497,58 +1615,105 @@
   };
 
   // ------------------------------------------------------------------ pause (any open panel pauses the story)
+  // Everything stops where it is (design review, 2026-11-23: "Narration and animations keep running while
+  // the menu is open. Pause everything while the menu is showing"): the line being said, every animation
+  // running on the page (the menu's own come after, and run), and the game's clock (CQ.clock: Zippy,
+  // Grumble, the camera, the tweens); the story holds at its next step. On release all of it goes on.
   CQ.pauser = {
     count: 0,
+    held: [],
     hold() {
       if (this.count++ === 0) {
         CQ.run.pause();
         CQ.audio.duck(true);
+        CQ.audio.pauseSpeech();
         CQ.idle.disarm();
         CQ.hand.stop();
+        this.held = [];
+        try {
+          document.getAnimations().forEach((a) => {
+            if (a.playState === "running") {
+              a.pause();
+              this.held.push(a);
+            }
+          });
+        } catch (e) {
+          /* an old browser: the animations carry on */
+        }
       }
     },
     release() {
       if (this.count === 0) return;
       if (--this.count === 0) {
+        this.held.forEach((a) => {
+          try {
+            if (a.playState === "paused") a.play();
+          } catch (e) {
+            /* it was cancelled meanwhile */
+          }
+        });
+        this.held = [];
         CQ.run.resume();
         CQ.audio.duck(false);
+        CQ.audio.resumeSpeech();
       }
     },
   };
 
   // ------------------------------------------------------------------ the screens list + replay (top left)
-  // Two wooden buttons in the top left corner, from the first screen on (asked 2026-11-06): the list of
-  // every screen of the quest (tap one to go straight there; the one on now is marked), and Play this
-  // screen again (it starts the screen on now from its beginning). While the list is open the game
+  // Three wooden buttons in the top left corner, from the first screen on (asked 2026-11-06): the list of
+  // the quest's screens (tap one to go straight there; the one on now is marked), Play this screen again
+  // (it starts the screen on now from its beginning) and the sound menu. While the list is open the game
   // waits; a tap outside it, or Escape, closes it.
+  // Design review, 2026-11-23: "The level menu lets kids jump anywhere… Lock levels that haven't been
+  // reached, or keep the list for QA builds only": a screen not reached yet in this game is locked (a
+  // padlock, greyed, not tappable); a test build (?qa=1) has them all. "The Restart button has no
+  // confirmation… Add a confirm step": ↻ asks first (Yes / No, under it). "Add an audio control. There's
+  // no visible mute / VO toggle in the HUD": the sound button opens the sound menu (music, effects,
+  // voice; until then only Escape opened it).
   CQ.nav = {
     build(ui) {
       this.el = CQ.el("div", "nav hidden", ui);
       this.listBtn = button("btn-wood nav-btn", ICON.menu, C().ui.screens, this.el, () => this.toggle());
-      this.replayBtn = button("btn-wood nav-btn", ICON.restart, C().ui.replay, this.el, () => this.replay());
+      this.replayBtn = button("btn-wood nav-btn", ICON.restart, C().ui.replay, this.el, () => this.ask());
+      // (the sound button stands in the top right corner, where the question bar never reaches: a third
+      // button at the top left would be under a long line's bar)
+      this.soundBtn = button("btn-wood nav-btn sound-btn hidden", ICON.sound, C().ui.sound, ui, () => {
+        this.close();
+        CQ.menu.open();
+      });
       this.listBtn.setAttribute("aria-haspopup", "true");
       this.listBtn.setAttribute("aria-expanded", "false");
       this.list = CQ.el("div", "panel nav-list hidden", ui);
       this.list.setAttribute("role", "menu");
       this.items = C().screens.map((s) => {
-        const b = button("nav-item", `<span class="ni-n">${s.n}</span><span class="ni-t">${CQ.rich(s.title)}</span>`, s.title, this.list, () => this.go(s.id));
+        const b = button("nav-item", `<span class="ni-n">${s.n}</span><span class="ni-t">${CQ.rich(s.title)}</span><span class="ni-lock">${ICON.lock}</span>`, s.title, this.list, () => this.go(s.id));
         b.setAttribute("role", "menuitem");
         b.dataset.cp = s.id;
         return b;
       });
+      // Start this screen again? Yes / No, in a little panel under ↻
+      this.confirm = CQ.el("div", "panel nav-confirm hidden", ui);
+      this.confirm.setAttribute("role", "dialog");
+      this.confirm.setAttribute("aria-label", C().ui.again);
+      CQ.el("div", "nc-q", this.confirm, C().ui.again);
+      const row = CQ.el("div", "nc-row", this.confirm);
+      button("nc-btn yes", ICON.yes, C().ui.yes, row, () => this.replay());
+      button("nc-btn no", ICON.no, C().ui.no, row, () => this.close());
       this.isOpen = false;
-      // a tap anywhere else closes the list
+      this.asking = false;
+      // a tap anywhere else closes the list (or the question)
       document.addEventListener(
         "pointerdown",
         (e) => {
-          if (this.isOpen && !e.target.closest(".nav-list, .nav")) this.close();
+          if ((this.isOpen || this.asking) && !e.target.closest(".nav-list, .nav, .nav-confirm")) this.close();
         },
         true
       );
       window.addEventListener(
         "keydown",
         (e) => {
-          if (e.key === "Escape" && this.isOpen) {
+          if (e.key === "Escape" && (this.isOpen || this.asking)) {
             e.stopImmediatePropagation(); // (not the pause menu as well)
             this.close();
           }
@@ -1558,12 +1723,30 @@
     },
     show(on) {
       this.el.classList.toggle("hidden", !on);
+      this.soundBtn.classList.toggle("hidden", !on);
       if (!on) this.close();
     },
-    // the screen on now is marked in the list
+    // the two buttons fade back while Zippy swings past their corner, and come back after (design review,
+    // 2026-11-23: "Zippy overlaps the HUD. In Level 2 the monkey covers the Menu and Restart buttons.
+    // Keep a safe zone around the HUD"); they can still be tapped
+    dodge(on) {
+      this.dodging = Math.max(0, (this.dodging || 0) + (on ? 1 : -1));
+      this.el.classList.toggle("dodge", this.dodging > 0);
+    },
+    // the screen on now is marked in the list; the screens after the furthest one reached are locked
     setCurrent(cp) {
       this.current = cp;
-      this.items.forEach((b) => b.classList.toggle("now", b.dataset.cp === cp));
+      const order = CQ.flow ? CQ.flow.ORDER : [];
+      const reached = Math.max(order.indexOf(cp), CQ.store.get("reached", 0) || 0);
+      this.items.forEach((b) => {
+        const i = order.indexOf(b.dataset.cp);
+        const locked = !CQ.qa && i > reached;
+        b.classList.toggle("now", b.dataset.cp === cp);
+        b.classList.toggle("locked", locked);
+        b.disabled = locked;
+        const title = (C().screens.find((s) => s.id === b.dataset.cp) || {}).title || "";
+        b.setAttribute("aria-label", locked ? CQ.fmt(C().ui.locked, { t: title }) : title);
+      });
     },
     toggle() {
       if (this.isOpen) this.close();
@@ -1571,6 +1754,7 @@
     },
     open() {
       if (this.isOpen) return;
+      this.closeAsk();
       this.isOpen = true;
       // just under the question bar (it grows for a long line), and never higher than styles.css has it
       const cap = CQ.caption.el;
@@ -1584,6 +1768,7 @@
       if (now) now.focus({ preventScroll: true });
     },
     close() {
+      this.closeAsk();
       if (!this.isOpen) return;
       this.isOpen = false;
       this.list.classList.add("hidden");
@@ -1591,9 +1776,34 @@
       CQ.pauser.release();
     },
     go(cp) {
+      const b = this.items.find((x) => x.dataset.cp === cp);
+      if (b && b.classList.contains("locked")) return;
       this.close();
       CQ.audio.play("ui.tap");
       if (CQ.flow) CQ.flow.chapter(cp);
+    },
+    // ↻: "Start this screen again?", under the button; the game waits meanwhile
+    ask() {
+      if (this.asking) return this.close();
+      if (!CQ.flow || !CQ.flow.current) return;
+      this.close();
+      this.asking = true;
+      const r = this.replayBtn.getBoundingClientRect();
+      const left = CQ.stage.toStage(r.left + r.width / 2, r.bottom);
+      this.confirm.style.left = Math.round(left.x) + "px";
+      this.confirm.style.top = Math.round(left.y + 16) + "px";
+      this.confirm.classList.remove("hidden");
+      CQ.pauser.hold();
+      CQ.audio.play("ui.tap");
+      CQ.anim(this.confirm, [{ opacity: 0, transform: "translate(-50%, -10px) scale(.92)" }, { opacity: 1, transform: "translate(-50%, 0) scale(1)" }], { duration: 220, easing: CQ.EASE.out, keep: false });
+      const yes = this.confirm.querySelector(".nc-btn.yes");
+      if (yes) yes.focus({ preventScroll: true });
+    },
+    closeAsk() {
+      if (!this.asking) return;
+      this.asking = false;
+      this.confirm.classList.add("hidden");
+      CQ.pauser.release();
     },
     replay() {
       this.close();
@@ -1651,14 +1861,8 @@
         t.setAttribute("role", "switch");
         this.toggles[k] = t;
       });
-      CQ.el("h3", "sub-title", panel, c.chapters);
-      const grid = CQ.el("div", "chapter-grid", panel);
-      C().chapters.forEach((ch, i) => {
-        button("chapter", `<span class="ch-n">${i + 1}</span><span class="ch-t">${ch.title}</span><span class="ch-s">${ch.sub}</span>`, ch.title, grid, () => {
-          this.close();
-          CQ.flow.chapter(ch.id);
-        });
-      });
+      // (no chapter list: the screens list, top left, goes to the screens already reached; design review,
+      // 2026-11-23: "The level menu lets kids jump anywhere")
       button("wbtn close-btn", "", C().ui.close, panel, () => this.close());
       this.isOpen = false;
       window.addEventListener("keydown", (e) => {
@@ -1714,6 +1918,7 @@
     GLOW: 1100, // ms the red light at the screen's corners comes and goes
     // Resolves when the shake is over (what follows it, a tile or label going home, waits for it).
     wrong(el, opts) {
+      if (CQ.buddy) CQ.buddy.react(false); // (Zippy, on an activity screen, winces)
       opts = opts || {};
       if (!opts.silent) CQ.audio.play("tryagain");
       if (el) {
@@ -1772,6 +1977,7 @@
       );
     },
     right(el, opts) {
+      if (CQ.buddy) CQ.buddy.react(true); // (Zippy, on an activity screen, cheers)
       opts = opts || {};
       if (!opts.silent) CQ.audio.play("correct");
       if (!el) return;
@@ -1818,6 +2024,48 @@
         off();
         t.remove();
       });
+    },
+  };
+
+  // ------------------------------------------------------------------ Zippy on the activity screens
+  // A small Zippy in the bottom left corner of the label, sort, recap and practice screens: he stands
+  // there, blinking, cheers at a right answer and winces at a wrong one (design review, 2026-11-23: "The
+  // theme disappears. The label, sort and Practice screens are plain dark panels with no Zippy, scale or
+  // jungle. Keep Zippy on screen reacting"; until then he wasn't on them, like the formula screen). He
+  // goes with the screen. CQ.answer tells him.
+  CQ.buddy = {
+    el: null,
+    // (his standing sheet, the finale's: he wears his crown and has his bag; his other sheets hang from the
+    // vine) frame 4: a finger up, thinking; 2, 6: fist up, laughing; 3: a kick
+    show(parent) {
+      this.el = CQ.el("div", "buddy", parent);
+      this.el.setAttribute("aria-hidden", "true");
+      this.sprite = new CQ.Sprite(this.el, "buddy-sprite", 0.44);
+      this.idle();
+      CQ.anim(this.el, [{ opacity: 0, transform: "translateY(40px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
+    },
+    alive() {
+      return !!(this.el && this.el.isConnected);
+    },
+    idle() {
+      if (!this.alive()) return;
+      this.sprite.stop();
+      this.sprite.show("zippy_dance", 4);
+    },
+    react(ok) {
+      if (!this.alive()) return;
+      clearTimeout(this.t);
+      this.sprite.stop();
+      if (ok) {
+        if (CQ.motion.reduced) this.sprite.show("zippy_dance", 2);
+        else this.sprite.play("zippy_dance", [2, 3, 6, 3, 2], 170);
+        this.t = setTimeout(() => this.idle(), 1300);
+      } else {
+        // a quick shake of the head ("oh no!"), and back to thinking
+        this.sprite.show("zippy_dance", 4);
+        if (!CQ.motion.reduced)
+          CQ.anim(this.sprite.el, [{ rotate: "0deg" }, { rotate: "-7deg", offset: 0.2 }, { rotate: "6deg", offset: 0.45 }, { rotate: "-4deg", offset: 0.7 }, { rotate: "0deg" }], { duration: 560, easing: "ease-in-out", keep: false });
+      }
     },
   };
 
@@ -2024,7 +2272,7 @@
       this.el.classList.remove("hidden");
       this.eqRow.className = "cp-side eqn";
       // written plainly, its own spacing, big (styles.css): never spread out over the rows under it
-      this.eqRow.innerHTML = `<span class="lab">${CQ.rich(`${k > 1 ? k : ""}x + ${eq.a}`)}</span><span class="op e1">=</span><span class="rest">${CQ.num(eq.b)}</span>`;
+      this.eqRow.innerHTML = `<span class="lab">${CQ.rich(`${k > 1 ? k : ""}x + ${eq.a}`)}</span><span class="op e1">=</span><span class="rest"><span class="cn">${CQ.num(eq.b)}</span></span>`;
       this.solRow.className = "cp-side sol";
       this.solRow.innerHTML = "";
       this.xRow.className = "cp-side try";
@@ -2039,7 +2287,7 @@
       // "Please don't do this like this… in all game").
       this.lhs.className = "cp-side lhs";
       this.rhs.className = "cp-side rhs";
-      this.lhs.innerHTML = `<span class="lab"><span class="ln">${U.lhs}</span><span class="op e0">=</span><span class="ex">${k > 1 ? `<span class="op">${k} ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ ${eq.a}</span></span></span><span class="op e1">=</span><span class="rest"><span class="eqv"><button type="button" class="blank" data-k="lhs" aria-label="${U.lhsValue}">?</button></span></span>`;
+      this.lhs.innerHTML = `<span class="lab"><span class="ln">${U.lhs}</span><span class="op e0">=</span><span class="ex">${k > 1 ? `<span class="op"><span class="cn">${k}</span> ×</span>` : ""}<span class="xslot"><i class="v">x</i></span><span class="op">+ <span class="cn">${eq.a}</span></span></span></span><span class="op e1">=</span><span class="rest"><span class="eqv"><button type="button" class="blank" data-k="lhs" aria-label="${U.lhsValue}">?</button></span></span>`;
       this.rhs.innerHTML = eq.rhsGiven
         ? `<span class="lab"><span class="ln">${U.rhs}</span></span><span class="op e1">=</span><span class="rest"><span class="ex"><span class="op">${CQ.num(eq.b)}</span></span></span>`
         : `<span class="lab"><span class="ln">${U.rhs}</span></span><span class="op e1">=</span><span class="rest"><span class="eqv"><button type="button" class="blank" data-k="rhs" aria-label="${U.rhsValue}">?</button></span></span>`;
@@ -2163,11 +2411,15 @@
     // write not a solution and this kind of things in this game"): the voice says it. (Since 2026-11-18
     // the equation and "Try" had faded away, leaving x = 4 lit where the try stood.)
     // cue = { lit: the words the row waits for in line, v: the value }.
+    // (design review, 2026-11-23: "Show '≠' instead of a red x = 4. A red 'x = 4' still reads as an
+    // equation. Show 'x ≠ 4 ✗'": a value that is not a solution is written x ≠ 4 ✗, in red; the solution
+    // x = 6 ✓, in green)
     async confirm(ok, line, cue) {
       this.lightSide(null);
       const r = this.solRow;
       r.className = "cp-side sol " + (ok ? "lit-ok" : "lit-no");
-      r.innerHTML = `<span class="lab"><i class="v">x</i></span><span class="op e1">=</span><span class="rest">${CQ.num(cue.v)}</span>`;
+      const sign = ok ? "=" : '<span class="neq">=</span>';
+      r.innerHTML = `<span class="lab"><i class="v">x</i></span><span class="op e1">${sign}</span><span class="rest">${CQ.num(cue.v)} <span class="sol-mark">${ok ? "✓" : "✗"}</span></span>`;
       await writePieces([...r.children], line, cue.lit);
     },
     // The side the voice is saying the value of glows in its colour; the other side's glow fades, the

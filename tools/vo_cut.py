@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-A voice line made from the start of another line's recording, when the new line is that recording's
-opening sentence, word for word (2026-11-18: practice's steps are said by themselves now, "Subtract 6 from
+A voice line made from the start (or, since 2026-11-23, the end) of another line's recording, when the
+new line is that recording's opening (or last) sentence, word for word (2026-11-18: practice's steps are said by themselves now, "Subtract 6 from
 both sides.", and they open the recorded hints "Subtract 6 from both sides. What is 17 − 6?"; "17 − 6 = 11."
 opens "17 − 6 = 11. Type 11."; "Not quite." opens "Not quite. Try the other one."). The same voice, with
 no new recording.
@@ -59,14 +59,47 @@ def main(args):
         src_e = by_id[e["from"]]
         words, src_words = e["line"].split(), src_e["line"].split()
         n = len(words)
-        if src_words[:n] != words or n >= len(src_words):
-            sys.exit("%s is not the start of %s: %r / %r" % (e["id"], src_e["id"], e["line"], src_e["line"]))
+        head = src_words[:n] == words and n < len(src_words)
+        tail = src_words[-n:] == words and n < len(src_words)
+        if not (head or tail):
+            sys.exit("%s is neither the start nor the end of %s: %r / %r" % (e["id"], src_e["id"], e["line"], src_e["line"]))
         W = times.get(src_e["id"])
         if not W or len(W) != 2 * len(src_words):
             sys.exit("%s has no word timings in js/vo_lines.js" % src_e["id"])
         src = os.path.join(OUT, src_e["id"] + ".mp3")
         if not os.path.exists(src):
             src = os.path.join(T.VO_DIR, src_e["id"] + ".ogg")
+        if not head:
+            # The end of the recording (its last sentence, design review of 2026-11-23: a line of two
+            # sentences said as two lines). The cut goes in the pause before the new line's first word:
+            # the last run of quiet between the word before it and its start, a little before the voice
+            # starts again (0.12 s, or the pause's middle, whichever is later), with a short fade in.
+            k = len(src_words) - n
+            a, b = W[2 * k - 1], W[2 * k]
+            db = T.loudness(T.decode(src))
+            lo, hi = int(W[2 * k - 2] / T.HOP), int(b / T.HOP)
+            runs, start = [], None
+            for i in range(lo, hi + 1):
+                quiet = i < hi and i < len(db) and db[i] <= QUIET
+                if quiet and start is None:
+                    start = i
+                elif not quiet and start is not None:
+                    runs.append((start, i))
+                    start = None
+            runs = [r for r in runs if (r[1] - r[0]) * T.HOP >= 0.08]
+            if runs:
+                s0, s1 = runs[-1][0] * T.HOP, runs[-1][1] * T.HOP
+                begin = max(s1 - 0.12, (s0 + s1) / 2)
+            else:
+                i0, i1 = int(a / T.HOP), max(int(a / T.HOP) + 1, hi)
+                seg = db[i0:i1] or [0]
+                begin = min(b - 0.05, (i0 + min(range(len(seg)), key=lambda i: seg[i])) * T.HOP)
+            mp3 = os.path.join(OUT, e["id"] + ".mp3")
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", "%.3f" % begin, "-i", src, "-ac", "1",
+                            "-af", "afade=t=in:d=0.04", "-c:a", "libmp3lame", "-q:a", "2", mp3], check=True)
+            made.append(mp3)
+            print("%s  from %s, %.2f s to the end (its first word at %.2f s)  %s" % (e["id"], src_e["id"], begin, b, e["line"]))
+            continue
         # The cut goes in the pause before the next word: the last run of quiet (under QUIET dB, at least
         # 0.08 s) between the start of the new line's last word and the next word's start, 0.3 s after
         # the voice stops or in the middle of the pause, whichever is earlier (a word's timed end often

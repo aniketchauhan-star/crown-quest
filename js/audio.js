@@ -1713,6 +1713,7 @@
     job.audio = el;
     el.onerror = function () { if (el.src !== mySrc) return; if (job.started) job.finish(true); else fb(); };
     el.onended = function () { if (el.src === mySrc) job.finish(true); };
+    job.clipSecs = clip.secs; // (resumeSpeech: how much of it is left)
     el.onplaying = function () {
       if (el.src !== mySrc || job.started) return;
       job.started = true;
@@ -1787,6 +1788,37 @@
     cancelSpeech();
     var el = VO && VO.element();
     if (el) { try { el.pause(); } catch (e) { /* ignore */ } }
+  }
+  // The line being said stops where it is while a menu is open, and goes on from there when it closes
+  // (design review, 2026-11-23: "Narration and animations keep running while the menu is open. Pause
+  // everything while the menu is showing"). Its safety timer (a clip that never ends) stops with it.
+  function pauseSpeech() {
+    var job = curJob;
+    if (!job || job.done || job.paused) return;
+    job.paused = true;
+    if (job.audio) {
+      for (var i = 0; i < job.timers.length; i++) clearTimeout(job.timers[i]);
+      job.timers = [];
+      try { job.audio.pause(); } catch (e) { /* ignore */ }
+    } else if (synth) {
+      try { synth.pause(); } catch (e) { /* ignore */ }
+    }
+  }
+  function resumeSpeech() {
+    var job = curJob;
+    if (!job || job.done || !job.paused) return;
+    job.paused = false;
+    if (job.audio) {
+      var el = job.audio;
+      var left = job.started ? Math.max(0, (job.clipSecs || 0) - (el.currentTime || 0)) / VO.rate : 3;
+      job.timers.push(setTimeout(function () { job.finish(job.started); }, left * 1000 + 600));
+      try {
+        var pr = el.play();
+        if (pr && pr.catch) pr.catch(function () { job.finish(job.started); });
+      } catch (e) { job.finish(job.started); }
+    } else if (synth) {
+      try { synth.resume(); } catch (e) { /* ignore */ }
+    }
   }
 
   /* ================================================================== *
@@ -1923,6 +1955,8 @@
     // true while a voice line is being spoken (a recording or the device voice)
     speaking: function () { return !!curJob; },
     stopSpeech: guard('stopSpeech', stopSpeech),
+    pauseSpeech: guard('pauseSpeech', pauseSpeech),
+    resumeSpeech: guard('resumeSpeech', resumeSpeech),
     cues: Object.keys(CUES),
     // 'running' once sound can play ('suspended' until the first tap on most browsers; 'none' before init)
     state: function () { try { return ctx ? ctx.state : 'none'; } catch (e) { return 'none'; } },
