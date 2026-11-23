@@ -193,16 +193,13 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo008 | Drag it to Zippy, then tap Swap. | = | ड्रैग इट टू ज़िप्पी, देन टैप स्वैप। | 2.9 |
 | vo009 | Now tap Swap! | = | नाउ टैप स्वैप! | 1.6 |
 | vo403 | Oops! The balance tipped. Try another bar! | = |  | 3.7 |
-| vo011 | Oops! Too heavy! The balance tipped! | = |  | 3.0 |
-| vo010 | Oops! Too light! The balance tipped! | = |  | 3.0 |
-| vo012 | Give Zippy a gold bar. | = |  | 1.7 |
-| vo405 | The crown balances 5 coins. | The crown balances five coins. |  | 2.5 |
+| vo013 | The crown balances 5 coins. Try the 5-unit bar! | The crown balances five coins. Try the five-unit bar! |  | 4.5 |
 | vo401 | Woohoo! Zippy got his first crown! | Woohoo! ज़िप्पी got his first crown! |  | 3.9 |
 | vo016 | Another crown! Let's collect it! | = |  | 2.6 |
-| vo406 | The crown balances 7 coins. | The crown balances seven coins. |  | 2.5 |
+| vo017 | The crown balances 7 coins. Try the 7-unit bar! | The crown balances seven coins. Try the seven-unit bar! |  | 4.6 |
 | vo402 | Woohoo! Zippy got another crown! | Woohoo! ज़िप्पी got another crown! |  | 3.6 |
 | vo019 | One more crown! Grumble's still asleep! | = |  | 3.3 |
-| vo407 | The crown balances 4 coins. | The crown balances four coins. |  | 2.6 |
+| vo020 | The crown balances 4 coins. Try the 4-unit bar! | The crown balances four coins. Try the four-unit bar! |  | 4.7 |
 | vo022 | Wait! This crown has two coins beside it. | = | वेट... दिस क्राउन हैज टू कॉइन्स बिसाइड इट. | 3.5 |
 | vo023 | Together, they balance 7 coins. | Together, they balance seven coins. |  | 2.8 |
 | vo024 | But Zippy needs to replace only the crown. | = |  | 2.9 |
@@ -218,12 +215,9 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo034 | x is a variable, and 2 is a constant. | x is a variable, and two is a constant. |  | 3.1 |
 | vo035 | Together, they form the algebraic expression x + 2. | Together, they form the algebraic expression x plus two. |  | 4.1 |
 | vo036 | The balance shows x + 2 = 7. | The balance shows x plus two equals seven. |  | 3.6 |
-| vo037 | Two expressions with equal values make an equation. | = |  | 3.9 |
-| vo038 | Left of the equals sign is the left-hand side, or LHS. | Left of the equals sign is the left-hand side, or L H S. |  | 5.4 |
-| vo039 | Right of the equals sign is the right-hand side, or RHS. | Right of the equals sign is the right-hand side, or R H S. |  | 5.4 |
-| vo418 | Tap the variable. | = |  | 1.8 |
-| vo419 | Tap the constant. | = |  | 1.6 |
-| vo420 | Tap the expression. | = |  | 2.0 |
+| vo037 | A statement that says two expressions have equal values is called an equation. | = | ए स्टेटमेंट दैट सेज़ टू एक्सप्रेशन्स हैव इक्वल वैल्यूज़ इज़ कॉल्ड एन इक्वेशन। | 5.5 |
+| vo038 | The expression to the left of the equals sign is called the left-hand side, or LHS. | The expression to the left of the equals sign is called the left-hand side, or L H S. | द एक्सप्रेशन टू द लेफ्ट ऑफ़ द इक्वल्स साइन इज़ कॉल्ड द लेफ्ट हैंड साइड, ऑर एल एच एस। | 6.6 |
+| vo039 | The expression to the right of the equals sign is called the right-hand side, or RHS. | The expression to the right of the equals sign is called the right-hand side, ऑर R H S. | दी एक्सप्रेशन टू दी राइट ऑफ दी ईक्वल्स साइन इज़ कॉल्ड दी राइट-हैंड साइड, ऑर आर एच एस। | 6.5 |
 | vo050 | Brilliant! You labelled every part! | = | ब्रिलियंट! यू लेबल्ड एव्री पार्ट. | 3.2 |
 | vo051 | This equation has one variable, x. | = | दिस इक्वेशन हैज़ वन वेरिएबल: एक्स। | 2.9 |
 | vo052 | The power of x is 1. | The power of x is one. |  | 2.8 |
@@ -238,21 +232,12 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo064 | An equation states that two expressions have equal values. | = | एन इक्वेशन स्टेट्स दैट टू एक्सप्रेशन्स हैव इक्वल वैल्यूज़। | 3.5 |
 | vo065 | The expression to the left of the equals sign is the left-hand side. | = | द एक्सप्रेशन टू द लेफ्ट ऑफ द इक्वल्स साइन इज द लेफ्ट-हैंड साइड। | 4.9 |
 | vo066 | The expression to the right of the equals sign is the right-hand side. | = | द एक्सप्रेशन टू द राइट ऑफ द इक्वल्स साइन इज द राइट-हैंड साइड। | 4.8 |
-| vo426 | x^2 means x times x, so its power is 2. | x squared means x times x, so its power is two. |  | 5.3 |
-| vo427 | Left of the equals sign is the left-hand side. | = |  | 3.3 |
-| vo428 | Right of the equals sign is the right-hand side. | = |  | 3.4 |
 | vo067 | Now let's find the crown's mass. | = | नाउ लेट्स फाइंड द क्राउन्स मास। | 2.8 |
 | vo068 | We need x to make both sides equal. | = |  | 2.5 |
-| vo409 | Let's try x = 4. | Let's try x equals four. |  | 2.6 |
-| vo410 | Find the value of each side. | = |  | 2.6 |
+| vo069 | Let's try x = 4. Find the value of each side. | Let's try x equals four. Find the value of each side. |  | 5.4 |
 | vo071 | The left-hand side is 6. | The left-hand side is six. |  | 2.7 |
-| vo421 | Which value should we try? | = |  | 2.1 |
-| vo422 | Let's try x = 5. | Let's try x equals five. |  | 2.9 |
-| vo423 | Let's try x = 6. | Let's try x equals six. |  | 2.5 |
-| vo424 | The left-hand side is 8. | The left-hand side is eight. |  | 1.9 |
-| vo425 | So, x = 6 is not a solution. | So, x equals six is not a solution. |  | 3.8 |
-| vo411 | A value that makes an equation true is its solution. | = |  | 3.9 |
-| vo412 | So, x = 5! | So, x equals five! |  | 2.8 |
+| vo072 | Now try x = 5. Find both sides. | Now try x equals five. Find both sides. |  | 4.6 |
+| vo075 | A value that makes an equation true is its solution. So, x = 5! | A value that makes an equation true is its solution. So, x equals five! |  | 6.8 |
 | vo076 | The crown weighs 5 units. Zippy can swap it! | The crown weighs five units. Zippy can swap it! |  | 4.2 |
 | vo077 | Now Zippy can swap. Tap Swap! | Now ज़िप्पी can swap. Tap Swap! | नाउ ज़िप्पी कैन स्वैप. टैप स्वैप! | 3.0 |
 | vo081 (Zippy) | Let's try 4. | Let's try four. | लेट्स ट्राई फोर। | 1.6 |
@@ -262,6 +247,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo086 | The right-hand side is the number on the right of the equals sign. | = |  | 4.4 |
 | vo087 (Zippy) | Phew! Good thing we checked! | = | फ़्यू! गुड थिंग वी चेक्ड। | 1.7 |
 | vo089 (Zippy) | Now let's try 6. | Now let's try six. | नाउ, लेट्स ट्राई सिक्स। | 1.8 |
+| vo090 | Give Zippy the 6-unit bar. | Give Zippy the six-unit bar. |  | 2.4 |
 | vo091 | Replace x with 6. | Replace x with six. | रिप्लेस एक्स विद सिक्स। | 2.3 |
 | vo092 | Add 6 + 3. Count on: 7, 8, 9. | Add six plus three. Count on: seven, eight, nine. |  | 5.6 |
 | vo404 | Another crown! Which gold bar will keep the balance level? | = |  | 4.7 |
@@ -284,8 +270,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo120 | Now let's check 12. | Now let's check twelve. | नाउ, लेट्स चेक ट्वेल्व। | 2.3 |
 | vo121 | Zippy spots another crown! | ज़िप्पी spots another crown! | ज़िप्पी स्पॉट्स अनदर क्राउन! | 2.1 |
 | vo126 | Split 23 into 8 and 15. | Split twenty-three into eight and fifteen. |  | 3.9 |
-| vo413 | There are 8 extra units beside the crown. | There are eight extra units beside the crown. |  | 3.2 |
-| vo414 | Let's remove them. | = |  | 1.6 |
+| vo127 | There are 8 extra units beside the crown. Let's remove them. | There are eight extra units beside the crown. Let's remove them. |  | 5.0 |
 | vo128 | Remove 8 units from both sides. | Remove eight units from both sides. |  | 3.1 |
 | vo131 | The crown balances 15 units. So, x = 15! | The crown balances fifteen units. So, x equals fifteen! |  | 6.2 |
 | vo132 | Before swapping, let's check the original equation. | = |  | 4.0 |
@@ -293,23 +278,24 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo134 | Find the left-hand side. | = |  | 1.7 |
 | vo135 | Add 15 + 8 to get 23. | Add fifteen plus eight to get twenty-three. |  | 3.8 |
 | vo138 | The crown weighs 15 units. Time to swap! | The crown weighs fifteen units. Time to swap! |  | 4.7 |
+| vo139 | Give Zippy the 15-unit bar, then tap Swap. | Give Zippy the fifteen-unit bar, then tap Swap. |  | 5.0 |
 | vo140 | Let's check 23. | Let's check twenty-three. | लेट्स चेक ट्वेंटी-थ्री। | 1.8 |
 | vo141 | Add 23 + 8 to get 31. | Add twenty-three plus eight to get thirty-one. |  | 4.2 |
 | vo143 | Let's check 31. | Let's check thirty-one. | लेट्स चेक थर्टी वन। | 1.8 |
 | vo144 | Add 31 + 8 to get 39. | Add thirty-one plus eight to get thirty-nine. |  | 3.9 |
 | vo148 | Each crown has the same mass, x. | = | ईच क्राउन हैज द सेम मास, एक्स। | 2.5 |
 | vo149 | Two crowns together have a mass of 2x. | Two crowns together have a mass of two x. |  | 3.8 |
-| vo415 | There are 4 extra units beside the crowns. | There are four extra units beside the crowns. |  | 3.5 |
+| vo150 | There are 4 extra units beside the crowns. Let's remove them. | There are four extra units beside the crowns. Let's remove them. |  | 5.4 |
 | vo151 | Split 18 into 4 and 14. | Split eighteen into four and fourteen. |  | 3.7 |
 | vo152 | Remove 4 units from both sides. | Remove four units from both sides. |  | 3.4 |
 | vo154 | But what does one crown weigh? | = |  | 2.2 |
 | vo157 | Let's check with x = 7. | Let's check with x equals seven. |  | 2.4 |
 | vo158 | 2 × 7 = 14. Add 4 to get 18. | Two times seven equals fourteen. Add four to get eighteen. |  | 6.0 |
+| vo161 | Give Zippy a 7-unit bar, then tap Swap. | Give Zippy a seven-unit bar, then tap Swap. |  | 5.0 |
 | vo162 | Let's check 9. | Let's check nine. | लेट्स चेक नाइन। | 1.5 |
 | vo163 | 2 × 9 = 18. Add 4 to get 22. | Two times nine equals eighteen. Add four to get twenty-two. |  | 5.5 |
-| vo408 | One more crown! | = |  | 1.5 |
-| vo416 | You've helped Zippy find the crowns' masses. | = |  | 3.2 |
-| vo417 | Now try a few equations! | = |  | 2.1 |
+| vo165 | One more crown! Give Zippy the other 7-unit bar. | One more crown! Give Zippy the other seven-unit bar. |  | 4.7 |
+| vo166 | You've helped Zippy find the crowns' masses. Now try a few equations! | = |  | 5.5 |
 | vo314 | Quest complete! Zippy collected all crowns, and Grumble's still snoring! | = |  | 6.3 |
 | vo316 | Can you identify these parts in another equation? | = |  | 2.9 |
 | vo317 | Drag each label to the correct box. | = |  | 2.7 |
@@ -341,6 +327,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo351 | Can we solve this without guessing? | = |  | 2.8 |
 | vo352 | 4x + 3 is on the left. That's the left-hand side. | Four x plus three is on the left. That's the left-hand side. |  | 4.1 |
 | vo353 | 19 is on the right. That's the right-hand side. | Nineteen is on the right. That's the right-hand side. |  | 3.7 |
+| vo354 | Drag the 5-unit bar to Zippy, then tap Swap. | Drag the five-unit bar to Zippy, then tap Swap. |  | 4.4 |
 | vo355 | The crown and 8 units balance 23 units. | The crown and eight units balance twenty-three units. |  | 4.3 |
 | vo356 | Guessing could take a while! | = |  | 1.5 |
 | vo357 | Drag an 8-unit bar off each side. | Drag an eight-unit bar off each side. |  | 3.8 |

@@ -39,26 +39,12 @@ window.CONTENT = {
     "l1-2": "Drag it to Zippy, then tap Swap.",
     "l2-1": "Another crown! Let's collect it!",
     "l3-1": "One more crown! Grumble's still asleep!",
+    "swap-hint2": "The crown balances {n} coins. Try the {n}-unit bar!",
     "swap-tap-swap": "Now tap Swap!",
     // after every wrong bar, in every level where the child picks a bar (user, 2026-11-19, with their own
     // recording; it took the place of "Give Zippy a gold bar." in Levels 1–3 and "Try another value!" in
     // Levels 6–7)
     "wrong-bar": "Oops! The balance tipped. Try another bar!",
-    // Levels 1–3 after a wrong bar (design review, 2026-11-23: "Wrong answers don't teach anything…
-    // 'Too heavy!' / 'Too light!'"): which way it tipped, in the user's own recordings of 19 Nov (vo010,
-    // vo011, back from git); the two numbers stand on the beam meanwhile ("7 > 5"). From the second wrong
-    // bar on, the crown's coins are counted, without naming the bar (same review: "2nd miss: highlight and
-    // count the coins… Don't leave the correct answer as the only one left"; it was "The crown balances 5
-    // coins. Try the 5-unit bar!", which the line below is cut from).
-    "swap-heavy": "Oops! Too heavy! The balance tipped!",
-    "swap-light": "Oops! Too light! The balance tipped!",
-    "swap-count": "The crown balances {n} coins.",
-    // a bar to give, without naming it (design review, 2026-11-23: "'Drag the 5-unit bar to Zippy' and 'Give
-    // Zippy the 4-unit bar' name the answer, so the child isn't thinking"): Levels 4, 5 (after its first,
-    // guided try), 8 and 9, in the user's recording of 19 Nov (vo012, back from git). "One more crown!" is
-    // cut from Level 9's old "One more crown! Give Zippy the other 7-unit bar."
-    "give-bar": "Give Zippy a gold bar.",
-    "one-more": "One more crown!",
 
     // Level 4: the mystery crown
     "l4-1": "Wait! This crown has two coins beside it.",
@@ -79,13 +65,9 @@ window.CONTENT = {
     "l4-13": "x is a variable, and 2 is a constant.",
     "l4-14": "Together, they form the algebraic expression x + 2.", // (review, 2026-11-13; it was "Joining x and 2 with addition gives…")
     "l4-15": "The balance shows x + 2 = 7.",
-    // (shorter since the second round of the design review of 2026-11-23, "Keep lines to about 8–10 words";
-    // recorded by the user the same day: docs/VO_LINES_TO_MAKE.txt. They were "A
-    // statement that says two expressions have equal values is called an equation.", "The expression to the
-    // left of the equals sign is called the left-hand side, or LHS." and the same for the right)
-    "l4-16": "Two expressions with equal values make an equation.",
-    "l4-17": "Left of the equals sign is the left-hand side, or LHS.",
-    "l4-18": "Right of the equals sign is the right-hand side, or RHS.",
+    "l4-16": "A statement that says two expressions have equal values is called an equation.",
+    "l4-17": "The expression to the left of the equals sign is called the left-hand side, or LHS.",
+    "l4-18": "The expression to the right of the equals sign is called the right-hand side, or RHS.",
     // back from the label activity to the formula screen (review, 2026-11-13: "Add a transition")
     "l4-19a": "Let's return to the crown's equation.",
     "l4-19": "This equation has one variable, x.",
@@ -97,20 +79,7 @@ window.CONTENT = {
     "l4-22": "This is a linear equation in one variable.", // (review, 2026-11-13; it was "So, it is a linear equation in one variable.")
     "l4-23": "Now let's find the crown's mass.",
     "l4-24": "We need x to make both sides equal.",
-    // (two lines since 2026-11-23, each cut from the one recording: design review, 2026-11-23: "Keep lines to about 8–10 words, and split the rest across beats"; it was "Let's try x = 4. Find the
-    // value of each side.")
-    "l4-25b": "Find the value of each side.",
-    // Level 4d since the design review of 2026-11-23: the child picks the value to try ("Let the child do
-    // the trial and check"); "Let's try x = {v}." for 4 is recorded (it was l4-25), for 5 and 6 recorded
-    // by the user the same day, with "Which value should we try?", "The left-hand side is 8." and "So,
-    // x = 6 is not a solution." (docs/VO_LINES_TO_MAKE.txt)
-    "pick-value": "Which value should we try?",
-    "try-x": "Let's try x = {v}.",
-    // Level 4's one-tap checks, each after its new word (design review, 2026-11-23: teach → try → check);
-    // recorded by the user the same day
-    "tap-var": "Tap the variable.",
-    "tap-const": "Tap the constant.",
-    "tap-expr": "Tap the expression.",
+    "l4-25": "Let's try x = 4. Find the value of each side.",
     // a side at a time (review, 2026-11-13: "Screen 1: 'The left-hand side equals 6.' Screen 2: 'The
     // right-hand side equals 7.'"), and the same for 5. Then, as in every check, two screens: the
     // balance (check-diff / check-same, below) and what the value is (check-not-sol; for 5, l4-29)
@@ -120,11 +89,14 @@ window.CONTENT = {
     // In every spoken line the sides are named in full, "left-hand side" and "right-hand side", never
     // "LHS"/"RHS" (user, 2026-11-19); LHS and RHS stay only where they are written as names: the working's
     // rows (ui.lhs, ui.rhs), the labels, and "…called the left-hand side, or LHS." that introduces them.
-    // (two lines since 2026-11-23, as l4-25: it was "A value that makes an equation true is its solution. So,
-    // x = 5!")
-    "l4-29": "A value that makes an equation true is its solution.",
-    "l4-29b": "So, x = 5!",
+    "l4-26": "The left-hand side is 6.",
+    "l4-26b": "The right-hand side is 7.",
+    "l4-27": "Now try x = 5. Find both sides.",
+    "l4-28": "The left-hand side is 7.",
+    "l4-28b": "The right-hand side is 7.",
+    "l4-29": "A value that makes an equation true is its solution. So, x = 5!",
     "l4-30": "The crown weighs 5 units. Zippy can swap it!",
+    "l4-give": "Drag the 5-unit bar to Zippy, then tap Swap.", // (x = 5 is known: review, 2026-11-08)
 
     // Levels 5–9: check before you swap.  {v} = value tried, {s} = the left side's value, {b} = the right side
     "l5-give": "Give Zippy the {v}-unit bar.",
@@ -170,9 +142,7 @@ window.CONTENT = {
     "l8-3": "Guessing could take a while!",
     "l8-4": "Can we solve this without guessing?", // (review, 2026-11-13; it was "Let's find the mass of the crown directly.")
     "l8-5": "Split 23 into 8 and 15.", // (review, 2026-11-13; it was "First, split 23 into 8 and 15.")
-    // (two lines since 2026-11-23, as l4-25: "remove-them" is said after it, and after l9-3)
-    "l8-6": "There are 8 extra units beside the crown.",
-    "remove-them": "Let's remove them.",
+    "l8-6": "There are 8 extra units beside the crown. Let's remove them.",
     "l8-7": "Remove 8 units from both sides.", // (review, 2026-11-13; it was "To keep the balance level, we must remove 8 units from both sides.")
     "l8-8-drag": "Drag an 8-unit bar off each side.", // (review, 2026-11-08: one side at a time)
     "l8-other": "Now remove 8 from the other side.",
@@ -180,6 +150,7 @@ window.CONTENT = {
     "l8-10": "Before swapping, let's check the original equation.",
     "l8-11": "Replace x with 15.",
     "l8-14": "The crown weighs 15 units. Time to swap!",
+    "l8-give": "Give Zippy the 15-unit bar, then tap Swap.",
 
     // Level 9: two matching crowns
     "l9-1": "Each crown has the same mass, x.",
@@ -188,7 +159,7 @@ window.CONTENT = {
     // removing 4 from both sides (they were "First, let's remove these 4 units.", before the split, "Split
     // 18 into 4 and 14." and "Remove 4 from both sides.")
     "l9-4": "Split 18 into 4 and 14.",
-    "l9-3": "There are 4 extra units beside the crowns.", // (then "remove-them", since 2026-11-23)
+    "l9-3": "There are 4 extra units beside the crowns. Let's remove them.",
     "l9-5": "Remove 4 units from both sides.",
     "l9-5-drag": "Drag a 4-unit bar off each side.", // (review, 2026-11-08: as in Level 8)
     "l9-other": "Now remove 4 from the other side.",
@@ -197,6 +168,8 @@ window.CONTENT = {
     "l9-7": "Divide both sides into two equal groups.", // (review, 2026-11-08)
     "l9-8": "Each crown weighs 7 units. So, x = 7!", // (review, 2026-11-08)
     "l9-9": "Let's check with x = 7.",
+    "l9-give": "Give Zippy a 7-unit bar, then tap Swap.",
+    "l9-give2": "One more crown! Give Zippy the other 7-unit bar.",
 
     // Every crown Zippy wins: once he has it, the only voice (user, 2026-11-19). His first crown (Level
     // 1) has the first line, only that once; every crown after it, to the last, has the second. (They
@@ -207,10 +180,7 @@ window.CONTENT = {
     "crown-another": "Woohoo! Zippy got another crown!",
 
     // Practice: try a few equations (the words for each equation are in `practice` below)
-    // (two lines since 2026-11-23, as l4-25: it was "You've helped Zippy find the crowns' masses. Now try a few
-    // equations!")
-    "p-intro": "You've helped Zippy find the crowns' masses.",
-    "p-intro-b": "Now try a few equations!",
+    "p-intro": "You've helped Zippy find the crowns' masses. Now try a few equations!",
 
     // Finale (heard, not shown in the question bar: Zippy dances; the title and the replay button are
     // in `finale`, below)
@@ -250,16 +220,9 @@ window.CONTENT = {
     sfx: "Sound effects",
     voice: "Voice",
     reducedMotion: "Reduced motion",
+    chapters: "Chapters",
     screens: "All the screens", // the list in the top left corner (read by screen readers)
-    // (design review, 2026-11-23) the screens list shows only the screens already reached; the rest are
-    // locked (read by screen readers); ↻ asks before it starts the screen again; the sound button opens
-    // the sound menu; the crown counter at the top right
-    locked: "{t} (not reached yet)",
-    again: "Start this screen again?",
-    yes: "Yes",
-    no: "No",
-    sound: "Sound",
-    crowns: "{n} of {t} crowns",
+    crowns: "{n} of {t} crowns", // the crown counter, top right (read by screen readers; design review, 2026-11-23)
     replay: "Play this screen again",
     unit: "1 unit",
     // the two sides, as they are written in the working (the check, Level 4's try, practice)
@@ -312,6 +275,18 @@ window.CONTENT = {
     { id: "L9", n: "9", title: "Level 9: two crowns" },
     { id: "P", n: "P", title: "Practice: six equations" },
     { id: "finale", n: "♛", title: "Finale: quest complete" },
+  ],
+
+  // Chapter select (menu). id = where the chapter starts.
+  chapters: [
+    { id: "intro", title: "Intro", sub: "Meet Zippy & Grumble" },
+    { id: "L1", title: "The Swap", sub: "Levels 1–3" },
+    { id: "L4a", title: "The Mystery Crown", sub: "Level 4" },
+    { id: "L5", title: "Check It", sub: "Levels 5–7" },
+    { id: "L8", title: "The Smart Way", sub: "Level 8" },
+    { id: "L9", title: "Two Crowns", sub: "Level 9" },
+    { id: "P", title: "Practice", sub: "Six equations" },
+    { id: "finale", title: "Finale", sub: "Quest complete" },
   ],
 
   /*
@@ -369,7 +344,7 @@ window.CONTENT = {
     // (the question bar says it; there is no heading on the board: review, 2026-11-07. The labels come
     // in two pairs, Variable and Equation, then LHS and RHS: js/activities.js, activityLabel)
     // from Level 4's formula screen into the activity (review, 2026-11-13: the balance fades out and
-    // x + 3 = 9 comes to the middle meanwhile; it was 4x + 3 = 19 until 2026-11-23)
+    // 4x + 3 = 19 comes to the middle meanwhile)
     bridge: "Can you identify these parts in another equation?",
     title: "Drag each label to the correct box.", // (text of 2026-11-19; it was "…to the matching box.")
     // into the second pair, and its instruction in the question bar while the child places LHS and RHS
@@ -378,24 +353,12 @@ window.CONTENT = {
     pair2: "Now label the left-hand side and right-hand side.",
     pair2Cue: { LHS: "the left-hand", RHS: "and right-hand" },
     // the four labels, as written on their tiles (the keys are the game's own names for them)
-    // (Constant: the label that fits neither box of the first pair, design review, 2026-11-23)
-    names: { Variable: "Variable", Equation: "Equation", LHS: "LHS", RHS: "RHS", Constant: "Constant" },
+    names: { Variable: "Variable", Equation: "Equation", LHS: "LHS", RHS: "RHS" },
     // (a right label: no words, only a success sound and a green border: review, 2026-11-07; a wrong one:
     // no words either, the screen shakes with red light at its corners and the label goes back for
     // another try: asked 2026-11-19. Until then a wrong label was explained and put in its box for the
     // child, "Not quite! x is the unknown value, so it's the variable.": reviews of 2026-11-13 and -16)
     done: "Brilliant! You labelled every part!", // (every label in)
-    // After a wrong label, a one-line hint about that label (design review, 2026-11-23: "Wrong drops snap
-    // back with no message. Add a shake, a short sound and a one-line hint"; from 2026-11-19 until then a
-    // wrong label had no words). All of them are recorded already, in the user's voice: the first two are
-    // the hints of 2026-11-13, LHS and RHS the recap's lines, and "Not quite!" practice's.
-    miss: {
-      Variable: "Not quite! x is the unknown value, so it's the variable.",
-      Equation: "The complete statement is an equation.",
-      LHS: "The expression to the left of the equals sign is the left-hand side.",
-      RHS: "The expression to the right of the equals sign is the right-hand side.",
-      Constant: "Not quite!",
-    },
   },
 
   // Activity: sort linear / nonlinear
@@ -416,19 +379,6 @@ window.CONTENT = {
     // the tray, its panel glowing if it was wrong before: asked 2026-11-19. It was "Check the highest
     // power of x.", then "The highest power of x is 1, so this equation is linear.")
     done: "Great sorting! You found every linear equation.",
-    // After a wrong card, why (design review, 2026-11-23: "a one-line hint"); recorded already, in the
-    // user's voice (they were its hints until 2026-11-19)
-    miss: {
-      linear: "The highest power of x is 1, so this equation is linear.",
-      nonlinear: "The highest power of x is 2, so this equation is nonlinear.",
-    },
-    // Before the cards, what a power is, with x² = x × x and x = x¹ written as the voice says them (design
-    // review, 2026-11-23: "'Highest power' is out of place. Powers haven't been taught, so the linear vs
-    // non-linear sort (x², 2x² + 1) is guesswork… teach powers with a visual first"). pow1 is new (recorded
-    // by the user the same day: docs/VO_LINES_TO_MAKE.txt); pow2 and pow3 were recorded before.
-    pow1: "x^2 means x times x, so its power is 2.",
-    pow2: "The power of x is 1.",
-    pow3: "Check the highest power of x.",
   },
 
   // A quick recap: four panels on one equation; each panel adds one more label.
@@ -441,10 +391,8 @@ window.CONTENT = {
       // look: words before them on which its part lights up already ("to the left of the equals sign")
       { id: "recap-1", text: "A variable is a symbol that represents a value.", show: ["variable"], cue: "A variable" },
       { id: "recap-2", text: "An equation states that two expressions have equal values.", show: ["variable", "equation"], cue: "An equation" },
-      // (recap-3 and recap-4 shorter since the second round of the design review of 2026-11-23, recorded
-      // by the user the same day; their old words are still said, recorded, as the label activity's hints)
-      { id: "recap-3", text: "Left of the equals sign is the left-hand side.", show: ["variable", "equation", "lhs"], look: "Left of", cue: "the left-hand" },
-      { id: "recap-4", text: "Right of the equals sign is the right-hand side.", show: ["variable", "equation", "lhs", "rhs"], look: "Right of", cue: "the right-hand" },
+      { id: "recap-3", text: "The expression to the left of the equals sign is the left-hand side.", show: ["variable", "equation", "lhs"], look: "to the left", cue: "the left-hand" },
+      { id: "recap-4", text: "The expression to the right of the equals sign is the right-hand side.", show: ["variable", "equation", "lhs", "rhs"], look: "to the right", cue: "the right-hand" },
     ],
   },
 
@@ -536,8 +484,7 @@ window.CONTENT = {
     title: "Mission Complete!",
     replay: "Play again",
     // (design review, 2026-11-23: "Add a results summary… Show the crowns collected, stars, the equations
-    // solved and the key words learned"; "add a second button (Next mission / Home)")
-    home: "Home",
+    // solved and the key words learned")
     sumCrowns: "Crowns",
     sumEquations: "Equations solved",
     sumWords: "Words learned",

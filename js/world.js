@@ -57,7 +57,8 @@
   //  - "shimmer": the light on the lake's ripples shifts all the time, and glints come and go (bgWater);
   //  - "crown": a tree's leafy top sways in the breeze, bending from the middle of the trunk, while the
   //    trunk and roots stay put (bgCrown): the big tree, and since 2026-11-23 the tree at the right edge
-  //    (the same picture mirrored: "flip");
+  //    (the big tree's picture turned round, "mirror", standing out at the edge so that its crown fills
+  //    the top right corner, clear of the balance: tools/make_background.py, "A tree on each side");
   //  - "branch": the leafy branch overhead sways from where it joins the tree, in gusts;
   //  - "sway": a plant sways from its foot.
   // Birds fly across the sky now and then, behind the branch and the tree (bgBirds). (Since 2026-11-23
@@ -170,8 +171,9 @@
   // later two fly out of the leaves and away to the right. Each bird flaps a few times and glides, at its
   // own pace, and each flock rises and falls a little as it goes. A flight is a CSS animation with a long
   // wait after it (styles.css, .bird-flock), so the birds rest with the rest of the scene while it is
-  // blurred, and stay away with Reduced motion and in light mode. They fly behind the branch and the tree
-  // (and Zippy), in front of the clouds and the hills.
+  // blurred, and stay away with Reduced motion and in light mode. They fly behind the branch and the trees
+  // (and Zippy), in front of the clouds and the hills: at the right edge they slip behind the corner of
+  // leaves of the tree there (the three on their way in, the two on their way out).
   const FLOCKS = [
     // flock, its birds: x, y from the leader, size, seconds to flap and glide, delay
     ["f1", [[0, 0, 1, 2.4, 0.3], [34, -13, 0.88, 2.7, 1.2], [62, 10, 0.8, 2.2, 0.7]]],
@@ -207,16 +209,25 @@
   // far from its right side), so where the two meet nothing moves and no join shows. CROWN is in parts
   // of the picture's width and height, as the tree is drawn at more than one size (since 2026-11-23:
   // 1040 x 1096 px until then, cut at 650 px, pivot 300 px). The two trees sway a little out of step.
+  // A tree drawn turned round ("mirror": the tree at the right edge is the big tree's own picture) has
+  // its two copies in a box that turns them round together (.bg-mirror), so the picture is loaded once
+  // and its top bends about its own trunk, as the big tree's does.
   // (The returned picture is the lower one: Zippy peeks out from behind both of the big tree's.)
   const CROWN = { cut: 650 / 1096, blend: 70 / 1096, pivotX: 300 / 1040 };
   function bgCrown(layer, ly, i) {
     const top = (CROWN.cut - CROWN.blend / 2) * ly.h;
     const end = (CROWN.cut + CROWN.blend / 2) * ly.h;
-    const trunk = CQ.img(ly.key, "bg-trunk", layer);
-    CQ.box(trunk, ly.x, ly.y, ly.w, ly.h);
+    let at = layer;
+    let [x, y] = [ly.x, ly.y];
+    if (ly.mirror) {
+      at = CQ.box(CQ.el("div", "bg-mirror", layer), ly.x, ly.y, ly.w, ly.h);
+      [x, y] = [0, 0];
+    }
+    const trunk = CQ.img(ly.key, "bg-trunk", at);
+    CQ.box(trunk, x, y, ly.w, ly.h);
     softMask(trunk, `linear-gradient(to bottom, transparent ${top - 1}px, #000 ${top}px)`);
-    const crown = CQ.img(ly.key, "bg-crown", layer);
-    CQ.box(crown, ly.x, ly.y, ly.w, ly.h);
+    const crown = CQ.img(ly.key, "bg-crown", at);
+    CQ.box(crown, x, y, ly.w, ly.h);
     softMask(crown, `linear-gradient(to bottom, #000 ${top}px, transparent ${end}px)`);
     const pivotX = ly.flip ? 1 - CROWN.pivotX : CROWN.pivotX;
     crown.style.transformOrigin = `${pivotX * ly.w}px ${CROWN.cut * ly.h}px`;
@@ -972,11 +983,6 @@
       if (owner != null) CQ.bubble.hide(false, owner);
     }
     tapped() {
-      // holding a bar the child gave him, before SWAP is tapped: he gives it back (CQ.Give.putBack)
-      if (this.held && this.held.type === "bar" && CQ.Give.heldBar && CQ.swapBtn.cb && !CQ.Give.busy) {
-        CQ.Give.putBack();
-        return;
-      }
       const now = performance.now();
       if (now - this.lastTap < 2500 || CQ.Give.dragging) return;
       if (!["idle", "hold"].includes(this.poseName)) return;
@@ -1730,16 +1736,10 @@
       this.layer = layer;
       this.list = [];
     }
-    // (opts.answer: the bar that balances; it never stands where the last level's stood, so its place
-    // can't be guessed: design review, 2026-11-23, "vary which slot holds the answer")
     setup(values, opts) {
       opts = opts || {};
       this.clear();
-      let order = opts.shuffle === false ? values.slice() : CQ.shuffle(values);
-      if (opts.answer != null && opts.shuffle !== false && values.filter((v) => v === opts.answer).length === 1) {
-        for (let i = 0; i < 12 && order.indexOf(opts.answer) === this.answerAt; i++) order = CQ.shuffle(values);
-        this.answerAt = order.indexOf(opts.answer);
-      }
+      const order = opts.shuffle === false ? values.slice() : CQ.shuffle(values);
       const xs = [L.BX - 270, L.BX, L.BX + 270];
       order.forEach((v, i) => {
         const x = xs[i];
@@ -1849,10 +1849,8 @@
       this.onGive = null;
       CQ.bars.refresh();
     },
-    // (a bar tried already can be given again: it is marked Tried, but the right one is never the only one
-    // left to pick; design review, 2026-11-23)
     can(bar) {
-      return !!(this.allowed && this.allowed.has(bar.value) && (bar.state === "idle" || bar.state === "tried") && !this.busy);
+      return !!(this.allowed && this.allowed.has(bar.value) && bar.state === "idle" && !this.busy);
     },
     // a bar is picked up (dragged, tapped or chosen with the keyboard): the flow's onPick, if any
     picked() {
@@ -1940,27 +1938,6 @@
       CQ.bars.refresh();
       const cb = this.onGive;
       if (cb) cb(bar.value);
-    },
-    // The child gives the bar back before tapping SWAP (a tap on Zippy while he holds it): it goes home to
-    // its stand, and SWAP goes until he holds a bar again (design review, 2026-11-23: "Ideally the child
-    // can put the bar back before tapping Swap").
-    async putBack() {
-      const bar = this.heldBar;
-      const z = CQ.zippy;
-      if (!bar || this.busy || !this.allowed || !z.held || z.held.type !== "bar") return false;
-      this.busy = true;
-      CQ.swapBtn.hide();
-      CQ.bars.refresh();
-      CQ.hand.stop();
-      z.pose("giveBack"); // "not this one": he holds it out
-      await CQ.sleep(260);
-      const from = z.barBox();
-      z.setHeld(null);
-      z.pose("idle");
-      await this.tossBack(bar, { from, scaleFrom: from.w / L.BAR_W });
-      this.busy = false;
-      CQ.bars.refresh();
-      return true;
     },
     // After a level swap the held bar is on the pan for good.
     useHeld() {

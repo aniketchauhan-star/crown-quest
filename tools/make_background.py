@@ -18,9 +18,15 @@ the forest are carried on past the frame, the far mountains carry on down behind
 the cloud the arch half hid in the reference is left out (see "Where the arch stood" below).
 The same day the big tree and its branch were toned down (CALM), so they don't compete with the balance.
 Later that day the scene got a tree on each side (asked: "right side there is nothing and left side is
-tree... right side add something, zoom out"): the big tree's picture, mirrored, stands at the right
-edge, and both trees and the branch are drawn smaller, so the scene looks wider and the balance stands
-between them (see "A tree on each side" below).
+tree... right side add something, zoom out"): the big tree's picture stands at the right edge, and both
+trees and the branch are drawn smaller, so the scene looks wider and the balance stands between them.
+That evening the right tree was turned round (asked: "the trees... both side, it's make a cluttered...
+not clutter but both side elements should have a balanced"): not mirrored, its crown leaned out of the
+picture. That left a bare trunk with its top cut off by the frame (asked later that night: "fix the
+right tree its like cut the tree and the grass leaf its look weird"), so now it is mirrored again but
+stands further out: its crown fills the top right corner, clear of the balance, its trunk bends out to
+the frame's edge and down to its roots, which stand on their own grass at the lake's edge; the lawn's
+strip of grass at the right is gone (see "A tree on each side" below).
 This tool used to live in art/background/tools/; the copy there (in the git history) still has the arch.
 
 art/ is not in the project folder: bring art/background/ back first (README, "Replace the artwork").
@@ -239,13 +245,11 @@ def build_lawn():
     alpha_left = ndi.gaussian_filter(left.astype(np.float32), 0.8)
     alpha_left[yy < 640] = 0
     alpha_left *= np.clip((560 - xx) / 50.0, 0, 1)  # fades out under the shore bush, no straight edge
-    # right: only the reference's own grass (how green a pixel is), faded in at the region's edges
-    greenness = np.clip((g - r - 6) / 30, 0, 1) * (b < g - 40) * (g > 120)
-    right_zone = ((xx > 1300) & (yy > 668) & (yy < 800)).astype(np.float32)
-    right_zone = ndi.gaussian_filter(right_zone, 3)
-    alpha_right = greenness * right_zone * ~floor
-    rgb = np.where((alpha_right > alpha_left)[..., None], REF, rgb)
-    alpha = np.maximum(alpha_left, alpha_right)
+    # (The lawn had a right part until late on 2026-11-23: the reference's own grass round the stone
+    # arch's foot. Without the arch it was a flat strip of lime green under the tree there, with a tongue
+    # out over the paving, and looked pasted on (asked: "the grass leaf its look weird"). The tree at the
+    # right stands on its own grass now, at the lake's edge.)
+    alpha = alpha_left
     return Image.fromarray(np.dstack([rgb, alpha[..., None] * 255]).astype(np.uint8)), floor
 
 
@@ -353,7 +357,8 @@ def grade(p, boxes):
 # balance): (saturation, contrast, brightness) for the finished layer. Saturation goes about each
 # pixel's own luma, contrast about the layer's mean colour (its pixels with alpha > 128, after the
 # saturation), then brightness; the alpha is not touched, so the outline is the same as before.
-CALM = {"branch": (0.72, 0.86, 0.93), "tree": (0.72, 0.86, 0.93), "tree-right": (0.72, 0.86, 0.93)}
+# (The tree at the right is the big tree's picture turned round, so it is toned down the same: MIRROR_OF.)
+CALM = {"branch": (0.72, 0.86, 0.93), "tree": (0.72, 0.86, 0.93)}
 
 
 def calm(img, sat, contrast, bright):
@@ -417,6 +422,12 @@ def render_layers(layout):
         else:
             name, px, py, sc, flip, lid, anim = (list(item) + [None, None])[:7]
             lid = lid or name
+            if lid in MIRROR_OF:
+                # its twin's finished picture turned round, as the game draws it (the piece mirrored and
+                # drawn again would differ from that by a few levels here and there)
+                twin = next(im for l, im, *_ in out if l == MIRROR_OF[lid])
+                out.append((lid, ImageOps.mirror(twin), round(px * K), round(py * K), anim))
+                continue
             img, x, y = piece_layer(name, px, py, sc, flip, lid)
             if lid in CALM:
                 img = calm(img, *CALM[lid])
@@ -441,10 +452,17 @@ def main(layout):
     for f in os.listdir(ldir):
         if f.endswith(".png"):
             os.remove(os.path.join(ldir, f))
-    # layers drawn from a mirrored piece say so ("flip"): the tree at the right sways about its own trunk
+    # layers drawn from a mirrored piece say so ("flip": a mirrored tree would sway about its own trunk,
+    # js/world.js, bgCrown; only the near mountains are, now)
     flipped = {(list(it) + [None] * 7)[5] or it[0] for it in layout if it[0] not in ("floor", "lawn") and len(it) > 4 and it[4]}
     entries = []
     for i, (lid, img, x, y, anim) in enumerate(layers, 1):
+        if lid in MIRROR_OF:
+            # no file of its own: its twin's picture, which the game draws turned round ("mirror"), so it
+            # is loaded once (its sway is the twin's too, turned round with it)
+            twin = next(e for e in entries if e["id"] == MIRROR_OF[lid])
+            entries.append({"id": lid, "file": twin["file"], "x": x, "y": y, "w": twin["w"], "h": twin["h"], "anim": anim, "mirror": True})
+            continue
         name = f"{i:02d}-{lid}.png"
         img.save(os.path.join(ldir, name), optimize=True)
         entries.append({"id": lid, "file": "layers/" + name, "x": x, "y": y, "w": img.size[0], "h": img.size[1], "anim": anim})
@@ -462,10 +480,26 @@ def main(layout):
 # ---------------------------------------------------------------- a tree on each side (2026-11-23)
 # With the arch gone, the right side was empty next to the big tree (asked: "left side is tree... right
 # side add something... equal left and right side"). Now a second tree frames the right edge: the big
-# tree's picture mirrored, as big as the big tree (RIGHT_TREE), its trunk cut by the frame (its inner
-# edge at x ~1704, the big tree's at ~249), its roots on the lawn behind the front-right bush. Its long
-# arm of leaves hangs over the right end of the balance's beam with ~60-85 px to spare at rest (the
-# branch over the left end: ~95); a smaller tree there would hang lower, into the beam.
+# tree's own picture turned round (MIRROR_OF: the game loads the picture once and mirrors it), just as
+# big, standing out at the right edge (RIGHT_TREE). Its crown leans in from there and fills the top right
+# corner (the crown count sits on it), its trunk bends out to the frame's edge and comes down to its
+# roots, which stand on their own grass at the lake's edge, behind the front-right bush. Both trees are
+# lit on the side that faces the balance.
+# How it got there, all on 2026-11-23:
+# - mirrored at (1168, -176) first: its crown leaned in over the balance (its long arm of leaves ~60 px
+#   above the beam's right end), the two crowns met in a ceiling of leaves across the top (about three
+#   quarters of the top 300 px was leaves) and the scene closed round like a keyhole (asked: "it's make
+#   a cluttered... not clutter but both side elements should have a balanced");
+# - then NOT mirrored, at (1600, -176): its crown leaned out of the picture, so a bare trunk showed, its
+#   top cut off by the frame, with the leafy plant at its foot standing out in front of the lake (asked:
+#   "fix the right tree its like cut the tree and the grass leaf its look weird");
+# - now mirrored again but 172 px further out: its leaves begin just left of the beam's right end and
+#   stay ~110 px above it (in Level 1, where the balance is biggest); 65% of the top 300 px is leaves
+#   (the big tree and its branch included), so the sky stays open over the balance; its trunk shows all
+#   the way from the leaves down to the roots (44 px of it where it bends out to the frame's edge), so it
+#   reads as one tree; and the leafy plant at its foot is out of the picture, beyond the trunk. (At 1400
+#   the trunk left the picture between y 330 and 490, so the leaves and the roots looked like two
+#   things; at 1300 the leaves come down to ~80 px over the beam's end.)
 # And the scene is zoomed out a little ("zoomout screen"): the big tree and its branch are drawn
 # FRAME_ZOOM as big, about FRAME_ANCHOR (on the frame's left edge, so the trunk's far side stays out of
 # the picture; at the height where the branch's top still meets the frame's top and the tree's foot
@@ -474,7 +508,8 @@ def main(layout):
 # edge; the birds fly out of one tree's leaves and into the other's.)
 FRAME_ZOOM = 0.88
 FRAME_ANCHOR = (0, 560 / K)  # reference px (output px (0, 560))
-RIGHT_TREE = (1168, -176, 1.0)  # output px: its top-left; its size against the big tree (as drawn, zoomed out)
+RIGHT_TREE = (1340, -176)  # output px: its top-left (as big as the big tree, as drawn: zoomed out)
+MIRROR_OF = {"tree-right": "tree"}  # a layer drawn as another's picture turned round (no file of its own)
 
 
 def framed(x, y, s):
@@ -494,7 +529,7 @@ LAYOUT = [
     # ("arch", 1308, 145, 1.1, False, "arch"): left out since 2026-11-23 (see "Where the arch stood")
     ("branch", *framed(330, -70, 1.2), False, "branch", "branch"),  # (before the zoom: 330, -70, 1.2)
     ("tree", *framed(-130, -250, 1.42), False, "tree", "crown"),  # (before the zoom: -130, -250, 1.42)
-    ("tree", RIGHT_TREE[0] / K, RIGHT_TREE[1] / K, 1.42 * FRAME_ZOOM * RIGHT_TREE[2], True, "tree-right", "crown"),
+    ("tree", RIGHT_TREE[0] / K, RIGHT_TREE[1] / K, 1.42 * FRAME_ZOOM, True, "tree-right", "crown"),  # (MIRROR_OF)
     ("bushBig", 1395, 700, 1.45, False, "bush-front-right", "sway"),
 ]
 

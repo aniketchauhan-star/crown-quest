@@ -17,11 +17,6 @@
     next: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M15 8l26 16-26 16z" fill="currentColor" stroke="#6B3E00" stroke-width="3.5" stroke-linejoin="round"/></svg>',
     back: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M33 8L7 24l26 16z" fill="currentColor" stroke="#6B3E00" stroke-width="3.5" stroke-linejoin="round"/></svg>',
     swap: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 17h28M28 9l9 8-9 8M40 31H12M20 23l-9 8 9 8" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    sound:
-      '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M7 18h8l11-9v30l-11-9H7z" fill="currentColor" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M32 17a9 9 0 0 1 0 14M36.5 11.5a16 16 0 0 1 0 25" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round"/></svg>',
-    lock: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="21" width="28" height="21" rx="4" fill="currentColor"/><path d="M16 21v-6a8 8 0 0 1 16 0v6" fill="none" stroke="currentColor" stroke-width="5"/></svg>',
-    yes: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 25l9 9 19-20" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    no: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13 13l22 22M35 13L13 35" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/></svg>',
   };
   CQ.ICON = ICON;
   // A gem from elements.png, picked by a word's colour (see CONTENT.words).
@@ -183,26 +178,7 @@
       CQ.treasure.build(modal);
       CQ.menu.build(modal);
       CQ.veil.build(CQ.stage.el);
-      // Skip, on every narrated stretch (design review, 2026-11-23: "Skip shows up only sometimes. It's on the
-      // first intro but not on the Level 2 and Level 4 lesson cutscenes. Make Skip / Replay consistent on
-      // every narrated sequence"): the intro, Zippy swinging into a level, Level 4's lessons and recap;
-      // showSkip(fn) says where it goes from each
-      this.skip = button("pill skip hidden", `${C().ui.skip} ⏭`, C().ui.skip, uiLayer, () => {
-        const fn = this.onSkip;
-        if (!fn) return;
-        this.hideSkip();
-        CQ.audio.stopSpeech();
-        fn();
-      });
-      this.onSkip = null;
-    },
-    showSkip(fn) {
-      this.onSkip = fn;
-      this.skip.classList.remove("hidden");
-    },
-    hideSkip() {
-      this.onSkip = null;
-      this.skip.classList.add("hidden");
+      this.skip = button("pill skip hidden", `${C().ui.skip} ⏭`, C().ui.skip, uiLayer, () => CQ.flow && CQ.flow.skipIntro());
     },
     // Remove every transient piece of UI (used when a level or chapter starts).
     // opts.keepSpot: the spotlight stays on (a new level set up while Zippy peeks: js/flow.js, outro);
@@ -211,7 +187,6 @@
       const keepSpot = !!(opts && opts.keepSpot);
       CQ.caption.hide(true);
       CQ.next.clear();
-      CQ.next.resetTurns();
       CQ.nav.dodging = 0;
       CQ.nav.el.classList.remove("dodge");
       CQ.swapBtn.hide(true);
@@ -226,7 +201,7 @@
       // and anything a step left behind when a chapter jump cut it short (Level 4's x + 2 = 7 strip)
       this.layer.querySelectorAll(".comic, .nameburst, .thought, .flyer, .eq-strip, .answer-tick").forEach((e) => e.remove());
       this.overlay.querySelectorAll(".thought, .flyer").forEach((e) => e.remove());
-      this.hideSkip();
+      this.skip.classList.add("hidden");
     },
   };
 
@@ -902,20 +877,12 @@
   // Narrated screens move on by themselves (see CQ.say). The Next button (bottom right) is shown only in
   // practice, once an equation is solved, for the next one (asked 2026-11-23: "no need to tap always in the
   // next button… need next button only 6 questions"; js/flow.js and activityPractice), and all the time in
-  // a test build (?qa=1). → and PageDown move on to the next line at once. While it is shown, it is
-  // hidden while it is the child's turn (a question waits for an answer: turn(), below), so a round is
-  // never skipped without being answered (design review, 2026-11-23, P0: "Next button skips questions…
-  // Hide or disable it until the round is solved"). Tapped with no line on, it does nothing, except
-  // while Zippy swings into a level (then the level starts at once) and in a test build (?qa=1), where
-  // it still jumps to the next part of the quest (CQ.flow.next), as it did for everyone until then.
-  // Back (or ←) goes back a line on formula screens in a test build only (same review: "The ◀ button
-  // appears on some lesson beats but not others. Make it consistent, or remove it and rely on Replay").
+  // a test build (?qa=1). While a line is on it moves on to the next line at once (so do → and PageDown);
+  // at any other moment it goes on to the next part of the quest (CQ.flow.next). On formula screens Back
+  // (or ←) goes back a line.
   CQ.qa = new URLSearchParams(location.search).get("qa") === "1";
   CQ.next = {
     seq: 0,
-    turns: 0, // the child's turns open now (Next is hidden while any is)
-    gen: 0, // a new screen: turns opened for the screen before are forgotten
-    wanted: false, // the quest wants Next shown (practice's solved equations; any screen but the finale with ?qa=1)
     build(ui) {
       this.backBtn = button("wbtn back-btn hidden", "", C().ui.back, ui, () => this.fire("back"));
       this.nextBtn = button("btn-wood next-btn hidden", `<span>${C().ui.next}</span>`, C().ui.next, ui, () => this.tapNext());
@@ -929,46 +896,20 @@
     },
     listen(opts) {
       const id = ++this.seq;
-      this.allowBack = !!(opts && opts.back) && CQ.qa;
+      this.allowBack = !!(opts && opts.back);
       this.backBtn.classList.toggle("hidden", !this.allowBack);
       const promise = new Promise((res) => (this.resolver = res));
       return { id, promise };
     },
-    // The Next button is shown from the first chapter on, and hidden on the finale (it has its own buttons).
+    // The Next button: shown in practice once an equation is solved (and with ?qa=1 from the first chapter
+    // on); hidden on the finale (it has its own buttons).
     showNext(on) {
-      this.wanted = !!on;
-      this.update();
-    },
-    // The child's turn: Next goes while a question waits for its answer. Returns the function that ends
-    // that turn (calling it twice, or after the screen changed, does nothing).
-    turn() {
-      const gen = this.gen;
-      let open = true;
-      this.turns++;
-      this.update();
-      return () => {
-        if (!open || gen !== this.gen) return;
-        open = false;
-        this.turns = Math.max(0, this.turns - 1);
-        this.update();
-      };
-    },
-    // a new screen (CQ.ui.reset): no turn is open
-    resetTurns() {
-      this.gen++;
-      this.turns = 0;
-      this.update();
-    },
-    update() {
-      // (Skip goes too while it is the child's turn: it skips narration, never the child's own task)
-      if (CQ.ui.skip) CQ.ui.skip.classList.toggle("turn-hidden", this.turns > 0);
-      const on = this.wanted && !this.turns;
       const hidden = this.nextBtn.classList.contains("hidden");
       if (on && hidden) {
         this.nextBtn.classList.remove("hidden");
         // (it rises into its corner at the bottom right, from just below)
         CQ.anim(this.nextBtn, [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 300, easing: CQ.EASE.out, keep: false });
-      } else if (!on && !hidden) this.nextBtn.classList.add("hidden");
+      } else if (!on) this.nextBtn.classList.add("hidden");
     },
     // Where the hand taps Next (CQ.hand.tapAt, when a child waits on it): on its upper part, over the word,
     // not its middle. The hand hangs below its fingertip and Next is in the bottom-right corner: from its
@@ -981,10 +922,9 @@
     },
     tapNext() {
       if (this.resolver) return this.fire("next"); // a line is on: the next line
-      if (CQ.pauser.count || this.turns) return;
+      if (CQ.pauser.count) return;
       CQ.audio.play("ui.tap");
-      // otherwise: Zippy's entrance into a level is skipped; in a test build, the next part of the quest
-      if (CQ.flow && (CQ.qa || CQ.flow.arriving)) CQ.flow.next();
+      if (CQ.flow) CQ.flow.next(); // otherwise: the next part of the quest
     },
     unlisten(id) {
       if (id === this.seq) this.clear(); // otherwise a newer screen is listening now
@@ -1615,105 +1555,58 @@
   };
 
   // ------------------------------------------------------------------ pause (any open panel pauses the story)
-  // Everything stops where it is (design review, 2026-11-23: "Narration and animations keep running while
-  // the menu is open. Pause everything while the menu is showing"): the line being said, every animation
-  // running on the page (the menu's own come after, and run), and the game's clock (CQ.clock: Zippy,
-  // Grumble, the camera, the tweens); the story holds at its next step. On release all of it goes on.
   CQ.pauser = {
     count: 0,
-    held: [],
     hold() {
       if (this.count++ === 0) {
         CQ.run.pause();
         CQ.audio.duck(true);
-        CQ.audio.pauseSpeech();
         CQ.idle.disarm();
         CQ.hand.stop();
-        this.held = [];
-        try {
-          document.getAnimations().forEach((a) => {
-            if (a.playState === "running") {
-              a.pause();
-              this.held.push(a);
-            }
-          });
-        } catch (e) {
-          /* an old browser: the animations carry on */
-        }
       }
     },
     release() {
       if (this.count === 0) return;
       if (--this.count === 0) {
-        this.held.forEach((a) => {
-          try {
-            if (a.playState === "paused") a.play();
-          } catch (e) {
-            /* it was cancelled meanwhile */
-          }
-        });
-        this.held = [];
         CQ.run.resume();
         CQ.audio.duck(false);
-        CQ.audio.resumeSpeech();
       }
     },
   };
 
   // ------------------------------------------------------------------ the screens list + replay (top left)
-  // Three wooden buttons in the top left corner, from the first screen on (asked 2026-11-06): the list of
-  // the quest's screens (tap one to go straight there; the one on now is marked), Play this screen again
-  // (it starts the screen on now from its beginning) and the sound menu. While the list is open the game
+  // Two wooden buttons in the top left corner, from the first screen on (asked 2026-11-06): the list of
+  // every screen of the quest (tap one to go straight there; the one on now is marked), and Play this
+  // screen again (it starts the screen on now from its beginning). While the list is open the game
   // waits; a tap outside it, or Escape, closes it.
-  // Design review, 2026-11-23: "The level menu lets kids jump anywhere… Lock levels that haven't been
-  // reached, or keep the list for QA builds only": a screen not reached yet in this game is locked (a
-  // padlock, greyed, not tappable); a test build (?qa=1) has them all. "The Restart button has no
-  // confirmation… Add a confirm step": ↻ asks first (Yes / No, under it). "Add an audio control. There's
-  // no visible mute / VO toggle in the HUD": the sound button opens the sound menu (music, effects,
-  // voice; until then only Escape opened it).
   CQ.nav = {
     build(ui) {
       this.el = CQ.el("div", "nav hidden", ui);
       this.listBtn = button("btn-wood nav-btn", ICON.menu, C().ui.screens, this.el, () => this.toggle());
-      this.replayBtn = button("btn-wood nav-btn", ICON.restart, C().ui.replay, this.el, () => this.ask());
-      // (the sound button stands in the top right corner, where the question bar never reaches: a third
-      // button at the top left would be under a long line's bar)
-      this.soundBtn = button("btn-wood nav-btn sound-btn hidden", ICON.sound, C().ui.sound, ui, () => {
-        this.close();
-        CQ.menu.open();
-      });
+      this.replayBtn = button("btn-wood nav-btn", ICON.restart, C().ui.replay, this.el, () => this.replay());
       this.listBtn.setAttribute("aria-haspopup", "true");
       this.listBtn.setAttribute("aria-expanded", "false");
       this.list = CQ.el("div", "panel nav-list hidden", ui);
       this.list.setAttribute("role", "menu");
       this.items = C().screens.map((s) => {
-        const b = button("nav-item", `<span class="ni-n">${s.n}</span><span class="ni-t">${CQ.rich(s.title)}</span><span class="ni-lock">${ICON.lock}</span>`, s.title, this.list, () => this.go(s.id));
+        const b = button("nav-item", `<span class="ni-n">${s.n}</span><span class="ni-t">${CQ.rich(s.title)}</span>`, s.title, this.list, () => this.go(s.id));
         b.setAttribute("role", "menuitem");
         b.dataset.cp = s.id;
         return b;
       });
-      // Start this screen again? Yes / No, in a little panel under ↻
-      this.confirm = CQ.el("div", "panel nav-confirm hidden", ui);
-      this.confirm.setAttribute("role", "dialog");
-      this.confirm.setAttribute("aria-label", C().ui.again);
-      CQ.el("div", "nc-q", this.confirm, C().ui.again);
-      const row = CQ.el("div", "nc-row", this.confirm);
-      button("nc-btn yes", ICON.yes, C().ui.yes, row, () => this.replay());
-      button("nc-btn no", ICON.no, C().ui.no, row, () => this.close());
       this.isOpen = false;
-      this.asking = false;
-      // a tap anywhere else closes the list (or the question)
+      // a tap anywhere else closes the list
       document.addEventListener(
         "pointerdown",
         (e) => {
-          if ((this.isOpen || this.asking) && !e.target.closest(".nav-list, .nav, .nav-confirm")) this.close();
+          if (this.isOpen && !e.target.closest(".nav-list, .nav")) this.close();
         },
         true
       );
       window.addEventListener(
         "keydown",
         (e) => {
-          if (e.key === "Escape" && (this.isOpen || this.asking)) {
+          if (e.key === "Escape" && this.isOpen) {
             e.stopImmediatePropagation(); // (not the pause menu as well)
             this.close();
           }
@@ -1723,7 +1616,6 @@
     },
     show(on) {
       this.el.classList.toggle("hidden", !on);
-      this.soundBtn.classList.toggle("hidden", !on);
       if (!on) this.close();
     },
     // the two buttons fade back while Zippy swings past their corner, and come back after (design review,
@@ -1733,20 +1625,10 @@
       this.dodging = Math.max(0, (this.dodging || 0) + (on ? 1 : -1));
       this.el.classList.toggle("dodge", this.dodging > 0);
     },
-    // the screen on now is marked in the list; the screens after the furthest one reached are locked
+    // the screen on now is marked in the list
     setCurrent(cp) {
       this.current = cp;
-      const order = CQ.flow ? CQ.flow.ORDER : [];
-      const reached = Math.max(order.indexOf(cp), CQ.store.get("reached", 0) || 0);
-      this.items.forEach((b) => {
-        const i = order.indexOf(b.dataset.cp);
-        const locked = !CQ.qa && i > reached;
-        b.classList.toggle("now", b.dataset.cp === cp);
-        b.classList.toggle("locked", locked);
-        b.disabled = locked;
-        const title = (C().screens.find((s) => s.id === b.dataset.cp) || {}).title || "";
-        b.setAttribute("aria-label", locked ? CQ.fmt(C().ui.locked, { t: title }) : title);
-      });
+      this.items.forEach((b) => b.classList.toggle("now", b.dataset.cp === cp));
     },
     toggle() {
       if (this.isOpen) this.close();
@@ -1754,7 +1636,6 @@
     },
     open() {
       if (this.isOpen) return;
-      this.closeAsk();
       this.isOpen = true;
       // just under the question bar (it grows for a long line), and never higher than styles.css has it
       const cap = CQ.caption.el;
@@ -1768,7 +1649,6 @@
       if (now) now.focus({ preventScroll: true });
     },
     close() {
-      this.closeAsk();
       if (!this.isOpen) return;
       this.isOpen = false;
       this.list.classList.add("hidden");
@@ -1776,34 +1656,9 @@
       CQ.pauser.release();
     },
     go(cp) {
-      const b = this.items.find((x) => x.dataset.cp === cp);
-      if (b && b.classList.contains("locked")) return;
       this.close();
       CQ.audio.play("ui.tap");
       if (CQ.flow) CQ.flow.chapter(cp);
-    },
-    // ↻: "Start this screen again?", under the button; the game waits meanwhile
-    ask() {
-      if (this.asking) return this.close();
-      if (!CQ.flow || !CQ.flow.current) return;
-      this.close();
-      this.asking = true;
-      const r = this.replayBtn.getBoundingClientRect();
-      const left = CQ.stage.toStage(r.left + r.width / 2, r.bottom);
-      this.confirm.style.left = Math.round(left.x) + "px";
-      this.confirm.style.top = Math.round(left.y + 16) + "px";
-      this.confirm.classList.remove("hidden");
-      CQ.pauser.hold();
-      CQ.audio.play("ui.tap");
-      CQ.anim(this.confirm, [{ opacity: 0, transform: "translate(-50%, -10px) scale(.92)" }, { opacity: 1, transform: "translate(-50%, 0) scale(1)" }], { duration: 220, easing: CQ.EASE.out, keep: false });
-      const yes = this.confirm.querySelector(".nc-btn.yes");
-      if (yes) yes.focus({ preventScroll: true });
-    },
-    closeAsk() {
-      if (!this.asking) return;
-      this.asking = false;
-      this.confirm.classList.add("hidden");
-      CQ.pauser.release();
     },
     replay() {
       this.close();
@@ -1861,8 +1716,14 @@
         t.setAttribute("role", "switch");
         this.toggles[k] = t;
       });
-      // (no chapter list: the screens list, top left, goes to the screens already reached; design review,
-      // 2026-11-23: "The level menu lets kids jump anywhere")
+      CQ.el("h3", "sub-title", panel, c.chapters);
+      const grid = CQ.el("div", "chapter-grid", panel);
+      C().chapters.forEach((ch, i) => {
+        button("chapter", `<span class="ch-n">${i + 1}</span><span class="ch-t">${ch.title}</span><span class="ch-s">${ch.sub}</span>`, ch.title, grid, () => {
+          this.close();
+          CQ.flow.chapter(ch.id);
+        });
+      });
       button("wbtn close-btn", "", C().ui.close, panel, () => this.close());
       this.isOpen = false;
       window.addEventListener("keydown", (e) => {

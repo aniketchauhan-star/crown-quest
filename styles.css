@@ -25,9 +25,8 @@
 }
 
 :root {
-  /* the colour link (design review, 2026-11-23): on the maths screens (below, "the colour link") a plain
-     number is the coins' silver and x the crown's gold; everywhere else these are the text's own colour */
-  --num-ink: currentColor;
+  /* the colour link (design review, 2026-11-23): on the maths screens (below, "the colour link") x is the
+     crown's gold; everywhere else it is the text's own colour (numbers always are: no silver) */
   --x-ink: currentColor;
   --ink: #1b3a44;
   --lhs: #177070;
@@ -567,6 +566,12 @@ html[data-shade] .stage-edge::after {
   }
 }
 
+/* a tree drawn turned round (the tree at the right edge: the big tree's picture, "mirror" in
+   js/world.js, bgCrown): its trunk and its swaying top inside, turned round together */
+.bg-mirror {
+  position: absolute;
+  transform: scaleX(-1);
+}
 /* the tree's leafy top sways in the breeze, bending about the cut across its trunk (transform-origin is
    set in js/world.js), with a gentle bob of its long arm of leaves on the right */
 .bg-crown {
@@ -1060,10 +1065,8 @@ html[data-shade] .stage-edge::after {
   }
 }
 .bar-slot.tried .gbar {
-  /* (it can be given again since 2026-11-23, design review: a little paler, not greyed out like a
-     disabled one) */
-  filter: grayscale(0.4) brightness(0.9);
-  opacity: 0.85;
+  filter: grayscale(0.65) brightness(0.8);
+  opacity: 0.65;
   animation: none;
 }
 .tried-tag {
@@ -1306,14 +1309,9 @@ html[data-shade] .stage-edge::after {
 /* the intro's Skip: top right, in line with the buttons at the top left (their middle at 34 + 92 / 2 =
    80 px), where the Next button stood until 2026-11-19 (the question bar keeps clear of that place); it
    was at the bottom right, the corner Next is in now */
-.pill.skip.turn-hidden {
-  display: none;
-}
 .pill.skip {
-  /* bottom right, beside Next (design review, 2026-11-23: the top right corner holds the sound button
-     and the crown counter now); it was at the top right */
-  right: 250px;
-  bottom: 49px;
+  right: 36px;
+  top: 49px;
 }
 .btn-wood {
   display: inline-flex;
@@ -1422,39 +1420,14 @@ html[data-shade] .stage-edge::after {
 .nav-item.now .ni-n {
   background: #8a5a00;
 }
-/* a screen not reached yet (design review, 2026-11-23): greyed, with a padlock, not tappable */
-.ni-t {
-  flex: 1;
-}
-.ni-lock {
-  display: none;
-  flex: 0 0 34px;
-  height: 34px;
-  color: #8b8578;
-}
-.ni-lock svg {
-  width: 100%;
-  height: 100%;
-}
-.nav-item.locked {
-  cursor: default;
-  color: #9a9384;
-}
-.nav-item.locked:hover {
-  background: none;
-}
-.nav-item.locked .ni-n {
-  background: #b9b2a3;
-}
-.nav-item.locked .ni-lock {
-  display: block;
-}
-/* the crowns won, "3/10", under the sound button (design review, 2026-11-23: "Add a crown counter or
-   progress bar in the HUD"): a small wooden plaque, like the buttons */
+/* the crowns won, "3/10", in the top right corner, its middle in line with the two buttons at the top left
+   (34 + 92 / 2 = 80 px; design review, 2026-11-23: "Add a crown counter or progress bar in the HUD"): a
+   small wooden plaque, like the buttons. (The question bar ends at 1660 px at the most, left of it; the
+   intro's Skip stands here, while the counter is hidden.) */
 .crown-count {
   position: absolute;
   right: 36px;
-  top: 140px;
+  top: 42px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1498,60 +1471,6 @@ html[data-shade] .stage-edge::after {
   pointer-events: none;
   z-index: 60;
   filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.3));
-}
-/* the sound button: top right, where the question bar never reaches (design review, 2026-11-23: "Add an
-   audio control") */
-.sound-btn {
-  position: absolute;
-  right: 36px;
-  top: 34px;
-  min-width: 120px;
-}
-/* ↻ asks first: "Start this screen again?" with Yes and No, under the button (design review,
-   2026-11-23) */
-.panel.nav-confirm {
-  position: absolute;
-  transform: translate(-50%, 0);
-  min-width: 0;
-  width: 470px;
-  padding: 22px 26px 24px;
-  text-align: center;
-  pointer-events: auto;
-  z-index: 76;
-}
-.nc-q {
-  font: 800 36px/1.15 var(--font);
-  color: var(--ink);
-}
-.nc-row {
-  display: flex;
-  justify-content: center;
-  gap: 34px;
-  margin-top: 20px;
-}
-.nc-btn {
-  width: 112px;
-  height: 92px;
-  border-radius: 24px;
-  border: 5px solid rgba(0, 0, 0, 0.25);
-  color: #fff;
-  cursor: pointer;
-  pointer-events: auto;
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.25);
-  transition: transform 0.12s;
-}
-.nc-btn svg {
-  width: 52px;
-  height: 52px;
-}
-.nc-btn.yes {
-  background: var(--ok);
-}
-.nc-btn.no {
-  background: var(--no);
-}
-.nc-btn:active {
-  transform: translateY(4px);
 }
 .swap-btn {
   position: absolute; /* placed under the left pan from js/ui.js */
@@ -2128,7 +2047,7 @@ html.reduced-motion .hand-ring.b {
   white-space: nowrap;
 }
 .menu-panel {
-  width: 980px; /* (the sound toggles only: no chapter list since 2026-11-23) */
+  width: 1440px;
   text-align: center;
 }
 .btn-wood.resume {
@@ -2182,6 +2101,48 @@ html.reduced-motion .hand-ring.b {
 .toggle.on .t-knob {
   left: 48px;
 }
+.chapter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.chapter {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 14px;
+  padding: 14px 18px 10px;
+  text-align: left;
+  border: 4px solid var(--parch-b);
+  border-radius: 20px;
+  background: #fff;
+  cursor: pointer;
+}
+.chapter:active {
+  transform: translateY(3px);
+}
+.ch-n {
+  grid-row: 1 / 3;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--wood);
+  color: var(--cream);
+  display: grid;
+  place-items: center;
+  font: 800 34px/1 var(--font);
+  border: 4px solid var(--wood-rim);
+}
+.ch-t {
+  font: 800 32px/1.05 var(--font);
+  color: var(--ink);
+}
+.ch-s {
+  font: 600 24px/1.1 var(--font);
+  color: #5e6b70;
+}
+
 /* ---------------------------------------------------------------- check panel + equation board */
 /* The check, under the balance, as plain text (no panel): the two sides worked out, then compared. */
 .check-panel {
@@ -3471,85 +3432,6 @@ body.solving .eb-row.final {
 .label-chip.placed {
   pointer-events: none;
 }
-/* Level 4's one-tap checks on the formula screen (design review, 2026-11-23): every sign can be tapped
-   (a soft dotted line under it says so); after two misses the right part glows */
-.nb-content .tok.tappable {
-  cursor: pointer;
-  pointer-events: auto;
-  text-decoration: underline dotted rgba(255, 250, 240, 0.55);
-  text-decoration-thickness: 0.05em;
-  text-underline-offset: 0.12em;
-}
-.nb-content .tok.tappable:hover {
-  color: #ffe27a;
-}
-.nb-content .tok.hint {
-  animation: tokHint 0.9s ease-in-out infinite alternate;
-}
-@keyframes tokHint {
-  from {
-    text-shadow: 0 0 0 rgba(255, 216, 77, 0);
-  }
-  to {
-    text-shadow: 0 0 22px rgba(255, 216, 77, 0.95), 0 0 8px rgba(255, 216, 77, 0.9);
-  }
-}
-/* Level 4d: the values to try, golden tiles under the working (design review, 2026-11-23) */
-.nb-pick {
-  display: flex;
-  justify-content: center;
-  gap: 28px;
-  margin-top: 40px;
-  pointer-events: auto;
-}
-.nb-pick .nb-pick-tile {
-  position: relative;
-  inset: auto;
-  width: 128px;
-  height: 128px;
-  border: none;
-  font-size: 64px;
-  cursor: pointer;
-  pointer-events: auto;
-}
-.nb-pick .nb-pick-tile.struck {
-  opacity: 0.45;
-  cursor: default;
-}
-.nb-pick .nb-pick-tile.struck::after {
-  content: "";
-  position: absolute;
-  left: 12%;
-  right: 12%;
-  top: 50%;
-  height: 6px;
-  background: #ff7a6b;
-  border-radius: 3px;
-  transform: rotate(-18deg);
-}
-/* the sort's opening: what a power is, x² = x × x and x = x¹, big in the middle (design review,
-   2026-11-23); the lit power gold */
-.pow-demo {
-  position: absolute;
-  left: 960px;
-  top: 560px;
-  transform: translate(-50%, -50%);
-  display: grid;
-  justify-items: start;
-  gap: 36px;
-  font: 800 120px/1.1 var(--font);
-  color: #fffaf0;
-  text-shadow: var(--scene-line);
-  white-space: nowrap;
-}
-.pow-demo sup {
-  font-size: 0.55em;
-  transition: color 0.4s ease, text-shadow 0.4s ease;
-}
-.pow-demo sup.lit {
-  color: #ffd84d;
-  text-shadow: var(--scene-line), 0 0 22px rgba(255, 216, 77, 0.85);
-}
 /* a sorted nonlinear card shows its power 2 in orange (no "power 1" / "power 2" badges: asked 2026-11-05),
    a deep orange that stands out on the cream card (2026-11-17) */
 .eq-card.show-2 sup {
@@ -3710,8 +3592,8 @@ body.solving .eb-row.final {
   color: var(--cream);
   text-shadow: 0 2px 0 #4a2300;
 }
-/* Home and Play again, together at the bottom, right of Zippy (design review, 2026-11-23; Play again
-   stood alone between the title and his crown): they pop up, then Play again breathes gently */
+/* Play again at the bottom centre, under Zippy (design review, 2026-11-23; it stood between the title and
+   his crown): it pops up, then breathes gently */
 .finale-again {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -3719,10 +3601,6 @@ body.solving .eb-row.final {
   gap: 26px;
   pointer-events: auto;
   z-index: 14;
-}
-.finale-again .btn-wood.fin-home {
-  min-width: 220px;
-  filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.35));
 }
 .finale-again.on .fin-again {
   animation: againBreath 1.1s ease-in-out infinite alternate;
@@ -3808,6 +3686,9 @@ body.solving .eb-row.final {
   border: 3px solid var(--c); /* its label's colours: .c-var, .c-eq, .c-lhs, .c-rhs */
   color: var(--c-ink);
   background: var(--c-bg);
+  /* dark ink on its light face, clean: no dark scene outline (the equation's text-shadow is inherited,
+     and it smeared the words into unreadable blobs; user, 2026-11-23) */
+  text-shadow: none;
 }
 .rc-tag.below {
   transform: translate(-50%, 0);
@@ -3854,10 +3735,6 @@ body.solving .eb-row.final {
 .pr-row {
   display: contents;
 }
-/* a wrong answer's check under it, "23 + 6 = 29 ≠ 17" (design review, 2026-11-23), its ≠ red */
-.pr-row.why > * {
-  color: #ffb3a8;
-}
 /* the two that cancel in a step, "+ 6 − 6", struck through and faded (design review, 2026-11-23) */
 .pr-strike {
   position: absolute;
@@ -3897,10 +3774,11 @@ body.solving .eb-row.final {
   text-shadow: 0 0 18px rgba(116, 240, 172, 0.5);
 }
 /* The answer box, x = □: dashed, light on the dark board, a number tile goes into it (js/tiles.js lights
-   it up, .nt-*: gold while a tile is over it, green when right, red when wrong); its ? faint, a number
-   in it bright. Once the answer is in, its box melts away (melt) and the number stands in the row as
-   plain text (plain), what stands beside it gliding over (review, 2026-11-18: no boxes round the numbers
-   of the working). */
+   it up, .nt-*: gold while a tile is over it, green when right, red when wrong); its ? as bright as a
+   number in it, like the checks' ? boxes (it was faint, at 0.55, and read grey on the blurred jungle:
+   2026-11-23, "the text should visible"). Once the answer is in, its box melts away (melt) and the
+   number stands in the row as plain text (plain), what stands beside it gliding over (review,
+   2026-11-18: no boxes round the numbers of the working). */
 .pr-box {
   display: inline-block;
   min-width: 1.5em;
@@ -3911,9 +3789,6 @@ body.solving .eb-row.final {
   color: #fffaf0;
   line-height: 1.15;
   text-align: center;
-}
-.pr-box.nt-empty {
-  color: rgba(255, 250, 240, 0.55);
 }
 .pr-box.melt {
   border-color: transparent;
@@ -4771,29 +4646,26 @@ html.lite #title .t-drift {
   opacity: 0.8;
   transition: opacity 0.7s ease;
 }
-/* a label done with keeps its colour, with a green tick after it: locked in, right */
+/* The label activity's done pair is locked in, not faded: its boxes and words stay at full strength, each
+   with a green tick, and only its lines and bracket fade back, so the new pair still stands out (at 0.8 the
+   pale boxes turned grey on the dark and the words went dim, to the end of the activity: user, 2026-11-23,
+   "the text should visible"). The recap's earlier labels still fade back a moment, then all come back. */
+.activity.label-act .drop-box.settled,
+.activity.label-act .label-chip.settled {
+  opacity: 1;
+}
+/* a label done with keeps its colour, with a green tick after it: locked in, right. The tick stands beside
+   the word, in a column of its own (the chip is a grid: as a row of its own it fell onto the box's bottom
+   edge), in the game's darker "right" green, clear on the pale box */
 .activity .label-chip.placed.settled {
   white-space: nowrap;
+  grid-auto-flow: column;
+  justify-content: center;
+  column-gap: 0.22em;
 }
 .activity .label-chip.placed.settled::after {
-  content: " ✓";
-  color: #2fbf7a;
-}
-/* a label put wrong twice: its own box glows softly until it is in (design review, 2026-11-23) */
-.activity .drop-box.hinted {
-  animation: boxHint 0.9s ease-in-out infinite alternate;
-}
-@keyframes boxHint {
-  from {
-    box-shadow: 0 0 0 0 rgba(255, 216, 77, 0);
-  }
-  to {
-    box-shadow: 0 0 0 10px rgba(255, 216, 77, 0.65), 0 0 28px rgba(255, 216, 77, 0.8);
-  }
-}
-html.reduced-motion .activity .drop-box.hinted {
-  animation: none;
-  box-shadow: 0 0 0 8px rgba(255, 216, 77, 0.7);
+  content: "✓";
+  color: var(--ok);
 }
 /* x lit in the label activity and the recap: the x itself turns gold and glows softly, like x on the
    formula screen (review, 2026-11-13: soft glows, not boxes; it was dark on a gold box), also inside the
@@ -4828,8 +4700,11 @@ html.reduced-motion .activity .drop-box.hinted {
 .activity .bin.rhs {
   border-color: #ffc35c;
 }
+/* the sort's panel names, teal and amber, in the scene's dark outline like the other bright words on the
+   activities' lighter backdrop (they had none, from when that backdrop was near black; the teal faded into
+   the blurred lake: 2026-11-23, "the text should visible") */
 .activity .bin-head {
-  text-shadow: none;
+  text-shadow: var(--scene-line);
 }
 .activity .bin.lhs .bin-head {
   color: #5ee6dc;
@@ -5331,15 +5206,14 @@ html.reduced-motion .thought.tip .ms-alarm {
 }
 
 /* ---------------------------------------------------------------- the colour link (design review, 2026-11-23) */
-/* "Colour x the same as the crown and the constant the same as the coins, everywhere": on the dark maths
-   screens (the formula screen, the check, Levels 8–9's working, the activities' equations, practice and its
-   balance) x is the crown's gold and every plain number (js/engine.js, CQ.rich: .cn) the silver of the
-   coins (a silver coin that day; the coins went back to the old gold one the same day, the numbers kept
-   the silver). A part that is lit or coloured keeps its own
-   colour, numbers and x too (the LHS teal, the RHS orange, a highlight, a verdict). */
-.cn {
-  color: var(--num-ink);
-}
+/* "Colour x the same as the crown…, everywhere": on the dark maths screens (the formula screen, the check,
+   Levels 8–9's working, the activities' equations, practice and its balance) x is the crown's gold. A part
+   that is lit or coloured keeps its own colour, x too (the LHS teal, the RHS orange, a highlight, a
+   verdict). The numbers are in the text's own bright ink, like + and =. (They were the silver of the
+   review's silver coin, each number in a span.cn from js/engine.js CQ.rich; the coin went back to the old
+   gold one, and the user found the silver numbers hard to read, 2026-11-23: "this text is not looking
+   visible properly", the label activity's 4, 3 and 19 grey against the hazy blue mountains behind them.
+   No grey or silver text on the scene.) */
 .v {
   color: var(--x-ink);
 }
@@ -5350,9 +5224,7 @@ body.checking .check-panel,
 .activity .label-eq,
 .activity .rc-eq,
 .eq-strip,
-.mini-tag,
-.pow-demo {
-  --num-ink: #c3d0dc;
+.mini-tag {
   --x-ink: #ffd84d;
 }
 .hl,
@@ -5369,7 +5241,6 @@ body.checking .check-panel,
 .c-lit,
 .lit-ok,
 .lit-no,
-.why,
 .try,
 .subbed,
 .xval,
@@ -5379,6 +5250,5 @@ body.checking .check-panel,
 .glow-const,
 .look-eq,
 .cancelled {
-  --num-ink: currentColor;
   --x-ink: currentColor;
 }

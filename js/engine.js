@@ -95,9 +95,11 @@
       .replace(/²/g, "<sup>2</sup>")
       .replace(/(^|[^A-Za-z])x(?![A-Za-z])/g, '$1<i class="v">x</i>')
       .replace(/≠/g, '<span class="neq">=</span>')
-      // every plain number in a span of its own (.cn), a power (sup) left as it is: on the maths screens a
-      // number is the coins' silver and x the crown's gold (design review, 2026-11-23: "Link colours between
-      // the scale and the equation"; styles.css). (None of the marks above has a digit in its tags.)
+      // every plain number in a span of its own (.cn), a power (sup) left as it is (design review,
+      // 2026-11-23: "Link colours between the scale and the equation"). The numbers were silver on the maths
+      // screens; since the user found that hard to read (same day) they keep the text's own bright ink, and
+      // only x has a colour of its own, the crown's gold (styles.css, "the colour link"). (None of the marks
+      // above has a digit in its tags.)
       .split(/(<sup>[^<]*<\/sup>)/)
       .map((part, i) => (i % 2 ? part : part.replace(/\d+(?:\.\d+)?/g, '<span class="cn">$&</span>')))
       .join("");
@@ -219,8 +221,6 @@
     ambience: (on) => safe(() => A() && A().ambience(on)),
     duck: (on) => safe(() => A() && A().duck(on)),
     stopSpeech: () => safe(() => A() && A().stopSpeech()),
-    pauseSpeech: () => safe(() => A() && A().pauseSpeech && A().pauseSpeech()),
-    resumeSpeech: () => safe(() => A() && A().resumeSpeech && A().resumeSpeech()),
     speaking: () => safe(() => !!(A() && A().speaking && A().speaking()), false), // a voice line is being spoken
     setEnabled: (k, on) => safe(() => A() && A().setEnabled(k, on)),
     isEnabled: (k) => safe(() => (A() ? !!A().isEnabled(k) : false), false),
@@ -332,12 +332,7 @@
   };
 
   // ------------------------------------------------------------------ frame ticker + tweens
-  // The tickers run on the game's own clock (CQ.clock), which stands still while the game is paused (a
-  // menu is open: CQ.run.pause): Zippy, Grumble, the camera and every tween stop where they are, and go on
-  // from there (design review, 2026-11-23: "Pause everything while the menu is showing").
   const tickers = new Set();
-  let gameT = performance.now();
-  CQ.clock = () => gameT;
   CQ.ticker = {
     add(fn) {
       tickers.add(fn);
@@ -346,19 +341,15 @@
   };
   let last = performance.now();
   function loop(now) {
-    const real = Math.max(0, now - last);
-    const dt = Math.min(0.05, real / 1000);
+    const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
     last = now;
-    if (!CQ.run.gate) {
-      gameT += real;
-      tickers.forEach((fn) => {
-        try {
-          fn(dt, gameT);
-        } catch (e) {
-          console.error(e);
-        }
-      });
-    }
+    tickers.forEach((fn) => {
+      try {
+        fn(dt, now);
+      } catch (e) {
+        console.error(e);
+      }
+    });
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
@@ -371,7 +362,7 @@
     return new Promise((res) => {
       let off = null;
       let done = false;
-      const start = CQ.clock();
+      const start = performance.now();
       const ctl = {
         stop() {
           if (done) return;

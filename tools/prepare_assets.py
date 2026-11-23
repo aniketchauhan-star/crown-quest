@@ -457,7 +457,9 @@ def copy_background(images):
         images[key] = {"src": f"assets/bg/jungle/{name}", "w": ly["w"], "h": ly["h"]}
         layers.append({"key": key, "x": ly["x"], "y": ly["y"], "w": ly["w"], "h": ly["h"], "anim": ly["anim"]})
         if ly.get("flip"):
-            layers[-1]["flip"] = True  # drawn from a mirrored piece (the tree at the right sways about its own trunk)
+            layers[-1]["flip"] = True  # drawn from a mirrored piece (a mirrored tree sways about its own trunk: js/world.js)
+        if ly.get("mirror"):
+            layers[-1]["mirror"] = True  # another layer's picture, which the game draws turned round (js/world.js)
     print(f"background: {len(layers)} layers -> assets/bg/jungle/")
     # a small copy of the whole scene for the bands round the stage on a screen that isn't 16:9: they
     # show the same jungle, blurred (styles.css, #viewport::before)
