@@ -16,12 +16,12 @@
       this.root = root;
       // the jungle lake, in layers (made from "background sheet.png": see art/background/README.md), and,
       // only when a side view looks past its right edge (CQ.ASIDE.free), its mirror image there (see
-      // mirrorBackground)
-      if (CQ.ASIDE && CQ.ASIDE.free) this.beyond = CQ.el("div", "layer bg-beyond", root);
+      // mirrorBackground), in the same layer, so the two blur as one picture
       this.decor = CQ.el("div", "layer bg-scene", root);
-      this.bgImgs = buildBackground(this.decor);
-      if (this.beyond) mirrorBackground(this.beyond);
-      CQ.peek.build(this.decor, this.bgImgs.bgTree); // Zippy's head peeking out from behind the tree trunk
+      this.bgImgs = buildBackground(CQ.el("div", "bg-here", this.decor));
+      if (CQ.ASIDE && CQ.ASIDE.free) mirrorBackground(CQ.el("div", "bg-beyond", this.decor));
+      const tree = this.bgImgs.bgTree;
+      CQ.peek.build(tree.parentNode, tree); // Zippy's head peeking out from behind the tree trunk
       this.balanceLayer = CQ.el("div", "layer balance-layer", root);
       this.grumbleLayer = CQ.el("div", "layer grumble-layer", root);
       this.barLayer = CQ.el("div", "layer bar-layer", root);
@@ -64,30 +64,66 @@
   // Birds fly across the sky now and then, behind the branch and the tree (bgBirds). (Since 2026-11-23
   // there is no stone arch at the right: tools/make_background.py.)
   // It all rests while the scene is blurred, and stays still with Reduced motion and in light mode.
+  // The trees, the branch, the bush and the birds stand in front of the open landscape (sky, hills,
+  // forest, lake, paving), in a box of their own (.bg-props), which fades away under the dark of a side
+  // view (the formula screen, the check, Levels 8–9's working: #world.presenting in styles.css). There
+  // the right tree's trunk and the bush stood behind the maths, and past the scene's edge (its mirror,
+  // mirrorBackground) there was no tree, so the faint jungle under the dark was busy on one side and
+  // empty on the other (user, 2026-11-25, with the check screen: "the background… is like cluttered…
+  // make uncluttered, but the left and right should balance equal"). Now only the open landscape is
+  // there, the same from edge to edge, and the trees come back as the dark lifts.
+  const PROPS = ["crown", "branch", "sway"];
+  const swayDelay = (i) => (-(i * 1.37) % 6).toFixed(2) + "s"; // no two sway in step
   function buildBackground(layer) {
     const imgs = {};
+    let props = null;
     (window.BG_LAYERS || []).forEach((ly, i) => {
-      if (ly.anim === "drift") return (imgs[ly.key] = bgClouds(layer, ly));
-      if (ly.anim === "crown") return (imgs[ly.key] = bgCrown(layer, ly, i));
-      const img = CQ.img(ly.key, ly.anim && ly.anim !== "shimmer" ? "anim-" + ly.anim : "", layer);
+      // (the props come last, in front: one box for a run of them, so their order stays as it was)
+      const at = !PROPS.includes(ly.anim) ? layer : props && props === layer.lastElementChild ? props : (props = CQ.el("div", "bg-props", layer));
+      if (ly.anim === "drift") return (imgs[ly.key] = bgClouds(at, ly));
+      if (ly.anim === "crown") return (imgs[ly.key] = bgCrown(at, ly, i));
+      const img = CQ.img(ly.key, ly.anim && ly.anim !== "shimmer" ? "anim-" + ly.anim : "", at);
       CQ.box(img, ly.x, ly.y, ly.w, ly.h);
-      if (ly.anim) img.style.animationDelay = (-(i * 1.37) % 6).toFixed(2) + "s"; // no two sway in step
-      if (ly.anim === "shimmer") bgWater(layer, ly);
+      if (ly.anim) img.style.animationDelay = swayDelay(i);
+      if (ly.anim === "shimmer") bgWater(at, ly);
       imgs[ly.key] = img;
     });
-    bgBirds(layer, imgs.bgBranch);
+    const branch = imgs.bgBranch;
+    bgBirds(branch ? branch.parentNode : props || layer, branch);
     return imgs;
   }
-  // Past the scene's right edge, its mirror image: still copies of its layers, flipped, so it carries on
-  // there with no seam. It is only built when a side view looks past the edge (CQ.ASIDE.free: the
-  // balance at the left of the screen, as from 2026-11-07 to 11-08 and again since 11-13), and there it
-  // is blurred and dark, under the maths. (The clouds, the big tree and its branch are nowhere near that
-  // edge; the tree at the right edge, since 2026-11-23, is left out too: there it ends at the edge.)
+  // Past the scene's right edge, its mirror image, so it carries on there with no seam. It is only built
+  // when a side view looks past the edge (CQ.ASIDE.free: the balance at the left of the screen, as from
+  // 2026-11-07 to 11-08 and again since 11-13), and there it is blurred and dark, under the maths. The
+  // open landscape is mirrored (still copies, turned round with this box), and the clouds are nowhere
+  // near the edge. A prop is not mirrored, which would stand a second trunk against the tree there: a
+  // prop that reaches past the edge (the right tree, the bush at its foot) carries on past it instead,
+  // swaying in step, so it is never cut off in a straight line while a view glides past the edge (with
+  // the other props it fades away on a side view). (Until 2026-11-25 this showed only the sky's colour,
+  // a flat dark band beside the jungle: its pictures were not placed. crown-quest-1b placed them and
+  // carried the tree on past the edge, the user having asked "show a background in this blank screen".)
+  // The box reaches SEAM px back over the scene, its pictures that end at the edge drawn that much wider,
+  // so the join is always covered: unblurred (light mode), the two edges met in a faint dark hairline.
+  const SEAM = 2;
   function mirrorBackground(layer) {
-    (window.BG_LAYERS || []).forEach((ly) => {
-      if (["drift", "crown", "branch"].includes(ly.anim)) return;
-      CQ.box(CQ.img(ly.key, "", layer), ly.x, ly.y, ly.w, ly.h);
+    CQ.box(layer, CQ.W - SEAM, 0, CQ.W + SEAM, CQ.H); // turned round about its middle: stage x X is 2W − X here
+    let props = null;
+    (window.BG_LAYERS || []).forEach((ly, i) => {
+      if (ly.anim === "drift") return;
+      const w = ly.x + ly.w >= CQ.W ? Math.max(ly.w, CQ.W + SEAM - ly.x) : ly.w;
+      if (!PROPS.includes(ly.anim)) return CQ.box(CQ.img(ly.key, "", layer), ly.x, ly.y, w, ly.h);
+      if (ly.x + ly.w > CQ.W) carryOn(props || (props = CQ.el("div", "bg-props", layer)), ly, i);
     });
+  }
+  // A prop carried on past the edge: this box is turned round as a whole, so the picture goes in at the
+  // mirrored place (stage x X is 2W − X here), turned round once more unless it was turned round already.
+  function carryOn(layer, ly, i) {
+    const at = Object.assign({}, ly, { x: 2 * CQ.W - ly.x - ly.w, mirror: !ly.mirror });
+    if (ly.anim === "crown") return bgCrown(layer, at, i);
+    const box = at.mirror ? CQ.box(CQ.el("div", "bg-mirror", layer), at.x, at.y, ly.w, ly.h) : null;
+    const img = CQ.img(ly.key, "anim-" + ly.anim, box || layer);
+    CQ.box(img, box ? 0 : at.x, box ? 0 : at.y, ly.w, ly.h);
+    img.style.animationDelay = swayDelay(i);
   }
   // A picture's soft mask (both spellings: Safari still wants -webkit-).
   function softMask(el, mask) {
@@ -231,7 +267,7 @@
     softMask(crown, `linear-gradient(to bottom, #000 ${top}px, transparent ${end}px)`);
     const pivotX = ly.flip ? 1 - CROWN.pivotX : CROWN.pivotX;
     crown.style.transformOrigin = `${pivotX * ly.w}px ${CROWN.cut * ly.h}px`;
-    crown.style.animationDelay = (-(i * 1.37) % 6).toFixed(2) + "s";
+    crown.style.animationDelay = swayDelay(i);
     return trunk;
   }
 

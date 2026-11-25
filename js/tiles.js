@@ -213,8 +213,8 @@
       box.removeAttribute("aria-expanded");
       box.removeAttribute("tabindex");
       CQ.audio.play("ui.pop");
+      CQ.hideNow(ctl.list); // (just measured: hidden at once, not faded out by .nt-tile's transition)
       const all = ctl.list.map((t, i) => {
-        t.style.opacity = "0";
         const kf = CQ.motion.reduced
           ? [{ opacity: 0 }, { opacity: 1 }]
           : [

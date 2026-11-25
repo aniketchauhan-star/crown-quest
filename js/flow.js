@@ -120,10 +120,10 @@
     // (the label activity fades the balance out while it is on.) The finale is only the jungle and Zippy
     // dancing: the balance, Grumble, the bars and the hanging Zippy are gone from its first moment,
     // however it is reached (asked 2026-11-19: the last balance showed a moment before "Mission Complete!")
-    // (since 2026-11-23 the finale keeps sleeping Grumble and, faint behind Zippy, the level balance: design
-    // review, "Story payoff. Bring back Grumble and the scale… with the scale still level behind him")
+    // (since 2026-11-23 the finale keeps sleeping Grumble: design review, "Story payoff. Bring back Grumble
+    // and the scale…"; the level balance it put faint behind Zippy was taken off again, user 2026-11-25)
     [
-      [CQ.world.balanceLayer, "0.55"],
+      [CQ.world.balanceLayer, "0"],
       [CQ.world.grumbleLayer, ""],
       [CQ.world.barLayer, "0"],
       [CQ.world.zippyLayer, "0"],
@@ -144,7 +144,7 @@
     CQ.hud.setLevel(LEVEL_OF[cp] || 1);
     CQ.gems.set(WORD_ORDER.slice(0, WORDS_AT[cp] || 0));
     const intro = cp === "intro";
-    CQ.hud.show(!intro && !finale); // (the crown counter: the finale has its own summary)
+    CQ.hud.show(!intro && !finale); // (the crown counter: not on the finale, only Zippy and his crown)
     CQ.audio.music(intro ? "title" : "game");
     CQ.audio.ambience(true);
     const lv = LV()[SCENE_OF[cp]];
@@ -280,16 +280,14 @@
   function glowCrown(on) {
     CQ.balance.glowItems("left", (it) => it.type === "crown", on);
   }
-  // The number n in a row of the working (CQ.eqBoard) lit (cls: x-lit, gold, the default; c-lit, red):
-  // the number alone, never the sign before it (asked 2026-11-19, with "+ 8" lit in x + 8: "plus sign
-  // will not highlighted. Only digit highlight… Do this in all game"). side "left": the 8 of x + 8;
-  // "right": the 8 of 8 + 15, its first. Returns the lit span; all: every n on that side, each lit by
-  // itself (the terms that cancel: both 4s of 2x + 4 − 4), in a list.
-  function lightTerm(row, side, n, eb, cls, all) {
+  // The number n in a row of the working (CQ.eqBoard) lit in gold (x-lit): the number alone, never the
+  // sign before it (asked 2026-11-19, with "+ 8" lit in x + 8: "plus sign will not highlighted. Only
+  // digit highlight… Do this in all game"). side "left": the 8 of x + 8; "right": the 8 of 8 + 15, its
+  // first. Returns the lit span.
+  function lightTerm(row, side, n, eb) {
     const host = row && row.querySelector(side === "left" ? ".eb-l" : ".eb-r");
     const chars = host ? [...host.querySelectorAll(".wch")] : [];
     const digits = String(n).split("");
-    const lit = [];
     for (let i = 0; i + digits.length <= chars.length; i++) {
       if (!digits.every((d, j) => chars[i + j].textContent === d)) continue;
       const before = chars[i - 1];
@@ -299,11 +297,9 @@
       const first = chars[i];
       const last = chars[i + digits.length - 1];
       if (first.parentNode !== last.parentNode) continue;
-      lit.push(eb.light(first, last, cls || "x-lit"));
-      if (!all) break;
-      i += digits.length - 1;
+      return eb.light(first, last, "x-lit");
     }
-    return all ? lit : lit[0] || null;
+    return null;
   }
   // "Look here!" (CQ.focus): what a line is about glows softly, and the rest of the scene fades back a
   // little and blurs, the whole balance staying bright. look(what) moves the glow there; look(null)
@@ -961,7 +957,7 @@
     const lx = worldLabel(`<span class="xl-x">${CQ.rich("x")}</span> <span class="xl-rest">${CQ.rich("+ 2")}</span>`, b.ends.left.x, under, "xlabel wide");
     const lxX = lx.querySelector(".xl-x");
     const lxRest = lx.querySelector(".xl-rest");
-    lxRest.style.opacity = "0";
+    CQ.hideNow(lxRest);
     look([crown.el, lx]);
     await said5;
     glowCrown(false);
@@ -1018,7 +1014,7 @@
     const flyIn = async (i, label) => {
       const from = CQ.centerOf(label);
       const f = CQ.el("div", "piece " + ["a", "b", "c"][i], null, [CQ.rich("x + 2"), "=", "7"][i]);
-      label.style.opacity = 0;
+      CQ.hideNow(label); // gone as its copy leaves it, never left fading behind it
       CQ.audio.play("ui.swoosh");
       await R.when(CQ.fly(CQ.ui.layer, f, from, targets[i], { duration: 650, arc: -110, scaleFrom: k0, scaleTo: k1 }));
       slots[i].classList.add("in");
@@ -1370,22 +1366,17 @@
   }
   // Values tried for x on the balance (Level 8: review, 2026-11-13), with no child input, each with its
   // line ("Let's try x = 10.", "How about x = 12?"): the crown, or the bar tried before (only the trial
-  // weight changes), makes way for a gold bar of the value, which glows, the scene softly dimmed; by the
-  // balance, on a card, 10 + 8 = 18 comes in, its 10 lit like the bar; then the balance tips the way the
-  // totals say (the right pan lower, by less as they near: 20 is nearer 23 than 18 is) as 18 ≠ 23 comes in
-  // under it. As the next line starts, the try before shrinks into a small record at the top of the card.
-  // Then the after line ("Trying different values could take a while."): the last try joins the records,
-  // and the crown is back and the balance level, both records still in sight ("Keep small records of both
-  // unsuccessful trials visible"). Returns the card (it goes as the working opens).
+  // weight changes), makes way for a gold bar of the value, which glows, the scene softly dimmed; a beat
+  // after it lands, the balance tips the way the totals say (the right pan lower, by less as they near:
+  // 10 + 8 = 18, and 12 + 8 = 20 is nearer 23). Then the after line ("Guessing could take a while!"): the
+  // crown is back and the balance level. Nothing is written by the balance, only the voice and its line
+  // in the question bar (asked 2026-11-25: "do not make this panel and this equation in right side… Only
+  // voiceover and text"; until then a cream card by it showed 10 + 8 = 18, then 18 ≠ 23, and kept small
+  // records of both tries, the balance tipping once the sum was written).
   async function tryValues(tries, a, total, after) {
     const b = CQ.balance;
     let cur = b.items.left.find((it) => it.type === "crown" && !it.ghost);
-    if (!cur) return null;
-    const card = CQ.el("div", "wlabel trials", CQ.world.drag);
-    CQ.pos(card, CQ.L.BX + 560, 470);
-    const recs = CQ.el("div", "tr-recs", card);
-    const now = CQ.el("div", "tr-now", card);
-    card.style.opacity = "0";
+    if (!cur) return;
     const swapIn = async (spec) => {
       await R.when(CQ.anim(cur.el, [{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(0.5)" }], { duration: 300, easing: CQ.EASE.in, essential: true }));
       cur = b.replaceItem(cur, spec);
@@ -1393,56 +1384,30 @@
       CQ.anim(cur.el, [{ opacity: 0, transform: "scale(0.5)" }, { opacity: 1, transform: "scale(1)" }], { duration: 360, easing: CQ.EASE.back, keep: false });
       CQ.audio.play("ui.pop", { volume: 0.6 });
     };
-    // the try on the card becomes a small record line at its top: 10 + 8 = 18, then 18 ≠ 23 in red
-    const toRecord = async () => {
-      if (!now.dataset.rec) return;
-      await R.when(CQ.anim(now, [{ opacity: 1 }, { opacity: 0 }], { duration: 280, essential: true }));
-      const r = CQ.el("div", "tr-rec", recs, now.dataset.rec);
-      now.innerHTML = "";
-      delete now.dataset.rec;
-      now.style.opacity = "";
-      CQ.anim(r, [{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 380, easing: CQ.EASE.out, keep: false });
-    };
     for (const t of tries) {
       const lineText = CQ.T(t.line);
       const said = say(t.line, { advance: "auto", pause: 300 });
-      await toRecord();
       // (as the voice says "x =", the crown or the bar before makes way, and the bar of the value pops in
       // as the value is said: review, 2026-11-16, things come with their words)
       await R.when(untilSaid(lineText, "x ="));
       await swapIn({ type: "bar", value: t.v, slot: "main" });
       look(() => (cur && cur.type === "bar" ? [cur.el] : []));
-      const sum = t.v + a;
-      now.dataset.rec = `<span>${CQ.rich(`${t.v} + ${a} = ${sum}`)}</span><span class="no">${CQ.rich(`${sum} ≠ ${total}`)}</span>`;
-      now.innerHTML = `<div class="tr-calc"><span class="tv">${CQ.num(t.v)}</span> + ${a} = ${sum}</div><div class="tr-cmp">${CQ.rich(`${sum} ≠ ${total}`)}</div>`;
-      const cmp = now.querySelector(".tr-cmp");
-      cmp.style.opacity = "0";
-      if (card.style.opacity === "0") {
-        card.style.opacity = "";
-        CQ.anim(card, [{ transform: "translate(-50%,-50%) scale(.5)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1 }], { duration: 420, easing: CQ.EASE.back, keep: false });
-      }
-      CQ.audio.play("ui.pop", { volume: 0.5 });
-      await R.wait(CQ.writeIn(now.firstElementChild, 0, 75) + 500); // 10 + 8 = 18, written in
-      // the balance tips the way the totals say as 18 ≠ 23 comes in
-      const d = total - sum;
+      await R.wait(900); // the bar lands (0.36 s), a beat, then the balance answers
+      // the balance tips the way the totals say: 10 + 8 = 18 is less than 23, so the right pan goes lower
+      const d = total - (t.v + a);
       b.target = Math.sign(d) * Math.min(16, 4 + 2 * Math.abs(d));
       b.setEmblem(d === 0);
       CQ.audio.play("balance.creak");
       b.pendingClang = true;
-      cmp.style.opacity = "";
-      CQ.anim(cmp, [{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 420, easing: CQ.EASE.out, keep: false });
       await said;
-      await R.wait(1300); // a moment to read it
+      await R.wait(1300); // a moment to see it tipped
     }
-    // "Trying different values could take a while.": the last try joins the records; the crown is back,
-    // and the balance level
+    // "Guessing could take a while!": the crown is back, and the balance level
     const said = say(after, { advance: "auto" });
     look([]);
-    await toRecord();
     await swapIn({ type: "crown", slot: "main" });
     b.evaluate();
     await said;
-    return card;
   }
   // A bar on a pan cracks into smaller bars (e.g. 23 into 8 and 15). Returns the new pan items. The parts
   // come out of the bar: they start together where it lay and slide apart to their places (review,
@@ -1521,7 +1486,7 @@
           const list = b.items[s];
           list.splice(list.indexOf(it), 1);
           b.layout(s);
-          it.el.style.opacity = "0";
+          CQ.hideNow(it.el); // at once: .pbar's opacity transition left it fading on the pan under the dragged one
           b.evaluate();
           CQ.audio.play("bar.pick");
         };
@@ -1660,11 +1625,10 @@
     await saying;
     z.pose("idle");
     // Trying values first, on the balance, each with its line (review, 2026-11-13): "Let's try x = 10."
-    // (10 + 8 = 18, then 18 ≠ 23: the balance tips, the right pan lower), "How about x = 12?" (only the
-    // trial weight changes: 12 + 8 = 20, then 20 ≠ 23: it tips a little less), then "Trying different
-    // values could take a while.": the crown is back and the balance level, the two tries kept by it as
-    // small records.
-    const trials = await tryValues(
+    // (the balance tips, the right pan lower), "How about x = 12?" (only the trial weight changes: it tips
+    // a little less), then "Guessing could take a while!": the crown is back and the balance level. No
+    // card, sums or records by the balance: only the voice and the question bar (asked 2026-11-25).
+    await tryValues(
       [
         { v: 10, line: "l8-try" },
         { v: 12, line: "l8-try2" },
@@ -1673,15 +1637,13 @@
       23,
       "l8-3"
     );
-    // "Can we find the crown's mass without guessing?" (same review: "Highlight the crown, then move into
-    // removing equal mass from both sides"): the crown lights up, the records go, and the view glides
-    // until the balance stands at the left, x + 8 = 23 written in at the right (the working, like the
-    // formula screen: CQ.eqBoard).
+    // "Can we solve this without guessing?" (same review: "Highlight the crown, then move into removing
+    // equal mass from both sides"): the crown lights up, and the view glides until the balance stands at
+    // the left, x + 8 = 23 written in at the right (the working, like the formula screen: CQ.eqBoard).
     b.setSign(null);
     const l84t = CQ.T("l8-4");
     const l84 = say("l8-4", { advance: "auto" });
     onSaid(l84t, "solve this", () => look(crownEls));
-    if (trials) CQ.anim(trials, [{ opacity: 1 }, { opacity: 0 }], { duration: 500, essential: true }).then(() => trials.remove());
     await R.when(eb.open());
     await R.when(eb.show("x + 8 = 23"));
     await l84;
@@ -1729,13 +1691,16 @@
     // the equation updates alongside it"; it used to go back to the whole scene, where one drag took
     // both off). Two small trays come in under the pans and both 8 bars glow gently: "Drag an 8 bar off
     // each side of the balance." As each lands on its tray, − 8 is written on its side of the equation
-    // (x + 8 − 8 = 8 + 15 − 8, its = under the others). The first leaves the balance tipped; then "Now
-    // remove 8 from the other side.", the other bar lit up; the second levels it.
+    // (x + 8 − 8 = 8 + 15 − 8, its = under the others), and that side's two that cancel are struck
+    // through and fade back, + 8 − 8 at the left, 8 + and − 8 at the right, so what stays bright reads
+    // x = 15 (design review, 2026-11-23: "Show the cancelling… animate +6 − 6 cancelling (strike-through
+    // or fade)", as in practice; asked for this screen 2026-11-25). The first leaves the balance tipped;
+    // then "Now remove 8 from the other side.", the other bar lit up; the second levels it.
     const trays = makeTrays();
     say("l8-8-drag", { advance: "none" });
     const minus = (s) => (s === "left" ? ".eb-l .both" : ".eb-r .both"); // (a side's − 8: its −, and the 8 in its box)
     await takeOffEach(8, trays, {
-      off: (s, n) => R.when(n === 1 ? eb.set("x + 8 {{− 8}} = 8 + 15 {{− 8}}", { hold: minus(s === "left" ? "right" : "left"), each: 40 }) : eb.reveal(minus(s))),
+      off: (s, n) => R.when(n === 1 ? eb.set("x + 8 {{− 8}} = 8 + 15 {{− 8}}", { hold: minus(s === "left" ? "right" : "left"), each: 40 }) : eb.reveal(minus(s))).then(() => R.when(eb.cancel(s))),
       next: () => say("l8-other", { advance: "none" }),
     });
     CQ.audio.play("balance.level");
@@ -1743,7 +1708,8 @@
     await R.wait(600);
     // The removal done, the trays go, with the 8 bars on them: the crown stands opposite the 15 bar on
     // their own (review, 2026-11-08: "hide the drop trays once the removal is complete"); the − 8s in
-    // the working go back to plain with them, the removal talked about no more (asked 2026-11-19).
+    // the working are plain by now (each went back to plain as it was struck through: asked 2026-11-19,
+    // lit only while talked about), and unmark makes sure of it.
     eb.unmark();
     await R.when(hideTrays(trays));
     await R.wait(400);
@@ -1888,13 +1854,15 @@
     // The child takes them off right here, one side at a time, with the working in view, as in Level 8
     // (review, 2026-11-08: "Keep the whole solving sequence on the same learning screen"; it used to go
     // back to the whole scene, where one drag took both off): two small trays under the pans, "Drag a 4
-    // bar off each side of the balance.", − 4 written on each side as its bar comes off, "Now remove 4
-    // from the other side." after the first; then the trays go, with the bars on them.
+    // bar off each side of the balance.", − 4 written on each side as its bar comes off, and that side's
+    // two that cancel struck through and faded back (+ 4 − 4 at the left, 4 + and − 4 at the right:
+    // eqBoard.cancel, asked 2026-11-25), "Now remove 4 from the other side." after the first; then the
+    // trays go, with the bars on them.
     const ledges = makeTrays();
     say("l9-5-drag", { advance: "none" });
     const minus = (s) => (s === "left" ? ".eb-l .both" : ".eb-r .both"); // (a side's − 4: its −, and the 4 in its box)
     await takeOffEach(4, ledges, {
-      off: (s, n) => R.when(n === 1 ? eb.set("2x + 4 {{− 4}} = 4 + 14 {{− 4}}", { hold: minus(s === "left" ? "right" : "left"), each: 40 }) : eb.reveal(minus(s))),
+      off: (s, n) => R.when(n === 1 ? eb.set("2x + 4 {{− 4}} = 4 + 14 {{− 4}}", { hold: minus(s === "left" ? "right" : "left"), each: 40 }) : eb.reveal(minus(s))).then(() => R.when(eb.cancel(s))),
       next: () => say("l9-other", { advance: "none" }),
     });
     CQ.audio.play("balance.level");
@@ -1902,19 +1870,16 @@
     await R.wait(900);
     // "The two crowns balance 14 units." (review, 2026-11-08: "Highlight the terms that cancel, then
     // reveal 2x = 14. The balance now shows two crowns opposite the 14 bar. Hide the drop trays."): as
-    // the line starts the trays go, with the 4 bars on them, and the terms that cancel light up red: the
-    // 4s of 2x + 4 − 4 at the left and of 4 + 14 − 4 at the right, each 4 by itself, their + and − plain
-    // (a highlight holds no sign: asked 2026-11-19), the blue boxes of the − 4s fading as they do; the
-    // crowns light up as "two crowns" is said, the 14 bar on "14 units", when 2x = 14 is written under
-    // the subtraction step. (The review lists "We need the mass of one crown" before this, but its 14 bar
-    // is split there, so this comes first.)
+    // the line starts the trays go, with the 4 bars on them (the terms that cancel were struck through,
+    // the − 4s' blue boxes gone, as the bars came off; until 2026-11-25 their 4s lit up red here
+    // instead); the crowns light up as "two crowns" is said, the 14 bar on "14 units", when 2x = 14 is
+    // written under the subtraction step. (The review lists "We need the mass of one crown" before this,
+    // but its 14 bar is split there, so this comes first.)
     look(null);
     const l9t = CQ.T("l9-two");
     const saidT = say("l9-two");
     const traysGone = R.when(hideTrays(ledges));
-    const r4 = eb.el.lastElementChild;
     eb.unmark();
-    const cancels = lightTerm(r4, "left", 4, eb, "c-lit", true).concat(lightTerm(r4, "right", 4, eb, "c-lit", true));
     // (the row as it is said: 2x on "two crowns", = 14 on "14")
     const row2x = R.when(eb.set("2x = 14", { line: l9t, parts: [{ cue: "Two crowns", text: "2x" }, { cue: "balance 14", text: "= 14" }] }));
     await R.when(untilSaid(l9t, "Two crowns"));
@@ -1925,7 +1890,6 @@
     await row2x;
     await saidT;
     await traysGone;
-    cancels.forEach((e) => e.classList.remove("c-lit"));
     b.clearGlow();
     // "We need the mass of one crown.": one crown lights up.
     const l96 = CQ.T("l9-6");

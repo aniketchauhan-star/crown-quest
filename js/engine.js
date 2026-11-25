@@ -423,6 +423,24 @@
     );
   };
 
+  // Hides things AT ONCE, to wait unseen for their turn (or to vanish as a copy takes their place),
+  // whatever CSS transition they have. A plain el.style.opacity = "0" on something the browser has
+  // already drawn, or only measured, with a CSS opacity transition (the check's rows, .blank boxes…),
+  // fades it out over that transition instead: the 25 Nov glitch of the check's "Try x =" and "= ?"
+  // boxes seen fading away before they were written in. Their transition is switched off for the one
+  // style change, then given back (its own inline value, if it had one).
+  CQ.hideNow = function (els) {
+    const list = (els && els.nodeType ? [els] : Array.from(els || [])).filter(Boolean); // one, or a list
+    if (!list.length) return;
+    const was = list.map((e) => e.style.transition);
+    list.forEach((e) => {
+      e.style.transition = "none";
+      e.style.opacity = "0";
+    });
+    list.forEach((e) => getComputedStyle(e).opacity); // the style change happens now, with no transition
+    list.forEach((e, i) => (e.style.transition = was[i]));
+  };
+
   // Fly an element (centre-anchored) from one stage point to another along an arc.
   // opts.filterFrom / filterTo: the CSS filter it starts / ends with (its own by default), so a flight
   // can start looking like the thing it leaves and land looking like the thing it becomes.

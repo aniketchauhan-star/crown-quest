@@ -236,21 +236,42 @@ html[data-shade] .stage-edge::after {
 }
 .bg-scene {
   z-index: 1;
+}
+/* the scene itself, cut at the stage's edges */
+.bg-here {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
 }
 /* past the scene's right edge, its mirror image (js/world.js, mirrorBackground): built and seen only
-   when a side view looks past that edge (CQ.ASIDE.free), blurred and dark under the maths */
-#world > .bg-beyond {
-  left: 1920px;
-  right: auto;
-  width: 1920px;
-  z-index: 1;
+   when a side view looks past that edge (CQ.ASIDE.free), blurred and dark under the maths. It is in the
+   scene's own layer, so the two blur and grow (.bg-scene.soft) as one picture, with no join between
+   them. (Until 2026-11-25 it was a layer of its own, whose pictures were never placed: past the edge
+   only the sky's colour showed, a flat dark band beside the jungle on the formula screen, the check and
+   Levels 8–9's working; user: "show a background in this blank screen also".) */
+.bg-beyond {
+  position: absolute; /* (placed in js/world.js: from just short of the edge, 1920 px on) */
   overflow: hidden;
   transform: scaleX(-1);
 }
 .bg-scene img {
   position: absolute;
   display: block;
+}
+/* The trees, the branch, the bush and the birds stand in front of the open landscape in a box of their
+   own (js/world.js, buildBackground), which fades away under the dark of a side view (the formula
+   screen, the check, Levels 8–9's working): behind the maths there is then only the faint landscape,
+   as behind the balance and past the edge (user, 2026-11-25: "cluttered… the left and right should
+   balance equal"). They go under the dark once it is in, as the view arrives (Zippy goes then too), and
+   come back as it starts to lift. (A tree reaching past the edge carries on there: mirrorBackground.) */
+.bg-props {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.3s ease-out;
+}
+#world.presenting > .bg-scene .bg-props {
+  opacity: 0;
+  transition: opacity 0.6s ease-in 0.7s;
 }
 .balance-layer {
   z-index: 3;
@@ -2301,7 +2322,7 @@ html.reduced-motion .hand-ring.b {
   position: relative;
 }
 /* {{…}}: the number of a step done to both sides, boxed (its sign plain beside it, asked 2026-11-19:
-   "Only digit should highlighted"). Like every highlight on a number (.mark-new, .x-lit, .c-lit), its box
+   "Only digit should highlighted"). Like every highlight on a number (.mark-new, .x-lit), its box
    takes no room: a ring drawn round it, its padding given back by its margins (below, with
    display: inline-block), so nothing in its row moves as it comes or goes and its sign keeps its usual gap */
 .same {
@@ -2634,8 +2655,9 @@ html.reduced-motion .hand-ring.b {
   color: #fffaf0;
   transition: opacity 0.5s ease;
 }
-/* lines worked out under the equation (trying a value): Try x = 4, LHS = 4 + 2 = 6, RHS = 7, each
-   starting at the left, under the equation's x (js/activities.js puts them there; review, 2026-11-20) */
+/* lines worked out under the equation (trying a value): Try x = 4, LHS = 4 + 2 = 6, RHS = 7, x ≠ 4, their
+   last = signs one under another, under the equation's = (js/activities.js puts the column there; asked
+   2026-11-25, the user's choice "B: last = lined up", as on 2026-11-19) */
 .notebook .nb-rows {
   display: flex;
   flex-direction: column;
@@ -2650,14 +2672,25 @@ html.reduced-motion .hand-ring.b {
   white-space: nowrap;
   transition: color 0.5s ease, opacity 0.5s ease, text-shadow 0.5s ease;
 }
+/* a row in three columns: what comes before its last = | that = (≠) | its value; the first column as
+   wide in every row, so their = signs stand one under another, and the values in one column */
+.notebook .nb-row.cols {
+  display: grid;
+  grid-template-columns: 400px auto auto;
+  column-gap: 20px;
+  align-items: baseline;
+}
+.notebook .nb-row.cols .sl {
+  justify-self: end;
+}
 /* Trying a value (review, 2026-11-13): "Try x = 4" under the equation, in gold, clearly a try; each side
    worked out under it, LHS then RHS, the side being said lit in its colour, the one before back to
-   plain, in full view ("Keep the previous calculation visible"). All three written plainly, flush left
-   under the equation's x (review, 2026-11-20, the user's picture; they were in columns, their last =
-   signs one under another: reviews, 2026-11-18 and 11-19). At the end, on the same screen, x = 4 is
-   written in under it all, red (not a solution) or green (the solution) (review, 2026-11-20: "Do not
-   make separate screen… X is equal to 4 come downside in red"; the working had faded away, leaving
-   x = 4 by itself: 2026-11-18/19). */
+   plain, in full view ("Keep the previous calculation visible"). Their last = signs one under another,
+   under the equation's (above; reviews, 2026-11-18 and 11-19, and again from 2026-11-25; flush left
+   under the equation's x from 2026-11-20). At the end, on the same screen, x = 4 is written in under it
+   all, red (not a solution) or green (the solution) (review, 2026-11-20: "Do not make separate screen…
+   X is equal to 4 come downside in red"; the working had faded away, leaving x = 4 by itself:
+   2026-11-18/19). */
 .notebook .nb-row.try {
   color: #ffd84d;
 }
@@ -2965,24 +2998,36 @@ body.checking .check-panel {
   top: 262px;
   width: 820px;
 }
-/* Its rows one under another, each written plainly and starting at the left, under the equation's x:
-   x + 3 = 9 / Try x = 4 / LHS = 4 + 3 = 7 / RHS = 9 (review, 2026-11-20, the user's picture and
-   choice: "downside 3 equations need to be left side"; they were in columns, their last = signs one
-   under another: reviews, 2026-11-18 and 11-19). The block of rows stands in the middle of the room;
-   each row's parts stand on one baseline (the x of the maths face, the words and the numbers alike). */
+/* Its rows in one grid of three columns, what comes before a row's LAST = | that = | its value, so the =
+   signs stand one under another and the values in one column: Try x = 4 / LHS = 4 + 3 = 7 / RHS = 9 /
+   x ≠ 4 (asked 2026-11-25, the user's choice "B: last = lined up", as on 2026-11-19; from 2026-11-20
+   they were written flush left under the equation's x). The equation over them is a line of its own, in
+   its own plain spacing, moved over so its = stands over theirs (js/ui.js, checkPanel.steady). The block
+   stands in the middle of the room; each row's parts stand on one baseline (the x of the maths face, the
+   words and the numbers alike). */
 body.checking .cp-row {
   display: grid;
+  /* the values' column as wide as a box (.blank's 156 px) all through, so nothing moves as a box melts
+     into its number */
+  grid-template-columns: auto auto minmax(156px, auto);
   justify-content: center;
-  justify-items: start;
+  align-items: baseline;
+  column-gap: 18px;
   row-gap: 34px;
   font: 800 82px/1.1 var(--font);
 }
 body.checking .cp-side {
+  display: contents;
+}
+body.checking .cp-side.eqn {
+  grid-column: 1 / -1;
+  justify-self: start;
   display: flex;
   align-items: baseline;
   gap: 18px;
 }
 body.checking .cp-side .lab {
+  justify-self: end;
   white-space: nowrap;
   padding-top: 0;
   /* the row's own size: "Try x" as big as its = 4, and LHS and RHS as big as the numbers after them
@@ -2997,10 +3042,8 @@ body.checking .cp-side.lhs .lab {
   align-items: baseline;
   gap: 16px;
 }
-/* a value's place as wide as a box (.blank's 156 px) all through, so the rows stand still as a box melts
-   into its number (the block, centred, would glide over by half the difference) */
 body.checking .cp-side .rest {
-  min-width: 156px;
+  justify-self: start;
   white-space: nowrap;
 }
 /* the equation itself, kept in sight at the top all through the check (reviews, 2026-11-08 and 11-20),
@@ -3090,36 +3133,55 @@ body.checking .check-panel .xslot {
 }
 /* Levels 8–9's working, like the formula screen (body.solving: CQ.eqBoard.open in js/ui.js): the
    balance stands at the left, bright (with its labels: x, ÷ 2), and the steps are written at its
-   right, one row under another; the earlier rows fade back and the answer is green. */
+   right, one row under another; the earlier rows fade back and the answer is green. Its room is the
+   space at the balance's right, centred on the screen's middle (y 140–940, under the question bar),
+   and the rows stand in the middle of it, up and down and across (asked 2026-11-25: "This equation
+   should right side in middle and it should big"; the room ran from y 186 to 1066, so the rows stood
+   low, their middle at y 626). */
 body.solving .eq-board {
   left: 1460px;
-  top: 186px;
+  top: 140px;
   width: 820px;
-  height: 880px;
+  height: 800px;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center; /* the rows in the middle of the room at the right (asked 2026-11-09: "utilise the negative space") */
   gap: 4px;
-  font-size: 80px;
-  line-height: 1.22; /* (Level 9's seven rows fit, clear of the question bar and the bottom) */
+  font-size: 80px; /* (at least: js/ui.js, CQ.eqBoard.fit, draws it as big as its rows fit this room) */
+  line-height: 1.22;
+}
+/* an unseen copy of the working, each row just as wide as it needs (its = still in its middle), to
+   find the size at which the rows fit the board (CQ.eqBoard.fit) */
+body.solving .eq-board.eb-probe {
+  height: auto;
+  visibility: hidden;
+  pointer-events: none;
+}
+.eq-board.eb-probe:empty {
+  display: none;
+}
+body.solving .eb-probe .eb-row {
+  width: max-content;
 }
 .eb-row {
   transition: opacity 0.6s ease;
 }
-/* a row: its left side, =, its right side; the = of every row in the middle of the board, one under
-   another (js/ui.js, eqBoard.set) */
+/* a row: its left side, =, its right side; the = of every row one under another, the left sides as
+   wide as the longest (--lw), the right sides as the longest (--rw), the three columns together in the
+   middle of the board (js/ui.js, eqBoard.fit and cols; with no widths yet, the = in the middle) */
 body.solving .eb-row {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: var(--lw, 1fr) auto var(--rw, 1fr);
+  justify-content: center;
   column-gap: 0.28em;
   align-items: center;
   width: 100%;
 }
 /* a little more room between the terms and signs of the working (Levels 8–9 and practice), so a lit
    number's box stands clear of the + or − beside it (asked 2026-11-19: only the number lit); the longest
-   row (2x + 4 − 4 = 4 + 14 − 4) still fits its half of the board, every = under the others */
+   row (2x + 4 − 4 = 4 + 14 − 4) still fits the board, every = under the others */
 .eq-board .eb-row,
 .pr-work {
   word-spacing: 0.06em;
@@ -3129,6 +3191,10 @@ body.solving .eb-row {
 }
 .eb-r {
   justify-self: start;
+}
+.eb-l,
+.eb-r {
+  position: relative; /* (the lines through the terms that cancel, .eb-strike) */
 }
 .eb-all {
   grid-column: 1 / -1;
@@ -3165,80 +3231,22 @@ body .same.unmark {
 .both {
   white-space: nowrap; /* a sign never ends a line without its number */
 }
-/* Values tried on the balance, on a card by it (Level 8: review, 2026-11-13): the try now, big (10 + 8 =
-   18, its 10 lit like its bar, then 18 ≠ 23 in red), under small records of the tries before */
-.wlabel.trials {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  font: 800 64px/1.15 var(--font);
-  color: var(--ink);
-  background: #fbefd2;
-  border: 5px solid #c79a57;
-  border-radius: 22px;
-  padding: 14px 28px 8px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
-}
-.trials .tr-recs {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: 38px;
-  color: #6b5a44;
-}
-.trials .tr-recs:empty,
-.trials .tr-now:empty {
-  display: none;
-}
-.trials .tr-rec {
-  display: flex;
-  gap: 30px;
-  white-space: nowrap;
-}
-.trials .tr-rec .no,
-.trials .tr-cmp {
-  color: #c8473b;
-}
-.trials .tr-recs:not(:empty) + .tr-now:not(:empty) {
-  margin-top: 6px;
-  padding-top: 8px;
-  border-top: 3px dashed #d9b98a;
-}
-.trials .tr-now {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.trials .tv {
-  display: inline-block;
-  padding: 0 12px;
-  border-radius: 14px;
-  background: #ffd84d;
-  box-shadow: 0 0 14px rgba(255, 200, 40, 0.75);
-}
-/* a value tried on the balance, by it (Level 8: 10 + 8 = 18) */
-.wlabel.trial {
-  font: 800 64px/1 var(--font);
-  color: var(--ink);
-  background: #fbefd2;
-  border: 5px solid #c79a57;
-  border-radius: 22px;
-  padding: 14px 26px 8px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
-}
+/* (Level 8's values tried on the balance have no card, sums or records by it, only the voice and the
+   question bar: asked 2026-11-25; the cream .trials card went then) */
 body.solving .eb-row.done {
   opacity: 0.6; /* the earlier steps stay readable, so the change can be followed (review, 2026-11-08) */
 }
 /* the answer (x = 15, x = 7): big and green in a green outline, like the solution in Level 4 (review,
    2026-11-08: "make x = 15 prominent"); just as wide as it needs, with its = still under the others
-   (its two sides are equal columns) */
+   (its two sides are equal columns, so its = is in its middle, and it is moved over by --fx to the
+   column of =: js/ui.js, eqBoard.cols) */
 body.solving .eb-row.final {
+  grid-template-columns: 1fr auto 1fr;
+  left: var(--fx, 0px);
   width: auto;
   margin-top: 8px;
-  padding: 2px 30px 0;
-  font-size: 112px;
+  padding: 0.02em 0.27em 0;
+  font-size: 1.4em; /* (112 px on the 80 px board; it grows with the board) */
   line-height: 1.2;
   border: 6px dashed #74f0ac;
   border-radius: 26px;
@@ -3274,7 +3282,8 @@ body.solving .eb-row.final {
 #world.presenting > .fx-layer {
   opacity: 0;
 }
-#world.snap > * {
+#world.snap > *,
+#world.snap > .bg-scene .bg-props {
   transition: none !important;
 }
 
@@ -3542,56 +3551,6 @@ body.solving .eb-row.final {
 .finale-title .nb-ch {
   -webkit-text-stroke: 15px var(--nb-ink);
 }
-/* the results under the title (design review, 2026-11-23): three small wooden plaques in a row */
-.fin-sum {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  display: flex;
-  gap: 22px;
-  z-index: 13;
-}
-.fs-chip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 84px;
-  padding: 4px 0 0;
-  border-style: solid;
-  border-width: 0 40px;
-  border-image: url(assets/elements/pillWood.webp) 0 51 0 51 fill / 0 40px stretch;
-  filter: drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
-  white-space: nowrap;
-}
-.fs-ic {
-  width: 52px;
-  height: auto;
-  margin-left: -14px;
-  flex: 0 0 auto;
-}
-.fs-ic .gem {
-  display: block;
-}
-.fs-tick {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: var(--ok);
-  color: #fff;
-  display: grid;
-  place-items: center;
-  font: 800 32px/1 var(--font);
-  padding-top: 3px;
-}
-.fs-n {
-  font: 800 40px/1 var(--font);
-  color: #ffe27a;
-  text-shadow: 0 3px 0 #4a2300;
-}
-.fs-l {
-  font: 700 28px/1 var(--font);
-  color: var(--cream);
-  text-shadow: 0 2px 0 #4a2300;
-}
 /* Play again at the bottom centre, under Zippy (design review, 2026-11-23; it stood between the title and
    his crown): it pops up, then breathes gently */
 .finale-again {
@@ -3735,8 +3694,11 @@ body.solving .eb-row.final {
 .pr-row {
   display: contents;
 }
-/* the two that cancel in a step, "+ 6 − 6", struck through and faded (design review, 2026-11-23) */
-.pr-strike {
+/* the two that cancel in a step, "+ 6 − 6", struck through and faded (design review, 2026-11-23); the
+   same lines in Levels 8–9's working as each bar comes off (+ 8 − 8; 8 + and − 8: eqBoard.cancel in
+   js/ui.js, asked 2026-11-25) */
+.pr-strike,
+.eb-strike {
   position: absolute;
   height: 0.08em;
   min-height: 6px;
@@ -3747,7 +3709,8 @@ body.solving .eb-row.final {
   pointer-events: none;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
 }
-.pr-row .cancelled {
+.pr-row .cancelled,
+.eq-board .cancelled {
   opacity: 0.45;
   transition: opacity 0.4s ease;
 }
@@ -4556,10 +4519,6 @@ html.lite #title .t-drift {
   background: var(--c);
   transform: scale(1.3);
 }
-/* where a line crosses a bracket on its way to its own part, the bracket gives way round it */
-.lead.hop {
-  box-shadow: 7px 0 0 #0a1820, -7px 0 0 #0a1820;
-}
 .activity .drop-box.ok {
   border: 6px solid var(--c);
   background: var(--c-bg);
@@ -4858,13 +4817,6 @@ html.reduced-motion .bar-slot.looked .gbar {
   color: #ffd84d;
   background: rgba(255, 216, 77, 0.16);
   box-shadow: 0 0 0 4px rgba(255, 216, 77, 0.75);
-}
-/* the terms that cancel (Level 9, review 2026-11-08: the 4s of 2x + 4 − 4 = 4 + 14 − 4), each 4 lit
-   red by itself, its + or − plain (asked 2026-11-19), with a ring that takes no room */
-.eq-board .c-lit {
-  color: #ff8f80;
-  background: rgba(255, 143, 128, 0.14);
-  box-shadow: 0 0 0 4px rgba(255, 143, 128, 0.8);
 }
 /* Level 9's two equal groups (review, 2026-11-08: "pairing each crown with one 7 bar through matching
    highlights"): each crown and its 7 bar lit in a colour of their own (violet, pink: as strong as the
@@ -5238,7 +5190,6 @@ body.checking .check-panel,
 .final,
 .pulse,
 .x-lit,
-.c-lit,
 .lit-ok,
 .lit-no,
 .try,

@@ -483,11 +483,8 @@ window.CONTENT = {
   finale: {
     title: "Mission Complete!",
     replay: "Play again",
-    // (design review, 2026-11-23: "Add a results summary… Show the crowns collected, stars, the equations
-    // solved and the key words learned")
-    sumCrowns: "Crowns",
-    sumEquations: "Equations solved",
-    sumWords: "Words learned",
+    // (the design review's results row, "Crowns", "Equations solved", "Words learned", was taken off:
+    // user, 2026-11-25)
   },
 
   // Sound effects: map any sound cue to a recorded file, e.g. overrides: { "zippy.laugh": "assets/audio/zippy-laugh.mp3" }.

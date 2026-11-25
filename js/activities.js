@@ -123,8 +123,8 @@
         crowns.forEach((c) => b.removeItem(c));
         if (asCoins) for (let i = 0; i < v * crowns.length; i++) sub.added.push(b.addItem("left", { type: "coin", slot: "subst" }, i));
         else sub.crowns.forEach((c, n) => sub.added.push(b.addItem("left", { type: "bar", value: v, slot: "main" }, n)));
+        CQ.hideNow(sub.added.map((it) => it.el));
         sub.added.forEach((it) => {
-          it.el.style.opacity = "0";
           it.forX = true; // (counting on from x's value skips these: Balance.autoCount)
         });
       });
@@ -421,18 +421,21 @@
       if (s.rows) {
         const rows = CQ.el("div", "nb-rows", c);
         s.rows.forEach((r) => {
-          // each row written plainly, all of them starting under the equation's x (below): x + 2 = 7 /
-          // Try x = 4 / LHS = 4 + 2 = 6 / RHS = 7, flush left (review, 2026-11-20, the user's picture and
-          // choice: "downside 3 equations need to be left side"; until then they stood in columns, their
-          // last = signs under the equation's: review, 2026-11-19). "Try" smaller, by itself (.tw). A
-          // side's value stays on its line, after its expression:
+          // each row of the check (cls "side": Try x = 4, LHS = 4 + 2 = 6, RHS = 7; "sol": x ≠ 4 or x = 5 ✓)
+          // in three columns: what comes before its last = (≠), that sign, its value, so every row's last
+          // = stands under the one above and under the equation's (below), the values in one column:
+          // x + 2 = 7 / Try x = 4 / LHS = 4 + 2 = 6 / RHS = 7 / x ≠ 4 (asked 2026-11-25, "make like
+          // before… the alignment", the user's choice "B: last = lined up", as on 2026-11-19; from
+          // 2026-11-20 they were written flush left under the equation's x, the user's choice then). "Try"
+          // smaller, by itself (.tw). A side's value stays on its line, after its expression:
           // LHS = 4 + 2 = 6 (review, 2026-11-19: "23 is equal to should same line in 15 is equal to"; = 6
           // on a line of its own under it, left of 4 + 2, was turned down the same day: "Please don't do
           // this like this… in all game").
-          let html = CQ.rich(r.t);
+          const m = /\b(side|sol)\b/.test(r.cls || "") ? /^(.+) ([=≠]) (.+)$/.exec(r.t) : null;
+          let html = m ? `<span class="sl">${CQ.rich(m[1])}</span><span class="se">${CQ.rich(m[2])}</span><span class="sr">${CQ.rich(m[3])}</span>` : CQ.rich(r.t);
           if (/\btry\b/.test(r.cls || "")) html = html.replace(UI.tryWord, `<span class="tw">${UI.tryWord}</span>`);
           const key = "row:" + r.t;
-          const el = add(CQ.el("div", "nb-row " + (r.cls || ""), rows, html), key);
+          const el = add(CQ.el("div", "nb-row " + (m ? "cols " : "") + (r.cls || ""), rows, html), key);
           if (r.cue) el.dataset.cue = r.cue; // it waits until the voice says this
           // a row already there that changes (lit, faded back) eases from how it was
           const was = before.rowCls && before.rowCls[key];
@@ -457,17 +460,16 @@
             CQ.writeOut(el, r.write, this.lineText, r.each || 75, () => this.renders === n).catch(() => {});
           }
         });
-        // the rows' left edge under the left edge of the equation's x (its letter, inside the token's
-        // padding), where they are laid out (no transforms)
-        const x = tok("x");
-        if (x) {
-          const left = (el) => {
-            let v = 0;
+        // the rows' column of = signs under the equation's = (where they are laid out: no transforms)
+        const se = rows.querySelector(".nb-row.cols .se");
+        const eqTok = tok("eq");
+        if (se && eqTok) {
+          const mid = (el) => {
+            let v = el.offsetWidth / 2;
             for (let e = el; e && e !== c; e = e.offsetParent) v += e.offsetLeft;
             return v;
           };
-          const pad = parseFloat(getComputedStyle(x).paddingLeft) || 0;
-          rows.style.translate = `${Math.round(left(x) + pad - left(rows))}px 0`;
+          rows.style.translate = `${Math.round(mid(eqTok) - mid(se))}px 0`;
         }
       }
       // a tag hangs under its part on a straight line that starts with a dot on the part (or on the
@@ -542,7 +544,7 @@
         // s.cue.eqn: the equation is written in as the voice gets to that word ("Let's return to the
         // crown's equation.")
         if (s.cue && s.cue.eqn) {
-          signs.forEach((t) => (t.style.opacity = "0"));
+          CQ.hideNow(signs);
           this.onCue(s.cue.eqn, sig, writeEq);
         } else writeEq();
         start = 120 + signs.length * 190 + 300;
@@ -720,7 +722,7 @@
     // Copies of things on the left pan fly over to their places on the formula screen (each picture in
     // fliers says which thing it is: "crown", "coin:0"…), one after another, starting at ms.
     flyIn(fliers, ms, sig) {
-      fliers.forEach((f) => (f.style.opacity = "0"));
+      CQ.hideNow(fliers);
       const left = CQ.balance.items.left;
       const source = (spec) => (spec === "crown" ? left.find((it) => it.type === "crown") : left.filter((it) => it.type === "coin")[+spec.split(":")[1]]);
       fliers.forEach((f, i) =>
@@ -952,16 +954,18 @@
   });
   // the second, the same screen: the equation and the working stay (the sides unlit), and x = v is written
   // in under them on cue, red (cls "lit-no": not a solution) or green ("lit-ok": the solution)
-  // (a value that is not a solution: x ≠ 4 ✗; the solution: x = 5 ✓. Design review, 2026-11-23: "A red
-  // 'x = 4' still reads as an equation. Show 'x ≠ 4 ✗'". The ≠ is drawn over an = (CQ.rich), so the
-  // letters written in are x, =, 4, ✗)
+  // (a value that is not a solution: x ≠ 4; the solution: x = 5 ✓. Design review, 2026-11-23: "A red
+  // 'x = 4' still reads as an equation. Show 'x ≠ 4 ✗'"; the ✗ after it was taken off, user 2026-11-25:
+  // "do not show the cross icon". The ≠ is drawn over an = (CQ.rich), so the letters written in are
+  // x, =, 4, and ✓ for the solution)
   const verdictRows = (v, s, cue, cls) => {
     const no = /lit-no/.test(cls);
+    const mark = no ? "" : " ✓";
     return [
       tryRow(v),
       { t: lhsText(v, s), cls: "side" },
       { t: rhsText, cls: "side" },
-      { t: `x ${no ? "≠" : "="} ${v} ${no ? "✗" : "✓"}`, cls: "sol " + cls, write: [{ cue, text: `x = ${v} ${no ? "✗" : "✓"}` }] },
+      { t: `x ${no ? "≠" : "="} ${v}${mark}`, cls: "sol " + cls, write: [{ cue, text: `x = ${v}${mark}` }] },
     ];
   };
   CQ.NB_TRY = [
@@ -1008,7 +1012,7 @@
     // both sides worked out: the crown makes way for 4 coins; "The two sides have different values. The
     // balance tips!", the balance tipping on "tips"
     balanceBeat("check-diff", 4, 6, { both: "The values" }, [{ cue: "balance tips", tilt: true }]),
-    // "So, x = 4 is not a solution.": x ≠ 4 ✗ written in red under the working on "x = 4"
+    // "So, x = 4 is not a solution.": x ≠ 4 written in red under the working on "x = 4"
     // (the balance stays tipped; come back to with Back, the coins are put in again and it tips once more)
     {
       id: "check-not-sol",
@@ -1077,9 +1081,9 @@
   // Things come in one at a time, so a child can follow: each element fades up in turn, gap ms apart
   // (the CSS translate property, so their own transforms are left alone).
   function oneByOne(els, gap, start) {
+    CQ.hideNow(els);
     els.forEach((el, i) => {
       if (!el) return;
-      el.style.opacity = "0";
       CQ.anim(el, [{ opacity: 0, translate: "0 18px" }, { opacity: 1, translate: "0 0" }], {
         duration: 420,
         delay: (start || 0) + i * (gap || 260),
@@ -1092,9 +1096,9 @@
   CQ.oneByOne = oneByOne;
 
   // A straight line from a label (at y0) to the part of an equation it names (at y1), ending in a dot
-  // on that part, in equation coordinates. cls gives its colour (c-var, c-eq, c-lhs, c-rhs); "hop"
-  // leaves a little gap where it crosses a bracket, so it plainly goes on to its own part. It is drawn
-  // faint; .on runs the colour down it from the label to the part (styles.css, "Labels joined to an
+  // on that part, in equation coordinates. cls gives its colour (c-var, c-eq, c-lhs, c-rhs). (Where it
+  // crosses a bracket it just goes over it: the dark band either side of it, "hop", was taken off, user
+  // 2026-11-25: "remove this black line".) It is drawn faint; .on runs the colour down it from the label to the part (styles.css, "Labels joined to an
   // equation"). w: how thick it is.
   function leadLine(d, x, y0, y1, cls, w) {
     w = w || 4;
@@ -1515,7 +1519,7 @@
       const from = { translate: `${fromAt.x - cur.x}px ${fromAt.y - cur.y}px`, scale: String(fromSize / parseFloat(getComputedStyle(eqn).fontSize)) };
       eqn.style.transformOrigin = "0 50%"; // (its middle, after its own -50% shift: it grows and shrinks about it)
       Object.assign(eqn.style, from);
-      eqn.style.opacity = "0";
+      CQ.hideNow(eqn);
       await another;
       eqn.style.opacity = "";
       CQ.anim(eqn, [{ opacity: 0 }, { opacity: 1 }], { duration: 320, keep: false });
@@ -1800,7 +1804,7 @@
     const LEFT = ["x", "plus", "four"];
     if (show.includes("variable")) {
       const t = tag("c-var", labels.variable, rx.cx, above);
-      parts.push({ name: "variable", lead: line(rx.cx, above, rx.y - 4, "c-var" + (show.includes("equation") ? " hop" : "")), tag: t, light: () => tk("x").classList.add("glow-var") });
+      parts.push({ name: "variable", lead: line(rx.cx, above, rx.y - 4, "c-var"), tag: t, light: () => tk("x").classList.add("glow-var") });
     }
     if (show.includes("equation")) {
       const br = brace(all, true, "c-eq");
@@ -1836,7 +1840,7 @@
       };
       parts.push({ name: "rhs", brace: br, lead: line(rr.cx, low, rr.y + rr.h + 19, "c-rhs"), tag: t, light });
     }
-    parts.forEach((p) => [p.brace, p.lead, p.tag].forEach((e) => e && (e.style.opacity = "0")));
+    CQ.hideNow(parts.flatMap((p) => [p.brace, p.lead, p.tag]));
     return parts;
   }
   // Where a token's sign is actually drawn (its ink, not its padded box), across, in equation
@@ -1973,12 +1977,10 @@
   // A board's things come in one at a time, each the way it would be drawn, and wait hidden (and can't
   // be touched) until their turn: "rise" (fade in with a little rise), "pop", "line" (a line drawn out
   // from the part it starts at, its dot first).
-  const hideAll = (els) =>
-    els.forEach((e) => {
-      if (!e) return;
-      e.style.opacity = "0";
-      e.style.pointerEvents = "none";
-    });
+  const hideAll = (els) => {
+    CQ.hideNow(els);
+    els.forEach((e) => e && (e.style.pointerEvents = "none"));
+  };
   const comeIn = (el, how, ms) => {
     if (!el) return Promise.resolve();
     el.style.pointerEvents = "";
@@ -2007,7 +2009,7 @@
     const box = CQ.el("div", "rc-eq-wrap", card);
     const eqn = CQ.eqTokens(box, RECAP_EQ, "rc-eq");
     const tokens = [...eqn.querySelectorAll(".tok")];
-    tokens.forEach((e) => (e.style.opacity = "0"));
+    CQ.hideNow(tokens);
     await CQ.run.wait(80); // lay the equation out before measuring it for the labels
     // all four labels, hidden, in the order the lines name them: variable, equation, lhs, rhs
     const parts = recapLabels(eqn, c.panels[c.panels.length - 1].show, c.labels);
@@ -2190,7 +2192,7 @@
         CQ.el("span", "pe", row, "="),
         CQ.el("span", "pr", row, cls === "ask" ? '<span class="pr-box">?</span>' : R(text.slice(i + 3))),
       ];
-      row.cells.forEach((c) => (c.style.opacity = "0"));
+      CQ.hideNow(row.cells);
       return row;
     };
     // The working fills the board (asked 2026-11-19, of a solved board small in the middle of the dark:
@@ -2563,30 +2565,31 @@
   // The magic runs as browser animations (transform and opacity). With Reduced motion he stands still,
   // laughing, and the magic is held lit.
   const DANCE = {
-    x: 960, // stage px: the middle of his cell, between his feet (in the middle, a little smaller and higher
-    // since the second round of the design review of 2026-11-23, so Play again stands at the bottom centre
-    // under him: "Move it to the bottom centre"; the level balance stands faint behind him)...
-    y: 872, // ...and the paving under them
-    scale: 1.0,
+    x: 960, // stage px: the middle of his cell, between his feet (in the middle, with Play again at the
+    // bottom centre under him: design review, 2026-11-23, "Move it to the bottom centre"). Since
+    // 2026-11-25 nothing else is on the screen with him (user: remove the results row and the balance
+    // behind him, "and do this nicely"), so he is a little bigger again and fills the room between the
+    // title and the button...
+    y: 888, // ...and the paving under them
+    scale: 1.2,
     beat: 250, // ms a frame: an eighth note of the finale music (120 BPM, js/audio.js)
     still: 2, // with Reduced motion: frame 2 (fist up, laughing)
-    body: -225, // his middle, from his feet (stage px)
+    body: -270, // his middle, from his feet (stage px)
   };
   // Where the stars twinkle, from between his feet (stage px): all round him, clear of him, his raised
-  // hand and his bag.
-  // (the ones over his crown sit either side of the Play again button, clear of it)
+  // hand and his bag; the top ones clear of the title's letters.
   const STARS = [
-    [-255, -400], [-305, -212], [-221, -76], [246, -425], [314, -255], [255, -94],
-    [-289, -520], [289, -530], [-365, -357], [374, -144], [382, -391],
+    [-306, -480], [-366, -254], [-265, -91], [295, -510], [377, -306], [306, -113],
+    [-347, -600], [347, -610], [-438, -428], [449, -173], [458, -469],
   ];
   const SPECKS = 22; // gold specks floating up from the paving round him
   const BAR = 2000; // ms: a bar of the finale music (8 frames); a sparkle burst on each
   const DANCE_FOR = 4 * BAR; // he dances four bars ("7 to 8 seconds"), then holds his pose
   const TITLE = { x: 960, y: 150 }; // "Mission Complete!": its middle, across the top, clear of the corner buttons
-  // (design review, 2026-11-23) the results, a row under the title; Play again at the bottom centre, under
-  // him ("The Play Again button sits between the title and Zippy's crown, so the screen feels crowded.
-  // Move it to the bottom centre"; it stood between the title and his crown)
-  const SUMMARY = { x: 960, y: 290 };
+  // Play again at the bottom centre, under him (design review, 2026-11-23: "The Play Again button sits
+  // between the title and Zippy's crown, so the screen feels crowded. Move it to the bottom centre"). (The
+  // review's results row under the title, the crowns, the equations solved and the words learned on
+  // wooden plaques, was taken off: user, 2026-11-25.)
   const AGAIN = { x: 960, y: 990 };
   // stars twinkling round the title, from its middle (stage px), clear of its letters
   const TITLE_STARS = [[-640, -50], [655, -40], [-590, 70], [600, 75], [-700, 20], [710, 25]];
@@ -2631,9 +2634,9 @@
     const letters = Array.from(c.title).map((ch) => {
       const l = CQ.el("span", "nb-ch" + (ch === " " ? " gap" : ""), word, ch === " " ? "\u00a0" : ch);
       l.setAttribute("data-ch", ch === " " ? "\u00a0" : ch);
-      l.style.opacity = "0";
       return l;
     });
+    CQ.hideNow(letters);
     const titleStars = TITLE_STARS.map(([dx, dy]) => {
       const st = CQ.el("div", "sparkle finale-star", front);
       CQ.pos(st, TITLE.x + dx, TITLE.y + dy);
@@ -2759,38 +2762,6 @@
         ], 2200, -(i * 380) - 1400);
       });
     };
-    // The results (design review, 2026-11-23): the crowns, the equations solved and the words learned,
-    // each on a small wooden plaque, popping in one after another under the title. (A plaque of the
-    // levels' stars went with the stars: user, 2026-11-23, "remove this text and the stars".)
-    const summaryIn = async () => {
-      const row = CQ.el("div", "fin-sum", wrap);
-      CQ.pos(row, SUMMARY.x, SUMMARY.y);
-      const P = C().practice;
-      const items = [
-        { icon: () => CQ.img("crown", "fs-ic"), n: `${CQ.hud.crowns}/${CQ.hud.total}`, label: c.sumCrowns },
-        { icon: () => CQ.el("span", "fs-ic fs-tick", null, "✓"), n: String((P && P.problems.length) || 0), label: c.sumEquations },
-        { icon: () => CQ.el("span", "fs-ic fs-gem", null, CQ.gem("#3D8BFD", 46)), n: String((C().words || []).length || 8), label: c.sumWords },
-      ];
-      const chips = items.map((it) => {
-        const ch = CQ.el("div", "fs-chip", row);
-        const ic = it.icon();
-        if (ic) {
-          ic.classList.add("fs-ic");
-          ch.appendChild(ic);
-        }
-        CQ.el("span", "fs-n", ch, it.n);
-        CQ.el("span", "fs-l", ch, it.label);
-        ch.setAttribute("aria-label", `${it.label}: ${it.n}`);
-        ch.style.opacity = "0";
-        return ch;
-      });
-      for (const ch of chips) {
-        ch.style.opacity = "";
-        CQ.audio.play("ui.pop", { volume: 0.6 });
-        CQ.anim(ch, still ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: "translateY(-16px) scale(.6)" }, { opacity: 1, transform: "translateY(0) scale(1)" }], { duration: 420, easing: CQ.EASE.back, keep: false, essential: true });
-        await CQ.run.wait(160);
-      }
-    };
     // Play again pops up at the bottom, under him, with a burst of sparkles, and breathes gently (CSS) to
     // be tapped: the quest starts again from the beginning.
     const againIn = () => {
@@ -2809,8 +2780,8 @@
     // his sheet ready to show (it is loaded with the game; this only waits for it on a slow device)
     if (strip.decode) await CQ.run.when(strip.decode().catch(() => {}));
 
-    // The scene is only the jungle from the start (the balance, Grumble, the bars and the hanging Zippy
-    // are gone: js/flow.js, resetScene). Handed the last practice board (the child tapped Next on it),
+    // The scene is only the jungle and Grumble asleep from the start (the balance, the bars and the hanging
+    // Zippy are gone: js/flow.js, resetScene). Handed the last practice board (the child tapped Next on it),
     // its dark lifts as a burst of sparkles comes where he will stand...
     const board = CQ.ui.overlay.querySelector(".activity.handover");
     CQ.audio.music("finale");
@@ -2859,8 +2830,6 @@
     if (still && left > 0) await CQ.run.wait(left);
     if (!still) CQ.anim(fig, [{ transform: "scale(1)" }, { transform: "scale(1.07)", offset: 0.4 }, { transform: "scale(1)" }], { duration: 460, easing: "ease-out", keep: false, essential: true });
     await CQ.run.wait(500);
-    await summaryIn();
-    await CQ.run.wait(250);
     againIn();
     await CQ.run.when(new Promise(() => {})); // the screen stays: Play again, the menu or ↻ ends it
   };

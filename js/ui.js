@@ -2054,7 +2054,7 @@
   // 2026-11-16: "animation se dikhao likhte hue", "ekdum appear kyu horha hai".)
   async function writePieces(els, line, cue, each) {
     each = each || 70;
-    els.forEach((e) => (e.style.opacity = "0"));
+    CQ.hideNow(els);
     if (cue && line) await CQ.run.when(CQ.caption.when(line, cue));
     CQ.audio.play("ui.pop", { volume: 0.55 });
     for (const e of els) {
@@ -2077,12 +2077,13 @@
   CQ.checkPanel = {
     build(ui) {
       this.el = CQ.el("div", "check-panel hidden", ui);
-      // A row each, one under another, all starting at the left, under the equation's x (review,
-      // 2026-11-20, the user's picture and choice: "downside 3 equations need to be left side"; styles.css,
-      // body.checking .cp-row): the equation, kept in sight all through the check; Try x = 4;
-      // LHS = 4 + 3 = □; RHS = □. A row's parts: what comes before its last = | that = | its value.
-      // (Until then the rows stood in columns: every row's first =, then its last =, one under another;
-      // reviews, 2026-11-18 and 11-19.)
+      // A row each, one under another: the equation, kept in sight all through the check; Try x = 4;
+      // LHS = 4 + 3 = □; RHS = □; at the end x ≠ 4 (or x = 6 ✓). A row's parts: what comes before its last
+      // = | that = | its value, in one grid, so every row's last = stands under the one above, under the
+      // equation's (steady), and the values stand in one column (asked 2026-11-25, the user's choice "B:
+      // last = lined up", as on 2026-11-19; styles.css, body.checking .cp-row). (From 2026-11-20 the rows
+      // were written flush left under the equation's x; before that, 2026-11-18, their first = signs
+      // stood one under another.)
       this.row = CQ.el("div", "cp-row", this.el);
       this.eqRow = CQ.el("div", "cp-side eqn", this.row);
       this.xRow = CQ.el("div", "cp-side try", this.row); // Try x = 4: the value put in for x
@@ -2156,9 +2157,12 @@
       if (old) old.classList.add("hidden");
       this.el.style.opacity = "";
       this.el.style.transform = "";
+      this.el.style.translate = ""; // (where the last check's ending row had moved it: confirm)
+      // the equation comes in; Try x = …, the left side and the right side wait for their turns, unseen
+      // from the start (hidden at once, before steady measures them: hidden after, their CSS opacity
+      // transition faded them out in view, "Try x =" and the "= ?" boxes, 2026-11-25)
+      CQ.hideNow([...this.xRow.children, ...this.pieces(this.lhs), ...this.pieces(this.rhs)]);
       this.steady(eq.v);
-      // the equation comes in; Try x = …, the left side and the right side wait for their turns
-      [...this.xRow.children, ...this.pieces(this.lhs), ...this.pieces(this.rhs)].forEach((e) => (e.style.opacity = "0"));
       CQ.audio.play("ui.pop");
       [...this.eqRow.children].forEach((e) => {
         e.style.opacity = "";
@@ -2166,20 +2170,32 @@
       });
       await CQ.run.wait(660);
     },
-    // The block of rows (centred) kept as wide as the left side will ever be, so nothing slides over as
-    // the value tried (v) takes x's place in it. Measured where the rows are laid out (no transforms).
-    // (2026-11-20 the equation was spread out over the left side here; the user turned that down the same
-    // day: "Do not make a spacing on x + 3 = 9, just make it bigger", choosing D, 144 px.)
+    // The column of = signs kept still as the value tried (v) takes x's place in the left side: the first
+    // column held as wide as "LHS = 4 + 3" will ever be. Then the equation, a line of its own over the
+    // grid in its own plain spacing, is moved over until its = stands over the rows' column of = (asked
+    // 2026-11-25, the user's choice "B: last = lined up"; styles.css, body.checking .cp-row).
+    // (2026-11-20 the equation was spread out over the left side; the user turned that down the same day:
+    // "Do not make a spacing on x + 3 = 9, just make it bigger", choosing D, 144 px.)
     steady(v) {
       const slot = this.lhs.querySelector(".xslot");
-      if (!slot) return;
+      const lab = this.lhs.querySelector(":scope > .lab");
+      if (!slot || !lab) return;
       this.row.style.gridTemplateColumns = "";
+      this.eqRow.style.translate = "";
       const was = slot.innerHTML;
-      const wideX = this.lhs.offsetWidth;
+      const wideX = lab.offsetWidth;
       if (v != null) slot.innerHTML = `<span class="subbed">${CQ.num(v)}</span>`;
-      const wideV = this.lhs.offsetWidth;
+      const wideV = lab.offsetWidth;
       slot.innerHTML = was;
-      this.row.style.gridTemplateColumns = `minmax(${Math.ceil(Math.max(wideX, wideV))}px, auto)`;
+      this.row.style.gridTemplateColumns = `minmax(${Math.ceil(Math.max(wideX, wideV))}px, auto) auto minmax(156px, auto)`;
+      const eqSign = this.eqRow.querySelector(":scope > .e1");
+      const colSign = this.xRow.querySelector(":scope > .e1");
+      if (!eqSign || !colSign) return;
+      const mid = (e) => {
+        const r = e.getBoundingClientRect();
+        return (r.left + r.right) / 2;
+      };
+      this.eqRow.style.translate = `${Math.round((mid(colSign) - mid(eqSign)) / (CQ.stage.scale || 1))}px 0`;
     },
     // a side's pieces, one by one, in the order they are written (its name, =, the parts of its
     // expression, =, its value; the right side: its name, =, its value)
@@ -2206,6 +2222,7 @@
         this.isOpen = false;
         document.body.classList.remove("checking");
         this.el.classList.add("hidden");
+        this.el.style.translate = "";
         [this.lhs, this.rhs].forEach((s) => s.classList.remove("lit", "faded"));
         this.solRow.innerHTML = "";
         return Promise.resolve();
@@ -2273,15 +2290,28 @@
     // the equation and "Try" had faded away, leaving x = 4 lit where the try stood.)
     // cue = { lit: the words the row waits for in line, v: the value }.
     // (design review, 2026-11-23: "Show '≠' instead of a red x = 4. A red 'x = 4' still reads as an
-    // equation. Show 'x ≠ 4 ✗'": a value that is not a solution is written x ≠ 4 ✗, in red; the solution
-    // x = 6 ✓, in green)
+    // equation. Show 'x ≠ 4 ✗'": a value that is not a solution is written x ≠ 4, in red, with no ✗ after
+    // it (user, 2026-11-25: "do not show the cross icon"); the solution x = 6 ✓, in green)
     async confirm(ok, line, cue) {
       this.lightSide(null);
       const r = this.solRow;
       r.className = "cp-side sol " + (ok ? "lit-ok" : "lit-no");
       const sign = ok ? "=" : '<span class="neq">=</span>';
-      r.innerHTML = `<span class="lab"><i class="v">x</i></span><span class="op e1">${sign}</span><span class="rest">${CQ.num(cue.v)} <span class="sol-mark">${ok ? "✓" : "✗"}</span></span>`;
-      await writePieces([...r.children], line, cue.lit);
+      const mark = ok ? ' <span class="sol-mark">✓</span>' : "";
+      // (the value in a span of its own: written in letter by letter, the digits of 15 would each be a part
+      // of the row's flex line, with its gap between them, "1 5")
+      const h = this.row.offsetHeight; // (the rows before this one)
+      r.innerHTML = `<span class="lab"><i class="v">x</i></span><span class="op e1">${sign}</span><span class="rest"><span class="sv">${CQ.num(cue.v)}</span>${mark}</span>`;
+      // The check stays in the middle of the room at the balance's right as this last row comes in under
+      // it (asked 2026-11-25: "This equation should right side in middle"; the row hung the check low,
+      // its middle at y 602): as the row is written in, on its words, the check glides up by half the
+      // room the row takes, like the working of Levels 8–9 as a row comes (CQ.eqBoard).
+      const els = [...r.children];
+      CQ.hideNow(els);
+      const dy = (this.row.offsetHeight - h) / 2;
+      if (cue.lit && line) await CQ.run.when(CQ.caption.when(line, cue.lit));
+      if (dy > 0.5) CQ.anim(this.el, [{ translate: "0 0" }, { translate: `0 ${-dy}px` }], { duration: 560, easing: CQ.EASE.out });
+      await writePieces(els, null, null);
     },
     // The side the voice is saying the value of glows in its colour; the other side's glow fades, the
     // row itself staying as it is, in full view ("The left-hand side equals 7" with LHS = 4 + 3 = 7 lit:
@@ -2312,10 +2342,92 @@
   // another, each one written in; the earlier rows fade back a little. The child takes bars off with the
   // working in view, and each − 8 (− 4) is written as its bar comes off (set's hold, then reveal:
   // review, 2026-11-08).
+  // Its size (asked 2026-11-25, of Level 8's x + 8 = 23 and x + 8 = 8 + 15 small at the balance's right,
+  // dark room all round them: "the equation should big its small"; it had been 80 px all along): like
+  // practice's working (js/activities.js), the biggest at which the rows it holds fit the board, BIG at
+  // most, found by putting them into an unseen copy of the working. It changes only as a new row comes
+  // in, sized for the rows so far and that one, whole (with the parts it holds back for reveal), and the
+  // rows already there glide to it: smaller as a longer row comes (Level 8's x + 8 − 8 = 8 + 15 − 8).
+  // Where (asked 2026-11-25 again, of the same two rows low at the balance's right: "This equation
+  // should right side in middle and it should big"): the block of rows stands in the middle of the room
+  // at the balance's right, up and down (the room is centred on the screen's middle: styles.css) and
+  // across: every row's = under the others, in a column as far from the block's left as its longest left
+  // side needs, and its right sides as long as they need (cols), not each side as wide as the longer of
+  // them, which left the rows off to one side and smaller than they had room for.
   CQ.eqBoard = {
+    BASE: 80,
+    BIG: 150,
     build(ui) {
       this.el = CQ.el("div", "eq-board hidden", ui);
+      this.probe = CQ.el("div", "eq-board eb-probe", ui);
+      this.probe.setAttribute("aria-hidden", "true");
+      this.size = this.BASE;
       this.isOpen = false;
+    },
+    // a row's parts: its left side, =, its right side; every row's = stands under the one above (review,
+    // 2026-11-08: "Keep the equal signs vertically aligned")
+    rowHTML(text) {
+      const i = text.indexOf(" = ");
+      return i < 0
+        ? `<span class="eb-all">${CQ.rich(text)}</span>`
+        : `<span class="eb-l">${CQ.rich(text.slice(0, i))}</span><span class="eb-eq">=</span><span class="eb-r">${CQ.rich(text.slice(i + 3))}</span>`;
+    },
+    // The biggest size (px) at which these rows, [text, final], fit the board, and the widths of its two
+    // columns at that size: { size, lw (the longest left side), rw (the longest right side) }. Measured in
+    // the unseen copy at BASE, and scaled. The answer row (final) is a box of its own round its = (its two
+    // sides as wide as each other: CSS), moved over so its = stands under the others: it needs its width
+    // and that move.
+    fit(rows) {
+      const p = this.probe;
+      p.style.fontSize = this.BASE + "px";
+      p.replaceChildren(
+        ...rows.map(([text, final]) => {
+          const r = CQ.el("div", "eb-row" + (final ? " final" : ""));
+          r.innerHTML = this.rowHTML(text);
+          return r;
+        })
+      );
+      const k = CQ.stage.scale || 1;
+      const wd = (e) => (e ? e.getBoundingClientRect().width / k : 0);
+      let L = 0;
+      let R = 0;
+      let mid = 0; // (the = and the gaps either side of it)
+      let all = 0; // (a row with no =)
+      let fin = 0;
+      [...p.children].forEach((r) => {
+        if (r.classList.contains("final")) return (fin = Math.max(fin, wd(r)));
+        const l = r.querySelector(".eb-l");
+        if (!l) return (all = Math.max(all, wd(r)));
+        L = Math.max(L, wd(l));
+        R = Math.max(R, wd(r.querySelector(".eb-r")));
+        mid = Math.max(mid, wd(r.querySelector(".eb-eq")) + 2 * (parseFloat(getComputedStyle(r).columnGap) || 0));
+      });
+      const w = Math.max(L + mid + R, all, fin + Math.abs(L - R));
+      const h = p.offsetHeight;
+      p.replaceChildren();
+      // (the board's room, as styles.css sets it: body.solving .eq-board)
+      const cs = getComputedStyle(this.el);
+      const roomW = parseFloat(cs.width);
+      const roomH = parseFloat(cs.height);
+      const size = !w || !h || !roomW || !roomH ? this.BASE : CQ.clamp(Math.floor(0.98 * this.BASE * Math.min(roomW / w, roomH / h)), this.BASE, this.BIG);
+      // (a pixel or two to spare: a side drawn at the new size can come out a hair wider than scaled)
+      const at = (v) => (v ? Math.ceil((v * size) / this.BASE) + 2 : 0);
+      return { size, lw: at(L), rw: at(R) };
+    },
+    // The board drawn at a fit's size, its columns that wide (styles.css: body.solving .eb-row, and the
+    // answer row moved over by --fx); none: back to the plain board.
+    cols(f) {
+      const st = this.el.style;
+      if (!f) {
+        st.fontSize = "";
+        ["--lw", "--rw", "--fx"].forEach((v) => st.removeProperty(v));
+        return;
+      }
+      st.fontSize = f.size + "px";
+      if (!f.lw || !f.rw) return ["--lw", "--rw", "--fx"].forEach((v) => st.removeProperty(v));
+      st.setProperty("--lw", f.lw + "px");
+      st.setProperty("--rw", f.rw + "px");
+      st.setProperty("--fx", (f.lw - f.rw) / 2 + "px");
     },
     async open() {
       if (this.isOpen) return;
@@ -2364,28 +2476,38 @@
       opts = opts || {};
       if (this.isOpen) this.el.classList.remove("hidden");
       let row = opts.same ? this.el.lastElementChild : null;
-      // the rows already there, where they stand now: the board keeps its rows in the middle of its room
-      // (asked 2026-11-09: "utilise the negative space"), so they glide up as a new one comes (below)
-      const before = row ? null : Array.from(this.el.children).map((r) => [r, r.getBoundingClientRect().top]);
+      // the rows already there, where they stand now (each by its =, which stays under the others): the
+      // board keeps its rows in the middle of its room (asked 2026-11-09: "utilise the negative space"),
+      // so they glide up as a new one comes (below), and to the board's new size and columns if they change
+      const anchor = (r) => r.querySelector(".eb-eq") || r;
+      const before = row ? null : Array.from(this.el.children).map((r) => [r, anchor(r).getBoundingClientRect()]);
+      const was = this.size;
       if (!row) {
+        const f = this.fit(before.map(([r]) => [r.eqText || "", r.classList.contains("final")]).concat([[text, !!opts.final]]));
+        this.size = f.size;
+        this.cols(f);
         this.el.querySelectorAll(".eb-row").forEach((r) => r.classList.add("done"));
         this.unmark(); // the step before is done: its − 8 / ÷ 2 marks go back to plain
         row = CQ.el("div", "eb-row", this.el);
       }
-      // its left side, =, its right side: every row's = stands in the middle of the board, under the
-      // one above (review, 2026-11-08: "Keep the equal signs vertically aligned")
-      const i = text.indexOf(" = ");
-      row.innerHTML =
-        i < 0
-          ? `<span class="eb-all">${CQ.rich(text)}</span>`
-          : `<span class="eb-l">${CQ.rich(text.slice(0, i))}</span><span class="eb-eq">=</span><span class="eb-r">${CQ.rich(text.slice(i + 3))}</span>`;
+      row.eqText = text;
+      row.innerHTML = this.rowHTML(text);
       row.classList.toggle("final", !!opts.final);
       if (opts.hold) row.querySelectorAll(opts.hold).forEach((e) => (e.style.display = "none"));
       if (before) {
         const k = CQ.stage.scale || 1;
-        before.forEach(([r, top]) => {
-          const dy = (top - r.getBoundingClientRect().top) / k;
-          if (Math.abs(dy) > 0.5) CQ.anim(r, [{ transform: `translateY(${dy}px)` }, { transform: "translateY(0px)" }], { duration: 560, easing: CQ.EASE.out, keep: false });
+        const s = was / this.size; // (each row was that many times its new size)
+        before.forEach(([r, a]) => {
+          const b = anchor(r).getBoundingClientRect();
+          const dx = (a.left + a.width / 2 - (b.left + b.width / 2)) / k;
+          const dy = (a.top + a.height / 2 - (b.top + b.height / 2)) / k;
+          if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5 || Math.abs(s - 1) > 0.01) {
+            // (grown or shrunk round its =, so the = goes straight from where it stood to where it stands
+            // now, and both sides of it with it)
+            const o = r.getBoundingClientRect();
+            r.style.transformOrigin = `${(b.left + b.width / 2 - o.left) / k}px ${(b.top + b.height / 2 - o.top) / k}px`;
+            CQ.anim(r, [{ transform: `translate(${dx}px, ${dy}px) scale(${s})` }, { transform: "translate(0px, 0px) scale(1)" }], { duration: 560, easing: CQ.EASE.out, keep: false });
+          }
         });
       }
       CQ.audio.play("ui.pop", { volume: 0.6 });
@@ -2409,9 +2531,9 @@
       return CQ.sleep(took);
     },
     // A stretch of a row lit up as one, from one of its parts to a later one in the same side (the digits
-    // of a number: Levels 8–9's 8 and 4, the 4s that cancel; never a + or − with them, asked 2026-11-19:
-    // "Only digit should highlighted"): they are wrapped in a span, lit with a ring that takes no room
-    // (cls: x-lit, gold; c-lit, red). Returns the span (its class off: unlit).
+    // of a number: Levels 8–9's 8 and 4; never a + or − with them, asked 2026-11-19: "Only digit should
+    // highlighted"): they are wrapped in a span, lit with a ring that takes no room (cls: x-lit, gold, the
+    // default). Returns the span (its class off: unlit).
     light(first, last, cls) {
       const span = document.createElement("span");
       span.className = "x-span " + (cls || "x-lit");
@@ -2429,6 +2551,64 @@
     // highlight").
     unmark() {
       this.el.querySelectorAll(".same").forEach((e) => e.classList.add("unmark"));
+    },
+    // The two that cancel on one side of the last row struck through, then faded back, as that side's bar
+    // comes off (design review, 2026-11-23: "Show the cancelling. In 'subtract 6 from both sides', animate
+    // +6 − 6 cancelling (strike-through or fade)": practice had it; Levels 8–9 too, asked 2026-11-25). The
+    // left side of x + 8 − 8 = 8 + 15 − 8: one line through + 8 − 8. Its right side: a line through 8 +
+    // and another through − 8, so what stays bright reads x = 15. Drawn from left to right, a moment
+    // apart, like practice's (styles.css, .eb-strike).
+    async cancel(side) {
+      const row = this.el.lastElementChild;
+      const host = row && row.querySelector(side === "left" ? ".eb-l" : ".eb-r");
+      const both = host && host.querySelector(".both");
+      if (!both || both.style.display === "none" || both.classList.contains("cancelled")) return;
+      const num = (c) => !!c && /[\d.]/.test(c.textContent);
+      const space = (c) => !!c && /\s/.test(c.textContent);
+      const sign = (c) => !!c && /[+−-]/.test(c.textContent);
+      // the side's own letters before its − 8, and the number it takes away
+      const own = [...host.querySelectorAll(".wch")].filter((c) => !both.contains(c) && c.compareDocumentPosition(both) & Node.DOCUMENT_POSITION_FOLLOWING);
+      const n = [...both.querySelectorAll(".wch")].filter(num).map((c) => c.textContent).join("");
+      // the term it cancels: that number standing by itself (not part of a bigger one), the last such
+      let at = -1;
+      for (let i = 0; n && i + n.length <= own.length; i++)
+        if (own.slice(i, i + n.length).map((c) => c.textContent).join("") === n && !num(own[i - 1]) && !num(own[i + n.length])) at = i;
+      if (at < 0) return;
+      // with the sign before it (+ 8); the side's first term, with the sign after it instead (8 +)
+      let a = at;
+      let z = at + n.length - 1;
+      let j = a - 1;
+      while (space(own[j])) j--;
+      if (sign(own[j])) a = j;
+      else {
+        j = z + 1;
+        while (space(own[j])) j++;
+        if (sign(own[j])) z = j;
+      }
+      const term = own.slice(a, z + 1);
+      // one line when only a space stands between the term and the − 8, else one each
+      const runs = own.slice(z + 1).every(space) ? [[term[0], both]] : [[term[0], term[term.length - 1]], [both, both]];
+      const k = CQ.stage.scale || 1;
+      const h = host.getBoundingClientRect();
+      const em = parseFloat(getComputedStyle(host).fontSize) || 80;
+      CQ.audio.play("ui.swoosh", { volume: 0.4 });
+      await Promise.all(
+        runs.map(([first, last], i) => {
+          const range = document.createRange();
+          range.setStartBefore(first);
+          range.setEndAfter(last);
+          const r = range.getBoundingClientRect();
+          const line = CQ.el("span", "eb-strike", host);
+          // (in em: it keeps to its terms whatever size the row is drawn at)
+          Object.assign(line.style, { left: ((r.left - h.left) / k - 4) / em + "em", width: (r.width / k + 8) / em + "em", top: (r.top - h.top + r.height / 2) / k / em + "em" });
+          return CQ.anim(line, [{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { duration: 420, delay: i * 120, easing: CQ.EASE.out });
+        })
+      );
+      // (and its − 8 goes back to plain, its blue box fading: that side's removal is done)
+      term.forEach((c) => c.classList.add("cancelled"));
+      both.classList.add("cancelled");
+      both.querySelectorAll(".same").forEach((e) => e.classList.add("unmark"));
+      await CQ.sleep(300);
     },
     // Parts of the last row left out by set's hold come in, gently: what stands beside them glides
     // over to make room (the left side grows to the left, its = staying under the others).
@@ -2455,6 +2635,8 @@
       this.el.classList.add("hidden");
       this.el.style.opacity = "";
       this.el.innerHTML = "";
+      this.cols(null);
+      this.size = this.BASE;
       return Promise.resolve();
     },
   };
