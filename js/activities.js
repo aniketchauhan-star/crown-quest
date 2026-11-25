@@ -2514,10 +2514,11 @@
       // (until then the board closed on them, and they stood there a moment before the finale faded
       // them out). If the child waits, the hand taps Next.
       CQ.caption.hide();
-      // (the balance stays, faint, and Grumble, asleep, for the finale's story: design review, 2026-11-23)
+      // (Grumble goes too: no Grumble in the finale, user 2026-11-25)
       const W = CQ.world;
       [
         [W.balanceLayer, 0.55],
+        [W.grumbleLayer, 0],
         [W.barLayer, 0],
         [W.zippyLayer, 0],
       ].forEach(([l, op]) => {
@@ -2780,7 +2781,7 @@
     // his sheet ready to show (it is loaded with the game; this only waits for it on a slow device)
     if (strip.decode) await CQ.run.when(strip.decode().catch(() => {}));
 
-    // The scene is only the jungle and Grumble asleep from the start (the balance, the bars and the hanging
+    // The scene is only the jungle from the start (the balance, Grumble, the bars and the hanging
     // Zippy are gone: js/flow.js, resetScene). Handed the last practice board (the child tapped Next on it),
     // its dark lifts as a burst of sparkles comes where he will stand...
     const board = CQ.ui.overlay.querySelector(".activity.handover");
@@ -2820,9 +2821,7 @@
       await CQ.run.wait(Math.max(0, ((C().audio && C().audio.winLaugh) || 1.2) * 1000 - 300));
       const text = CQ.T("fin-1");
       await CQ.run.when(CQ.audio.speak(CQ.speakable(text), { who: "narrator", line: text }));
-      // "…and Grumble's still snoring!": and so he is, asleep at the left (design review, 2026-11-23:
-      // "Grumble disappears from the ending… Give Grumble a moment in the finale: still snoring")
-      if (wrap.isConnected) CQ.grumble.snore(1, 0.8, true);
+      // (no Grumble here: his snore after the line went with him, user 2026-11-25)
     })().catch(() => {}); // (cancelled: another screen was chosen)
     // the dance over (with Reduced motion he stands still meanwhile), he strikes his pose; then Play again
     await CQ.run.when(danceOver);

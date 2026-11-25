@@ -121,10 +121,11 @@
     // dancing: the balance, Grumble, the bars and the hanging Zippy are gone from its first moment,
     // however it is reached (asked 2026-11-19: the last balance showed a moment before "Mission Complete!")
     // (since 2026-11-23 the finale keeps sleeping Grumble: design review, "Story payoff. Bring back Grumble
-    // and the scale…"; the level balance it put faint behind Zippy was taken off again, user 2026-11-25)
+    // and the scale…"; the level balance it put faint behind Zippy was taken off again, user 2026-11-25;
+    // and Grumble too, same day: "Remove the grumble from here. No need grumble")
     [
       [CQ.world.balanceLayer, "0"],
-      [CQ.world.grumbleLayer, ""],
+      [CQ.world.grumbleLayer, "0"],
       [CQ.world.barLayer, "0"],
       [CQ.world.zippyLayer, "0"],
     ].forEach(([l, op]) => (l.style.opacity = finale ? op : ""));
