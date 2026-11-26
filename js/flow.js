@@ -604,8 +604,7 @@
   // back onto the pan and the wrong bar goes back to its own stand (marked Tried); Zippy runs off the
   // screen. Grumble stands a moment, yawns and (after a soft fade: a little later) is asleep again. Zippy's
   // smiling head peeks out from behind the tree, "hmm?", ducks back, then he swings back in.
-  // (onLevel: called as the crown is back and the balance level again)
-  async function wakeAndUndo(v, barItem, onLevel) {
+  async function wakeAndUndo(v, barItem) {
     const z = CQ.zippy;
     const b = CQ.balance;
     const gen = CQ.gen;
@@ -655,7 +654,6 @@
           if (gen !== CQ.gen) return;
           crownItem.el.style.visibility = "";
           b.evaluate();
-          if (onLevel) onLevel();
           await home;
           if (gen !== CQ.gen) return;
           // ...and he swings away to the left!
@@ -790,29 +788,9 @@
     return e;
   }
 
-  // ------------------------------------------------------------------ a swap, right or wrong
-  // The two pans' numbers on the balance as it tips, "7 > 5" (design review, 2026-11-23: "Show weight on
-  // the scale itself. When the bar goes on, show '5 = 5 ✓' or '7 > 5' on the beam so the child links the
-  // number to the tip"): under the hub, on the post between the pans, in the scene's bright letters in a
-  // dark outline, the sign red. Only for a wrong bar: "7 = 7 ✓" on a won level was taken off (user,
-  // 2026-11-23: "remove this text").
-  function beamVerdict(L, v) {
-    const lv = v + (L.left || 0);
-    const rv = sum(L.right);
-    const left = L.left ? `${CQ.num(v)} + ${CQ.num(L.left)}` : CQ.num(v);
-    const html = `${left} <span class="bv-s no">${lv > rv ? ">" : "<"}</span> ${CQ.num(rv)}`;
-    return worldLabel(html, CQ.L.BX, CQ.L.PIVOT_Y + 150, "beam-verdict");
-  }
-  // A wrong bar on the pan (Levels 1–3): the alarm wakes Grumble and the bar goes back to its stand,
-  // marked Tried, for the child to try again; meanwhile the two pans' numbers stand on the balance from
-  // the moment it tips until it is level again ("7 > 5", design review, 2026-11-23: it is only shown, the
-  // game goes on as it did).
-  async function wrongSwap(L, v, barItem) {
-    const verdict = beamVerdict(L, v);
-    await wakeAndUndo(v, barItem, () => removeLabel(verdict)); // the bar is back on its stand, marked Tried
-  }
-
   // ------------------------------------------------------------------ LEVELS 1–3: the swap
+  // (A wrong bar tips the balance with nothing written on it: the "5 < 7" of the design review of
+  // 2026-11-23, on the post under the hub, was taken off, user 2026-11-26: "remove this from all game".)
   async function runSwapLevel(key) {
     const L = LV()[key];
     const b = CQ.balance;
@@ -852,7 +830,7 @@
         await crownLine();
         return;
       }
-      await wrongSwap(L, v, barItem);
+      await wakeAndUndo(v, barItem); // the alarm wakes Grumble; the bar is back on its stand, marked Tried
       attempts++;
       CQ.track("hint_shown", { level: L.n, tier: attempts >= 2 ? 2 : 1 });
       // after every wrong bar: "Oops! The balance tipped. Try another bar!" (user, 2026-11-19; no "Oops!

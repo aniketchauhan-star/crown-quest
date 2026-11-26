@@ -1364,6 +1364,17 @@
     placeAt(p) {
       CQ.pos(this.el, p.x - this.tip.x, p.y - this.tip.y);
     },
+    // A gesture shows the child's turn, so it waits until no line is being said (CQ.turn: asked 2026-11-26,
+    // "make sure the things will happen when the voice end then user can do interaction"), then a short
+    // beat. Resolves false when it is no longer wanted meanwhile (a touch, a newer gesture, another screen).
+    async turn(id) {
+      if (CQ.turn.open()) return true;
+      const run = CQ.run.token;
+      this.el.classList.add("hidden");
+      await CQ.turn.quiet();
+      await CQ.sleep(250);
+      return id === this.seq && run === CQ.run.token && !run.cancelled && CQ.turn.open();
+    },
     stop() {
       this.seq++;
       this.active = false;
@@ -1384,6 +1395,7 @@
       this.dropCarry();
       if (!from || !to) return;
       this.active = true;
+      if (!(await this.turn(id))) return;
       times = times || 2;
       opts = opts || {};
       const off = opts.carryAt || { x: 0, y: 0 };
@@ -1453,6 +1465,7 @@
       points = (points || []).filter(Boolean);
       if (!points.length) return;
       this.active = true;
+      if (!(await this.turn(id))) return;
       times = times || (points.length > 1 ? 1 : 2);
       const alive = () => id === this.seq;
       this.el.classList.remove("hidden");

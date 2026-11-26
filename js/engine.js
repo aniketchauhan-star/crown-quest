@@ -224,9 +224,18 @@
     speaking: () => safe(() => !!(A() && A().speaking && A().speaking()), false), // a voice line is being spoken
     setEnabled: (k, on) => safe(() => A() && A().setEnabled(k, on)),
     isEnabled: (k) => safe(() => (A() ? !!A().isEnabled(k) : false), false),
+    endedAt: 0, // when the last voice line ended (performance.now): the child's turn counts from it (CQ.turn)
     speak(text, opts) {
       try {
-        if (A()) return Promise.resolve(A().speak(text, opts)).catch(() => ({ spoken: false }));
+        if (A()) {
+          const said = Promise.resolve(A().speak(text, opts)).catch(() => ({ spoken: false }));
+          if (CQ.turn) CQ.turn.sync();
+          return said.then((r) => {
+            CQ.audio.endedAt = performance.now();
+            if (CQ.turn) CQ.turn.sync();
+            return r;
+          });
+        }
       } catch (e) {
         /* fall through */
       }
@@ -958,7 +967,81 @@
     });
   };
 
+  // ------------------------------------------------------------------ the child's turn: when the voice has ended
+  // While a voice line is being said, the game takes no tap, drag or key on anything in it: the line is
+  // said, the things it names come with their words, and the child's turn begins when it has ended (asked
+  // 2026-11-26: "make sure the things will happen when the voice end then user can do interaction"). The
+  // hint hand (CQ.hand) and the idle help (CQ.idle) wait for it too. Always there: the screens list and
+  // replay (top left), Skip, the question bar (a tap hears the line again), Back, open panels and the title
+  // screen; Next too in a test build (?qa=1), and → / PageDown for teachers. A press begun while a line was
+  // being said is not taken when it ends either (its click). With the voice off there is nothing to wait for.
+  CQ.turn = {
+    FREE: "#title, #modal, .nav, .nav-list, .skip, .caption, .back-btn",
+    // the child may act now: no line is being said (or a panel is open, and the story waits anyway)
+    open() {
+      return !CQ.audio.speaking() || !!(CQ.pauser && CQ.pauser.count);
+    },
+    free(el) {
+      if (!el || !el.closest || !el.closest("#stage")) return true; // (not the game's: the page itself)
+      return !!el.closest(this.FREE) || !!(CQ.qa && el.closest(".next-btn"));
+    },
+    // Resolves when no line is being said.
+    quiet() {
+      if (!CQ.audio.speaking()) return Promise.resolve();
+      return new Promise((res) => {
+        const check = () => (CQ.audio.speaking() ? setTimeout(check, 60) : res());
+        check();
+      });
+    },
+    // how long it has been quiet (ms; 0 while a line is being said)
+    quietFor() {
+      return CQ.audio.speaking() ? 0 : performance.now() - CQ.audio.endedAt;
+    },
+    // The page knows while a line is being said (styles.css: the game's things show no grab or pointer
+    // cursor then, as they can't be taken yet).
+    sync() {
+      document.documentElement.classList.toggle("vo-on", CQ.audio.speaking());
+    },
+  };
+  (() => {
+    const T = CQ.turn;
+    let held = false; // the press under way began while a line was being said
+    const stop = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    };
+    document.addEventListener(
+      "pointerdown",
+      (e) => {
+        held = !T.open() && !T.free(e.target);
+        if (held) stop(e);
+      },
+      true
+    );
+    document.addEventListener(
+      "click",
+      (e) => {
+        const was = held;
+        held = false;
+        if (T.free(e.target)) return;
+        if (was || !T.open()) stop(e);
+      },
+      true
+    );
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        held = false;
+        if ((e.key === "Enter" || e.key === " ") && !T.open() && !T.free(e.target)) stop(e);
+      },
+      true
+    );
+  })();
+
   // ------------------------------------------------------------------ idle help (no action for a while)
+  // ms with nothing done, counted from when the voice ended too (CQ.turn): the help never comes while a
+  // line is being said, nor straight after one.
   CQ.idle = {
     timer: null,
     fn: null,
@@ -971,14 +1054,16 @@
     reset() {
       clearTimeout(this.timer);
       if (!this.fn) return;
-      this.timer = setTimeout(() => {
+      const fire = () => {
         const f = this.fn;
-        if (f) {
-          safe(f);
-          this.ms = Math.max(this.ms, 12000);
-          this.reset();
-        }
-      }, this.ms);
+        if (!f) return;
+        const quiet = CQ.turn.quietFor();
+        if (quiet < this.ms) return (this.timer = setTimeout(fire, quiet ? this.ms - quiet : 200));
+        safe(f);
+        this.ms = Math.max(this.ms, 12000);
+        this.reset();
+      };
+      this.timer = setTimeout(fire, this.ms);
     },
     disarm() {
       clearTimeout(this.timer);

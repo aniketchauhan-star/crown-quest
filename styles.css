@@ -1223,18 +1223,6 @@ html[data-shade] .stage-edge::after {
   color: var(--scene-ink);
   text-shadow: var(--scene-line);
 }
-/* the pans' numbers on the balance after a wrong swap, "7 > 5" (design review, 2026-11-23: "Show weight
-   on the scale itself"): on the post under the hub, bright letters in the scene's dark outline. (Not on
-   a won level: "7 = 7 ✓" was taken off, user 2026-11-23.) */
-.wlabel.beam-verdict {
-  font: 800 78px/1 var(--font);
-  color: var(--scene-ink);
-  text-shadow: var(--scene-line);
-  z-index: 22;
-}
-.beam-verdict .bv-s.no {
-  color: #ff7a6b;
-}
 /* Level 4's x + 2 under the left pan, built with the voice: x, then + 2 (js/flow.js, runL4a) */
 .wlabel .xl-x,
 .wlabel .xl-rest {
@@ -5202,4 +5190,18 @@ body.checking .check-panel,
 .look-eq,
 .cancelled {
   --x-ink: currentColor;
+}
+
+/* While a line is being said the game takes no tap or drag yet (CQ.turn, js/engine.js: the child's turn
+   comes when the voice has ended): nothing in it shows a grab or pointer cursor meanwhile, except what is
+   always there (the screens list and replay, Skip, the question bar, Back). */
+.vo-on #world,
+.vo-on #world *,
+.vo-on #overlay *,
+.vo-on #ui * {
+  cursor: default !important;
+}
+.vo-on #ui :is(.nav, .nav-list, .skip, .caption, .back-btn),
+.vo-on #ui :is(.nav, .nav-list, .skip, .caption, .back-btn) * {
+  cursor: pointer !important;
 }
