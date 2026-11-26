@@ -56,22 +56,23 @@
   //  - "drift": the clouds glide slowly across the sky, and come round again (bgClouds);
   //  - "shimmer": the light on the lake's ripples shifts all the time, and glints come and go (bgWater);
   //  - "crown": a tree's leafy top sways in the breeze, bending from the middle of the trunk, while the
-  //    trunk and roots stay put (bgCrown): the big tree, and since 2026-11-23 the tree at the right edge
-  //    (the big tree's picture turned round, "mirror", standing out at the edge so that its crown fills
-  //    the top right corner, clear of the balance: tools/make_background.py, "A tree on each side");
-  //  - "branch": the leafy branch overhead sways from where it joins the tree, in gusts;
-  //  - "sway": a plant sways from its foot.
+  //    trunk and roots stay put (bgCrown): the big tree (from 2026-11-23 to 11-26 there was a second one
+  //    at the right edge, too much: tools/make_background.py, "One tree, and its branch at the top right");
+  //  - "branch": the leafy branch overhead sways from where it joins its tree, in gusts (since 2026-11-26
+  //    it hangs into the top right corner, turned round, from a tree out of the picture);
+  //  - "sway": a plant sways from its foot (none since 2026-11-26: the bush at the front right is gone).
   // Birds fly across the sky now and then, behind the branch and the tree (bgBirds). (Since 2026-11-23
   // there is no stone arch at the right: tools/make_background.py.)
   // It all rests while the scene is blurred, and stays still with Reduced motion and in light mode.
-  // The trees, the branch, the bush and the birds stand in front of the open landscape (sky, hills,
-  // forest, lake, paving), in a box of their own (.bg-props), which fades away under the dark of a side
-  // view (the formula screen, the check, Levels 8–9's working: #world.presenting in styles.css). There
-  // the right tree's trunk and the bush stood behind the maths, and past the scene's edge (its mirror,
-  // mirrorBackground) there was no tree, so the faint jungle under the dark was busy on one side and
-  // empty on the other (user, 2026-11-25, with the check screen: "the background… is like cluttered…
-  // make uncluttered, but the left and right should balance equal"). Now only the open landscape is
-  // there, the same from edge to edge, and the trees come back as the dark lifts.
+  // The tree, the branch and the birds stand in front of the open landscape (sky, hills, forest, lake,
+  // paving), in a box of their own (.bg-props), which fades away under the dark of a side view (the
+  // formula screen, the check, Levels 8–9's working: #world.presenting in styles.css). There the right
+  // tree's trunk and a bush stood behind the maths (both gone since 2026-11-26), and past the scene's
+  // edge (its mirror, mirrorBackground) there was no tree, so the faint jungle under the dark was busy on
+  // one side and empty on the other (user, 2026-11-25, with the check screen: "the background… is like
+  // cluttered… make uncluttered, but the left and right should balance equal"). Now only the open
+  // landscape is there, the same from edge to edge, and the tree and the branch come back as the dark
+  // lifts.
   const PROPS = ["crown", "branch", "sway"];
   const swayDelay = (i) => (-(i * 1.37) % 6).toFixed(2) + "s"; // no two sway in step
   function buildBackground(layer) {
@@ -97,11 +98,12 @@
   // 2026-11-07 to 11-08 and again since 11-13), and there it is blurred and dark, under the maths. The
   // open landscape is mirrored (still copies, turned round with this box), and the clouds are nowhere
   // near the edge. A prop is not mirrored, which would stand a second trunk against the tree there: a
-  // prop that reaches past the edge (the right tree, the bush at its foot) carries on past it instead,
-  // swaying in step, so it is never cut off in a straight line while a view glides past the edge (with
-  // the other props it fades away on a side view). (Until 2026-11-25 this showed only the sky's colour,
-  // a flat dark band beside the jungle: its pictures were not placed. crown-quest-1b placed them and
-  // carried the tree on past the edge, the user having asked "show a background in this blank screen".)
+  // prop that reaches past the edge (the branch at the top right; the right tree until 2026-11-26)
+  // carries on past it instead, swaying in step, so it is never cut off in a straight line while a view
+  // glides past the edge (with the other props it fades away on a side view). (Until 2026-11-25 this
+  // showed only the sky's colour, a flat dark band beside the jungle: its pictures were not placed.
+  // crown-quest-1b placed them and carried the tree on past the edge, the user having asked "show a
+  // background in this blank screen".)
   // The box reaches SEAM px back over the scene, its pictures that end at the edge drawn that much wider,
   // so the join is always covered: unblurred (light mode), the two edges met in a faint dark hairline.
   const SEAM = 2;
@@ -203,13 +205,13 @@
   }
 
   // Birds (asked 2026-11-23: "make some birds"): now and then a few fly across the sky, far off over the
-  // lake. Three come in from the right, below the crown count, and climb into the big tree's leaves;
-  // later two fly out of the leaves and away to the right. Each bird flaps a few times and glides, at its
-  // own pace, and each flock rises and falls a little as it goes. A flight is a CSS animation with a long
-  // wait after it (styles.css, .bird-flock), so the birds rest with the rest of the scene while it is
-  // blurred, and stay away with Reduced motion and in light mode. They fly behind the branch and the trees
-  // (and Zippy), in front of the clouds and the hills: at the right edge they slip behind the corner of
-  // leaves of the tree there (the three on their way in, the two on their way out).
+  // lake. Three come in at the right edge, under the branch there, and climb into the big tree's leaves;
+  // later two fly out of the leaves and away out of the right edge, under the branch. Each bird flaps a
+  // few times and glides, at its own pace, and each flock rises and falls a little as it goes. A flight
+  // is a CSS animation with a long wait after it (styles.css, .bird-flock), so the birds rest with the
+  // rest of the scene while it is blurred, and stay away with Reduced motion and in light mode. They fly
+  // behind the branch and the tree (and Zippy), in front of the clouds and the hills. (Until 2026-11-26
+  // they slipped behind the corner of leaves of a tree at the right edge.)
   const FLOCKS = [
     // flock, its birds: x, y from the leader, size, seconds to flap and glide, delay
     ["f1", [[0, 0, 1, 2.4, 0.3], [34, -13, 0.88, 2.7, 1.2], [62, 10, 0.8, 2.2, 0.7]]],
@@ -244,10 +246,11 @@
   // across the cut. The top bends about the trunk at the cut (CROWN.pivotX; in a mirrored picture, as
   // far from its right side), so where the two meet nothing moves and no join shows. CROWN is in parts
   // of the picture's width and height, as the tree is drawn at more than one size (since 2026-11-23:
-  // 1040 x 1096 px until then, cut at 650 px, pivot 300 px). The two trees sway a little out of step.
-  // A tree drawn turned round ("mirror": the tree at the right edge is the big tree's own picture) has
-  // its two copies in a box that turns them round together (.bg-mirror), so the picture is loaded once
-  // and its top bends about its own trunk, as the big tree's does.
+  // 1040 x 1096 px until then, cut at 650 px, pivot 300 px).
+  // A tree drawn turned round ("mirror": from 2026-11-23 to 11-26 the tree at the right edge was the big
+  // tree's own picture; and a tree carried on past the edge, carryOn) has its two copies in a box that
+  // turns them round together (.bg-mirror), so the picture is loaded once and its top bends about its
+  // own trunk, as the big tree's does.
   // (The returned picture is the lower one: Zippy peeks out from behind both of the big tree's.)
   const CROWN = { cut: 650 / 1096, blend: 70 / 1096, pivotX: 300 / 1040 };
   function bgCrown(layer, ly, i) {

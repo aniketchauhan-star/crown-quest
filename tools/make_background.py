@@ -18,15 +18,15 @@ the forest are carried on past the frame, the far mountains carry on down behind
 the cloud the arch half hid in the reference is left out (see "Where the arch stood" below).
 The same day the big tree and its branch were toned down (CALM), so they don't compete with the balance.
 Later that day the scene got a tree on each side (asked: "right side there is nothing and left side is
-tree... right side add something, zoom out"): the big tree's picture stands at the right edge, and both
-trees and the branch are drawn smaller, so the scene looks wider and the balance stands between them.
-That evening the right tree was turned round (asked: "the trees... both side, it's make a cluttered...
-not clutter but both side elements should have a balanced"): not mirrored, its crown leaned out of the
-picture. That left a bare trunk with its top cut off by the frame (asked later that night: "fix the
-right tree its like cut the tree and the grass leaf its look weird"), so now it is mirrored again but
-stands further out: its crown fills the top right corner, clear of the balance, its trunk bends out to
-the frame's edge and down to its roots, which stand on their own grass at the lake's edge; the lawn's
-strip of grass at the right is gone (see "A tree on each side" below).
+tree... right side add something, zoom out"): the big tree's picture stood at the right edge, and the
+trees and the branch are drawn smaller, so the scene looks wider. The right tree took three goes that
+day and was still too much: on 2026-11-26 it went (asked: "the trees both side making a cluttered...
+make uncluttered and best design"). Now one tree stands at the left, where Zippy hangs, and its leafy
+branch, turned round, hangs into the top right corner as if from a tree just out of the picture, so
+both top corners have leaves and the sky over the balance is open (see "One tree, and its branch at
+the top right" below). The lawn's strip of grass at the right went on 2026-11-23, the big plant at the
+front right on 2026-11-26; later that day the right got a lawn again, the left one turned round, with a
+bank of the lake's own bushes along the shore (see "A lawn on the right too" below).
 This tool used to live in art/background/tools/; the copy there (in the git history) still has the arch.
 
 art/ is not in the project folder: bring art/background/ back first (README, "Replace the artwork").
@@ -227,6 +227,9 @@ def build_floor(dst_ref):
 
 
 # ---------------------------------------------------------------- the lawn: grass from the reference
+LAWN_END = (545, 14)  # reference px: where the lawn ends at the right, and over how many px it fades
+
+
 def build_lawn():
     r, g, b = REF[..., 0], REF[..., 1], REF[..., 2]
     yy, xx = np.mgrid[0:RH, 0:RW]
@@ -244,13 +247,92 @@ def build_lawn():
     rgb = np.where(known[..., None], REF, filled)
     alpha_left = ndi.gaussian_filter(left.astype(np.float32), 0.8)
     alpha_left[yy < 640] = 0
-    alpha_left *= np.clip((560 - xx) / 50.0, 0, 1)  # fades out under the shore bush, no straight edge
+    # it ends by the shore bush, soon and crisply (it faded out over 50 px until 2026-11-26, a smear on
+    # the paving: "fix the this blurriness where this type of thing blurriness... I need to a natural look")
+    x1, soft = LAWN_END
+    alpha_left *= np.clip((x1 - xx) / soft, 0, 1)
     # (The lawn had a right part until late on 2026-11-23: the reference's own grass round the stone
     # arch's foot. Without the arch it was a flat strip of lime green under the tree there, with a tongue
-    # out over the paving, and looked pasted on (asked: "the grass leaf its look weird"). The tree at the
-    # right stands on its own grass now, at the lake's edge.)
+    # out over the paving, and looked pasted on (asked: "the grass leaf its look weird"). Since
+    # 2026-11-26 the right has this lawn turned round instead, with a bank of bushes: lawn_both_sides.)
     alpha = alpha_left
     return Image.fromarray(np.dstack([rgb, alpha[..., None] * 255]).astype(np.uint8)), floor
+
+
+# ---------------------------------------------------------------- a lawn on the right too (2026-11-26)
+# With the right tree and the bush in front gone, the paving and the lake at the right looked empty
+# (asked, with a crop of them: "add a grass in this area so this will not look empty space"). Now the
+# right has what the left has: the lawn, turned round, so the paving runs between two lawns down to the
+# lake, and a bank of bushes by the shore. The bank is the lake piece's own bushes at its right end
+# (extend_lake leaves them out), lifted off the water by their colour.
+# The turned-round lawn keeps only what lies below RIGHT_LAWN_TOP: above it is the strip that on the
+# left is hidden behind the tree, a blurry smudge (filled in where the reference has the tree) with the
+# cut-off feet of its plants, flat against the lake; on the right it showed (asked, with a crop of it:
+# "please fix the this blurriness... I need to a natural look"). So the paving runs on to the shore there,
+# and the lawn begins below the strip, where its grass is clean, its top a crisp row of small round
+# clumps of grass (LAWN_CLUMPS, the shape of the lawn's own edges at the paving). The bank stands behind
+# that edge, so the clumps grow in front of the bushes' feet and hide the piece's straight bottom, as at
+# the left, where the lawn grows in front of the bank. (Tried and dropped the same day: the bank in front
+# with its foot faded into the grass, a hazy band; the strip's own row of tufts as the edge, which has
+# the smudge between its tufts, a hard dark band; asked for "a natural look" without blur.)
+# The bank's edges are cleaned of the water's colour (it showed as a pale blue rim) and it is sharpened,
+# like any piece drawn bigger than in the sheet. (Cutting the strip away along its grass, column by
+# column, left blocky holes; tried and dropped.) Both are drawn in the lawn's own layer, so the game has
+# no new picture to load and the layers keep their numbers.
+RIGHT_LAWN_TOP = 822  # output y: the turned-round lawn from here down (its clumps rise above it)
+LAWN_CLUMPS = (16, 38, 3.5, 8.5, 11)  # a clump's width and height ranges (px), and the random seed
+RIGHT_BANK = (430, 1.4, 24, 834, 4)  # lake piece px where the bank begins, its scale, how far it reaches
+# past the right edge (output px), the output y of its foot (behind the lawn's edge) and how many px of
+# its foot fade (only to round off the piece's straight bottom)
+
+
+def right_bank():
+    """The bushes at the lake piece's right end, without the water: green where the water is blue."""
+    x0, s, _, _, fade = RIGHT_BANK
+    a = np.array(piece("lake")).astype(np.float32)[:, x0:]
+    g, b, al = a[..., 1], a[..., 2], a[..., 3]
+    t = np.clip((g - b + 10) / 40.0, 0, 1)
+    lab, n = ndi.label(ndi.binary_opening(t > 0.5, iterations=1))
+    sizes = ndi.sum(np.ones_like(lab), lab, range(1, n + 1))
+    keep = np.isin(lab, [i + 1 for i, v in enumerate(sizes) if v > 60])  # no specks
+    keep = ndi.binary_erosion(keep, iterations=1)  # the outermost pixels are half water
+    alpha = np.minimum(al / 255, ndi.gaussian_filter(keep.astype(np.float32), 0.6) * 1.15).clip(0, 1)
+    # every pixel takes a bush colour (the half-water ones the nearest solid bush's), so no blue rim
+    a[..., :3] = push_pull_fill(a[..., :3], keep & (alpha > 0.98))
+    a[..., 3] = alpha * 255
+    img = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+    img = sharpen(resize_rgba(img, img.width * s * K, img.height * s * K))
+    img = calm(img, 0.85, 0.95, 0.97)  # a little calmer, like the far bank at the left
+    img = img.crop(img.getbbox())
+    f = np.array(img).astype(np.float32)
+    rows = np.arange(f.shape[0])[:, None]
+    f[..., 3] *= np.clip((f.shape[0] - 1 - rows) / fade, 0, 1)  # its foot fades into the grass
+    return Image.fromarray(np.clip(f, 0, 255).astype(np.uint8))
+
+
+def lawn_both_sides(full):
+    """The finished lawn (a full frame) with its twin at the right: turned round, from RIGHT_LAWN_TOP
+    down, and the bank behind its top edge."""
+    twin = np.array(ImageOps.mirror(full)).astype(np.float32)
+    w0, w1, h0, h1, seed = LAWN_CLUMPS
+    rng = np.random.default_rng(seed)
+    top = np.full(W, float(RIGHT_LAWN_TOP))
+    x = 0.0
+    while x < W:  # overlapping round clumps along the edge
+        w, h = rng.uniform(w0, w1), rng.uniform(h0, h1)
+        xs = np.arange(int(x), min(W, int(x + w) + 1))
+        t = (xs - x) / w * 2 - 1
+        top[xs] = np.minimum(top[xs], RIGHT_LAWN_TOP - h * np.sqrt(np.clip(1 - t * t, 0, 1)))
+        x += w * rng.uniform(0.55, 0.85)
+    rows = np.arange(H)[:, None]
+    twin[..., 3] *= np.clip(rows - top[None, :] + 0.5, 0, 1)  # crisp: soft by a pixel only
+    bank = right_bank()
+    _, _, past, foot, _ = RIGHT_BANK
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    layer.paste(bank, (W - bank.width + past, foot - bank.height))  # (cut at the frame's edge)
+    a = over(twin, np.array(layer).astype(np.float32))  # the lawn's tufts in front of the bushes' feet
+    a = over(np.array(full).astype(np.float32), a)
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
 
 
 # ---------------------------------------------------------------- where the arch stood (2026-11-23)
@@ -278,7 +360,8 @@ FOREST_FILL = (140, 470, 1250, 0.12)
 def extend_forest(p):
     """The forest is low at its right end (the arch stood in front of it there): a stretch of the same
     forest, mirrored and a little hazier, stands behind it there, out past the frame, so the tree line
-    goes on at its usual height. Its start fades in behind the big tree at the right."""
+    goes on at its usual height. Its start fades in softly (it was behind a tree at the right until
+    2026-11-26; it shows now, and needs nothing more)."""
     x0, x1, at, haze = FOREST_FILL
     a = np.array(p).astype(np.float32)
     h, w = a.shape[:2]
@@ -357,7 +440,6 @@ def grade(p, boxes):
 # balance): (saturation, contrast, brightness) for the finished layer. Saturation goes about each
 # pixel's own luma, contrast about the layer's mean colour (its pixels with alpha > 128, after the
 # saturation), then brightness; the alpha is not touched, so the outline is the same as before.
-# (The tree at the right is the big tree's picture turned round, so it is toned down the same: MIRROR_OF.)
 CALM = {"branch": (0.72, 0.86, 0.93), "tree": (0.72, 0.86, 0.93)}
 
 
@@ -417,17 +499,11 @@ def render_layers(layout):
             img, x, y = crop_bbox(sharpen(build_floor(item[1]), 1.6, 60))
             out.append(("floor", img, x, y, None))
         elif kind == "lawn":
-            img, x, y = crop_bbox(sharpen(to_out(lawn), 1.2, 50))
+            img, x, y = crop_bbox(lawn_both_sides(sharpen(to_out(lawn), 1.2, 50)))
             out.append(("lawn", img, x, y, None))
         else:
             name, px, py, sc, flip, lid, anim = (list(item) + [None, None])[:7]
             lid = lid or name
-            if lid in MIRROR_OF:
-                # its twin's finished picture turned round, as the game draws it (the piece mirrored and
-                # drawn again would differ from that by a few levels here and there)
-                twin = next(im for l, im, *_ in out if l == MIRROR_OF[lid])
-                out.append((lid, ImageOps.mirror(twin), round(px * K), round(py * K), anim))
-                continue
             img, x, y = piece_layer(name, px, py, sc, flip, lid)
             if lid in CALM:
                 img = calm(img, *CALM[lid])
@@ -453,16 +529,10 @@ def main(layout):
         if f.endswith(".png"):
             os.remove(os.path.join(ldir, f))
     # layers drawn from a mirrored piece say so ("flip": a mirrored tree would sway about its own trunk,
-    # js/world.js, bgCrown; only the near mountains are, now)
+    # js/world.js, bgCrown; the near mountains and, since 2026-11-26, the branch are, now)
     flipped = {(list(it) + [None] * 7)[5] or it[0] for it in layout if it[0] not in ("floor", "lawn") and len(it) > 4 and it[4]}
     entries = []
     for i, (lid, img, x, y, anim) in enumerate(layers, 1):
-        if lid in MIRROR_OF:
-            # no file of its own: its twin's picture, which the game draws turned round ("mirror"), so it
-            # is loaded once (its sway is the twin's too, turned round with it)
-            twin = next(e for e in entries if e["id"] == MIRROR_OF[lid])
-            entries.append({"id": lid, "file": twin["file"], "x": x, "y": y, "w": twin["w"], "h": twin["h"], "anim": anim, "mirror": True})
-            continue
         name = f"{i:02d}-{lid}.png"
         img.save(os.path.join(ldir, name), optimize=True)
         entries.append({"id": lid, "file": "layers/" + name, "x": x, "y": y, "w": img.size[0], "h": img.size[1], "anim": anim})
@@ -477,39 +547,40 @@ def main(layout):
     print(f"wrote background.png and {len(entries)} layers")
 
 
-# ---------------------------------------------------------------- a tree on each side (2026-11-23)
-# With the arch gone, the right side was empty next to the big tree (asked: "left side is tree... right
-# side add something... equal left and right side"). Now a second tree frames the right edge: the big
-# tree's own picture turned round (MIRROR_OF: the game loads the picture once and mirrors it), just as
-# big, standing out at the right edge (RIGHT_TREE). Its crown leans in from there and fills the top right
-# corner (the crown count sits on it), its trunk bends out to the frame's edge and comes down to its
-# roots, which stand on their own grass at the lake's edge, behind the front-right bush. Both trees are
-# lit on the side that faces the balance.
-# How it got there, all on 2026-11-23:
-# - mirrored at (1168, -176) first: its crown leaned in over the balance (its long arm of leaves ~60 px
-#   above the beam's right end), the two crowns met in a ceiling of leaves across the top (about three
-#   quarters of the top 300 px was leaves) and the scene closed round like a keyhole (asked: "it's make
-#   a cluttered... not clutter but both side elements should have a balanced");
-# - then NOT mirrored, at (1600, -176): its crown leaned out of the picture, so a bare trunk showed, its
-#   top cut off by the frame, with the leafy plant at its foot standing out in front of the lake (asked:
-#   "fix the right tree its like cut the tree and the grass leaf its look weird");
-# - now mirrored again but 172 px further out: its leaves begin just left of the beam's right end and
-#   stay ~110 px above it (in Level 1, where the balance is biggest); 65% of the top 300 px is leaves
-#   (the big tree and its branch included), so the sky stays open over the balance; its trunk shows all
-#   the way from the leaves down to the roots (44 px of it where it bends out to the frame's edge), so it
-#   reads as one tree; and the leafy plant at its foot is out of the picture, beyond the trunk. (At 1400
-#   the trunk left the picture between y 330 and 490, so the leaves and the roots looked like two
-#   things; at 1300 the leaves come down to ~80 px over the beam's end.)
-# And the scene is zoomed out a little ("zoomout screen"): the big tree and its branch are drawn
-# FRAME_ZOOM as big, about FRAME_ANCHOR (on the frame's left edge, so the trunk's far side stays out of
-# the picture; at the height where the branch's top still meets the frame's top and the tree's foot
-# stays on the lawn). The balance, Zippy and Grumble keep their size, so between the two trees the
-# balance stands out more. (js/world.js: Zippy's peek from behind the trunk, PEEK, follows the trunk's
-# edge; the birds fly out of one tree's leaves and into the other's.)
+# ---------------------------------------------------------------- one tree, and its branch at the top right
+# (2026-11-26; asked: "the trees both side making a cluttered... make uncluttered and best design")
+# The big tree stands at the left: Zippy's vine comes down out of its leaves (it crosses the frame's top
+# edge between x 420 and ~510, even when he swings over to the crown, and the leaves there are solid up
+# to x ~780), he peeks out from behind its trunk (js/world.js, PEEK) and Grumble sleeps at its foot. Its leafy branch, which hung over the middle of the top (x 333 to
+# 1004) until 2026-11-26, now hangs into the top right corner, turned round, as if from a tree just out of
+# the picture (BRANCH_AT): its leaves are solid from x ~1420 to the edge between y ~30 and 150 (the crown
+# count sits on them), its lowest leaf hangs to y 282 at x 1778, far from the balance. Along the top
+# edge, from x 782 to 1350, there is only sky: over the balance and behind the question bar (51% of the
+# top 300 px is leaves; with a tree on each side it was 65%, and the leaves met over the bar). The left
+# has the tree, Zippy, Grumble and the lawn; the right the balance and the open lake.
+# A tree on each side (2026-11-23 to 11-26; asked, once the arch had gone: "right side there is nothing
+# and left side is tree... equal left and right side"), the big tree's picture at the right:
+# - mirrored at (1168, -176): its crown leaned in over the balance, the two crowns met across the top
+#   (about three quarters of the top 300 px was leaves), like a keyhole ("it's make a cluttered");
+# - not mirrored at (1600, -176): a bare trunk, its top cut off by the frame, with a leafy plant at its
+#   foot in front of the lake ("its like cut the tree and the grass leaf its look weird");
+# - mirrored at (1340, -176): its crown filled the top right corner and its trunk bent out to the edge and
+#   down to its roots at the lake's edge. Still two trunks closing the scene in, and leaves along the
+#   whole top but the middle: cluttered (2026-11-26).
+# Tried on 2026-11-26 and left out (rendered over the game and compared): the right tree further out (at
+# 1460 its trunk leaves the picture half way down, so its crown and roots look like two things), a
+# smaller tree at the right (its trunk stands just beside the right pan), the branch kept at the left as
+# well (leaves along the top again) and a low bank of the lake piece's own bushes at the right shore
+# (tidy, but one more thing on the right when the ask was for less).
+# The scene stays zoomed out a little (2026-11-23: "zoomout screen"): the big tree and the branch are
+# drawn FRAME_ZOOM as big, the tree about FRAME_ANCHOR (on the frame's left edge, so the trunk's far side
+# stays out of the picture; at the height where its foot stays on the lawn). The balance, Zippy and
+# Grumble keep their size. (js/world.js: Zippy's peek follows the trunk's edge, PEEK; three birds fly in
+# from the right into the tree's leaves, two fly out of them and away under the branch: .bird-flock in
+# styles.css.)
 FRAME_ZOOM = 0.88
 FRAME_ANCHOR = (0, 560 / K)  # reference px (output px (0, 560))
-RIGHT_TREE = (1340, -176)  # output px: its top-left (as big as the big tree, as drawn: zoomed out)
-MIRROR_OF = {"tree-right": "tree"}  # a layer drawn as another's picture turned round (no file of its own)
+BRANCH_AT = (1350, -14)  # output px: the branch's top-left, turned round (1.2 x FRAME_ZOOM as big, as before)
 
 
 def framed(x, y, s):
@@ -527,10 +598,14 @@ LAYOUT = [
     ("floor", [(300, 652), (1500, 652), (2300, 1010), (-500, 1010)]),
     ("lawn",),
     # ("arch", 1308, 145, 1.1, False, "arch"): left out since 2026-11-23 (see "Where the arch stood")
-    ("branch", *framed(330, -70, 1.2), False, "branch", "branch"),  # (before the zoom: 330, -70, 1.2)
+    # the branch at the top right, turned round (until 2026-11-26 at the left, over the middle of the top:
+    # *framed(330, -70, 1.2), not mirrored)
+    ("branch", BRANCH_AT[0] / K, BRANCH_AT[1] / K, 1.2 * FRAME_ZOOM, True, "branch", "branch"),
     ("tree", *framed(-130, -250, 1.42), False, "tree", "crown"),  # (before the zoom: -130, -250, 1.42)
-    ("tree", RIGHT_TREE[0] / K, RIGHT_TREE[1] / K, 1.42 * FRAME_ZOOM, True, "tree-right", "crown"),  # (MIRROR_OF)
-    ("bushBig", 1395, 700, 1.45, False, "bush-front-right", "sway"),
+    # ("tree", 1340 / K, -176 / K, 1.42 * FRAME_ZOOM, True, "tree-right", "crown"): the big tree's picture
+    # turned round at the right edge, left out since 2026-11-26 (see "One tree, and its branch...")
+    # ("bushBig", 1395, 700, 1.45, False, "bush-front-right", "sway"): left out since 2026-11-26 (asked,
+    # with a picture of it: "remove this from the right side front of the screen")
 ]
 
 if __name__ == "__main__":

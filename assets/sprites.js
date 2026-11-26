@@ -30,11 +30,9 @@ window.IMAGES = {
   bgForest: { src: "assets/bg/jungle/05-forest.webp", w: 1814, h: 169 },
   bgLake: { src: "assets/bg/jungle/06-lake.webp", w: 1501, h: 202 },
   bgFloor: { src: "assets/bg/jungle/07-floor.webp", w: 1920, h: 334 },
-  bgLawn: { src: "assets/bg/jungle/08-lawn.webp", w: 643, h: 346 },
+  bgLawn: { src: "assets/bg/jungle/08-lawn.webp", w: 1920, h: 375 },
   bgBranch: { src: "assets/bg/jungle/09-branch.webp", w: 671, h: 297 },
   bgTree: { src: "assets/bg/jungle/10-tree.webp", w: 915, h: 964 },
-  bgTreeRight: { src: "assets/bg/jungle/10-tree.webp", w: 915, h: 964 },
-  bgBushFrontRight: { src: "assets/bg/jungle/12-bush-front-right.webp", w: 468, h: 358 },
   bgBand: { src: "assets/bg/band.webp", w: 480, h: 270 },
   tPlate: { src: "assets/title/plate.webp", w: 1672, h: 941 },
   tZippy: { src: "assets/title/zippy.webp", w: 1081, h: 1052, x: 245.8, y: 82.9, s: 0.5582 },
@@ -133,18 +131,19 @@ window.BG_LAYERS = [
   {
     "key": "bgLawn",
     "x": 0,
-    "y": 734,
-    "w": 643,
-    "h": 346,
+    "y": 705,
+    "w": 1920,
+    "h": 375,
     "anim": null
   },
   {
     "key": "bgBranch",
-    "x": 333,
-    "y": -4,
+    "x": 1350,
+    "y": -14,
     "w": 671,
     "h": 297,
-    "anim": "branch"
+    "anim": "branch",
+    "flip": true
   },
   {
     "key": "bgTree",
@@ -153,23 +152,6 @@ window.BG_LAYERS = [
     "w": 915,
     "h": 964,
     "anim": "crown"
-  },
-  {
-    "key": "bgTreeRight",
-    "x": 1340,
-    "y": -176,
-    "w": 915,
-    "h": 964,
-    "anim": "crown",
-    "mirror": true
-  },
-  {
-    "key": "bgBushFrontRight",
-    "x": 1602,
-    "y": 804,
-    "w": 468,
-    "h": 358,
-    "anim": "sway"
   }
 ];
 

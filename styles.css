@@ -258,12 +258,13 @@ html[data-shade] .stage-edge::after {
   position: absolute;
   display: block;
 }
-/* The trees, the branch, the bush and the birds stand in front of the open landscape in a box of their
+/* The tree, the branch and the birds stand in front of the open landscape in a box of their
    own (js/world.js, buildBackground), which fades away under the dark of a side view (the formula
    screen, the check, Levels 8–9's working): behind the maths there is then only the faint landscape,
    as behind the balance and past the edge (user, 2026-11-25: "cluttered… the left and right should
    balance equal"). They go under the dark once it is in, as the view arrives (Zippy goes then too), and
-   come back as it starts to lift. (A tree reaching past the edge carries on there: mirrorBackground.) */
+   come back as it starts to lift. (A prop reaching past the edge, the branch at the top right, carries
+   on there: mirrorBackground.) */
 .bg-props {
   position: absolute;
   inset: 0;
@@ -410,10 +411,14 @@ html[data-shade] .stage-edge::after {
 }
 
 /* birds, far off over the lake (js/world.js, bgBirds; asked 2026-11-23: "make some birds"). A flock is
-   only seen while its flight runs: three come in from the right, below the crown count, and climb into
-   the big tree's leaves (out of sight there by x 870, where the leaves are solid), fly on behind them out
-   of the scene, and the sky stays empty until the next flight; two fly out from behind the leaves and
-   away to the right. Each bird flaps three times and glides, its body lifting on each downstroke. */
+   only seen while its flight runs: three come in at the right edge, under the lowest leaves of the
+   branch there, and climb into the big tree's leaves (out of sight there by x ~720, where the leaves are
+   solid), fly on behind them out of the scene, and the sky stays empty until the next flight; two fly
+   out from behind the tree's leaves, along under them first, and away out of the right edge, under the
+   branch. Each is seen once, from the edge or the leaves to the leaves or the edge: no path passes the
+   branch's or the tree's ragged lower leaves, where a bird would blink in and out (paths since
+   2026-11-26, when the branch moved to the top right and the right tree went). Each bird flaps three
+   times and glides, its body lifting on each downstroke. */
 .bg-birds {
   position: absolute;
   inset: 0;
@@ -435,20 +440,20 @@ html[data-shade] .stage-edge::after {
 /* (the same speed all the way, about 65 px a second) */
 @keyframes birdsF1 {
   0% {
-    transform: translate(1990px, 262px);
+    transform: translate(1990px, 334px);
     opacity: 1;
   }
-  20.4% {
-    transform: translate(880px, 160px);
+  20.5% {
+    transform: translate(880px, 180px);
     opacity: 1;
   }
-  37.5% {
-    transform: translate(-60px, 140px);
+  37.7% {
+    transform: translate(-60px, 150px);
     opacity: 1;
   }
-  37.6%,
+  37.8%,
   100% {
-    transform: translate(-60px, 140px);
+    transform: translate(-60px, 150px);
     opacity: 0;
   }
 }
@@ -458,13 +463,17 @@ html[data-shade] .stage-edge::after {
     transform: translate(300px, 188px);
     opacity: 1;
   }
-  26.9% {
-    transform: translate(2010px, 236px);
+  7.9% {
+    transform: translate(800px, 202px);
     opacity: 1;
   }
-  27%,
+  27% {
+    transform: translate(2010px, 322px);
+    opacity: 1;
+  }
+  27.1%,
   100% {
-    transform: translate(2010px, 236px);
+    transform: translate(2010px, 322px);
     opacity: 0;
   }
 }
@@ -587,8 +596,9 @@ html[data-shade] .stage-edge::after {
   }
 }
 
-/* a tree drawn turned round (the tree at the right edge: the big tree's picture, "mirror" in
-   js/world.js, bgCrown): its trunk and its swaying top inside, turned round together */
+/* a picture drawn turned round, with what moves inside it: a prop carried on past the scene's right edge
+   (js/world.js, carryOn: the branch at the top right reaches past it), or a tree with "mirror" (bgCrown:
+   its trunk and swaying top turned round together; none since the tree at the right went, 2026-11-26) */
 .bg-mirror {
   position: absolute;
   transform: scaleX(-1);
@@ -621,9 +631,11 @@ html[data-shade] .stage-edge::after {
   }
 }
 
-/* the leafy branch overhead sways from where it joins the tree, in gusts, and its hanging leaves flutter */
+/* the leafy branch overhead sways from where it joins its tree, in gusts, and its hanging leaves flutter.
+   Since 2026-11-26 it hangs in the top right corner, turned round ("flip"), so it joins its tree at its
+   right end, out of the picture (it was 3% 25%, at the big tree's leaves, when it hung at the left). */
 .anim-branch {
-  transform-origin: 3% 25%;
+  transform-origin: 97% 25%;
   animation: bgBranch 8.6s ease-in-out infinite alternate, bgFlutter 3.1s ease-in-out infinite alternate;
 }
 @keyframes bgBranch {
