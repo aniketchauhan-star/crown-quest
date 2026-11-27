@@ -2091,12 +2091,11 @@
     build(ui) {
       this.el = CQ.el("div", "check-panel hidden", ui);
       // A row each, one under another: the equation, kept in sight all through the check; Try x = 4;
-      // LHS = 4 + 3 = □; RHS = □; at the end x ≠ 4 (or x = 6 ✓). A row's parts: what comes before its last
-      // = | that = | its value, in one grid, so every row's last = stands under the one above, under the
-      // equation's (steady), and the values stand in one column (asked 2026-11-25, the user's choice "B:
-      // last = lined up", as on 2026-11-19; styles.css, body.checking .cp-row). (From 2026-11-20 the rows
-      // were written flush left under the equation's x; before that, 2026-11-18, their first = signs
-      // stood one under another.)
+      // LHS = 4 + 3 = □; RHS = □; at the end x ≠ 4 (or x = 6 ✓). Every row starts at the left, under the
+      // equation's x, like lines written in a notebook (asked 2026-11-27, the user's choice "C: left edges
+      // in one line"; styles.css, body.checking .cp-row). (2026-11-25 to 11-27 every row's last = stood
+      // under the equation's =, the user's choice "B" then; 2026-11-20 to 11-25 flush left, as now;
+      // 2026-11-18 their first = signs stood one under another.)
       this.row = CQ.el("div", "cp-row", this.el);
       this.eqRow = CQ.el("div", "cp-side eqn", this.row);
       this.xRow = CQ.el("div", "cp-side try", this.row); // Try x = 4: the value put in for x
@@ -2183,32 +2182,25 @@
       });
       await CQ.run.wait(660);
     },
-    // The column of = signs kept still as the value tried (v) takes x's place in the left side: the first
-    // column held as wide as "LHS = 4 + 3" will ever be. Then the equation, a line of its own over the
-    // grid in its own plain spacing, is moved over until its = stands over the rows' column of = (asked
-    // 2026-11-25, the user's choice "B: last = lined up"; styles.css, body.checking .cp-row).
-    // (2026-11-20 the equation was spread out over the left side; the user turned that down the same day:
-    // "Do not make a spacing on x + 3 = 9, just make it bigger", choosing D, 144 px.)
+    // The rows' left edge kept still all through the check: every row starts at the left of one column,
+    // under the equation's x, and that column, centred in the room, is held as wide as the widest row
+    // will ever be (the left side with its box still in, and with x or the value tried, v, in it), so
+    // nothing moves as the value takes x's place or a box melts into its number (asked 2026-11-27, the
+    // user's choice "C: left edges in one line"; styles.css, body.checking .cp-row). (2026-11-25 to 11-27
+    // the equation was moved over until its = stood over the rows' last =, the user's choice "B" then;
+    // 2026-11-20 it was spread out over the left side, turned down the same day: "Do not make a spacing
+    // on x + 3 = 9, just make it bigger", choosing D, 144 px.)
     steady(v) {
       const slot = this.lhs.querySelector(".xslot");
-      const lab = this.lhs.querySelector(":scope > .lab");
-      if (!slot || !lab) return;
       this.row.style.gridTemplateColumns = "";
       this.eqRow.style.translate = "";
+      if (!slot) return;
       const was = slot.innerHTML;
-      const wideX = lab.offsetWidth;
+      const wideX = this.lhs.offsetWidth;
       if (v != null) slot.innerHTML = `<span class="subbed">${CQ.num(v)}</span>`;
-      const wideV = lab.offsetWidth;
+      const wideV = this.lhs.offsetWidth;
       slot.innerHTML = was;
-      this.row.style.gridTemplateColumns = `minmax(${Math.ceil(Math.max(wideX, wideV))}px, auto) auto minmax(156px, auto)`;
-      const eqSign = this.eqRow.querySelector(":scope > .e1");
-      const colSign = this.xRow.querySelector(":scope > .e1");
-      if (!eqSign || !colSign) return;
-      const mid = (e) => {
-        const r = e.getBoundingClientRect();
-        return (r.left + r.right) / 2;
-      };
-      this.eqRow.style.translate = `${Math.round((mid(colSign) - mid(eqSign)) / (CQ.stage.scale || 1))}px 0`;
+      this.row.style.gridTemplateColumns = `minmax(${Math.ceil(Math.max(wideX, wideV))}px, auto)`;
     },
     // a side's pieces, one by one, in the order they are written (its name, =, the parts of its
     // expression, =, its value; the right side: its name, =, its value)

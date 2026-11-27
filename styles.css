@@ -2655,9 +2655,9 @@ html.reduced-motion .hand-ring.b {
   color: #fffaf0;
   transition: opacity 0.5s ease;
 }
-/* lines worked out under the equation (trying a value): Try x = 4, LHS = 4 + 2 = 6, RHS = 7, x ≠ 4, their
-   last = signs one under another, under the equation's = (js/activities.js puts the column there; asked
-   2026-11-25, the user's choice "B: last = lined up", as on 2026-11-19) */
+/* lines worked out under the equation (trying a value): Try x = 4, LHS = 4 + 2 = 6, RHS = 7, x ≠ 4, each
+   starting at the left, under the equation's x (js/activities.js puts them there; asked 2026-11-27, the
+   user's choice "C: left edges in one line", as from 2026-11-20 to 11-25) */
 .notebook .nb-rows {
   display: flex;
   flex-direction: column;
@@ -2672,22 +2672,11 @@ html.reduced-motion .hand-ring.b {
   white-space: nowrap;
   transition: color 0.5s ease, opacity 0.5s ease, text-shadow 0.5s ease;
 }
-/* a row in three columns: what comes before its last = | that = (≠) | its value; the first column as
-   wide in every row, so their = signs stand one under another, and the values in one column */
-.notebook .nb-row.cols {
-  display: grid;
-  grid-template-columns: 400px auto auto;
-  column-gap: 20px;
-  align-items: baseline;
-}
-.notebook .nb-row.cols .sl {
-  justify-self: end;
-}
 /* Trying a value (review, 2026-11-13): "Try x = 4" under the equation, in gold, clearly a try; each side
    worked out under it, LHS then RHS, the side being said lit in its colour, the one before back to
-   plain, in full view ("Keep the previous calculation visible"). Their last = signs one under another,
-   under the equation's (above; reviews, 2026-11-18 and 11-19, and again from 2026-11-25; flush left
-   under the equation's x from 2026-11-20). At the end, on the same screen, x = 4 is written in under it
+   plain, in full view ("Keep the previous calculation visible"). All written plainly, flush left under
+   the equation's x (above; 2026-11-20 to 11-25, and again from 2026-11-27; their last = signs one under
+   another in reviews 2026-11-18/19 and 2026-11-25 to 11-27). At the end, on the same screen, x = 4 is written in under it
    all, red (not a solution) or green (the solution) (review, 2026-11-20: "Do not make separate screen…
    X is equal to 4 come downside in red"; the working had faded away, leaving x = 4 by itself:
    2026-11-18/19). */
@@ -2998,36 +2987,26 @@ body.checking .check-panel {
   top: 262px;
   width: 820px;
 }
-/* Its rows in one grid of three columns, what comes before a row's LAST = | that = | its value, so the =
-   signs stand one under another and the values in one column: Try x = 4 / LHS = 4 + 3 = 7 / RHS = 9 /
-   x ≠ 4 (asked 2026-11-25, the user's choice "B: last = lined up", as on 2026-11-19; from 2026-11-20
-   they were written flush left under the equation's x). The equation over them is a line of its own, in
-   its own plain spacing, moved over so its = stands over theirs (js/ui.js, checkPanel.steady). The block
-   stands in the middle of the room; each row's parts stand on one baseline (the x of the maths face, the
-   words and the numbers alike). */
+/* Its rows one under another, each starting at the left, under the equation's x, like lines written in
+   a notebook: x + 3 = 9 / Try x = 4 / LHS = 4 + 3 = 7 / RHS = 9 / x ≠ 4 (asked 2026-11-27, the user's
+   choice "C: left edges in one line", as from 2026-11-20 to 11-25; from 2026-11-25 every row's last =
+   stood under the equation's =). One column, centred in the room and held as wide as the widest row will
+   ever be (js/ui.js, checkPanel.steady), so the rows never move as a box melts into its number; each
+   row's parts stand on one baseline (the x of the maths face, the words and the numbers alike). */
 body.checking .cp-row {
   display: grid;
-  /* the values' column as wide as a box (.blank's 156 px) all through, so nothing moves as a box melts
-     into its number */
-  grid-template-columns: auto auto minmax(156px, auto);
+  grid-template-columns: auto;
   justify-content: center;
-  align-items: baseline;
-  column-gap: 18px;
+  justify-items: start;
   row-gap: 34px;
   font: 800 82px/1.1 var(--font);
 }
 body.checking .cp-side {
-  display: contents;
-}
-body.checking .cp-side.eqn {
-  grid-column: 1 / -1;
-  justify-self: start;
   display: flex;
   align-items: baseline;
   gap: 18px;
 }
 body.checking .cp-side .lab {
-  justify-self: end;
   white-space: nowrap;
   padding-top: 0;
   /* the row's own size: "Try x" as big as its = 4, and LHS and RHS as big as the numbers after them
@@ -3043,7 +3022,6 @@ body.checking .cp-side.lhs .lab {
   gap: 16px;
 }
 body.checking .cp-side .rest {
-  justify-self: start;
   white-space: nowrap;
 }
 /* the equation itself, kept in sight at the top all through the check (reviews, 2026-11-08 and 11-20),

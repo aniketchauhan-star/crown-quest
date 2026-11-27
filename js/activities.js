@@ -422,20 +422,18 @@
         const rows = CQ.el("div", "nb-rows", c);
         s.rows.forEach((r) => {
           // each row of the check (cls "side": Try x = 4, LHS = 4 + 2 = 6, RHS = 7; "sol": x ≠ 4 or x = 5 ✓)
-          // in three columns: what comes before its last = (≠), that sign, its value, so every row's last
-          // = stands under the one above and under the equation's (below), the values in one column:
-          // x + 2 = 7 / Try x = 4 / LHS = 4 + 2 = 6 / RHS = 7 / x ≠ 4 (asked 2026-11-25, "make like
-          // before… the alignment", the user's choice "B: last = lined up", as on 2026-11-19; from
-          // 2026-11-20 they were written flush left under the equation's x, the user's choice then). "Try"
+          // written plainly, starting at the left, under the equation's x (below), like lines written in a
+          // notebook: x + 2 = 7 / Try x = 4 / LHS = 4 + 2 = 6 / RHS = 7 / x ≠ 4 (asked 2026-11-27, the
+          // user's choice "C: left edges in one line", as from 2026-11-20 to 11-25; from 2026-11-25 they
+          // were in columns, every row's last = under the equation's =, the user's choice "B" then). "Try"
           // smaller, by itself (.tw). A side's value stays on its line, after its expression:
           // LHS = 4 + 2 = 6 (review, 2026-11-19: "23 is equal to should same line in 15 is equal to"; = 6
           // on a line of its own under it, left of 4 + 2, was turned down the same day: "Please don't do
           // this like this… in all game").
-          const m = /\b(side|sol)\b/.test(r.cls || "") ? /^(.+) ([=≠]) (.+)$/.exec(r.t) : null;
-          let html = m ? `<span class="sl">${CQ.rich(m[1])}</span><span class="se">${CQ.rich(m[2])}</span><span class="sr">${CQ.rich(m[3])}</span>` : CQ.rich(r.t);
+          let html = CQ.rich(r.t);
           if (/\btry\b/.test(r.cls || "")) html = html.replace(UI.tryWord, `<span class="tw">${UI.tryWord}</span>`);
           const key = "row:" + r.t;
-          const el = add(CQ.el("div", "nb-row " + (m ? "cols " : "") + (r.cls || ""), rows, html), key);
+          const el = add(CQ.el("div", "nb-row " + (r.cls || ""), rows, html), key);
           if (r.cue) el.dataset.cue = r.cue; // it waits until the voice says this
           // a row already there that changes (lit, faded back) eases from how it was
           const was = before.rowCls && before.rowCls[key];
@@ -460,16 +458,17 @@
             CQ.writeOut(el, r.write, this.lineText, r.each || 75, () => this.renders === n).catch(() => {});
           }
         });
-        // the rows' column of = signs under the equation's = (where they are laid out: no transforms)
-        const se = rows.querySelector(".nb-row.cols .se");
-        const eqTok = tok("eq");
-        if (se && eqTok) {
-          const mid = (el) => {
-            let v = el.offsetWidth / 2;
+        // the rows' left edge under the left edge of the equation's x (its letter, inside the token's
+        // padding), where they are laid out (no transforms)
+        const x = tok("x");
+        if (x) {
+          const left = (el) => {
+            let v = 0;
             for (let e = el; e && e !== c; e = e.offsetParent) v += e.offsetLeft;
             return v;
           };
-          rows.style.translate = `${Math.round(mid(eqTok) - mid(se))}px 0`;
+          const pad = parseFloat(getComputedStyle(x).paddingLeft) || 0;
+          rows.style.translate = `${Math.round(left(x) + pad - left(rows))}px 0`;
         }
       }
       // a tag hangs under its part on a straight line that starts with a dot on the part (or on the
