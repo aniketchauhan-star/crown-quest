@@ -190,8 +190,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo005 | Let's swap the crown without tipping the balance! | = |  | 2.9 |
 | vo006 | Each coin weighs 1 unit. | Each coin weighs one unit. |  | 2.2 |
 | vo007 | Which bar should Zippy choose? | = |  | 2.4 |
-| vo008 | Drag it to Zippy, then tap Swap. | = | ड्रैग इट टू ज़िप्पी, देन टैप स्वैप। | 2.9 |
-| vo009 | Now tap Swap! | = | नाउ टैप स्वैप! | 1.6 |
+| vo405 | Drag it to Zippy. | = |  | 1.2 |
 | vo403 | Oops! The balance tipped. Try another bar! | = |  | 3.7 |
 | vo013 | The crown balances 5 coins. Try the 5-unit bar! | The crown balances five coins. Try the five-unit bar! |  | 4.5 |
 | vo401 | Woohoo! Zippy got his first crown! | Woohoo! ज़िप्पी got his first crown! |  | 3.9 |
@@ -239,7 +238,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo072 | Now try x = 5. Find both sides. | Now try x equals five. Find both sides. |  | 4.6 |
 | vo075 | A value that makes an equation true is its solution. So, x = 5! | A value that makes an equation true is its solution. So, x equals five! |  | 6.8 |
 | vo076 | The crown weighs 5 units. Zippy can swap it! | The crown weighs five units. Zippy can swap it! |  | 4.2 |
-| vo077 | Now Zippy can swap. Tap Swap! | Now ज़िप्पी can swap. Tap Swap! | नाउ ज़िप्पी कैन स्वैप. टैप स्वैप! | 3.0 |
+| vo406 | Now Zippy can swap. | Now ज़िप्पी can swap. |  | 1.5 |
 | vo081 (Zippy) | Let's try 4. | Let's try four. | लेट्स ट्राई फोर। | 1.6 |
 | vo082 | Give Zippy the 4-unit bar. | Give Zippy the four-unit bar. |  | 2.7 |
 | vo083 | Replace x with 4. | Replace x with four. | रिप्लेस एक्स विद फोर। | 2.2 |
@@ -278,7 +277,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo134 | Find the left-hand side. | = |  | 1.7 |
 | vo135 | Add 15 + 8 to get 23. | Add fifteen plus eight to get twenty-three. |  | 3.8 |
 | vo138 | The crown weighs 15 units. Time to swap! | The crown weighs fifteen units. Time to swap! |  | 4.7 |
-| vo139 | Give Zippy the 15-unit bar, then tap Swap. | Give Zippy the fifteen-unit bar, then tap Swap. |  | 5.0 |
+| vo408 | Give Zippy the 15-unit bar. | Give Zippy the fifteen-unit bar. |  | 2.7 |
 | vo140 | Let's check 23. | Let's check twenty-three. | लेट्स चेक ट्वेंटी-थ्री। | 1.8 |
 | vo141 | Add 23 + 8 to get 31. | Add twenty-three plus eight to get thirty-one. |  | 4.2 |
 | vo143 | Let's check 31. | Let's check thirty-one. | लेट्स चेक थर्टी वन। | 1.8 |
@@ -291,7 +290,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo154 | But what does one crown weigh? | = |  | 2.2 |
 | vo157 | Let's check with x = 7. | Let's check with x equals seven. |  | 2.4 |
 | vo158 | 2 × 7 = 14. Add 4 to get 18. | Two times seven equals fourteen. Add four to get eighteen. |  | 6.0 |
-| vo161 | Give Zippy a 7-unit bar, then tap Swap. | Give Zippy a seven-unit bar, then tap Swap. |  | 5.0 |
+| vo409 | Give Zippy a 7-unit bar. | Give Zippy a seven-unit bar. |  | 2.6 |
 | vo162 | Let's check 9. | Let's check nine. | लेट्स चेक नाइन। | 1.5 |
 | vo163 | 2 × 9 = 18. Add 4 to get 22. | Two times nine equals eighteen. Add four to get twenty-two. |  | 5.5 |
 | vo165 | One more crown! Give Zippy the other 7-unit bar. | One more crown! Give Zippy the other seven-unit bar. |  | 4.7 |
@@ -327,7 +326,7 @@ Since 2026-11-18 practice says only fixed lines, so every one of them can have a
 | vo351 | Can we solve this without guessing? | = |  | 2.8 |
 | vo352 | 4x + 3 is on the left. That's the left-hand side. | Four x plus three is on the left. That's the left-hand side. |  | 4.1 |
 | vo353 | 19 is on the right. That's the right-hand side. | Nineteen is on the right. That's the right-hand side. |  | 3.7 |
-| vo354 | Drag the 5-unit bar to Zippy, then tap Swap. | Drag the five-unit bar to Zippy, then tap Swap. |  | 4.4 |
+| vo407 | Drag the 5-unit bar to Zippy. | Drag the five-unit bar to Zippy. |  | 2.2 |
 | vo355 | The crown and 8 units balance 23 units. | The crown and eight units balance twenty-three units. |  | 4.3 |
 | vo356 | Guessing could take a while! | = |  | 1.5 |
 | vo357 | Drag an 8-unit bar off each side. | Drag an eight-unit bar off each side. |  | 3.8 |

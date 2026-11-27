@@ -1201,14 +1201,53 @@
   BAL.FLOOR = (ART.base.at + IM().balBase.h) * ART_K; // pivot down to the bottom of the base
   BAL.HUB_R = (IM().balHub.w / 2) * ART_K;
   BAL.GROW = BAL.S / 0.7;
-  // Coins: spacing in a row. On the pans they stand in rows of 5, one row straight above another, like a
-  // ten-frame (design review, 2026-11-23: "At 4–10 coins they stack in tight clusters that are hard to
-  // count… Lay them out in a clear grid (rows of 5, like a ten-frame)"): COIN_GRID, a row's height, with no
-  // overlap. The coins put in for x in the check still gather in a heap (COIN_ROW: rows overlap a little).
-  BAL.COIN_ROW = Math.round(L.COIN_W * 0.78);
-  BAL.COIN_STEP = L.COIN_W + 2;
-  BAL.COIN_GRID = L.COIN_W + 3;
+  // Coins on a pan rest on one another (coinPile, below): side by side their rims just meet (COIN_TOUCH,
+  // centre to centre), and a coin above sits in the dip between two below, touching both. PLATE_ROOM: how
+  // far the things on a plate can spread, rim to rim.
+  BAL.COIN_TOUCH = L.COIN_W - 2;
+  BAL.PLATE_ROOM = IM().balPlate.w * ART_K - 6;
   CQ.BAL = BAL;
+
+  // A pile of n coins standing on edge, the way round things rest on one another (asked 2026-11-27: the
+  // rows of 5 stood one straight above another with a gap, so the top row hung in the air, "make this
+  // like they rest in each other, natural look"; the rows of 5 came from the design review of
+  // 2026-11-23, "Lay them out in a clear grid (rows of 5, like a ten-frame)", and the coins still never
+  // cover one another where there is room). The bottom row stands on the plate; each coin above sits in
+  // the dip between two coins of the row under it, touching both, so each row has a coin fewer than the
+  // row below and sits in its middle (5 + 2 for 7, 5 + 4 + 2 for 11). base: the most coins in the bottom
+  // row (more if n coins could not rest on that many: coinBase); step: centre to centre along a row (less
+  // than COIN_TOUCH on a crowded pan: the coins of a row then overlap a little, like a fanned heap, and
+  // still rest on one another). Gives each coin's centre x from the pile's middle, its bottom y (up is
+  // negative), its row and its place in the row, in counting order: the bottom row first, left to right.
+  function coinBase(n, base) {
+    let b = Math.min(n, base);
+    while ((b * (b + 1)) / 2 < n) b++;
+    return b;
+  }
+  function coinPile(n, base, step) {
+    const touch = BAL.COIN_TOUCH;
+    const rise = Math.sqrt(touch * touch - (step / 2) * (step / 2)); // up a row: the dip's depth
+    const out = [];
+    let below = null; // the x's of the row under this one
+    for (let r = 0, left = n; left > 0; r++) {
+      let xs;
+      if (!below) {
+        const k = coinBase(n, base);
+        xs = Array.from({ length: k }, (_, i) => (i - (k - 1) / 2) * step);
+      } else {
+        const dips = below.slice(1).map((x, j) => (below[j] + x) / 2);
+        const k = Math.min(dips.length, left);
+        const from = Math.floor((dips.length - k) / 2);
+        xs = dips.slice(from, from + k);
+      }
+      xs.forEach((x, i) => out.push({ x, y: -r * rise, row: r, i }));
+      below = xs;
+      left -= xs.length;
+    }
+    return out;
+  }
+  // how wide such a pile is: its bottom row
+  const coinPileW = (n, base, step) => (n ? (coinBase(n, base) - 1) * step + L.COIN_W : 0);
   // On-pan sizes in stage pixels (for bars and crowns flying to and from the pans).
   L.PAN_BAR_PX = L.PAN_BAR_W * BAL.S;
   L.CROWN_PX = L.CROWN_W * BAL.S;
@@ -1537,17 +1576,14 @@
       });
     }
     layoutLeft(items) {
-      const cw = BAL.COIN_STEP;
       const res = new Map();
-      // Coins gathered into one group (a value put in for x, with the coins that were beside it): rows
-      // of up to four, like the right pan's.
+      // a pile of coins (coinPile) with its middle at x (the coins of a row further right in front)
+      const pile = (coins, base, step, x) =>
+        coinPile(coins.length, base, step).forEach((p, i) => res.set(coins[i], { x: x + p.x, y: p.y, z: 3 + p.row * 6 + p.i }));
+      // Coins gathered into one group (a value put in for x, with the coins that were beside it): one
+      // pile, like the right pan's.
       const group = items.filter((it) => it.slot === "group");
-      group.forEach((c, i) => {
-        const r = Math.floor(i / 4);
-        const inRow = Math.min(4, group.length - r * 4);
-        const rowW = inRow * cw - (cw - L.COIN_W);
-        res.set(c, { x: -rowW / 2 + (i % 4) * cw + L.COIN_W / 2, y: -r * BAL.COIN_ROW, z: 3 + r });
-      });
+      pile(group, 5, BAL.COIN_TOUCH, 0);
       const rest = items.filter((it) => it.slot !== "group");
       const main = rest.filter((it) => it.slot === "main");
       const subst = rest.filter((it) => it.slot === "subst"); // coins put in for x, where the crown stood
@@ -1556,45 +1592,45 @@
       const bars = extra.filter((it) => it.type === "bar");
       // The coins put in for x and the coins beside them are two groups, well apart, so 4 + 3 can be seen
       // on the pan (review, 2026-11-13: "Show four replacement coins and three additional coins as distinct
-      // groups"): the coins of each a little closer together, the gap between them wider.
+      // groups"). Each is a pile as narrow as coins can rest (two in the bottom row, more where they could
+      // not hold the rest), and where the two, or the crown and its coins, would run past the plate's
+      // rims, the two groups first come a little closer, then the coins of a row overlap a little (the
+      // same size as ever: a coin weighs 1 unit on either pan), never so much that a coin's 1, or its
+      // count when counted, is covered (Level 6's check, 8 or 7 coins for x and 4 beside them, the most).
       const two = subst.length > 0 && coins.length > 0;
-      const step = two ? L.COIN_W - 5 : cw;
-      const pileW = (n) => Math.min(2, n) * step - (step - L.COIN_W); // coins two to a row
-      let extraW = 0;
-      if (coins.length) extraW = pileW(coins.length);
-      if (bars.length) extraW = Math.max(extraW, bars[0].w);
+      const MAIN_GAP = -10;
+      const crownsW = main.reduce((w, m) => w + m.w, 0) + Math.max(0, main.length - 1) * MAIN_GAP;
+      const widths = (step, twoGap) => {
+        const subW = coinPileW(subst.length, 2, step);
+        const extraW = Math.max(coinPileW(coins.length, 2, step), bars.length ? bars[0].w : 0);
+        const mainW = crownsW + subW;
+        const gap = mainW && extraW ? (two ? twoGap : 8) : 0;
+        return { subW, extraW, mainW, gap, all: mainW + gap + extraW };
+      };
+      let step = BAL.COIN_TOUCH;
+      const over = (twoGap) => widths(step, twoGap).all - BAL.PLATE_ROOM;
+      const twoGap = Math.max(20, 30 - Math.max(0, over(30)));
+      const gaps = (subst.length ? coinBase(subst.length, 2) - 1 : 0) + (coins.length ? coinBase(coins.length, 2) - 1 : 0);
+      if (over(twoGap) > 0 && gaps) step = Math.max(L.COIN_W * 0.7, step - over(twoGap) / gaps);
+      const w = widths(step, twoGap);
       // the crown (or crowns, side by side: two crowns overlap a little), or the coins put in for x in
       // its place, then what lies beside them
-      const MAIN_GAP = -10;
-      const mainW = main.reduce((w, m) => w + m.w, 0) + Math.max(0, main.length - 1) * MAIN_GAP + (subst.length ? pileW(subst.length) : 0);
-      const gap = mainW && extraW ? (two ? 30 : 8) : 0;
-      let x0 = -(mainW + gap + extraW) / 2;
+      let x0 = -w.all / 2;
       let mx = x0;
       main.forEach((m) => {
         res.set(m, { x: mx + m.w / 2, y: 0, z: 2 });
         mx += m.w + MAIN_GAP;
       });
-      subst.forEach((c, i) => {
-        const row = Math.floor(i / 2);
-        const inRow = Math.min(2, subst.length - row * 2);
-        res.set(c, { x: x0 + (pileW(subst.length) - pileW(inRow)) / 2 + (i % 2) * step + L.COIN_W / 2, y: -row * BAL.COIN_ROW, z: 3 + row });
-      });
-      x0 += mainW + gap;
-      coins.forEach((c, i) => {
-        const row = Math.floor(i / 2);
-        const inRow = Math.min(2, coins.length - row * 2);
-        const rowW = inRow * step - (step - L.COIN_W);
-        // (beside the crown, two to a row, one row straight above another: no overlap, easy to count)
-        res.set(c, { x: x0 + (extraW - rowW) / 2 + (i % 2) * step + L.COIN_W / 2, y: -row * (two ? BAL.COIN_ROW : BAL.COIN_GRID), z: 3 + row });
-      });
-      bars.forEach((b, i) => res.set(b, { x: x0 + extraW / 2, y: -i * 64, z: 3 + i }));
+      pile(subst, 2, step, x0 + w.subW / 2);
+      x0 += w.mainW + w.gap;
+      pile(coins, 2, step, x0 + w.extraW / 2);
+      bars.forEach((b, i) => res.set(b, { x: x0 + w.extraW / 2, y: -i * 64, z: 3 + i }));
       return items.map((it) => res.get(it));
     }
     layoutRight(items) {
       const coins = items.filter((it) => it.type === "coin");
       const bars = items.filter((it) => it.type !== "coin");
       const res = new Map();
-      const cw = BAL.COIN_STEP;
       if (bars.length) {
         const total = bars.reduce((s, b) => s + b.w, 0) + (bars.length - 1) * 12;
         let x = -total / 2;
@@ -1603,15 +1639,9 @@
           x += b.w + 12;
         });
       }
-      // rows of 5 like a ten-frame, the bottom row first, each filled from the left, every row in the same
-      // five columns (fewer than 5: one row, in the middle)
-      const per = 5;
-      const cols = Math.min(per, coins.length);
-      const frameW = cols * cw - (cw - L.COIN_W);
-      coins.forEach((c, i) => {
-        const r = Math.floor(i / per);
-        res.set(c, { x: -frameW / 2 + (i % per) * cw + L.COIN_W / 2, y: -r * BAL.COIN_GRID, z: 3 + r });
-      });
+      // one pile resting on the plate, up to 5 in the bottom row (coinPile: 5 + 2 for 7, 5 + 4 + 2 for 11;
+      // fewer than 6: one row, in the middle)
+      coinPile(coins.length, 5, BAL.COIN_TOUCH).forEach((p, i) => res.set(coins[i], { x: p.x, y: p.y, z: 3 + p.row * 6 + p.i }));
       return items.map((it) => res.get(it));
     }
     // World position of an item's centre (follows the beam).
@@ -1957,7 +1987,6 @@
       const z = CQ.zippy;
       const old = this.heldBar;
       if (old && old !== bar && z.held && z.held.type === "bar") {
-        CQ.swapBtn.hide(); // a new bar is on its way: SWAP comes back when it is in his hands
         z.setHeld(null);
         this.tossBack(old);
       }

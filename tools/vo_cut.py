@@ -59,8 +59,11 @@ def main(args):
         src_e = by_id[e["from"]]
         words, src_words = e["line"].split(), src_e["line"].split()
         n = len(words)
-        head = src_words[:n] == words and n < len(src_words)
-        tail = src_words[-n:] == words and n < len(src_words)
+        # (word for word, but the punctuation after a word may differ: "Drag it to Zippy." is the start of
+        # "Drag it to Zippy, then tap Swap.", 2026-11-27)
+        bare = lambda ws: [w.rstrip(",.!?;:") for w in ws]
+        head = bare(src_words[:n]) == bare(words) and n < len(src_words)
+        tail = bare(src_words[-n:]) == bare(words) and n < len(src_words)
         if not (head or tail):
             sys.exit("%s is neither the start nor the end of %s: %r / %r" % (e["id"], src_e["id"], e["line"], src_e["line"]))
         W = times.get(src_e["id"])

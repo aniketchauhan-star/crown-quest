@@ -145,7 +145,6 @@
     CQ.hud.setLevel(LEVEL_OF[cp] || 1);
     CQ.gems.set(WORD_ORDER.slice(0, WORDS_AT[cp] || 0));
     const intro = cp === "intro";
-    CQ.hud.show(!intro && !finale); // (the crown counter: not on the finale, only Zippy and his crown)
     CQ.audio.music(intro ? "title" : "game");
     CQ.audio.ambience(true);
     const lv = LV()[SCENE_OF[cp]];
@@ -323,7 +322,7 @@
   // Hint: hand drags from a bar to Zippy. Returns the gesture (it settles when the hand is done).
   function demoGive(v) {
     const bar = CQ.bars.get(v);
-    // too late: a bar was given meanwhile (the SWAP hint must not be replaced), or the swap has begun
+    // too late: a bar was given meanwhile, or the swap has begun
     if (!bar || bar.state !== "idle" || (CQ.zippy.held && CQ.zippy.held.type === "bar") || CQ.Give.busy || !CQ.Give.allowed) return null;
     const from = CQ.camera.toScreen(CQ.bars.center(v));
     const to = CQ.camera.toScreen(CQ.zippy.holdPoint("zippy_swap", 1)); // into his open hands
@@ -352,13 +351,14 @@
   }
   // The child gives one of `values` to Zippy. Resolves with the value once he has caught it.
   // A child who does nothing for a while gets the hand showing how, and only that: the instruction is
-  // not said again (review, 2026-11-07: "do not repeat the instruction. Give hand nudge only").
+  // not said again (review, 2026-11-07: "do not repeat the instruction. Give hand nudge only"). The hand
+  // shows opts.show if it is still on its stand (Level 1: the right one, as in the first demo).
   function giveBar(values, opts) {
     opts = opts || {};
     CQ.balance.counting = true; // coins can be tapped to count them while the child decides
     if (opts.glow) values.forEach((v) => CQ.bars.glow(v, true));
     CQ.idle.arm(() => {
-      const v = values.find((x) => CQ.bars.get(x) && CQ.bars.get(x).state === "idle");
+      const v = [opts.show].concat(values).find((x) => x != null && CQ.bars.get(x) && CQ.bars.get(x).state === "idle");
       if (v != null) demoGive(v);
     }, 8000);
     CQ.Give.onPick = onPick;
@@ -374,46 +374,14 @@
     );
     return given;
   }
-  // The child gives a bar to Zippy, then taps SWAP (they may change bars before tapping). Idle: the
-  // hand only (as in giveBar), with the `show` bar if it is still on its stand (Level 1: the right one,
-  // as in the first demo).
-  function giveThenSwap(values, show) {
-    let firstSwap = !CQ.store.get("swapDemoSeen", false);
-    CQ.idle.arm(() => {
-      if (CQ.zippy.held && CQ.zippy.held.type === "bar") CQ.hand.tapAt(CQ.centerOf(CQ.swapBtn.el));
-      else {
-        const v = [show].concat(values).find((x) => x != null && CQ.bars.get(x) && CQ.bars.get(x).state === "idle");
-        if (v != null) demoGive(v);
-      }
-    }, 8000);
-    CQ.Give.onPick = onPick;
-    return R.when(
-      new Promise((res) => {
-        CQ.Give.enable(values, () => {
-          CQ.swapBtn.show(() => {
-            const held = CQ.zippy.held;
-            if (!held || held.type !== "bar" || CQ.Give.busy) return; // a new bar is still on its way: SWAP comes back when it lands
-            CQ.focus.off();
-            CQ.Give.disable();
-            CQ.idle.disarm();
-            res(held.value);
-          });
-          if (firstSwap) {
-            firstSwap = false;
-            CQ.store.set("swapDemoSeen", true);
-            say("swap-tap-swap", { advance: "none" });
-            setTimeout(() => {
-              if (!CQ.swapBtn.cb) return; // already tapped
-              // once it has popped in; Zippy, with the bar, stays bright with it: when it is tapped he
-              // swings over in front of the balance (z.front) and must not jump out from under the fade
-              look([CQ.swapBtn.el, CQ.zippy.rig]);
-              CQ.focus.offAfter(5000);
-              CQ.hand.tapAt(CQ.centerOf(CQ.swapBtn.el));
-            }, 500);
-          }
-        });
-      })
-    );
+  // The child gives a bar to Zippy and he swaps it for the crown by himself (user, 2026-11-27: "remove
+  // the swap button, zippy should automatically swap when user give bar to zippy"; the child gave a bar,
+  // then tapped SWAP). A moment with it in his hands after the catch, so the child sees which bar he got.
+  async function giveThenSwap(values, show) {
+    const v = await giveBar(values, { show });
+    CQ.focus.off();
+    await R.wait(350);
+    return v;
   }
   async function tossTried(v) {
     const z = CQ.zippy;
@@ -441,8 +409,8 @@
     CQ.hand.stop();
     CQ.idle.disarm();
     CQ.caption.hide();
-    // he and the crown stay in front of the balance all the way, even when it is still lifted over the
-    // look that "Now tap Swap!" put on the button (asked 2026-11-17: they went behind it)
+    // he and the crown stay in front of the balance all the way, even when it is still lifted over a
+    // look (asked 2026-11-17: they went behind it)
     z.front(true);
     const crown = b.find("left", (it) => it.type === "crown" && !it.ghost);
     const target = b.itemCenter(crown);
@@ -532,7 +500,7 @@
       CQ.fx.sparkle(CQ.world.fx, hp.x, hp.y, 16, 100);
       CQ.audio.play("crown.sparkle");
       CQ.audio.play("correct");
-      CQ.hud.crowns++; // (the counter, top right, shows it when a crown flies in: crownLine)
+      CQ.hud.crowns++;
       await R.wait(700);
       z.pose("proud");
       await R.wait(450);
@@ -552,8 +520,8 @@
   // 9's first one too), "Woohoo! Zippy got another crown!". It goes by the crowns he has (CQ.hud.crowns,
   // counted as the crown is collected; a screen started from the list has the crowns of the levels
   // before it), so it is Level 1's crown that is his first. If he is wearing it, it sparkles on "crown".
-  // On "crown" a crown flies from his head into the counter at the top right (design review, 2026-11-23),
-  // which counts it.
+  // (A crown flew from his head into a counter at the top right on "crown" from the design review of
+  // 2026-11-23 until the user took the counter off, 2026-11-27.)
   async function crownLine() {
     const id = CQ.hud.crowns > 1 ? "crown-another" : "crown-first";
     const z = CQ.zippy;
@@ -561,11 +529,9 @@
       onSaid(CQ.T(id), "crown", () => {
         const hp = z.headPoint();
         CQ.fx.sparkle(CQ.world.fx, hp.x, hp.y, 10, 70);
-        if (CQ.hud.shown < CQ.hud.crowns) CQ.hud.gain(hp, 96);
       });
     }
     await say(id);
-    if (CQ.hud.shown < CQ.hud.crowns) CQ.hud.render(CQ.hud.crowns); // (the line was skipped before its word)
   }
   // Equal masses: celebration. He puts the crown on and laughs; the crown line (crownLine) follows. (Until
   // 2026-11-19 he said "Hee hee! Sleep tight, Grumble!" after the laugh, with a snore from Grumble, and
@@ -1067,7 +1033,7 @@
     CQ.bars.setVisible(true, 700); // the gold bars come back for the swap
     CQ.bars.glow(5, true); // x = 5 is the solution: the 5 bar glows as it comes back, "this one"
     await say("l4-30", { advance: "auto" });
-    say("l4-give", { advance: "none" }); // Drag the 5 bar to Zippy, then tap Swap.
+    say("l4-give", { advance: "none" }); // Drag the 5-unit bar to Zippy. (He swaps it by himself.)
     askBars(); // (the scene calm behind the bars a moment: design review, 2026-11-23)
     const v = await giveThenSwap([5]);
     await swapAndCollect(v);
@@ -1248,17 +1214,14 @@
     }
     return true;
   }
-  // The checked bar is in Zippy's hands: tap SWAP. Only a checked value gets here, so the balance stays level.
+  // The checked bar is in Zippy's hands: "Now Zippy can swap.", and he does, by himself (no SWAP button
+  // to tap since 2026-11-27). Only a checked value gets here, so the balance stays level.
   async function swapAfterCheck(v, o) {
-    o = o || {};
-    say(o.tapLine || "check-now-swap", { advance: "none" });
-    CQ.idle.arm(() => CQ.hand.tapAt(CQ.centerOf(CQ.swapBtn.el)), 8000);
-    await R.when(CQ.swapBtn.wait());
-    CQ.idle.disarm();
+    await say("check-now-swap", { advance: "auto" });
     return swapAndCollect(v, o);
   }
-  // SWAP was tapped with a bar that works: the swap, and he collects the crown. (No "That works!": not
-  // needed, review 2026-11-08.)
+  // Zippy has a bar that works: the swap, and he collects the crown. (No "That works!": not needed,
+  // review 2026-11-08.)
   async function swapAndCollect(v, o) {
     o = o || {};
     const { d } = await swapOnPan(v);
@@ -1715,7 +1678,7 @@
     b.setSign("x + 8 = 23");
     const crown = b.find("left", (it) => it.type === "crown");
     await checkRoutine(L, 15, { from: b.itemCenter(crown), rhsGiven: true, line: "l8-11" });
-    // The swap: only a checked value gets the SWAP button.
+    // The swap: only a checked value is swapped for the crown.
     await say("l8-14", { advance: "auto" });
     say("l8-give", { advance: "none" });
     askBars(); // (the scene calm behind the bars a moment: design review, 2026-11-23)

@@ -1,6 +1,6 @@
 /*
  * Zippy's Crown Quest: user interface.
- * HUD, captions + narration, Next/Back, the SWAP button, speech bubbles, comic sound words,
+ * HUD, captions + narration, Next/Back, speech bubbles, comic sound words,
  * name bursts, spotlight, thought bubbles, hand demos, word gems + Word Treasure, menu,
  * the Check panel (LHS/RHS with number pickers) and the equation board.
  */
@@ -16,7 +16,6 @@
     menu: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 13h28M10 24h28M10 35h28" stroke="currentColor" stroke-width="7" stroke-linecap="round"/></svg>',
     next: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M15 8l26 16-26 16z" fill="currentColor" stroke="#6B3E00" stroke-width="3.5" stroke-linejoin="round"/></svg>',
     back: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M33 8L7 24l26 16z" fill="currentColor" stroke="#6B3E00" stroke-width="3.5" stroke-linejoin="round"/></svg>',
-    swap: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 17h28M28 9l9 8-9 8M40 31H12M20 23l-9 8 9 8" fill="none" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   };
   CQ.ICON = ICON;
   // A gem from elements.png, picked by a word's colour (see CONTENT.words).
@@ -164,11 +163,9 @@
       CQ.stage.el.style.setProperty("--bx", CQ.L.BX + "px");
       this.overlay = overlay;
       this.modal = modal;
-      CQ.hud.build(uiLayer);
       CQ.caption.build(uiLayer);
       CQ.next.build(uiLayer);
       CQ.nav.build(uiLayer);
-      CQ.swapBtn.build(uiLayer);
       CQ.bubble.build(uiLayer);
       CQ.spot.build(overlay);
       CQ.focus.build();
@@ -189,7 +186,6 @@
       CQ.next.clear();
       CQ.nav.dodging = 0;
       CQ.nav.el.classList.remove("dodge");
-      CQ.swapBtn.hide(true);
       CQ.bubble.hide(true);
       if (!keepSpot) CQ.spot.off(true);
       CQ.focus.off(true);
@@ -224,63 +220,30 @@
     },
   };
 
-  // ------------------------------------------------------------------ crowns: the counter, top right
-  // The crowns Zippy has won, "3/10", under the sound button (design review, 2026-11-23: "There's no
-  // progress or collection display. Add a crown counter… so each round adds to something"; until then
-  // the screen had none). crowns counts them at once (the crown line goes by it); the counter shows a
-  // new one when it flies in (gain: from Zippy's head as the line says "crown"; flyCrown: Level 9's
-  // first crown, from his hands), with a pop, a sparkle and its sound (same review: "a crown 'collected'
-  // fly-to-HUD animation and a sound sting").
+  // ------------------------------------------------------------------ crowns (no on-screen HUD)
+  // The screen has no crown counter (user, 2026-11-27: the "1/10" plaque at the top right from the design
+  // review of 2026-11-23, taken off; it is as it was before that review). The game still counts the
+  // crowns (the crown line goes by it: "first crown" or "another crown"); Level 9's first crown, from
+  // Zippy's hands, flies up out of the picture with a sparkle.
   CQ.hud = {
     crowns: 0,
     level: 1,
-    shown: 0,
-    total: 10,
-    build(ui) {
-      this.total = Object.values(C().levels).reduce((a, l) => a + (l.crowns || 1), 0);
-      this.el = CQ.el("div", "crown-count hidden", ui);
-      this.el.setAttribute("role", "status");
-      this.icon = CQ.img("crown", "cc-crown", this.el);
-      this.num = CQ.el("span", "cc-num", this.el);
-      this.render(0);
-    },
-    show(on) {
-      this.el.classList.toggle("hidden", !on);
-    },
     setLevel(n) {
       this.level = n;
     },
-    // (a screen started afresh: the crowns of the levels before it, at once)
+    // (a screen started afresh: the crowns of the levels before it)
     setCrowns(n) {
       this.crowns = n;
-      this.render(n);
     },
-    render(n) {
-      this.shown = n;
-      this.num.textContent = `${n}/${this.total}`;
-      this.el.setAttribute("aria-label", CQ.fmt(C().ui.crowns, { n, t: this.total }));
-    },
-    // where a crown flying in lands (stage px)
-    target() {
-      return CQ.centerOf(this.icon) || { x: CQ.W - 160, y: 175 };
-    },
-    // a crown flies from fromWorld into the counter, which counts it (up to the crowns won)
-    async gain(fromWorld, width) {
-      const from = CQ.camera.toScreen(fromWorld);
-      const to = this.target();
-      const w = width || 120;
-      const land = this.icon.getBoundingClientRect().width / CQ.stage.scale || 54;
-      CQ.audio.play("crown.sparkle");
-      await CQ.fly(CQ.ui.layer, CQ.crownFlyer(w), from, to, { duration: 950, arc: -120, scaleTo: land / w, spin: 360 });
-      this.render(Math.min(this.crowns, this.shown + 1));
-      CQ.fx.sparkle(CQ.ui.layer, to.x, to.y, 12, 50);
-      CQ.audio.play("coin.clink", { index: 6 });
-      CQ.anim(this.el, [{ transform: "scale(1)" }, { transform: "scale(1.25)", offset: 0.35 }, { transform: "scale(1)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
-    },
-    // Level 9's first crown: from his hands into the counter
+    // Level 9's first crown: from his hands up and away
     async flyCrown(fromWorld, width) {
+      const from = CQ.camera.toScreen(fromWorld);
+      const to = { x: CQ.clamp(from.x + 240, 200, CQ.W - 200), y: 70 };
+      const w = width || 120; // its width as it sets off; it ends 54 px wide
       this.crowns++;
-      await this.gain(fromWorld, width);
+      CQ.audio.play("crown.sparkle");
+      await CQ.fly(CQ.ui.layer, CQ.crownFlyer(w), from, to, { duration: 1000, arc: -140, scaleTo: 54 / w, spin: 360, fadeOut: true });
+      CQ.fx.sparkle(CQ.ui.layer, to.x, to.y, 12, 50);
     },
   };
 
@@ -948,52 +911,6 @@
     },
   };
 
-  // ------------------------------------------------------------------ SWAP button
-  CQ.swapBtn = {
-    build(ui) {
-      this.el = button("swap-btn hidden", `${ICON.swap}<span>${C().ui.swap}</span>`, C().ui.swap, ui, () => {
-        if (!this.cb) return;
-        const cb = this.cb;
-        this.cb = null;
-        CQ.audio.play("ui.tap");
-        this.hide();
-        cb();
-      });
-      this.cb = null;
-      // next to Zippy, under him as he hangs at home with the bar, above sleeping Grumble's head (design
-      // review, 2026-11-23: "The Swap button covers the crown pan. It sits on top of the left pan's rim.
-      // Move it below the scale, or next to Zippy"; it stood under the left plate, between it and the bars)
-      CQ.pos(this.el, CQ.L.ZIPPY.ax + 10, 568);
-    },
-    show(cb) {
-      this.cb = cb;
-      this.tok = (this.tok || 0) + 1;
-      this.el.classList.remove("hidden");
-      CQ.audio.play("ui.pop");
-      CQ.anim(this.el, [{ transform: "translate(-50%,-50%) scale(.2)" }, { transform: "translate(-50%,-50%) scale(1)" }], {
-        duration: 420,
-        easing: CQ.EASE.back,
-      });
-    },
-    hide(now) {
-      this.cb = null;
-      const t = (this.tok = (this.tok || 0) + 1);
-      if (now || this.el.classList.contains("hidden")) {
-        this.el.classList.add("hidden");
-        return;
-      }
-      CQ.anim(this.el, [{ opacity: 1, transform: "translate(-50%,-50%) scale(1)" }, { opacity: 0, transform: "translate(-50%,-50%) scale(.85)" }], {
-        duration: 260,
-        keep: false,
-      }).then(() => {
-        if (t === this.tok) this.el.classList.add("hidden");
-      });
-    },
-    wait() {
-      return CQ.run.when(new Promise((res) => this.show(res)));
-    },
-  };
-
   // ------------------------------------------------------------------ speech bubbles + comic words
   CQ.bubble = {
     build(ui) {
@@ -1161,8 +1078,6 @@
       CQ.screen.shade("soft:" + owner, keep === false ? false : shade != null ? shade : keep.length ? 1 : 2);
       this.apply();
       CQ.caption.roomChanged(); // (a dark screen lifting: the question bar keeps clear of Zippy's vine)
-      // the crown counter steps aside on an activity board (its panels reach the top right corner)
-      if (CQ.hud && CQ.hud.el) CQ.hud.el.classList.toggle("aside", this.owners.has("activity"));
     },
     // every owner but except (one owner or a list of them)
     clear(except) {
@@ -1792,7 +1707,6 @@
     GLOW: 1100, // ms the red light at the screen's corners comes and goes
     // Resolves when the shake is over (what follows it, a tile or label going home, waits for it).
     wrong(el, opts) {
-      if (CQ.buddy) CQ.buddy.react(false); // (Zippy, on an activity screen, winces)
       opts = opts || {};
       if (!opts.silent) CQ.audio.play("tryagain");
       if (el) {
@@ -1851,7 +1765,6 @@
       );
     },
     right(el, opts) {
-      if (CQ.buddy) CQ.buddy.react(true); // (Zippy, on an activity screen, cheers)
       opts = opts || {};
       if (!opts.silent) CQ.audio.play("correct");
       if (!el) return;
@@ -1901,47 +1814,9 @@
     },
   };
 
-  // ------------------------------------------------------------------ Zippy on the activity screens
-  // A small Zippy in the bottom left corner of the label, sort, recap and practice screens: he stands
-  // there, blinking, cheers at a right answer and winces at a wrong one (design review, 2026-11-23: "The
-  // theme disappears. The label, sort and Practice screens are plain dark panels with no Zippy, scale or
-  // jungle. Keep Zippy on screen reacting"; until then he wasn't on them, like the formula screen). He
-  // goes with the screen. CQ.answer tells him.
-  CQ.buddy = {
-    el: null,
-    // (his standing sheet, the finale's: he wears his crown and has his bag; his other sheets hang from the
-    // vine) frame 4: a finger up, thinking; 2, 6: fist up, laughing; 3: a kick
-    show(parent) {
-      this.el = CQ.el("div", "buddy", parent);
-      this.el.setAttribute("aria-hidden", "true");
-      this.sprite = new CQ.Sprite(this.el, "buddy-sprite", 0.44);
-      this.idle();
-      CQ.anim(this.el, [{ opacity: 0, transform: "translateY(40px)" }, { opacity: 1, transform: "translateY(0)" }], { duration: 520, easing: CQ.EASE.out, keep: false });
-    },
-    alive() {
-      return !!(this.el && this.el.isConnected);
-    },
-    idle() {
-      if (!this.alive()) return;
-      this.sprite.stop();
-      this.sprite.show("zippy_dance", 4);
-    },
-    react(ok) {
-      if (!this.alive()) return;
-      clearTimeout(this.t);
-      this.sprite.stop();
-      if (ok) {
-        if (CQ.motion.reduced) this.sprite.show("zippy_dance", 2);
-        else this.sprite.play("zippy_dance", [2, 3, 6, 3, 2], 170);
-        this.t = setTimeout(() => this.idle(), 1300);
-      } else {
-        // a quick shake of the head ("oh no!"), and back to thinking
-        this.sprite.show("zippy_dance", 4);
-        if (!CQ.motion.reduced)
-          CQ.anim(this.sprite.el, [{ rotate: "0deg" }, { rotate: "-7deg", offset: 0.2 }, { rotate: "6deg", offset: 0.45 }, { rotate: "-4deg", offset: 0.7 }, { rotate: "0deg" }], { duration: 560, easing: "ease-in-out", keep: false });
-      }
-    },
-  };
+  // (No Zippy on the activity screens: the small Zippy in the bottom left corner of the label, sort, recap
+  // and practice screens, cheering and wincing at the answers, from the design review of 2026-11-23, was
+  // taken off by the user, 2026-11-27.)
 
   // ------------------------------------------------------------------ layout glides (FLIP)
   // When a change of layout moves things (a box melting into its number, a row coming in under others),

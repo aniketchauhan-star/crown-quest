@@ -351,7 +351,7 @@
       if (this.going) return;
       this.going = true;
       window.removeEventListener("keydown", this.onKey);
-      if (opts && opts.reset) ["progress", "practiceAt", "swapDemoSeen", "blankDemoSeen"].forEach((k) => CQ.store.remove(k));
+      if (opts && opts.reset) ["progress", "practiceAt", "blankDemoSeen"].forEach((k) => CQ.store.remove(k));
       CQ.audio.init();
       CQ.settings.apply();
       CQ.screen.fullscreen(); // phones and tablets: the whole screen, held sideways

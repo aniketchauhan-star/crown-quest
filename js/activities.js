@@ -1127,10 +1127,9 @@
     CQ.anim(wrap, [{ opacity: 0 }, { opacity: 1 }], { duration: 420, essential: true });
     if (!(opts && opts.still)) CQ.anim(b, [{ transform: "scale(.9)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 600, easing: CQ.EASE.out, essential: true });
     CQ.audio.play("scroll.open");
-    // the scene's Zippy rests once the dark is in; a small Zippy stands in the corner of the screen instead,
-    // reacting to the answers (CQ.buddy; design review, 2026-11-23: "Keep Zippy on screen reacting")
+    // the scene's Zippy rests once the dark is in. No Zippy on the activity screens (user, 2026-11-27: the
+    // small Zippy in the bottom left corner from the design review of 2026-11-23 taken off)
     setTimeout(() => wrap.isConnected && CQ.zippy.setVisible(false), 500);
-    CQ.buddy.show(wrap);
     wrap.board = b;
     return wrap;
   }
@@ -2097,12 +2096,11 @@
     CQ.next.showNext(false);
     CQ.el("div", "nb-dim", wrap);
     CQ.soft.set("activity", []);
-    // The scene's Zippy rests meanwhile, unseen under the dark; a small Zippy stands in the corner instead,
-    // reacting to the answers, and a small balance stands at the right, level, tipping a moment at a wrong
-    // answer (design review, 2026-11-23: "Keep Zippy on screen reacting, and keep a scale visible in
-    // Practice"; until then the problems had the screen to themselves)
+    // The scene's Zippy rests meanwhile, unseen under the dark (no small Zippy in the corner: user,
+    // 2026-11-27); a small balance stands at the right, level, tipping a moment at a wrong answer (design
+    // review, 2026-11-23: "keep a scale visible in Practice"; until then the problems had the screen to
+    // themselves)
     setTimeout(() => wrap.isConnected && CQ.zippy.setVisible(false), 700);
-    CQ.buddy.show(wrap);
     // (the two sides of the equation stand on its pans, "x + 6" and "17", and change as it is solved: what
     // a step takes away rises off both pans, a step that divides or multiplies shows it on both; design
     // review, 2026-11-23: "take 6 coins off both pans on a scale")

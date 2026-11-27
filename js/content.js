@@ -36,11 +36,10 @@ window.CONTENT = {
 
     // Levels 1–3: the swap
     "l1-1": "Which bar should Zippy choose?",
-    "l1-2": "Drag it to Zippy, then tap Swap.",
+    "l1-2": "Drag it to Zippy.", // (he swaps it by himself: no Swap button since 2026-11-27)
     "l2-1": "Another crown! Let's collect it!",
     "l3-1": "One more crown! Grumble's still asleep!",
     "swap-hint2": "The crown balances {n} coins. Try the {n}-unit bar!",
-    "swap-tap-swap": "Now tap Swap!",
     // after every wrong bar, in every level where the child picks a bar (user, 2026-11-19, with their own
     // recording; it took the place of "Give Zippy a gold bar." in Levels 1–3 and "Try another value!" in
     // Levels 6–7)
@@ -96,7 +95,7 @@ window.CONTENT = {
     "l4-28b": "The right-hand side is 7.",
     "l4-29": "A value that makes an equation true is its solution. So, x = 5!",
     "l4-30": "The crown weighs 5 units. Zippy can swap it!",
-    "l4-give": "Drag the 5-unit bar to Zippy, then tap Swap.", // (x = 5 is known: review, 2026-11-08)
+    "l4-give": "Drag the 5-unit bar to Zippy.", // (x = 5 is known: review, 2026-11-08)
 
     // Levels 5–9: check before you swap.  {v} = value tried, {s} = the left side's value, {b} = the right side
     "l5-give": "Give Zippy the {v}-unit bar.",
@@ -105,7 +104,7 @@ window.CONTENT = {
     // side.' Only LHS is being asked here"; it was "Find the value of each side.")
     "check-find-lhs": "Find the left-hand side.",
     "check-find-rhs": "Now find the right-hand side.",
-    "check-now-swap": "Now Zippy can swap. Tap Swap!",
+    "check-now-swap": "Now Zippy can swap.", // (and he does: no Swap button to tap since 2026-11-27)
     "check-lets": "Let's check {v}.",
     "check-next": "Now let's check {v}.", // Level 7 (levels: say.nextTry)
     "check-next-try": "Now try x = {v}.", // Level 6
@@ -150,7 +149,7 @@ window.CONTENT = {
     "l8-10": "Before swapping, let's check the original equation.",
     "l8-11": "Replace x with 15.",
     "l8-14": "The crown weighs 15 units. Time to swap!",
-    "l8-give": "Give Zippy the 15-unit bar, then tap Swap.",
+    "l8-give": "Give Zippy the 15-unit bar.",
 
     // Level 9: two matching crowns
     "l9-1": "Each crown has the same mass, x.",
@@ -168,7 +167,7 @@ window.CONTENT = {
     "l9-7": "Divide both sides into two equal groups.", // (review, 2026-11-08)
     "l9-8": "Each crown weighs 7 units. So, x = 7!", // (review, 2026-11-08)
     "l9-9": "Let's check with x = 7.",
-    "l9-give": "Give Zippy a 7-unit bar, then tap Swap.",
+    "l9-give": "Give Zippy a 7-unit bar.",
     "l9-give2": "One more crown! Give Zippy the other 7-unit bar.",
 
     // Every crown Zippy wins: once he has it, the only voice (user, 2026-11-19). His first crown (Level
@@ -206,7 +205,6 @@ window.CONTENT = {
     tryWord: "Try", // the check's "Try x = 4" (review, 2026-11-13); it fades as the try's verdict comes (2026-11-18)
     back: "Back",
     next: "Next",
-    swap: "SWAP",
     tried: "Tried",
     skip: "Skip",
     level: "Level",
@@ -222,7 +220,6 @@ window.CONTENT = {
     reducedMotion: "Reduced motion",
     chapters: "Chapters",
     screens: "All the screens", // the list in the top left corner (read by screen readers)
-    crowns: "{n} of {t} crowns", // the crown counter, top right (read by screen readers; design review, 2026-11-23)
     replay: "Play this screen again",
     unit: "1 unit",
     // the two sides, as they are written in the working (the check, Level 4's try, practice)
@@ -291,7 +288,7 @@ window.CONTENT = {
 
   /*
    * Levels. crown = the crown's hidden mass. left = coins beside the crown. right = coins on the
-   * right pan (their count: since 2026-11-23 they stand in rows of 5, like a ten-frame, js/world.js). bars = the three gold bars (shown in a
+   * right pan (their count: since 2026-11-27 they rest in a pile, up to 5 in the bottom row and each coin above in the dip between two below, js/world.js coinPile). bars = the three gold bars (shown in a
    * new random order each time). chips = the three number choices for each blank in the check.
    * crowns = how many matching crowns (Level 9), itemScale = smaller crowns and bars so all fit.
    * (The line after each crown is "crown-first" / "crown-another", above.)

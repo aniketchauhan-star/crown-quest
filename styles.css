@@ -905,8 +905,7 @@ html[data-shade] .stage-edge::after {
 /* What a look-here moment is about glows softly (CQ.focus in js/ui.js; review, 2026-11-13: "A soft glow
    around the relevant objects would fit the wooden, forest theme better", instead of a frame round
    them): a coin or a crown like any lit pan item; a gold bar on a pan in warm orange (below: gold on gold
-   hardly shows); the whole balance gently (.bal-rig); the Swap button and the gold bars on their stands
-   too. A pan's plate, a stand or a label has no glow of its own: it simply stays bright. */
+   hardly shows); the whole balance gently (.bal-rig); the gold bars on their stands too. A pan's plate, a stand or a label has no glow of its own: it simply stays bright. */
 .pan-item.looked {
   animation: glowPulse 1.1s ease-in-out infinite alternate;
 }
@@ -923,17 +922,6 @@ html[data-shade] .stage-edge::after {
 }
 .bar-slot.looked .gbar {
   animation: barGlow 1.1s ease-in-out infinite alternate;
-}
-.swap-btn.looked {
-  animation: swapPulse 1s ease-in-out infinite, btnGlow 1.1s ease-in-out infinite alternate; /* (still pulsing too) */
-}
-@keyframes btnGlow {
-  from {
-    filter: drop-shadow(0 0 8px rgba(255, 216, 77, 0.8)) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.3));
-  }
-  to {
-    filter: drop-shadow(0 0 20px #ffd84d) drop-shadow(0 0 5px #fff) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.3));
-  }
 }
 /* a pan glowing in its side's colour (Balance.glowSides, CQ.notebook.sideGlow): left like the LHS (teal),
    right like the RHS (orange). The things on it glow as clearly as a lit crown or coin, a white core and
@@ -1441,44 +1429,6 @@ html[data-shade] .stage-edge::after {
 .nav-item.now .ni-n {
   background: #8a5a00;
 }
-/* the crowns won, "3/10", in the top right corner, its middle in line with the two buttons at the top left
-   (34 + 92 / 2 = 80 px; design review, 2026-11-23: "Add a crown counter or progress bar in the HUD"): a
-   small wooden plaque, like the buttons. (The question bar ends at 1660 px at the most, left of it; the
-   intro's Skip stands here, while the counter is hidden.) */
-.crown-count {
-  position: absolute;
-  right: 36px;
-  top: 42px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  height: 76px;
-  padding: 4px 0 0;
-  border-style: solid;
-  border-width: 0 38px;
-  border-image: url(assets/elements/pillWood.webp) 0 51 0 51 fill / 0 38px stretch;
-  filter: drop-shadow(0 6px 5px rgba(0, 0, 0, 0.3));
-  pointer-events: none;
-  z-index: 21;
-}
-.crown-count {
-  transition: opacity 0.4s ease;
-}
-.crown-count.aside {
-  opacity: 0;
-}
-.cc-crown {
-  width: 62px;
-  height: auto;
-  margin: -6px 0 0 -10px;
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
-}
-.cc-num {
-  font: 800 38px/1 var(--font);
-  color: var(--cream);
-  text-shadow: 0 3px 0 #4a2300;
-  white-space: nowrap;
-}
 /* a first-try win: bigger stars flying out, and coins bursting up (js/engine.js, CQ.fx) */
 .sparkle.fx-star {
   width: 64px;
@@ -1492,28 +1442,6 @@ html[data-shade] .stage-edge::after {
   pointer-events: none;
   z-index: 60;
   filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.3));
-}
-.swap-btn {
-  position: absolute; /* placed under the left pan from js/ui.js */
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 50px 12px;
-  font: 800 54px/1 var(--font);
-  color: #fff;
-  background: url(assets/elements/pillGreen.webp) center / 100% 100% no-repeat;
-  border: none;
-  filter: drop-shadow(0 0 10px rgba(255, 216, 77, 0.75)) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.3));
-  text-shadow: 0 3px 0 #0c3d29;
-  cursor: pointer;
-  pointer-events: auto;
-  animation: swapPulse 1s ease-in-out infinite;
-}
-.swap-btn svg {
-  width: 58px;
-  height: 58px;
-  margin-top: -6px;
 }
 
 /* ---------------------------------------------------------------- caption, bubbles, comic words */
@@ -1860,18 +1788,6 @@ html.reduced-motion .cap-text .ch {
   transform-origin: 50% 50%;
   pointer-events: none;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
-}
-/* the small Zippy in the corner of an activity screen, reacting to the answers (js/ui.js, CQ.buddy) */
-.buddy {
-  position: absolute;
-  left: 112px;
-  top: 1068px;
-  pointer-events: none;
-  z-index: 6;
-}
-.buddy .sprite {
-  position: absolute;
-  transform-origin: 50% 100%; /* (his shake turns about his feet) */
 }
 .ms-grumble {
   position: absolute;
@@ -4220,15 +4136,6 @@ html.lite #title .t-drift {
   to {
     transform: scale(1);
     opacity: 1;
-  }
-}
-@keyframes swapPulse {
-  0%,
-  100% {
-    transform: translate(-50%, -50%) scale(1);
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.08);
   }
 }
 /* a crown or a coin lit up: a soft halo of warm white light round it, like lamplight, breathing gently
