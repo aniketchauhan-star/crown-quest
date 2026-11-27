@@ -256,7 +256,7 @@ def build_lawn():
     # out over the paving, and looked pasted on (asked: "the grass leaf its look weird"). Since
     # 2026-11-26 the right has this lawn turned round instead, with a bank of bushes: lawn_both_sides.)
     alpha = alpha_left
-    return Image.fromarray(np.dstack([rgb, alpha[..., None] * 255]).astype(np.uint8)), floor
+    return Image.fromarray(np.dstack([rgb, alpha[..., None] * 255]).astype(np.uint8)), known
 
 
 # ---------------------------------------------------------------- a lawn on the right too (2026-11-26)
@@ -310,20 +310,28 @@ def right_bank():
     return Image.fromarray(np.clip(f, 0, 255).astype(np.uint8))
 
 
-def lawn_both_sides(full):
-    """The finished lawn (a full frame) with its twin at the right: turned round, from RIGHT_LAWN_TOP
-    down, and the bank behind its top edge."""
-    twin = np.array(ImageOps.mirror(full)).astype(np.float32)
-    w0, w1, h0, h1, seed = LAWN_CLUMPS
+def clump_top(base, seed):
+    """The output y of a lawn's top edge in each column: a crisp row of overlapping round clumps of
+    grass (LAWN_CLUMPS) rising above the line y = base (a number, or one per column)."""
+    w0, w1, h0, h1, _ = LAWN_CLUMPS
     rng = np.random.default_rng(seed)
-    top = np.full(W, float(RIGHT_LAWN_TOP))
+    base = np.broadcast_to(np.asarray(base, np.float64), (W,))
+    top = base.copy()
     x = 0.0
     while x < W:  # overlapping round clumps along the edge
         w, h = rng.uniform(w0, w1), rng.uniform(h0, h1)
         xs = np.arange(int(x), min(W, int(x + w) + 1))
         t = (xs - x) / w * 2 - 1
-        top[xs] = np.minimum(top[xs], RIGHT_LAWN_TOP - h * np.sqrt(np.clip(1 - t * t, 0, 1)))
+        top[xs] = np.minimum(top[xs], base[xs] - h * np.sqrt(np.clip(1 - t * t, 0, 1)))
         x += w * rng.uniform(0.55, 0.85)
+    return top
+
+
+def lawn_both_sides(full):
+    """The finished lawn (a full frame) with its twin at the right: turned round, from RIGHT_LAWN_TOP
+    down, and the bank behind its top edge."""
+    twin = np.array(ImageOps.mirror(full)).astype(np.float32)
+    top = clump_top(RIGHT_LAWN_TOP, LAWN_CLUMPS[4])
     rows = np.arange(H)[:, None]
     twin[..., 3] *= np.clip(rows - top[None, :] + 0.5, 0, 1)  # crisp: soft by a pixel only
     bank = right_bank()
@@ -332,6 +340,40 @@ def lawn_both_sides(full):
     layer.paste(bank, (W - bank.width + past, foot - bank.height))  # (cut at the frame's edge)
     a = over(twin, np.array(layer).astype(np.float32))  # the lawn's tufts in front of the bushes' feet
     a = over(np.array(full).astype(np.float32), a)
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+
+
+# ---------------------------------------------------------------- no smudge by the tree's foot (2026-11-27)
+# The left lawn is filled in smoothly (push_pull_fill) where the reference has the tree's foot and the
+# bank bushes, and it stops at reference y 640, which cuts the bushes along a straight line. The tree
+# was meant to hide all that, but it did not: right of its foot (x ~470 to 626) a dark band of bush
+# bottoms, cut straight along the top and ending in a soft vertical fade over the water, and a smoothed
+# wedge under the foot showed between Grumble and the balance (asked 2026-11-27, with a crop of it: "fix
+# this blur fast"; the same strip that showed on the right on 2026-11-26). Now, right of PAVE_EDGE, the
+# lawn begins at the shore below a crisp row of small clumps, as on the right (LAWN_CLUMPS), and keeps
+# only its own grass there: the water meets the paving as it does all along the lake, and the paving
+# runs up to the tree's foot. Left of it the soft shade under the foot stays, behind Grumble (a shadow
+# there; the floor does not reach that far left, x < ~311, so the sky would show without it), and ends
+# in a slanting edge of small clumps, like the lawn's own edges (in the finale Grumble is not there).
+# (Tried and dropped the same day: the filled pixels under the foot given the lawn's own grass from a
+# little way below them, which repeated its tufts in plain stripes.)
+PAVE_EDGE = (470, 792, 1.6, 5)  # output px: where the shade's slanting end meets the lawn (behind Grumble's
+# horn), how many px it goes left for each px up, and its clumps' random seed
+SHORE = (762, 27)  # output y the lawn there begins at (its clumps rise above it), and the clumps' seed
+BAND_END = 810  # output y: only the lawn above this is changed (below it, and its twin, as they were)
+
+
+def lawn_by_the_foot(full, known):
+    """The left lawn (a full frame) with no filled-in pixel showing right of PAVE_EDGE (known: where
+    the reference has grass, in reference px)."""
+    a = np.array(full).astype(np.float32)
+    kn = np.array(Image.fromarray(known.astype(np.uint8) * 255).resize((W, H), Image.BILINEAR)) / 255.0
+    rows = np.arange(H)[:, None]
+    top = clump_top(SHORE[0], SHORE[1])
+    x0, y0, slope, seed = PAVE_EDGE
+    edge = x0 + (rows - y0) * slope + (SHORE[0] - clump_top(SHORE[0], seed)[:H, None])  # (bumps to the right)
+    cut = (np.arange(W)[None, :] >= edge) & (rows < BAND_END)
+    a[..., 3] = np.where(cut, a[..., 3] * np.clip(rows - top[None, :] + 0.5, 0, 1) * kn, a[..., 3])
     return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
 
 
@@ -492,14 +534,14 @@ def render_layers(layout):
     out = [("sky", build_sky(), 0, 0, None)]
     img, x, y = crop_bbox(end_clouds(to_out(build_clouds())))  # soft already: no sharpening
     out.append(("clouds", img, x, y, "drift"))
-    lawn, _ = build_lawn()
+    lawn, known = build_lawn()
     for item in layout:
         kind = item[0]
         if kind == "floor":
             img, x, y = crop_bbox(sharpen(build_floor(item[1]), 1.6, 60))
             out.append(("floor", img, x, y, None))
         elif kind == "lawn":
-            img, x, y = crop_bbox(lawn_both_sides(sharpen(to_out(lawn), 1.2, 50)))
+            img, x, y = crop_bbox(lawn_both_sides(lawn_by_the_foot(sharpen(to_out(lawn), 1.2, 50), known)))
             out.append(("lawn", img, x, y, None))
         else:
             name, px, py, sc, flip, lid, anim = (list(item) + [None, None])[:7]
